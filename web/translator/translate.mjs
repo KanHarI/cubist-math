@@ -558,12 +558,15 @@ export class Translator {
   translateSyntax(ast,source,imported=new Map()) {
     requireTestMode(ast,this.testMode);
     // Modules are translated one after another, imports first. After one,
-    // terms shown later (inspection, a program's callers) print in its
-    // scope, with no notation selected.
+    // terms shown later (inspection, a program's callers) print in its final
+    // scope (translateModule), with no notation selected.
     const notation=this.checker.notation;
     let result;
     try { return result=this.translateModule(ast,source,imported); }
-    finally { this.checker.notation=result?notationForUses(result.env,this.checker,[]):notation; }
+    finally {
+      this.checker.notation=result?{...this.moduleNotation,selection:null,selectionIdentity:null,selectionReceiver:null}:notation;
+      this.moduleNotation=null;
+    }
   }
   translateModule(ast,source,imported) {
     const module=this.unit({source});
@@ -917,6 +920,20 @@ export class Translator {
       }
       settle(queue);
     }
+    // The module's final scope: the one a definition appended to it would
+    // read, its environment with all its file-level uses applied as an
+    // item's are, which opens the models they name. It is entered with no
+    // observer, so it records nothing. Where the uses cannot be applied (one
+    // was refused), only named notations, which no opening hides, are known.
+    const uses=(ast.items??[]).filter(item=>item.kind==="use").map(item=>item.model);
+    this.moduleNotation=null;
+    if(uses.length&&!uses.some(model=>refusedUses.has(model))) {
+      const unit=this.unit({source,references:null,steps:null,scopePoints:null}).declaration(this.declarationFuel);
+      try { this.moduleNotation=notationForScope(sourceItemScope(this,new Scope(unit,new Map(),env),{kind:"def",uses})); }
+      catch(error) {propagateElaborationStop(error);}
+      finally {unit.fuel.close();}
+    }
+    this.moduleNotation??=notationForUses(env,this.checker,uses,{select:false});
     return {declarations,env,directives,
       ...(this.collectGeneration?{generation:publications.map(group=>({id:group.id,declarations:group.members.map(({theory,generated,...syntax})=>syntax)}))}:{}),
       publications:publications.map(group=>({id:group.id,owner:group.owner,family:group.family,

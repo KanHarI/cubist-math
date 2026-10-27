@@ -847,15 +847,22 @@ in `web/cubical-source-text.mjs`). Before, a unary numeral printed as
 `CommRing.of_nat{{U}}(A, unat.(2))`.
 Every numeral or literal abbreviation, bare or `name.(n)`, now prints only
 where the scope it is printed for establishes that it reads back.
-`notationContext` (`web/translator/notation-context.mjs`) resolves what
-`name.(…)` selects there as `selected` does: by label, or through the
-scope's lexical context, deciding a slot or an opening by the scope's
-outcomes. `selects`, `qualifies` and `readBack` in `sourceText` require a
+`notationContext` (`web/translator/notation-context.mjs`) asks the scope
+what `name.(…)` selects there, through the elaborator's own resolution:
+`selectionTarget`, which `selected` (`web/translator/theories.mjs`) calls to
+decide the same question, on the scope's environment, where a model's
+opening is an alias of each name it opens; or, in a scope with a retained
+lexical context, `LexicalContext.selector`, deciding a slot or an opening by
+the scope's outcomes. A lookup costs a few map reads, never a walk of the
+environment. `selects`, `qualifies` and `readBack` in `sourceText` require a
 positive answer; where the scope cannot give one, or a context has no
 lookups, the term prints as written, a call or constructors. Every context
-that shows text is given lookups: a declaration's own scope, the file-level
-uses a declaration's messages print in before it (`notationForUses`), a
-module's scope for terms shown after checking, and contextual queries.
+that shows text is given a real scope: a declaration's own, the module's
+final one for terms shown after checking (the scope a definition appended
+to it reads, its uses applied), and contextual queries. A declaration's
+messages print before its scope is entered, in the selection its file-level
+uses make (`notationForUses`); after a use that opens a model, whose fields
+may hide any name but a named notation's, only named notations are trusted.
 Generated-Cubist displays read no environment and print explicit forms. A
 shadowed `unat` or `bnat_numerals` prints a value as its constructors, and
 a model variable whose name a named notation takes prints its numeral as
@@ -867,7 +874,8 @@ keep the name-only check
 name (a named notation, a binder, `use`, an import, a section opening) with
 each numeral kind, and reads every printed text back on each surface: a
 print, a type mismatch, a `use` message, the elaboration view, a REPL and a
-contextual `typeof`.
+contextual `typeof`. It also counts a printing scope's environment reads, so
+displays stay linear in the number of terms shown.
 [ring_numeral_display.cubist](../../../cubist-tests/ring_numeral_display.cubist)
 and [numeral_display_scopes.cubist](../../../cubist-tests/numeral_display_scopes.cubist)
 check these displays with only the algebra and the number modules imported,

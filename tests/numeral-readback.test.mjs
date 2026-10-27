@@ -223,3 +223,87 @@ test("terms shown after checking print in the checked module's scope", async () 
     assert.ok(again);
   });
 });
+
+// A model's opening hides names that the module's environment still binds:
+// where a use opens one before the selection a message prints in, the
+// selected receiver and every name but a named notation's are unknown, and
+// a numeral prints as written. (The explicit form names the declared model
+// m, which the opening also hides; display naming does not qualify it.)
+const opened = `import unat;
+import bnat;
+theory Counted(U < UU0) {
+  M : U;
+  inj(n : BNat) : M;
+  def of_nat(n : BNat) : M := inj(n) notation numeral;
+}
+def m : Counted(U0) := Counted.make(M := BNat, inj := fun (n : BNat) => n);
+def other : Counted(U0) := Counted.make(M := BNat, inj := fun (n : BNat) => b_zero);
+theory Holder(U < UU0) {
+  m : Counted(U0);
+}
+def holder : Holder(U0) := Holder.make(m := other);
+`;
+test("a use before a declaration's scope trusts no name an earlier opening may hide", async () => {
+  await withChecked(`${opened}def p := refl(m.of_nat(b_positive(bp_odd(bp_one))));\nuse holder;\nuse m;\nuse p;\ndef after : Unit := tt;\n`, (_, result) => {
+    const text = typeOfUse(result.gaps.find(gap => gap.name === "after")?.reason ?? "");
+    assert.equal(text, "Counted.of_nat{{U0}}(m, bnat_numerals.(3)) = Counted.of_nat{{U0}}(m, bnat_numerals.(3))");
+  });
+});
+
+// After checking, a term prints in the module's final scope, the one a
+// definition appended to it reads: its uses applied, openings included.
+// holder's field m hides m's attached rule, however many items follow the
+// use, and a notation declared after it is in scope; m's own opening leaves
+// m's name, and its rule, in place.
+test("terms shown after checking keep the openings of the module's uses", async () => {
+  const declarations = `${opened}notation m {\n  numeral(n : BNat) := n;\n}\nnotation bnat_numerals {\n  numeral(n : BNat) := b_zero;\n}\ndef three : BNat := b_positive(bp_odd(bp_one));\n`;
+  const explicit = "b_positive(bp_odd(bp_one))";
+  for (const [tail, expected] of [["use holder;\n", explicit], ["use holder;\ndef later : Unit := tt;\n", explicit],
+    ["use holder;\nnotation later {\n  numeral(n : BNat) := n;\n}\n", "later.(3)"], ["use m;\n", "m.(3)"]])
+    await withChecked(declarations + tail, async (program, result) => {
+      assert.deepEqual(result.gaps, [], JSON.stringify(result.gaps));
+      const { checker } = program;
+      const { expression } = checker.checkSyntax({ tag: "DefRef", name: "main__three" }, null, new Map(), new Map());
+      const text = checker.displayText(checker.normalForm(expression), []);
+      assert.equal(text, expected, tail);
+      assert.ok(await withChecked(`${declarations}${tail}def three_again : three = ${text} := refl(three);\n`,
+        (_, again) => again.outputs.every(output => output.verified)), tail);
+    });
+});
+
+// A display's lookups cost a few reads of the scope's environment, whatever
+// its size: no lookup walks the environment (the review measured a
+// quadratic rebuild of it per display), so displays scale linearly with the
+// number of terms shown. The checker is a real one, whose compilation
+// bindings a rebuild would read.
+test("a printing scope's lookups read the environment without walking it", async () => {
+  const { notationContext, notationForUses, notationBinding } = await import("../web/translator/notation-context.mjs");
+  class CountingMap extends Map {
+    reads = 0;
+    walks = 0;
+    get(key) { this.reads++; return super.get(key); }
+    entries() { this.walks++; return super.entries(); }
+    [Symbol.iterator]() { return this.entries(); }
+    keys() { this.walks++; return super.keys(); }
+    values() { this.walks++; return super.values(); }
+    forEach(...rest) { this.walks++; return super.forEach(...rest); }
+  }
+  await withChecked("import unat;\n", ({ checker }) => {
+    assert.ok(checker.compilationBindings);
+    const costs = [];
+    for (const size of [100, 10000]) {
+      const env = new CountingMap([...Array(size)].map((_, k) => [`name_${k}`, { tag: "DefRef", name: `main__name_${k}` }]));
+      env.set(notationBinding("unat"), { tag: "Notation", bindingId: "unat-id" });
+      env.reads = 0;
+      for (let k = 0; k < 100; k++) {
+        const context = k % 2 ? notationContext({ env, checker }, null) : notationForUses(env, checker, [{ kind: "name", name: "unat" }]);
+        const found = [context.reads("unat"), context.reads("name_1"), context.opens("name_1", { tag: "DefRef", name: "main__name_1" }, false)];
+        assert.equal(env.walks, 0, `size ${size}: a lookup walked the environment`);
+        assert.deepEqual(found, ["unat-id", null, true]);
+      }
+      costs.push(env.reads);
+    }
+    assert.equal(costs[0], costs[1], `reads at 100 and 10000 names: ${costs}`);
+    assert.ok(costs[0] <= 100 * 12, `${costs[0]} reads for 100 displays`);
+  });
+});

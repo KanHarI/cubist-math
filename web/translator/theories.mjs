@@ -11,7 +11,7 @@ import {failureRoot,untranslated,sourceFailure} from "./declarations.mjs";
 import {projectedResolution,failedResolution} from "../cubist/bindings.mjs";
 import {modelNotations,modelOperandRecipes,recordOf,notationAlternative,notationPrintingRecipe,notationPrintingViews} from "./model-notation.mjs";
 export {recordOf} from "./model-notation.mjs";
-import {operatorBinding,SELECTION,bindNotationContext,notationBinding} from "./notation-context.mjs";
+import {operatorBinding,SELECTION,bindNotationContext,notationBinding,selectionTarget} from "./notation-context.mjs";
 import {retainedNotationReceipt,registerRetainedNotationPrinting,retainSourceNotation} from "./named-notation.mjs";
 import {lowerBindingReference} from "../cubist/binding-syntax.mjs";
 import {retainedTheoryDeclarations} from "./retained-theories.mjs";
@@ -290,9 +290,10 @@ export function selected(t,scope,node,{effects=selectionEffects.all,activation=n
     return scope.withSlotOutcomes(effects.labels?scope.slotOutcomes.selectNamespace(activation.bindingId)
       :scope.slotOutcomes.activate(activation.bindingId,[]));
   }
-  const key=referenceKey(node),notation=key?receiverScope.env.get(notationBinding(key)):null;
-  if(notation?.tag==="Notation"&&!notation.model) {
-    const inner=effects.notation?notationSelected(scope,notation):scope;
+  // The printer resolves a qualifier by this same target (notation-context.mjs).
+  const key=referenceKey(node),target=key?selectionTarget(receiverScope.env,key):null;
+  if(target?.named) {
+    const notation=target.named,inner=effects.notation?notationSelected(scope,notation):scope;
     if(!activation)return inner;
     let activated=inner.withSlotOutcomes(inner.slotOutcomes.activate(activation.bindingId,[]));
     if(effects.notation)activated=bindNotationContext(activated,t.identityAdapter.key(activation.bindingId));
@@ -301,8 +302,8 @@ export function selected(t,scope,node,{effects=selectionEffects.all,activation=n
   const receiver=t.term(node,receiverScope,null),inner=opened(t,scope,node,{effects,receiver,receiverScope,activation});
   // A model's notation with the literal rules its module added, where the
   // name is still that model.
-  if(effects.notation&&inner&&notation?.model&&receiverScope.env.get(key)===notation.model) {
-    const selection=inner.env.get(SELECTION);
+  if(effects.notation&&inner&&target?.attached) {
+    const notation=target.attached,selection=inner.env.get(SELECTION);
     const extended=inner.alias(SELECTION,{...selection,extension:notation.bindingId??null,
       numeral:notation.rules.get("numeral")??selection.numeral??null,
       literal:notation.rules.get("literal")??selection.literal??null});
