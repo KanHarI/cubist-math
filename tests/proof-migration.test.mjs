@@ -472,6 +472,22 @@ test("at level types an axiom's convertible statement stands for the original", 
   assert.match(dependent.failures[1].reason, /^The axiom's statement relies on other assumptions: axioms_fixture::A -> /);
 });
 
+// Trust needs exact identity: an unchanged P never vouches for P__x, a
+// declaration whose name only begins like P's, whether P is an axiom or a
+// definition; the definition's case predates #317 (#317's review round 7,
+// finding 1). P__x's type is kept, but what depends on its value is not.
+test("an unchanged declaration never vouches for another whose name begins like its own", async () => {
+  const run = (before, after) => verifyMigration({ modules: ["axioms_fixture"], level: "types",
+    readOriginal: async name => name === "axioms_fixture" ? before : library(name), readEdited: async () => after });
+  const changed = source => source.replace("def P__x : U0 := Unit;", "def P__x : U0 := Void;");
+  const axiom = "def P := axiom Unit;\ndef P__x : U0 := Unit;\ndef A := axiom P__x;\ndef use_ := A;\n";
+  const [axiomReport] = await run(axiom, changed(axiom));
+  assert.deepEqual(axiomReport.failures.map(failure => failure.name), ["A", "use_"]);
+  const definition = "def P : Unit := tt;\ndef P__x : U0 := Unit;\ndef use_(y : P__x) : P__x := y;\n";
+  const [definitionReport] = await run(definition, changed(definition));
+  assert.deepEqual(definitionReport.failures.map(failure => failure.name), ["use_"]);
+});
+
 // The edited axiom stands for the original as a free variable only: a binder
 // of the same spelling keeps its occurrences (#317's review round 2,
 // finding 2). Nor does an axiom's assumption take a binder's name.

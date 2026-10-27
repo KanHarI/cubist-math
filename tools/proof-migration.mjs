@@ -146,13 +146,14 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
   const signatureCorrespondence = new Map();
   const signatureName = name => signatureCorrespondence.get(name) ?? name;
   // An edited axiom whose assumed statement is the original's stands for it,
-  // as a free assumption of its dependents' terms, types and lists.
+  // as a free assumption of its dependents' terms, types and lists: by its
+  // exact assumption, in a map of its own, never in `identical`.
   const axiomCorrespondence = new Map();
   const assumptionName = name => axiomCorrespondence.get(name) ?? name;
-  const standsIn = name => {
-    const parts = shadowBinding(name);
-    return !parts || identical.has(`${parts.module}__${parts.local.split("__")[0]}`);
-  };
+  // An edited definition stands for the original only when its own exact
+  // identity was found identical: never because another declaration's
+  // name begins its own, as P's does P__x's, which identifiers allow.
+  const standsIn = name => !shadowBinding(name) || identical.has(originalName(name));
   // Generated unfolding helpers are named by a session serial; compare their
   // checked bodies instead of their names.
   const helper = name => /__unfolding_\d+$/.test(name) && views.has(name);
@@ -193,10 +194,7 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
     const visit = node => {
       if (!node || typeof node !== "object" || seen.has(node)) return;
       seen.add(node);
-      if (node.tag === "DefRef" && !standsIn(node.name)) {
-        const parts = shadowBinding(node.name);
-        found.add(`${parts.module}__${parts.local.split("__")[0]}`);
-      }
+      if (node.tag === "DefRef" && !standsIn(node.name)) found.add(originalName(node.name));
       for (const value of Array.isArray(node) ? node : Object.values(node)) visit(value);
     };
     visit(term);
@@ -256,8 +254,10 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
       const name = node.tag === "DefRef" ? node.name : ["Sort", "Elim"].includes(node.tag) ? node.signature : null;
       if (name) {
         if (helper(name)) visit(views.get(name).term);
+        // The module's own declarations, by the module that checked them,
+        // not by a binding's prefix, which another module's name may share.
         const binding = originalName(name);
-        if (binding.startsWith(`${module}__`)) found.add(`${module}__${binding.slice(module.length+2).split("__")[0]}`);
+        if (program.symbols[binding]?.sourceModule === module) found.add(binding);
       }
       for (const value of Array.isArray(node) ? node : Object.values(node)) visit(value);
     };
@@ -383,8 +383,7 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
         if (extensions(originalBinding) !== extensions(editedBinding))
           return fail(name, `Kernel extensions changed: ${extensions(originalBinding) || "none"} -> ${extensions(editedBinding) || "none"}`);
         if (hashTerm(before) === hashTerm(after)) {
-          axiomCorrespondence.set(edited, original);
-          identical.add(`${module}__${name}`); report.identical++; return;
+          axiomCorrespondence.set(edited, original); report.identical++; return;
         }
         if (level === "identical") return fail(name, "The axiom's assumed statement changed.");
         // As a public type is compared: bounded kernel conversion, rolled back.

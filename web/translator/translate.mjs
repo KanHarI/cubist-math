@@ -995,7 +995,7 @@ export class Translator {
         // `failure` classifies a checker rejection ("mismatch", "budget",
         // "deadline", "resource" or "other"), so callers need not read the reason.
         declarations.push({name:d.name.text,status:"not-translated",...sourceFailure(error,module),
-          syntax:d});
+          ...(error.duplicate?{duplicate:true}:{}),syntax:d});
       }
       declarations.at(-1).notation=this.checker.notation;
       declarations.at(-1).rewriteWork={...unit.work};
@@ -1058,7 +1058,7 @@ export class Translator {
       const refusal=initialRefusal(d,failure), error=refusal?unit.locate(refusal.error,refusal.at):failure;
       unavailable(error);
       declarations.push({name:d.name.text,status:"not-translated",...sourceFailure(error,module),
-        syntax:d});
+        ...(error.duplicate?{duplicate:true}:{}),syntax:d});
     }
     declarations.at(-1).notation=this.checker.notation;
     declarations.at(-1).rewriteWork={...unit.work};

@@ -176,8 +176,11 @@ test("two modules' declarations that would share one identity: the later is refu
     const uses_ = Object.keys(uses).map((name, index) => `computable def use_${index} := ${name};`);
     const source = [...imports.map(name => `import ${name};`), ...uses_].join("\n");
     const { result } = await checkProgram(t, source, { module, reader: inMemory(modules) });
-    const failed = result.imports.find(output => output.binding === refused);
-    assert.match(failed?.reason ?? "", clash, JSON.stringify(modules));
+    // The later is refused as a duplicate, and writes no record: the earlier
+    // keeps the identity (#317's review round 7, finding 2).
+    const refusal = result.gaps.find(gap => gap.duplicate && `${gap.module}__${gap.name}` === refused);
+    assert.match(refusal?.reason ?? "", clash, JSON.stringify(modules));
+    assert.ok(result.imports.every(output => output.binding !== refused || output.verified), JSON.stringify(modules));
     for (const [index, expected] of Object.values(uses).entries()) {
       const output = result.outputs.find(item => item.name === `use_${index}`);
       if (expected === true) assert.ok(output.verified, output.reason);
@@ -267,6 +270,21 @@ test("an assumption is published with its axiom definition's site", async t => {
   }
   assert.match(published(program.checker.axioms.get("classical_axioms__LEM")).description, /^Excluded middle, assumed/);
   assert.equal(published("__assumption_Truncate#").definitionSite, undefined);
+});
+
+// A declaration refused for an identity another module's declaration holds
+// writes no record over it: a::b__c's axiom keeps its symbol, and its
+// assumption the site and documentation of its own definition, in a, found
+// through its origin's module and declaration (#317's review round 7,
+// finding 2).
+test("a refused declaration never overwrites the records of the identity it clashes with", async t => {
+  const modules = inMemory({ a: "// The axiom of a.\ndef b__c := axiom Unit;\n", a__b: "// The definition of a__b.\ndef c := tt;\n" });
+  const { program, result } = await checkProgram(t, "import a;\nimport a__b;\ndef used := a::b__c;", { module: await createCubical(), reader: modules });
+  assert.equal(program.symbols.a__b__c.sourceModule, "a");
+  assert.match(result.gaps.find(gap => gap.module === "a__b" && gap.name === "c")?.reason ?? "", /would be one identity, a__b__c/);
+  const assumption = result.symbols.find(symbol => symbol.binding === program.checker.axioms.get("a__b__c"));
+  assert.deepEqual([assumption.definitionSite.module, assumption.definitionSite.name, assumption.description],
+    ["a", "b__c", "The axiom of a."]);
 });
 
 test("assumption names live where no declaration, constructor, binder or generated name can", async t => {

@@ -417,14 +417,19 @@ transition land together.
    meet in one, as `a::b__c` and `a__b::c` do: the later declaration is
    refused (E256, `identityClash` in `web/translator/translate.mjs`), whether
    it is a definition, a declared type or constructor, or an axiom, and no
-   declaration publishes under another module's identity. The migration
+   declaration publishes under another module's identity: the refusal is a
+   duplicate's, which writes no record over the identity's own. The migration
    verifier compares an axiom by its assumed statement, as a declaration's
    public type: what the statements rely on first, then the same statement,
    or at level `types` a statement the kernel shows convertible within the
-   time limit; such a one
+   time limit; such a one, kept by its exact assumption in a map of its
+   own,
    stands for the original in its dependents' terms, types and assumption
    lists, renamed only where it occurs free (`mapDefinitions` in
-   `tools/proof-migration.mjs`), and a changed one is reported. A historical
+   `tools/proof-migration.mjs`), and a changed one is reported. An edited
+   definition stands for the original only by its own exact identity:
+   main trusted every name a found-identical declaration's name begins, so
+   an unchanged `P` vouched for a changed `P__x`. A historical
    reader reads `axiom` as the source's revision did (`historicalKeywords`
    in `web/cubist/legacy-syntax.mjs`; the verifier reads the revision off
    its parser): a revision with the form reserves the word and reads the
