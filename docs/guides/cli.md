@@ -40,7 +40,7 @@ A successful check prints the declaration and kernel-step counts, then each
 declaration that relies on an assumption with every assumption it relies on,
 as `recover assumes LEM`, its warnings, `evaluate` results and prints, each
 print followed by the assumptions its term relies on, as
-`print typeof at line 4 assumes LEM`, and exits with status 0. Parse errors, missing imports, or unchecked declarations exit nonzero,
+`print typeof at line 4 assumes LEM`, and exits with status 0. Parse errors, missing imports, or unchecked declarations, the file's or an import's, exit nonzero,
 each printed on a line of its own with its code, as
 `error E606 at line 2:3 (wrong): Type mismatch: …`; a warning prints as
 `warning W703 at line 1:37 (copy): …`. Every code has an entry in the

@@ -4,7 +4,7 @@
 // fallback. `read` supplies pinned files and any explicitly shared foundations.
 import { moduleReader, moduleNamePattern, moduleRoots, placeOfPath, searchOrder } from "../web/module-resolution.mjs";
 import { currentSyntax, historicalKeywords, historicalRenamingAt, reservedBindingRenaming } from "../web/cubist/legacy-syntax.mjs";
-import { parse, tokenize, languageKeywords } from "../web/cubist/parser.mjs";
+import { parse, tokenize } from "../web/cubist/parser.mjs";
 
 // The relocation is valid only for the source unary epoch. A transitional
 // UNat module may be bypassed only when it is the published identity alias;
@@ -26,11 +26,20 @@ export function unaryNaturalBase({available,readSource}) {
 // Resolve renamed and relocated modules once for both baseline checks and
 // historical declaration discovery. A relocated file has its current place
 // even though its contents are read from the old archive path.
-export function historicalModulePaths({ available, movedToLibrary = new Set(), unaryNat = false }) {
+//
+// A module a renaming plan renamed is read by the word it renames: the
+// plan's inverse, never a spelling's suffix. `spellings` gives the shared
+// plan in effect (renamingFor), which spells axiom axiom__ where the sources
+// spell axiom_ already; each keyword's own spelling (historicalRenamingAt)
+// is the one the keyword migration gave renamed modules' files, as paths_
+// for paths.
+export function historicalModulePaths({ available, movedToLibrary = new Set(), unaryNat = false, spellings = () => historicalRenamingAt() }) {
   const movedPaths = new Set();
+  const renames = name => [spellings(), historicalRenamingAt()]
+    .map(plan => Object.keys(plan).find(word => plan[word] === name)).find(word => word !== undefined);
   const modulePath = (place, name) => {
     const historicalName=unaryNat&&name==="unat"?"nat":name;
-    const oldName = historicalName.endsWith("_") && languageKeywords.has(historicalName.slice(0, -1)) ? historicalName.slice(0, -1) : historicalName;
+    const oldName = renames(historicalName) ?? historicalName;
     const moved = movedToLibrary.has(name) || movedToLibrary.has(oldName);
     if (moved && place !== "library") return null;
     const root = moduleRoots[moved ? "archive" : place];

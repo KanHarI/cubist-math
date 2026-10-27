@@ -65,6 +65,19 @@ evaluate double(2) expecting 4;
 // A user's axiom, a library axiom and one reached through an import are
 // reported with every result that relies on them; a result that relies on
 // none is not reported.
+// check checks the file and everything it imports: an import's failing
+// declaration fails the check, though nothing the file uses fails (#317's
+// review round 5, finding 2).
+test("CLI check fails when an import fails a declaration", async t => {
+  const directory = await mkdtemp(join(tmpdir(), "cubist-cli-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  await writeFile(join(directory, "dep.cubist"), "def bad : Void := tt;\ndef kept := tt;\n");
+  await writeFile(join(directory, "main.cubist"), "import dep;\ndef use_ := kept;\n");
+  const checked = run(["check", "main.cubist"], { cwd: directory });
+  assert.notEqual(checked.status, 0, checked.stdout);
+  assert.match(checked.stderr, /^error E606 at line 1:\d+ \(dep\.bad\): Type mismatch/m);
+});
+
 test("CLI check reports every assumption a result relies on, a user's axiom among them", async t => {
   const directory = await mkdtemp(join(tmpdir(), "cubist-cli-"));
   t.after(() => rm(directory, { recursive: true, force: true }));

@@ -230,6 +230,25 @@ test("an axiom whose identity an earlier binder spells takes a fresh assumption 
 // qualified identity, a library axiom and a legacy builtin, leaves the mark
 // to assumptions, and no identifier can write it (#317's review round 3,
 // finding 1).
+// An assumption is no declaration: the program's symbols hold declarations
+// alone, and an inspected assumption states its axiom, found through the
+// origin the checker recorded, never through its label, which a local
+// declaration may spell too (#317's review round 5, finding 1).
+test("an inspected assumption states its own axiom, whatever else its label spells", async t => {
+  const { program, result } = await checkProgram(t,
+    "import classical_axioms;\ndef e := classical_axioms::LEM(U0);\ndef LEM : Unit { exact tt; }", { module: await createCubical() });
+  assert.equal(result.complete, true, JSON.stringify(program.gaps));
+  const assumption = program.checker.axioms.get("classical_axioms__LEM");
+  assert.equal(program.symbols[assumption], undefined);
+  assert.deepEqual(Object.keys(program.symbols).filter(isAssumptionName), []);
+  const view = program.inspect(assumption);
+  const statement = view.statement.conclusion.map(part => part.text).join("");
+  assert.match(statement, /Trunc/);
+  assert.doesNotMatch(statement, /Unit/);
+  assert.equal(view.folded.reference, undefined);
+  assert.equal(program.inspect("main__LEM").statement.conclusion.map(part => part.text).join(""), "Unit");
+});
+
 test("assumption names live where no declaration, constructor, binder or generated name can", async t => {
   const modules = inMemory({ a: "def b__c := axiom Unit;\ndef d := b__c;\n", a__b: "def e := tt;\n" });
   const fallback = sourceReader();

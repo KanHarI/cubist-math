@@ -18,7 +18,7 @@ import { assertFreshBuild } from "./build-stamp.mjs";
 import { migrationSourceReader, historicalModulePaths, historicalMigrationSources, unaryNaturalBase } from "./migration-sources.mjs";
 import { placeOfFile } from "./module-sources.mjs";
 import { moduleRoots, searchOrder } from "../web/module-resolution.mjs";
-import { historicalSource } from "../web/cubist/legacy-syntax.mjs";
+import { historicalRenamingAt, historicalSource } from "../web/cubist/legacy-syntax.mjs";
 import { parse } from "../web/cubist/parser.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
@@ -103,7 +103,10 @@ const movedToLibrary = new Set([...available].filter(path => path.startsWith(mod
   .map(path => path.slice(moduleRoots.archive.length, -".cubist".length))
   .filter(name => existsSync(`${root}${moduleRoots.library}${name}.cubist`)
     && !existsSync(`${root}${moduleRoots.archive}${name}.cubist`)));
-const paths = historicalModulePaths({ available, movedToLibrary, unaryNat });
+// The shared renaming plan, once made: module paths read its renamed
+// modules by the words they rename.
+let renaming = null;
+const paths = historicalModulePaths({ available, movedToLibrary, unaryNat, spellings: () => renaming ?? historicalRenamingAt({ axiomForm }) });
 const originalModulePath = paths.modulePath;
 const historicalSources = historicalMigrationSources({ available, ...paths, implicitNat, axiomForm,
   readSource: path => git(["show", `${base}:${path}`]),
@@ -120,7 +123,7 @@ for (const name of modules) {
     if (path) selectedPaths.add(path);
   }
 }
-const renaming = historicalSources.renamingFor(selectedPaths);
+renaming = historicalSources.renamingFor(selectedPaths);
 const readOriginal = migrationSourceReader(async (place, name) => {
   const path = originalModulePath(place, name);
   if (path === null) return null;

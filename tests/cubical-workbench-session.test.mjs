@@ -224,3 +224,20 @@ test("a transfer whose provenance cannot be read keeps its sources, and an incom
   assert.equal(typeof h1_truncation, "string");
   await assert.rejects(session.load({ ...exported, sources: missing }), /did not replay completely/);
 });
+
+// Complete means every declaration of every module checks, an import's as
+// the main module's: a transfer whose import fails a declaration is
+// refused, though the declarations it uses check (#317's review round 5,
+// finding 2).
+test("a transfer whose import fails a declaration is refused", async t => {
+  const dep = "def kept := tt;\n";
+  const program = new CubicalProgram(module, async name => name === "dep" ? dep : null, { collectReferences: false });
+  t.after(() => program.dispose());
+  await program.check("import dep;\ndef use_ := kept;", "workbench");
+  const exported = program.export("workbench__use_");
+  const session = new WorkbenchSession(module);
+  t.after(() => session.dispose());
+  await assert.rejects(session.load({ ...exported, sources: { dep: `def bad : Void := tt;\n${dep}` } }),
+    /did not replay completely: Type mismatch/);
+  assert.equal((await session.load(exported)).view.type.tag, "Unit");
+});

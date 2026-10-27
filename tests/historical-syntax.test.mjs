@@ -204,6 +204,32 @@ test("a historical module named by a renamed word keeps one name in imports and 
   assert.deepEqual([report.failures, report.identical], [[], 2]);
 });
 
+// The shared plan spells a renamed module apart from every name the sources
+// use, as axiom__ where a source declares axiom_; its path is read through
+// the plan's inverse, not a suffix, and an unchanged migration verifies
+// (#317's review round 5, finding 3).
+test("a module the plan spells twice over is found through the plan, not a suffix", async t => {
+  const sources = new Map([["library/axiom.cubist", "def f : Unit := tt;\n"],
+    ["library/history.cubist", "import axiom;\ndef axiom_ : Unit := tt;\ndef result : Unit := axiom::f;\n"]]);
+  const available = new Set(sources.keys());
+  let renaming = null;
+  const paths = historicalModulePaths({ available, spellings: () => renaming ?? {} });
+  const history = historicalMigrationSources({ available, ...paths, readSource: path => sources.get(path) });
+  renaming = history.renamingFor(["library/history.cubist"]);
+  assert.equal(renaming.axiom, "axiom__");
+  const read = path => historicalSource(history.source(path), path.slice("library/".length, -".cubist".length),
+    { implicitNat: false, minusReverses: false, renaming, importedDeclarations: history.importsOf(path) });
+  const rewritten = read("library/history.cubist");
+  assert.equal(rewritten, "import axiom__;\ndef axiom_ : Unit := tt;\ndef result : Unit := axiom__::f;\n");
+  assert.equal(paths.modulePath("library", "axiom__"), "library/axiom.cubist");
+  const readOriginal = migrationSourceReader(async (place, name) => {
+    const path = paths.modulePath(place, name);
+    return path && available.has(path) ? read(path) : null;
+  }, ["history"]);
+  const [report] = await verifyMigration({ modules: ["history"], readOriginal, readEdited: async () => rewritten });
+  assert.deepEqual([report.failures, report.identical], [[], 2]);
+});
+
 test("historical fill binders leave the box keyword intact", async t => {
   assert.doesNotThrow(() => parse(read("def f(A : U0, a : A, fill : A) : a = a := fun (i : Interval) => fill j in A from a at i { };")));
   const rewritten = await checked(t,
