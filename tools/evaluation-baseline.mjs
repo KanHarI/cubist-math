@@ -62,7 +62,11 @@ export const fixture = new URL("tests/fixtures/evaluation-baseline.json", root);
 // runtime, is a demand, and the prime projections of euclid(4) and
 // euclid(5), and euclid(4)'s value form, show values where the kernel's head
 // queries stopped with K344.
-export const version = 8;
+// Version 9 executes the point constructors of higher and truncated sorts
+// in the runtime (docs/reports/runtime-repl-evaluation.md): no type decides
+// a fallback before the runtime is asked, so a value form demands no weak
+// head of the kernel.
+export const version = 9;
 
 const euclid = "import euclid; use unat;", circle = "import circle; use unat;";
 // The archived Euclid construction and its prerequisites stay fixed for
