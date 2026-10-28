@@ -952,10 +952,15 @@ Each step lands in focused PRs under the review rule above.
       `!!!`, a literal of main's rationals falls from 72.0M ticks and
       1,116,794 nodes to 11.5M and 265,250, still over the plan's 10M
       target.
-   2. **NUM2's default `Z`/`Q`:** the public carriers become the binary
-      `BInt` and `BQ`, with generic ring numeral interpretation, numerical
-      casts and rendering, gated on folded normal forms. The unary integers
-      and rationals stay as compatibility clients.
+   2. **NUM2's default `Z`/`Q`,** done on 2026-10-26: public `Z` and `Q`
+      alias the binary `BInt` and `BQ`, and their API's contracts check
+      under folded normal forms. A ring reads numerals by doubling over
+      `BNat`, with checked agreement to its unary numerals
+      (`ring_numerals`); the casts `int_of_nat`, `rat_of_int` and
+      `rat_of_nat` keep binary magnitudes, and computed values print
+      decimal magnitudes from their bits. The unary integers and rationals
+      were removed by the user's decision; `UNat` remains for structural
+      recursion.
    3. **#289's runtime in the REPLs** (EVAL3/EVAL4 integration). The CLI,
       browser and contextual REPLs compute the value form and constructor
       patterns through the runtime query, with one specified fallback to

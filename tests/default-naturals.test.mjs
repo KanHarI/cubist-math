@@ -29,9 +29,12 @@ test("mathematical displays show computed binary magnitudes and retained rationa
   const { program, result, get } = await checkProgram(t, `import nat; import rationals;
     def large : Nat := nat.(18446744073709551615 + 1);
     def half : Q := rationals.(1/2);
+    def product : Z := integers.(18446744073709551615 * 2);
   `, { name: "default_display" });
   assert.ok(result.complete, JSON.stringify(result.gaps));
   assert.equal(program.inspect("default_display__large", { normalize: true }).expressionText, "18446744073709551616");
+  // A computed integer shows its representative's binary magnitudes in decimal.
+  assert.match(program.inspect("default_display__product", { normalize: true }).expressionText, /36893488147419103230/);
   assert.match(program.inspect("default_display__half").expressionText, /1\/2/);
   assert.equal(get("half").verified, true);
 });

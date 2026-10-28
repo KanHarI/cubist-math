@@ -14,9 +14,9 @@ representations and bit arithmetic are implemented below. NUM1's semiring
 agreement, universe transport, bitwise equality/setness and comparison
 correctness are implemented, together with dependent Peano/strong recursion
 and factorial. The default-`Nat` migration is implemented below; its release checks pass.
-NUM2 is in progress: the binary integer ring/domain and rational field are
-constructed; certificate-normalization validation and the default `Z`/`Q`
-migration remain. EVAL3–EVAL8 remain open:
+NUM2's binary integer ring/domain and rational field are the default `Z`
+and `Q` since 2026-10-26, with binary generic ring numerals and casts; the
+full normal forms of the rational inverses remain targets. EVAL3–EVAL8 remain open:
 [#289](https://github.com/KanHarI/cubist-math/pull/289) adds a
 [first internal EVAL3/EVAL4 query](#first-implementation-289) for ordinary
 data. Since its [REPL integration](#repl-integration) of 2026-10-26 it
@@ -40,7 +40,7 @@ budget failures. The [nondependent descent change](../../reports/nondependent-qu
 closes the generic quotient gate. The quotient-free transport gates and the
 binary-rational inverses' full normalization remain open. The binary-rational
 API was released on the inverses' folded normal forms (2026-10-26), and the
-default `Z`/`Q` migration is gated the same way, by the decision of that day.
+default `Z`/`Q` migration passed the same gate that day.
 These fixes do not complete NUM2.
 The [explicit normalization stack](../../reports/normalization-stack.md) covers
 the existing full normalizer's traversal. The
@@ -93,6 +93,9 @@ stays within its stated contract.
 **Decisions of 2026-10-26:**
 - The default `Z`/`Q` switch is gated on folded normal forms, as the
   binary-rational API's release was.
+- The unary integers and rationals are not kept after the switch: only
+  tests and measurement fixtures used them. `UNat` remains the one unary
+  number type, for structural recursion.
 - This phase also connects the runtime query of #289 to the REPLs, adds
   typed readback and lands EVAL7.
 - EVAL7 moves primality and divisibility to `library/`, as step NT2 of moving
@@ -335,11 +338,10 @@ Define both representations early, independently of the new evaluator:
   fractions of that binary-backed `Z`. They must not implement arithmetic
   by converting magnitudes through `UNat`.
 
-This is a new numerical library. The existing
-[integers](../../../library/integers.cubist) and
-[rationals](../../../library/rationals.cubist) provide construction evidence;
-comparison maps, isomorphisms and universe paths to those old types are
-outside this track. The unary/binary natural equivalence remains an early
+This is a new numerical library. The unary integers and rationals built on
+2026-10-05 provided construction evidence, and were removed when the binary
+ones became the default on 2026-10-26; comparison maps, isomorphisms and
+universe paths to those old types were outside this track. The unary/binary natural equivalence remains an early
 deliverable because both representations are useful. Here `BNat` names the
 binary carrier explicitly; once NUM0/NUM1's correctness and compatibility
 gates pass, expose it as the new default `Nat` as directed on 2026-10-17.
@@ -392,7 +394,8 @@ below the algebraic model layer to avoid an import cycle through `algebra`.
 EVAL0 is done. EVAL1 is implemented in #266; EVAL2 and NUM0 are implemented below.
 NUM1's semiring, transport, equality/order and dependent-recursion work is
 implemented. The default-`Nat` compatibility migration is implemented with
-release validation passed (#278, 2026-10-18). NUM2, EVAL3/EVAL4 and EVAL5 are
+release validation passed (#278, 2026-10-18), and the default `Z`/`Q`
+migration on 2026-10-26. NUM2, EVAL3/EVAL4 and EVAL5 are
 partly delivered, as their rows say; the other rows remain. Sizes are relative
 scope, as in the work plan.
 
@@ -402,7 +405,7 @@ scope, as in the work plan.
 | EVAL1 | One-pass REPL evaluation; implemented in #266 | EVAL0 | S |
 | NUM0 | Explicit UNat and canonical BNat with direct binary arithmetic; implemented | Current inductive declarations; archive evidence | M |
 | NUM1 | Natural semiring isomorphism, U0 path/transport, bitwise setness, comparison correctness, H1 binary Peano view, coherent strong recursion and factorial; implemented | NUM0; semiring and order laws; H1 dependent elimination; computational univalence | L |
-| NUM2 | New binary-backed Z and Q, ring/domain/field laws and default APIs. In progress: generic fractions (#279), binary integers (#280, #281) and the binary-rational API, released on folded normal forms (#283), and binary generic ring numerals; the default `Z`/`Q` migration and rendering remain | NUM1; current quotients, rings and fractions | L |
+| NUM2 | New binary-backed Z and Q, ring/domain/field laws and default APIs. Generic fractions (#279), binary integers (#280, #281) and the binary-rational API, released on folded normal forms (#283); binary generic ring numerals and the default `Z`/`Q` migration, with casts and rendering, on the same gate (2026-10-26). The rational inverses' full normal forms remain targets | NUM1; current quotients, rings and fractions | L |
 | EVAL2 | Memoized full normalization; implemented | EVAL0; independent of EVAL1 | M |
 | EVAL3 | Closure evaluator for a specified data fragment. A first internal query for ordinary data (#289), which computes REPL and print value forms (REPL integration); higher sorts, patterns and typed readback remain | EVAL0 and semantic contract | L |
 | EVAL4 | Explicit evaluation stack and bounded runtime. #289's machine loop and a synchronous observation for the checker; a responsive snapshot for asynchronous use, memory calibration, closed-environment pruning and sharing of repeated calls remain | EVAL3 design; implement alongside it | M |
@@ -817,9 +820,8 @@ the kernel's normal-form depth (`K337`) after about 127M query ticks, and of
 `bq_decide(1/2, 2/3)`, whose certificate is negative, at its syntax depth
 (`K344`) after about 82M; their folded normal forms take 689,608 and 89,617.
 The new API is released on these folded normal forms (2026-10-26). Public
-`Z`/`Q` and numerical rendering still require their migration; generic ring
-numerals are binary (below). No canonical signed or lowest-terms
-presentation is claimed.
+`Z` and `Q` alias these carriers since the default migration below. No
+canonical signed or lowest-terms presentation is claimed.
 
 The original bounded follow-up probes localized the growth to full normalization of the
 open integer multiplication function within the quotient's cross-multiplication
@@ -913,6 +915,35 @@ check these displays with only the algebra and the number modules imported,
 each read back, and the contracts check mixed bit patterns against the
 binary integers' literal reader.
 
+**Default migration (2026-10-26).** Public `Z` and `Q` alias `BInt` and
+`BQ`. The facades [integers.cubist](../../../library/integers.cubist) and
+[rationals.cubist](../../../library/rationals.cubist) keep the public names
+over `Nat`: `int(a, b)`, the `int_` operations and laws, the `integers`
+ring, `rat(a, k)`, `rat_decide`, the `rationals` field and their notations,
+whose literal rules (`int_literal`, `rat_literal`) call the binary readers.
+`rat_inv` is the total inverse. The casts `int_of_nat`, `rat_of_int` and
+`rat_of_nat` keep binary magnitudes; `int_of_nat_numeral` and
+`rat_of_nat_numeral` prove that the casts the literal rules read into agree
+with the generic numerals. `rat`'s nonzero certificate uses the integers'
+zero decision, as the literal reader's does: in one fresh program each, the
+folded normal form of `rat(int(2, 0), 2)` took 44,197 query ticks and 942
+nodes, and the full one 3,493,093 ticks and 97,457 nodes. The unary
+constructions and proofs were removed the same day, by the user's
+decision: nothing in the library used them. Tests that covered general
+behavior use the public binary carriers; those that covered a unary numeral
+rule use test-local models, a ring over `unat_models` among them. The
+debugging plan's probe and its T6 target measure the public binary
+rationals, and its unary measurements stay as history. The migrated API's
+contracts check under folded normal forms in
+[default_number_contracts.cubist](../../../tests/fixtures/contracts/default_number_contracts.cubist),
+including a wide inverse. [default_numbers.cubist](../../../cubist-tests/default_numbers.cubist)
+checks the displays: computed values print as quotient representatives
+whose magnitudes are decimal from their bits, and literals print as
+written. Beyond the generic numerals above, the printers needed no change:
+both read `BNat` bits into decimal (`binaryNatural` in
+`web/cubical-source-text.mjs`, `binaryDigits` in `web/cubical-notation.mjs`). The archive imports neither module. The
+evaluation baseline's workloads import neither, and it was not refreshed.
+
 Construct `Z` from pairs of `BNat`, using the existing same-difference
 relation and quotient approach with binary addition and multiplication.
 Construct `Q` as fractions over this `Z`, retaining its nonzero-denominator
@@ -933,8 +964,8 @@ work remains proposed under the [number-order decision](../work-plan.md#open-dec
 the 2026-10-17 direction includes only ordered-ring/field definitions and
 keeps this further work paused. NUM2 does not wait for it. R2 and the later real constructions target the
 new `Q`, with positive-rational precision and binary natural bounds. The
-older unary-backed carriers remain compatibility clients, rather than a
-second target for the new order development. No comparison to them is
+older unary-backed carriers were not a second target for the new order
+development, and were removed on 2026-10-26. No comparison to them is
 required here. The later signed-integer and lowest-terms presentations
 must use binary magnitudes and present these same new carriers.
 
