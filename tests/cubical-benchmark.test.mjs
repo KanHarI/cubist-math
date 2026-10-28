@@ -3,15 +3,19 @@ import {sourceReader} from "../tools/module-sources.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalKernel } from "../web/cubical-kernel.mjs";
 import { InstructionGraph } from "../web/cubical-instructions.mjs";
 import { benchmark, benchmarkAreas, category } from "../web/benchmark-runner.mjs";
-import { areaLabels, savedReport } from "../web/benchmark-areas.mjs";
+import { areaLabels, savedReport, declarationLink, repository } from "../web/benchmark-areas.mjs";
 import { parse } from "../web/cubist/parser.mjs";
 import { diagnosticCode } from "../web/diagnostics.mjs";
 import { InstructionDriver } from "../web/cubical-instruction-driver.mjs";
 import { budget } from "./timing.mjs";
+
+const checkout = fileURLToPath(new URL("../", import.meta.url));
 
 // A kernel session with its instruction graph, and a definition of tt : Unit
 // admitted by Define, recorded under its name as the elaborator records one.
@@ -118,6 +122,37 @@ test("benchmark measures an area, the library, the archive or the Cubist tests, 
   assert.equal(report.area, "tests");
   assert.ok(report.declarations.some(d => d.module === "let_statements" && d.category === "checked"));
   await assert.rejects(benchmark({ area: "elsewhere" }), /library, archive or tests, not elsewhere/);
+});
+
+// The benchmark page links each row of a saved report to its declaration's
+// source at the revision the report measured (declarationLink), not to
+// today's workspace, where a declaration measured then may be gone or
+// changed: each saved report records its revision and its modules' paths
+// there, and each row's line lies in its file. A run in the browser
+// measures today's sources and opens its rows in the workspace.
+test("every link from a saved benchmark opens its source at the revision it measured", async () => {
+  for (const area of Object.keys(benchmarkAreas)) {
+    const report = JSON.parse(await readFile(new URL(`../web/${savedReport(area)}`, import.meta.url), "utf8"));
+    const paths = [...new Set(report.declarations.map(row => report.sources?.[row.module]))];
+    assert.ok(report.revision && paths.every(Boolean), `${area}: the report records its revision and every module's path`);
+    // Every file at that revision, read in one batch: a header, then its text.
+    const batch = execFileSync("git", ["cat-file", "--batch"], { cwd: checkout, maxBuffer: 1 << 28,
+      input: paths.map(path => `${report.revision}:${path}\n`).join("") });
+    const lines = new Map();
+    for (let at = 0, i = 0; i < paths.length; i++) {
+      const end = batch.indexOf(10, at), header = batch.subarray(at, end).toString();
+      const size = Number(/^\w+ blob (\d+)$/.exec(header)?.[1]);
+      assert.ok(Number.isInteger(size), `${area}: ${paths[i]} at ${report.revision}: ${header}`);
+      lines.set(paths[i], batch.subarray(end + 1, end + 1 + size).toString().split("\n").length);
+      at = end + 1 + size + 1;
+    }
+    for (const row of report.declarations) {
+      const path = report.sources[row.module], label = `${area}: ${row.module}.${row.name}`;
+      assert.equal(declarationLink(report, row), `${repository}/blob/${report.revision}/${path}#L${row.line}`, label);
+      assert.ok(row.line >= 1 && row.line <= lines.get(path), label);
+    }
+  }
+  assert.equal(declarationLink({ declarations: [] }, { module: "nat", name: "nat_add", line: 3 }), "proof.html?proof=nat&name=nat_add");
 });
 
 test("benchmark lists a failure or block its source's comment states as intended, not as one to fix", async () => {

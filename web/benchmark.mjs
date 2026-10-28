@@ -1,4 +1,4 @@
-import { areaLabels, savedReport } from "./benchmark-areas.mjs";
+import { areaLabels, savedReport, declarationLink } from "./benchmark-areas.mjs";
 
 const $ = id => document.getElementById(id);
 // The area measured, from the page's address: ?area=library, archive or tests.
@@ -10,7 +10,7 @@ const labels = { checked: "1 · Checked within deadline", optimize: "2 · Needs 
 let report, lastText, worker, localRun = false;
 function link(row) {
   const a = document.createElement("a");
-  a.href = `proof.html?proof=${encodeURIComponent(row.module)}&name=${encodeURIComponent(row.name)}`;
+  a.href = declarationLink(report, row);
   a.textContent = `${row.module}.${row.name}`; return a;
 }
 function renderRows() {
@@ -50,7 +50,7 @@ function renderReport() {
     $("category").querySelector('[value="checked"]').textContent = labels.checked;
     const counts = report.counts ?? Object.fromEntries(Object.keys(labels).map(c => [c, report.declarations.filter(d => d.category === c).length]));
     const total = report.total ?? report.declarations.length;
-    $("status").textContent = `${areaLabels[report.area ?? "archive"]} · ${report.complete ? "Completed" : "Running"} · ${new Date(report.generatedAt).toLocaleString()} · ${report.modules ?? "…"} modules · ${total} declarations${report.elapsedSeconds ? ` · ${report.elapsedSeconds}s elapsed` : ""}${report.revision ? ` · ${report.revision.slice(0, 8)}${report.dirty ? " + working changes" : ""}` : ""}`;
+    $("status").textContent = `${areaLabels[report.area ?? "archive"]} · ${report.complete ? "Completed" : "Running"} · ${new Date(report.generatedAt).toLocaleString()} · ${report.modules ?? "…"} modules · ${total} declarations${report.elapsedSeconds ? ` · ${report.elapsedSeconds}s elapsed` : ""}${report.revision ? ` · ${report.revision.slice(0, 8)}${report.dirty ? " + working changes" : ""}` : ""}${report.sources ? ", its sources linked as they were there" : ""}`;
     $("progress").max = Math.max(1, total); $("progress").value = counts.checked ?? 0;
     $("counts").replaceChildren(...Object.entries(labels).map(([key, label]) => {
       const button = document.createElement("button"), number = document.createElement("strong");

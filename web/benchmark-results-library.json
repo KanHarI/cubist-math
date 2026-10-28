@@ -13217,5 +13217,23 @@
       "reuseChecks": true,
       "compactPaths": true
     }
+  },
+  "sources": {
+    "algebra": "library/algebra.cubist",
+    "classical_axioms": "library/classical_axioms.cubist",
+    "contractible_maps": "library/contractible_maps.cubist",
+    "h1_classical": "library/h1_classical.cubist",
+    "h1_truncation": "library/h1_truncation.cubist",
+    "hlevels": "library/hlevels.cubist",
+    "integers": "library/integers.cubist",
+    "lexemes": "library/lexemes.cubist",
+    "lists": "library/lists.cubist",
+    "nat": "library/nat.cubist",
+    "propositions": "library/propositions.cubist",
+    "quotients": "library/quotients.cubist",
+    "rationals": "library/rationals.cubist",
+    "squares": "library/squares.cubist",
+    "univalence": "library/univalence.cubist",
+    "universe_automorphisms": "library/universe_automorphisms.cubist"
   }
 }

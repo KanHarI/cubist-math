@@ -218,7 +218,14 @@ with the test IDs `euclid.*`. `prime_numbers` keeps its name: the archive's
   retitled for what it keeps) and the Files index (`web/cubist-files.json`).
   The reference's checking chapter names `check euclid` as a module found
   in `library/` first, which it now is; no reference example imported the
-  archive's Euclid or a deleted definition.
+  archive's Euclid or a deleted definition. The benchmark page's saved
+  reports, measured at `d92b54e8`, linked each row to today's workspace,
+  where `primes.Prime` and the archive's `euclid` no longer exist and
+  `euclid` names the binary theorem; a saved report now records each
+  module's source path, and its rows link to the source at the revision it
+  measured, on the repository. They are not re-recorded: a dated record
+  stays truthful this way through every later deletion, where a re-recorded
+  one linked to the workspace would go stale again at NT3.
 - **Tests.** The site, landing, inspector, cubical and proof-navigation
   browser tests open the library's Euclid: its goal at line 16, its local
   `least : IsLeastDivisor(succ(factorial(n)), p)` in the inspector, the

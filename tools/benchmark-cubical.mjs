@@ -8,6 +8,7 @@ import { pathToFileURL } from "node:url";
 import { benchmark, benchmarkAreas } from "../web/benchmark-runner.mjs";
 import { savedReport } from "../web/benchmark-areas.mjs";
 import { sourceReader } from "./module-sources.mjs";
+import { moduleRoots } from "../web/module-resolution.mjs";
 import { assertFreshBuild } from "./build-stamp.mjs";
 
 
@@ -38,7 +39,11 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
         console.log(`${row.category.padEnd(8)} ${row.elapsedMs.toFixed(1)}ms ${row.module}.${row.name}${row.reason ? ` — ${row.reason}` : ""}`);
     },
   });
-  Object.assign(report, { revision, dirty, runtime: process.version, cpu: cpus()[0]?.model,
+  // Each module's source path at this revision, where a saved report's rows
+  // link (web/benchmark-areas.mjs's declarationLink).
+  const sources = Object.fromEntries([...new Set(report.declarations.map(row => row.module))].sort()
+    .map(name => [name, `${moduleRoots[readSource.placeOf(name)]}${name}.cubist`]));
+  Object.assign(report, { revision, dirty, sources, runtime: process.version, cpu: cpus()[0]?.model,
     complete: true, method: "One session; source order with imports checked once. Each declaration is elaborated with every check derived by the instruction kernel as it runs, and admitted by Define, within its deadline. Warm dependencies; transient arena terms and judgements compacted between declarations; no normalization request. Deadline polled cooperatively in JS and C." });
   await mkdir(new URL("../build/", import.meta.url), { recursive: true });
   await writeFile(new URL(`../build/cubical-benchmark${area === "archive" ? "" : `-${area}`}.json`, import.meta.url), JSON.stringify(report, null, 2) + "\n");
