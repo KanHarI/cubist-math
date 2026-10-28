@@ -757,8 +757,9 @@ its inverse contracts by the user's decision of 2026-10-26. The default
 [#289](https://github.com/KanHarI/cubist-math/pull/289) adds a first internal
 EVAL3/EVAL4 runtime query for ordinary data. Since 2026-10-26 the REPLs
 compute value forms through it, falling back once to the kernel's head
-queries on unsupported demand. Its signatures must be untruncated, without
-path constructors, so quotient values such as `BInt`'s and `BQ`'s fall back. EVAL5's observation
+queries on unsupported demand. Since #324 it also executes the point
+constructors of quotients and other higher sorts, so `BInt` and `BQ` value
+forms compute in it; path constructors and compositions fall back. EVAL5's observation
 contract shipped as the demand marks and folded normal forms. The rest of
 EVAL3–EVAL8 remains planned. The ordered-ring/field
 definitions and algebra lattice landed in #267 over #268's inherited operation

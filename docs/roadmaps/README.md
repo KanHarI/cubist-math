@@ -163,9 +163,10 @@ and `module::name` references as continuing contracts.
 - [Runtime evaluation](runtime/runtime-evaluation-roadmap.md): EVAL0–EVAL2,
   NUM0, NUM1 and the default binary `Nat` are implemented; NUM2's binary
   integers and rationals are on main, and its default `Z`/`Q` migration is
-  open. EVAL3/EVAL4 has a first internal query, not yet integrated. EVAL5's
-  observation contract has shipped, but not its typed readback. EVAL6–EVAL8
-  remain.
+  open. EVAL3/EVAL4's runtime computes the REPLs' value forms (#320),
+  higher sorts' point constructors included (#324). EVAL5's observation
+  contract has shipped; its typed readback is proposed in
+  [typed readback](runtime/typed-readback.md). EVAL6–EVAL8 remain.
 - [Rational normalization debugging plan](runtime/rational-normalization-debug-plan.md):
   the attribution of the rational full-normalization cluster; D1 and B8 done.
 - [Typed readback](runtime/typed-readback.md): EVAL5's readback of runtime
