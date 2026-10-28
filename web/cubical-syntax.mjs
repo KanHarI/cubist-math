@@ -33,6 +33,10 @@ export function freeDimensionMask(kernel, id, memo) {
       mask = (tag === "HComp" ? free(c[0]) : bound(c[0])) | system(c[1], ([body]) => bound(body)) | free(c[2]); break;
     case "Glue": mask = free(c[0]) | system(c[1], ([type, equiv]) => free(type) | free(equiv)); break;
     case "GlueTerm": mask = free(c[0]) | free(c[1]) | system(c[2], ([term]) => free(term)); break;
+    // A link of a system met alone, as the driver's comparison meets it
+    // below its composition or Glue type: its face too, and its parts as
+    // they are, the binder above them already accounted for.
+    case "Tube": case "GlueSystem": mask = c.reduce((m, child) => m | free(child), formula(payload)); break;
     default: mask = c.reduce((m, child) => m | free(child), 0n);
   }
   memo.set(id, mask);

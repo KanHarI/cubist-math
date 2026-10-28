@@ -1009,13 +1009,28 @@ export class InstructionDriver {
       this.settle(a, b, mismatch);
     }
     if (!this.alpha(this.subterm(a), this.subterm(b))) {
-      // Universes and families of universes are cumulative.
+      // Universes and families of universes are cumulative. Lift includes
+      // one type in another only along Π, Σ and level Π binders ending in
+      // universes (ck_syntactic_cumulative), so two types of another shape
+      // are not offered to it: the kernel would first compare them whole,
+      // and refuse them, in time that grows with their normal forms.
+      if (!this.cumulative(this.subterm(a), this.subterm(b))) throw mismatch(null);
       let lifted;
       try { lifted = g.lift(a.ref.id, g.side(b.ref.id, "other")); }
       catch (error) { throw mismatch(error); }
       return g.convert(lifted, g.symmetry(b.ref.id));
     }
     return g.convert(a.ref.id, g.symmetry(b.ref.id));
+  }
+  // Whether Lift could include one type in another that is not
+  // alpha-equal to it: both universes, or both Π, Σ or level Π types of one
+  // kind whose bodies could be. The kernel compares their domains and
+  // levels; this reads only the binders' kinds.
+  cumulative(x, y) {
+    for (let nx = this.node(x), ny = this.node(y); ; nx = this.node(nx.children[1]), ny = this.node(ny.children[1])) {
+      if (nx.kind === "U" && ny.kind === "U") return true;
+      if (nx.kind !== ny.kind || !["Pi", "Sigma", "LPi"].includes(nx.kind)) return false;
+    }
   }
 
   // Whether two subterms are equal: true, false, or null when it cannot tell.

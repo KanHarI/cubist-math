@@ -64,6 +64,27 @@ test("pruned term scopes preserve free names, shadowing and binder domains", asy
   assert.ok(!driver.alpha(sum(10), sum(20)));
 });
 
+// A composition's faces lie outside its binder, under the binders around
+// it. Comparing its tubes one link at a time, the renaming of a binder
+// around it is kept for a link whose face names that dimension: <i>
+// comp^k Unit [i = 0 ↦ tt] tt and <j> comp^k Unit [j = 0 ↦ tt] tt are
+// alpha-equal, as the kernel finds them, and a face on a free dimension
+// is no bound one.
+test("dimension pruning keeps the renamings a system's faces read", async t => {
+  const { kernel, driver, term } = await setup(t);
+  const unit = term("Unit"), point = term("Point");
+  const at0 = dim => kernel.formula("face", [[0n, 1n << BigInt(dim)]]);
+  const line = (bound, faced) => term("PLam", bound, unit, term("Comp", 5, unit, term("Tube", at0(faced), point, 0), point));
+  const glued = (bound, faced) => term("PLam", bound, term("U", 0, term("LConst", 0)),
+    term("Glue", 0, unit, term("GlueSystem", at0(faced), unit, term("Var", kernel.symbol("e")), 0)));
+  for (const shape of [line, glued]) {
+    assert.ok(driver.alpha(shape(2, 2), shape(1, 1)), shape.name);
+    assert.equal(kernel.alphaEqual(shape(2, 2), shape(1, 1)), true, shape.name);
+    assert.ok(!driver.alpha(shape(2, 2), shape(1, 0)), `${shape.name}: a bound face against a free one`);
+    assert.equal(kernel.alphaEqual(shape(2, 2), shape(1, 0)), false, shape.name);
+  }
+});
+
 test("term-scope pruning retains level variables and annotation dependencies", async t => {
   const { driver, term } = await setup(t);
   const v = name => term("Var", name), unit = term("Unit"), bound = term("LBound", 1);
