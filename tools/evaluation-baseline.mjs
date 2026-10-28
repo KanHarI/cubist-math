@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // The runtime evaluation baseline (EVAL0 of
 // docs/roadmaps/runtime/runtime-evaluation-roadmap.md): what evaluating the fixed
-// archive workloads costs today, phase by phase, with failures counted as
-// well as successes.
+// workloads costs today, phase by phase, with failures counted as well as
+// successes.
 //   node tools/evaluation-baseline.mjs [--samples=N] [--warm=N] [--only=ID,…] [--no-depth] [--write]
 // Each sample of a workload is a new Node process: it loads the kernel,
 // runs the workload's setup entries (its imports) and then its entry once,
@@ -19,11 +19,6 @@
 // arena's growth and each phase's calls and failures. A workload whose cold
 // samples disagree on them is reported as not deterministic. Times, memory
 // and the warm runs are one machine's observations, never test thresholds.
-//
-// The "scratch" series runs the versioned closure experiment
-// (tools/closure-evaluation-experiment.mjs) on the same checked definitions.
-// Its results are untrusted values of a demanded natural, not normal forms,
-// and are reported apart from the kernel series.
 import { spawnSync, execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { createHash } from "node:crypto";
@@ -36,7 +31,6 @@ import { Translator } from "../web/translator/translate.mjs";
 import { RuntimeQuery } from "../web/cubical-runtime.mjs";
 import { sourceReader } from "./module-sources.mjs";
 import { assertFreshBuild } from "./build-stamp.mjs";
-import { closureEvaluator } from "./closure-evaluation-experiment.mjs";
 
 const root = new URL("../", import.meta.url);
 export const fixture = new URL("tests/fixtures/evaluation-baseline.json", root);
@@ -67,12 +61,21 @@ export const fixture = new URL("tests/fixtures/evaluation-baseline.json", root);
 // a fallback before the runtime is asked, so a value form demands no weak
 // head of the kernel, and the runtime copies from the kernel only the
 // syntax and definitions its walk reaches.
-export const version = 9;
+// Version 10 moves the Euclid, factorial and divisibility workloads to the
+// library's Euclid over binary Nat (EVAL7, docs/reports/binary-euclid.md),
+// with nat's factorial and the remainder-based decision: the archive's
+// unary Euclid and its divisibility are deleted. The unary series keeps its
+// revisions: those workloads on the archive's Euclid, and the scratch
+// closure experiment's series on its definitions, were last recorded at
+// version 9 (tests/fixtures/evaluation-baseline.json at main 27c0cc38). The
+// unary arithmetic workloads import unat alone; their entries are
+// unchanged.
+export const version = 10;
 
-const euclid = "import euclid; use unat;", circle = "import circle; use unat;";
-// The archived Euclid construction and its prerequisites stay fixed for
-// evaluator comparisons (archive/first-library/euclid.cubist, primes.cubist):
-// a change to their algorithm starts a separate series.
+const euclid = "import euclid; use nat;", unary = "import unat; use unat;", circle = "import circle; use unat;";
+// The library's Euclid construction and its prerequisites stay fixed for
+// evaluator comparisons (library/euclid.cubist, prime_numbers.cubist,
+// divisibility.cubist): a change to their algorithm starts a new version.
 const fixed = [
   // Full results: plain REPL evaluation and print both show the value form,
   // and their !!! twins normalize once (EVAL1).
@@ -80,8 +83,8 @@ const fixed = [
   { id: "euclid-3-print", setup: euclid, entry: "print(evaluate(euclid(3)));" },
   { id: "euclid-4", setup: euclid, entry: "evaluate euclid(4);" },
   // An expected-value pattern computes what it observes: its hole computes
-  // nothing, but the prime it compares is too deep to build. Its !!! twin
-  // matches the full normal form, as every pattern did before EVAL5.
+  // nothing. Its !!! twin matches the full normal form, as every pattern
+  // did before EVAL5.
   { id: "euclid-4-pattern", setup: euclid, entry: "evaluate euclid(4) expecting (5, _);" },
   { id: "euclid-4-pattern-normal", setup: euclid, entry: "evaluate euclid(4) expecting !!!(5, _);" },
   // Prime projections.
@@ -90,32 +93,32 @@ const fixed = [
   { id: "euclid-4-prime", setup: euclid, entry: "evaluate euclid(4).1;" },
   { id: "euclid-4-prime-print", setup: euclid, entry: "print(evaluate(euclid(4).1));" },
   { id: "euclid-5-prime", setup: euclid, entry: "evaluate euclid(5).1;" },
+  // 7! + 1 = 71 * 71: the search's 70 candidates pass the kernel's syntax
+  // depth guard, as NUM1's strong recursion alone does at that depth.
+  { id: "euclid-7-prime", setup: euclid, entry: "evaluate euclid(7).1;" },
   // Factorial, the construction's growth factor.
   { id: "factorial-4", setup: euclid, entry: "evaluate factorial(4);" },
   { id: "factorial-5-print", setup: euclid, entry: "print(evaluate(factorial(5)));" },
   // Divisibility decisions: whether 3, 4 and 5 divide 6, 6 and 121.
-  { id: "divides-3-6", setup: euclid, entry: "evaluate nontrivial_divisibility_decidable(1, 6);" },
-  { id: "divides-4-6", setup: euclid, entry: "evaluate nontrivial_divisibility_decidable(2, 6);" },
-  { id: "divides-5-121", setup: euclid, entry: "evaluate nontrivial_divisibility_decidable(3, 121);" },
+  { id: "divides-3-6", setup: euclid, entry: "evaluate divides_decide(3, 6);" },
+  { id: "divides-4-6", setup: euclid, entry: "evaluate divides_decide(4, 6);" },
+  { id: "divides-5-121", setup: euclid, entry: "evaluate divides_decide(5, 121);" },
   // Ordinary data recursion, and the syntax depth of a unary result.
-  { id: "multiply-12-12", setup: euclid, entry: "evaluate 12 * 12;" },
-  { id: "multiply-2-254", setup: euclid, entry: "evaluate 2 * 254;" },
-  { id: "multiply-2-255", setup: euclid, entry: "evaluate 2 * 255;" },
-  { id: "multiply-2-255-print", setup: euclid, entry: "print(evaluate(2 * 255));" },
-  { id: "multiply-2-256-print", setup: euclid, entry: "print(evaluate(2 * 256));" },
+  { id: "multiply-12-12", setup: unary, entry: "evaluate 12 * 12;" },
+  { id: "multiply-2-254", setup: unary, entry: "evaluate 2 * 254;" },
+  { id: "multiply-2-255", setup: unary, entry: "evaluate 2 * 255;" },
+  { id: "multiply-2-255-print", setup: unary, entry: "print(evaluate(2 * 255));" },
+  { id: "multiply-2-256-print", setup: unary, entry: "print(evaluate(2 * 256));" },
   // Cubical terms (docs/examples/hott-automation/canonicity.cubist):
   // transport along a closed path, and winding numbers through Glue and the
   // circle's declared pushout.
   { id: "transport-closed", setup: circle, entry: "evaluate transport(fun (n : UNat) => UNat, 3 + 0, 3, unat_add_zero(3), 5);" },
   { id: "winding-2", setup: circle, entry: "evaluate winding(concatenate(U1, S1, base, base, base, loop, loop));" },
   { id: "winding-minus-2", setup: circle, entry: "evaluate winding(integer_loop(negative(2)));" },
-  // The closure experiment's prime projections, the roadmap's preliminary
-  // series, on the definition `probe := euclid(n)` the kernel checked.
-  ...[3, 4, 5, 6].map(n => ({ id: `scratch-euclid-${n}-prime`, series: "scratch", setup: euclid, entry: `def probe := euclid(${n});` })),
 ];
 // Each REPL and print workload, followed by its !!! twin.
 export const workloads = fixed.flatMap(workload => {
-  const normal = workload.series === "scratch" ? null : /^evaluate (?!.*\bexpecting\b)/.test(workload.entry)
+  const normal = /^evaluate (?!.*\bexpecting\b)/.test(workload.entry)
     ? workload.entry.replace(/^evaluate /, "evaluate !!!") : workload.entry.replace(/^print\(evaluate\(/, "print(evaluate(!!!");
   return normal && normal !== workload.entry ? [workload, { ...workload, id: `${workload.id}-normal`, entry: normal }] : [workload];
 });
@@ -129,10 +132,8 @@ export const contracts = {
   expected: "evaluate e expecting v: the normal form, stuck definitions folded, compared with v's",
   pattern: "evaluate e expecting p, p with holes or marks: each part computed as far as p observes it",
   patternNormal: "evaluate e expecting !!!p: the full normal form, matched part by part",
-  scratch: "closure experiment: the demanded natural only; untrusted, certifies nothing",
 };
-export const contractOf = workload => workload.series === "scratch" ? "scratch"
-  : /^print\s*\(/.test(workload.entry) ? (/^print\(evaluate\(!!!/.test(workload.entry) ? "printNormal" : "print")
+export const contractOf = workload => /^print\s*\(/.test(workload.entry) ? (/^print\(evaluate\(!!!/.test(workload.entry) ? "printNormal" : "print")
   : !/\bexpecting\b/.test(workload.entry) ? (/^evaluate !!!/.test(workload.entry) ? "replNormal" : "repl")
   : /\bexpecting\s*!!!/.test(workload.entry) ? "patternNormal"
   : /\bexpecting\b[\s\S]*(?:\b_\b|!)/.test(workload.entry) ? "pattern" : "expected";
@@ -152,8 +153,6 @@ export const phases = {
   compare: "checker.equal, outside other phases: comparing types, normal forms and patterns' parts",
   render: "checker.displayText, outside other phases: printing a value or message",
   other: "the rest of the entry: parsing, module and session bookkeeping, transactions",
-  execute: "scratch: forcing the definition to a pair",
-  readback: "scratch: forcing the pair's first component to a number; laziness defers most computation here",
 };
 
 const workFields = ["instructions", "rejected", "instructionSteps", "queries", "failedQueries", "querySteps", "exhausted", "deadlines"];
@@ -455,37 +454,13 @@ const outcomeOf = (results, normal = null) => {
 const rounded = run => Object.fromEntries(Object.entries(run).map(([key, value]) =>
   [key, typeof value === "number" && key === "ms" ? Number(value.toFixed(3)) : value]));
 
-// One run of an entry in the session: its outcome, and its phases, or the
-// scratch evaluator's.
+// One run of an entry in the session: its outcome and its phases.
 async function runEntry(program, session, workload, { depth = false } = {}) {
   const measured = await profiled(program, () => session.run(workload.entry), { depth });
   if (measured.error) throw measured.error;
-  const run = { outcome: outcomeOf(measured.result, measured.evaluated), phases: Object.fromEntries(Object.entries(measured.totals).map(([name, total]) => [name, rounded(total)])),
+  return { outcome: outcomeOf(measured.result, measured.evaluated), phases: Object.fromEntries(Object.entries(measured.totals).map(([name, total]) => [name, rounded(total)])),
     entry: rounded(measured.entry), peakNodes: measured.peakNodes, peakBytes: measured.peakBytes,
     ...(measured.runtime ? { runtime: measured.runtime } : {}), ...(depth ? { depths: measured.depths } : {}) };
-  if (workload.series !== "scratch") return run;
-  if (run.outcome.status === "error") throw new Error(`${workload.id}: ${run.outcome.text}`);
-  // The definition the entry checked, evaluated by the experiment.
-  const reference = program.kernel.definitions.get(`repl_${session.count}__probe`);
-  if (!reference) throw new Error(`${workload.id}: the entry defined no probe.`);
-  const evaluator = closureEvaluator(program.kernel), before = reading(program.kernel);
-  const scratch = { definition: run };
-  let pair, value, failure = null, stage = "execute";
-  const started = performance.now();
-  try {
-    pair = evaluator.force(evaluator.delay(reference));
-    if (pair.tag !== "Pair") throw new Error("Expected result pair");
-    scratch.executeMs = performance.now() - started;
-    stage = "readback";
-    value = evaluator.natural(pair.first);
-  } catch (error) { failure = error; }
-  const end = reading(program.kernel), ms = end.ms - started;
-  scratch.executeMs ??= ms;
-  Object.assign(scratch, { readbackMs: ms - scratch.executeMs, stage,
-    outcome: failure ? outcomeFor(true, failure.message) : outcomeFor(false, String(value)),
-    stats: { ...evaluator.stats }, kernel: rounded(minus(end, before)) });
-  scratch.executeMs = Number(scratch.executeMs.toFixed(3)); scratch.readbackMs = Number(scratch.readbackMs.toFixed(3));
-  return scratch;
 }
 
 // A workload in this process: a new program over `module`, its setup, then
@@ -514,11 +489,7 @@ export async function measureWorkload(module, workload, { warm = 0, depth = fals
 // Figures without their time.
 const strip = figures => Object.fromEntries(Object.entries(figures).filter(([key]) => key !== "ms"));
 // A run's deterministic part: everything but times and the depth analysis.
-// Where the experiment overflows the host's stack depends on how far the JIT
-// has compiled it, so a failed scratch run's counts are observations.
 export function deterministic(run) {
-  if (run.definition) return { definition: deterministic(run.definition), outcome: run.outcome, stage: run.stage,
-    ...(run.outcome.status === "value" ? { stats: run.stats, kernel: strip(run.kernel) } : {}) };
   return { outcome: run.outcome, entry: strip(run.entry), peakNodes: run.peakNodes, runtime: run.runtime ?? null,
     phases: Object.fromEntries(Object.entries(run.phases).map(([name, figures]) => [name, strip(figures)])) };
 }
@@ -549,26 +520,17 @@ const median = values => statistics(values)?.median ?? null;
 export function summarize(workload, samples, { depthSample = null, unobserved = null } = {}) {
   const cold = samples.map(sample => sample.cold), warm = samples.flatMap(sample => sample.warm), first = cold[0];
   const variants = new Set(cold.map(run => JSON.stringify(deterministic(run))));
-  const series = workload.series ?? "kernel";
-  const summary = { id: workload.id, series, contract: contractOf(workload), setup: workload.setup, entry: workload.entry,
+  if (unobserved && unobserved.cold.outcome.sha256 !== first.outcome.sha256) throw new Error(`${workload.id}: unobserved, the entry gave another outcome.`);
+  const summary = { id: workload.id, contract: contractOf(workload), setup: workload.setup, entry: workload.entry,
     outcome: first.outcome, deterministic: variants.size === 1,
-    import: { ...sparse(samples[0].import), ms: statistics(samples.map(sample => sample.import.ms)) } };
-  if (series === "scratch") {
-    Object.assign(summary, { stage: first.stage, stats: first.stats, kernel: sparse(first.kernel),
-      definition: { ...sparse(first.definition.entry), ms: statistics(cold.map(run => run.definition.entry.ms)) },
-      ms: { execute: statistics(cold.map(run => run.executeMs)), readback: statistics(cold.map(run => run.readbackMs)),
-        warmExecute: median(warm.map(run => run.executeMs)), warmReadback: median(warm.map(run => run.readbackMs)) } });
-  } else {
-    if (unobserved && unobserved.cold.outcome.sha256 !== first.outcome.sha256) throw new Error(`${workload.id}: unobserved, the entry gave another outcome.`);
-    Object.assign(summary, {
-      total: { ...sparse(first.entry), peakNodes: first.peakNodes, peakBytes: first.peakBytes },
-      ...(first.runtime ? { runtime: first.runtime } : {}),
-      ms: { cold: statistics(cold.map(run => run.entry.ms)), unobserved: unobserved?.cold.ms ?? null,
-        warm: statistics(warm.map(run => run.entry.ms)) },
-      phases: Object.fromEntries(Object.keys(first.phases).map(name => [name, { ...sparse(first.phases[name]),
-        coldMs: median(cold.map(run => run.phases[name]?.ms ?? 0)), warmMs: median(warm.map(run => run.phases[name]?.ms ?? 0)) }])),
-      ...(depthSample ? { depth: depthSample.cold.depths ?? {} } : {}) });
-  }
+    import: { ...sparse(samples[0].import), ms: statistics(samples.map(sample => sample.import.ms)) },
+    total: { ...sparse(first.entry), peakNodes: first.peakNodes, peakBytes: first.peakBytes },
+    ...(first.runtime ? { runtime: first.runtime } : {}),
+    ms: { cold: statistics(cold.map(run => run.entry.ms)), unobserved: unobserved?.cold.ms ?? null,
+      warm: statistics(warm.map(run => run.entry.ms)) },
+    phases: Object.fromEntries(Object.keys(first.phases).map(name => [name, { ...sparse(first.phases[name]),
+      coldMs: median(cold.map(run => run.phases[name]?.ms ?? 0)), warmMs: median(warm.map(run => run.phases[name]?.ms ?? 0)) }])),
+    ...(depthSample ? { depth: depthSample.cold.depths ?? {} } : {}) };
   summary.maxRssMiB = statistics(samples.map(sample => sample.maxRssMiB));
   return summary;
 }
@@ -628,13 +590,11 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     };
     for (const workload of selected) {
       const runs = Array.from({ length: samples }, () => child(workload, { warm }));
-      const kernelSeries = workload.series !== "scratch";
-      const summary = summarize(workload, runs, { depthSample: report.settings.depth && kernelSeries ? child(workload, { depth: true }) : null,
-        unobserved: kernelSeries ? child(workload, { observe: false }) : null });
+      const summary = summarize(workload, runs, { depthSample: report.settings.depth ? child(workload, { depth: true }) : null,
+        unobserved: child(workload, { observe: false }) });
       report.workloads.push(summary);
-      const ms = summary.ms.cold?.median ?? summary.ms.execute.median + summary.ms.readback.median;
       console.log(`${workload.id.padEnd(26)} ${summary.outcome.status.padEnd(5)} ${(summary.outcome.code ?? summary.outcome.text.slice(0, 24)).padEnd(24)}`
-        + ` ${String(summary.phases?.normalize?.calls ?? "-").padStart(2)} nf  ${ms.toFixed(1).padStart(9)} ms`
+        + ` ${String(summary.phases.normalize?.calls ?? "-").padStart(2)} nf  ${summary.ms.cold.median.toFixed(1).padStart(9)} ms`
         + `${summary.deterministic ? "" : "  NOT DETERMINISTIC"}`);
     }
     mkdirSync(new URL("build/", root), { recursive: true });
