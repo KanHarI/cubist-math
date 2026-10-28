@@ -210,8 +210,9 @@ with the test IDs `euclid.*`. `prime_numbers` keeps its name: the archive's
 ### Every consumer moved
 
 - **Site.** The landing page's Euclid card describes the library's argument
-  and opens it; the quick reference's default source is
-  `library/euclid.cubist`; the language page lists `euclid` among the
+  and opens it; the workspace opens the library's Euclid when its URL names
+  no module or an unknown one (it fell back to an archive path); the quick
+  reference's default source is `library/euclid.cubist`; the language page lists `euclid` among the
   library's examples; the module lists (`web/cubist/modules.mjs`), the
   archive's proof catalog (`web/proof-library.mjs`, where `primes` is
   retitled for what it keeps) and the Files index (`web/cubist-files.json`).
