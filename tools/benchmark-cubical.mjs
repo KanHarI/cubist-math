@@ -13,8 +13,8 @@ import { moduleRoots } from "../web/module-resolution.mjs";
 import { assertFreshBuild } from "./build-stamp.mjs";
 
 // A file's bytes at a revision, or null where it has none.
-export function committedSource(revision, path, cwd = fileURLToPath(new URL("../", import.meta.url))) {
-  try { return execFileSync("git", ["show", `${revision}:${path}`], { cwd, maxBuffer: 1 << 28, stdio: ["ignore", "pipe", "ignore"] }); }
+export function committedSource(revision, path, cwd = fileURLToPath(new URL("../", import.meta.url)), env = process.env) {
+  try { return execFileSync("git", ["show", `${revision}:${path}`], { cwd, env, maxBuffer: 1 << 28, stdio: ["ignore", "pipe", "ignore"] }); }
   catch { return null; }
 }
 // The sources a saved report's rows link to (web/benchmark-areas.mjs's
