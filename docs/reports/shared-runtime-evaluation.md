@@ -14,8 +14,17 @@ supported signature fragment includes the point constructors of higher and
 truncated declared types, with their eliminators' clauses for them, by the
 same descriptors and the same elimination rule as ordinary data
 ([higher sorts' point constructors](runtime-repl-evaluation.md#higher-sorts-point-constructors));
-path constructors, the squash among them, stay unsupported. The rest of
-this report describes the query as #289 added it.
+path constructors, the squash among them, stay unsupported. Since
+[#324](https://github.com/KanHarI/cubist-math/pull/324) the query copies
+no closure when it is made: it reads each node, definition and signature
+from the kernel when its walk first demands it, counted in its work and
+cells, and definition and constructor types are no longer copied for
+typed readback. It holds the kernel to do so, and a read after the
+kernel's handles move (the commit or rollback of a checkpoint open when
+the query was made) or after disposal fails as `expired`; what it copied
+and computed before stays observable
+([report](runtime-repl-evaluation.md#the-query-copies-only-what-the-walk-reaches)).
+The rest of this report describes the query as #289 added it.
 
 ## Boundary and representation
 

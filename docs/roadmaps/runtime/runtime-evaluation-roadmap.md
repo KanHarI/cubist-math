@@ -1058,12 +1058,10 @@ them, stay unsupported, with paths applied and compositions
 ([report](../../reports/runtime-repl-evaluation.md#higher-sorts-point-constructors)).
 Binary integers' and rationals' arithmetic, inverses and decisions compute
 their value forms in the runtime, but for a decision that finds two values
-equal, which holds the quotient's path constructor. A binary rational's
-snapshot, about 32,000 nodes, is most of its runtime cost, as the report
-measures.
-The first slice's check of the evaluated term's type, which took the
-fallback before the snapshot for a value of such a sort, is removed: no
-type decides the fallback now.
+equal, which holds the quotient's path constructor. The first slice's
+check of the evaluated term's type, which took the fallback before the
+snapshot for a value of such a sort, is removed: no type decides the
+fallback now.
 
 Over the demand marks' 197 constructs, the runtime computes 156 value forms
 and falls back on 37 (135 and 58, 18 of them from the value's type, on
@@ -1079,10 +1077,37 @@ Decided on 2026-10-26: constructor patterns stay on the kernel's queries
 until typed readback and the applicable EVAL8 review, since a pattern's
 verdict is a check and its expression leaves need kernel terms for runtime
 parts; and a stop at the runtime's limits stays reported, not retried.
-EVAL4's open items are a responsive snapshot copy for asynchronous use,
-memory calibration, closed-environment pruning, and sharing of repeated
-calls, a memo whose retention is measured: a per-environment memo of
-delayed syntax was tried and withdrawn, as the report records.
+
+EVAL4's items:
+- **A snapshot that copies only what the walk reaches: done** in
+  [#324](https://github.com/KanHarI/cubist-math/pull/324) (2026-10-28,
+  [report](../../reports/runtime-repl-evaluation.md#the-query-copies-only-what-the-walk-reaches)).
+  The query reads each node, definition and signature from the kernel when
+  its walk first demands it, counted in its work and cells. A read after the
+  kernel's handles move, at the commit or rollback of a checkpoint open
+  when the query was made, or after disposal, expires instead of reading
+  another state. A binary rational's eager copy had made its value form
+  about three times as slow by the runtime as by the kernel's queries:
+  `2/3 + 1/6` now copies 1,256 nodes where the closure of its judgement
+  holds 32,015, and takes 28,170 steps against the kernel walk's 32,755
+  ticks. The wide inverse and a decision of distinct wide integers still
+  take more steps than the kernel's walk takes ticks, though not more time.
+- Open: a responsive snapshot copy for asynchronous use, narrowed by the
+  lazy copy, which reads inside observations, between the slices at which
+  `observe` yields, to the η check's walk of a function's syntax and a
+  declared type's descriptors, each within one transition; memory
+  calibration; closed-environment pruning; and sharing of repeated calls, a
+  memo whose retention is measured: a per-environment memo of delayed
+  syntax was tried and withdrawn, as the report records.
+
+**For the user's decision, recorded on 2026-10-28 and not scheduled:**
+whether the runtime may show a path constructor applied to its data with
+its fields, as the kernel's walk shows it, instead of falling back. A
+decision that finds two binary rationals or integers equal has one at its
+weak head, `left(relate(…))`, and today its entry pays the runtime's walk
+up to it and then the kernel's whole walk. Showing it needs no dimension or
+composition; the second slice refuses it, as specified, and a path
+constructor applied at an interval point stays unsupported either way.
 
 ### Rational full-normalization completion path
 

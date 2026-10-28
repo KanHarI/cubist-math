@@ -993,8 +993,13 @@ Each step lands in focused PRs under the review rule above.
         values equal holds the quotient's path constructor, and falls back.
         No type decides the fallback any more. Over the demand marks'
         constructs the runtime computes 156 value forms, and 40 of the
-        binary contracts' 41 evaluated terms. A binary rational's snapshot,
-        about 32,000 nodes, is most of its runtime cost.
+        binary contracts' 41 evaluated terms. A query copies from the
+        kernel only what its walk reaches, when it first demands it
+        (EVAL4's item, done in #324): `2/3 + 1/6` copies 1,256 nodes where
+        the eager copy took 32,015, and its runtime steps fell from 146,459
+        to 28,170, below the kernel walk's 32,755 ticks; the wide inverse
+        and a decision of distinct wide integers still take more steps
+        than the kernel's walk takes ticks.
       - **Decided on 2026-10-26:** constructor patterns stay on the kernel's
         queries until typed readback (4) and the applicable EVAL8 review: a
         pattern's verdict is a check, which the runtime's observations may
