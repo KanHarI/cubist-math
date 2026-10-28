@@ -5,9 +5,9 @@ use unat;
 
 // Actual natural moduli are combined explicitly. No countable choice is used.
 def index_sum_left(n, m : UNat) :=
-  transport nat_le_add(m, n) along unat_add_comm(m, n) in ((fun (k : UNat) => IndexLE(n, k)));
+  transport unat_le_add(m, n) along unat_add_comm(m, n) in ((fun (k : UNat) => IndexLE(n, k)));
 
-def index_sum_right(n, m : UNat) := typed(IndexLE(m, n + m), nat_le_add(n, m));
+def index_sum_right(n, m : UNat) := typed(IndexLE(m, n + m), unat_le_add(n, m));
 
 def field_converges_constant(
   F : U1, zero, one : F, addF, mulF : F -> F -> F, negF : F -> F, lt : F -> F -> U0,
@@ -75,10 +75,10 @@ def field_converges_add(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, xs(n), x, ys(n), y,
         half(epsilon), half(epsilon),
         leftClose(
-          n, nat_le_trans(leftBound, bound, n, index_sum_left(leftBound, rightBound), large)
+          n, unat_le_trans(leftBound, bound, n, index_sum_left(leftBound, rightBound), large)
         ),
         rightClose(
-          n, nat_le_trans(rightBound, bound, n, index_sum_right(leftBound, rightBound), large)
+          n, unat_le_trans(rightBound, bound, n, index_sum_right(leftBound, rightBound), large)
         )
       ) along halfSum(epsilon) in (
         (fun (radius : F) => FieldClose(F, addF, lt, addF(xs(n), ys(n)), addF(x, y), radius))
@@ -130,12 +130,12 @@ def field_cauchy_add(
         F, zero, one, addF, mulF, negF, lt, ring, order, arithmetic, xs(m), xs(n), ys(m), ys(n),
         half(epsilon), half(epsilon),
         leftClose(
-          m, n, nat_le_trans(leftBound, bound, m, index_sum_left(leftBound, rightBound), largeM),
-          nat_le_trans(leftBound, bound, n, index_sum_left(leftBound, rightBound), largeN)
+          m, n, unat_le_trans(leftBound, bound, m, index_sum_left(leftBound, rightBound), largeM),
+          unat_le_trans(leftBound, bound, n, index_sum_left(leftBound, rightBound), largeN)
         ),
         rightClose(
-          m, n, nat_le_trans(rightBound, bound, m, index_sum_right(leftBound, rightBound), largeM),
-          nat_le_trans(rightBound, bound, n, index_sum_right(leftBound, rightBound), largeN)
+          m, n, unat_le_trans(rightBound, bound, m, index_sum_right(leftBound, rightBound), largeM),
+          unat_le_trans(rightBound, bound, n, index_sum_right(leftBound, rightBound), largeN)
         )
       ) along halfSum(epsilon) in (
         (

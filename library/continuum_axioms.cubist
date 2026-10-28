@@ -1,0 +1,29 @@
+// The continuum hypotheses of continuum_hypothesis, assumed: optional
+// assumptions, which a module states it relies on by importing this one.
+// Importing continuum_hypothesis gives the statements and the conditional
+// proofs between them and assumes none of them. Each axiom assumes its
+// statement's body for every universe U < UU0, in next(next(U)). An
+// assumption has no computation rule: a result that uses one is listed with
+// it and cannot be computable. Implications to excluded middle and choice
+// are not claimed here.
+import continuum_hypothesis;
+
+// The continuum hypothesis, assumed: CH(U, X, setX, between) refutes a set
+// X in next(U) strictly between Nat and PowerSet(U, Nat) in cardinality.
+def CH := axiom ContinuumHypothesis;
+
+// The cardinality dichotomy at Nat, assumed: DecidableCH(U, X, setX, above,
+// below) merely gives an equivalence of X with Nat or with PowerSet(U, Nat).
+// decidable_ch_implies_ch derives CH(U) from it.
+def DecidableCH := axiom DecidableContinuumHypothesis;
+
+// The generalized continuum hypothesis, assumed: GCH(U, A, setA, infinite)
+// is the continuum hypothesis for a set A in U into which Nat merely
+// injects, between A and PowerSet(U, A). gch_implies_ch derives CH(U).
+def GCH := axiom GeneralizedContinuumHypothesis;
+
+// The cardinality dichotomy at every infinite set, assumed:
+// DecidableGCH(U, A, setA, infinite) is the dichotomy between A and
+// PowerSet(U, A). decidable_gch_implies_gch derives GCH(U), and
+// decidable_gch_implies_decidable_ch DecidableCH(U).
+def DecidableGCH := axiom DecidableGeneralizedContinuumHypothesis;

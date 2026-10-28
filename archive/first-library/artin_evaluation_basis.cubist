@@ -42,7 +42,7 @@ def embedding_evaluation_frame_build_step(
     intro small;
     let bound := transport small along total in ((fun (v : UNat) => le(v, m)));
     exact successor_not_le_self(
-      m, nat_le_trans(succ(m), add_count(succ(k), m), m, nat_le_add(k, m), bound)
+      m, unat_le_trans(succ(m), add_count(succ(k), m), m, unat_le_add(k, m), bound)
     );
   }
   let Next := EmbeddingEvaluationFrame(K, L, n, succ(m), maps);
