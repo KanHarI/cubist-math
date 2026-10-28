@@ -8,10 +8,11 @@ archive's retirement, as [Removing the legacy assumptions](#removing-the-legacy-
 plans. On 2026-10-26 its [steps](#steps) 1–4 were scheduled alongside the
 runtime phase, starting with `axiom` definitions. Step 1 is implemented
 (2026-10-26): excluded middle and choice are the library's axioms, and the
-legacy builtins are labelled `LEM[Truncate]` and `Choice[Truncate]`. Step 2
-is implemented (2026-10-28): no fixture outside the archive invokes the
-legacy builtins itself. Steps 3 and 4 are not implemented yet, and step 5 waits
-for the archive's deletion. The
+legacy builtins are labelled `LEM[Truncate]` and `Choice[Truncate]`. Steps 2
+and 3 are implemented (2026-10-28): no fixture outside the archive invokes the
+legacy builtins itself, and the reference and guides teach `Trunc` and the
+library's axioms, keeping the legacy builtins to notes on the archive. Step 4
+is not implemented yet, and step 5 waits for the archive's deletion. The
 [ledger](h1-truncation-ledger.json) pins 12 checked public changes against
 `f4d1961`, rebased from `cc6b50f` on 2026-10-05, and records 5 more of two
 comparisons that step 1 retired, with the revision at which they last
@@ -544,6 +545,25 @@ transition land together.
    quick-reference example to import `classical_axioms` and use `Trunc`
    and `merely` before step 4 confines its old builtin calls. The guide lists
    `Trunc` and the two library axioms among its principles.
+
+   **Done on 2026-10-28** (`web/proof.html`'s example moved in step 1). The
+   cubical chapter declares the library's truncation (`#trunc`): `Trunc`'s
+   declaration quoted from `h1_truncation`, its point, `Trunc.squash` and
+   `mere_eliminate`, with a checked example. The assumptions chapter's
+   truncation section sends there and keeps the archive's `Truncate`, its
+   four assumptions and the `LEM[Truncate]` and `Choice[Truncate]` labels
+   to one note, for the archive's modules only; its universes section
+   states the axioms' universes, and that `Trunc` keeps its universe, with
+   library examples. The legacy builtins' accepted examples are gone. E406
+   and E407 are explained as the archive's legacy assumptions' errors, each
+   shown by one refused example in that note, and E403 by `ua` given one
+   argument too many. Step 4's refusal outside the archive will answer those
+   two examples first, so E406 and E407 then join E404, which only the
+   legacy builtins raise, in the code list without a shown example. `docs/guides/cubist.md` lists `Trunc`, `merely`,
+   `Trunc.squash` and `mere_eliminate` with `LEM` and `Choice` among the
+   library's principles, states `Trunc`'s universe, and keeps the archive's
+   truncation to one paragraph. The keyword and regression-contract guides
+   already name the legacy builtins only as the archive's.
 4. **Confinement.** `Truncate`, `TruncateIntro`, `TruncateProp`,
    `TruncateElim` and the builtin `LEM(U, …)` and `Choice(U, …)` are
    accepted only in archive modules, which the module reader distinguishes by

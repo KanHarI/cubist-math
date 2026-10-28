@@ -198,14 +198,16 @@ and `fun (U < UU0) => t` bind a universe variable in a type or a term. See the
 [Universes chapter](../../web/reference/universes.html).
 
 The following functions are the library principles and their derived
-operations, each generic over `U < UU0`. See
+operations, each generic over `U < UU0`. `Trunc`, the propositional
+truncation, and its operations come from `h1_truncation`; `LEM` and `Choice`
+are the two axioms of `classical_axioms`, which imports it. See
 [the single-axiom univalence development](../tactical/univalence.md).
 
 ```text
-Truncate(U, A)
-TruncateIntro(U, A, a)
-TruncateProp(U, A)
-TruncateElim(U, A, P, proposition_proof, map)
+Trunc(U, A)
+merely(U, A, a)
+Trunc.squash(x, y)
+mere_eliminate(U, V, A, P, proposition_proof, map, t)
 FunExt(U, A, B, f, g, pointwise_equality)
 Choice(U)(A, B, setA, setFibers, inhabited)
 LEM(U)(A, double_negation)
@@ -216,8 +218,12 @@ UnivalenceBeta(U)(A, B, equivalence, x)
 UnivalenceEta(U)(A, B, path)
 ```
 
-Each instance at a universe is a first-class function. The two application
-styles above are interchangeable. `Choice` still requires setness of the
+Each instance at a universe is a first-class function, except `Trunc`, which
+takes both its arguments. The two application styles above are
+interchangeable. `Trunc` is a declared type, no assumption:
+`merely` is its point `point(a)` and computes, and `Trunc.squash` identifies
+any two of its elements. `LEM` and `Choice` are assumptions, listed with
+every result that uses them. `Choice` still requires setness of the
 index type and every fiber and returns only a truncated section.
 `Univalence` asserts that the canonical `idtoequiv` map is an equivalence.
 `ua` is its derived inverse: it accepts `Equiv(U, A, B)` and returns
@@ -230,17 +236,21 @@ universe-parameterized definitions. `x =[T] y` explicitly selects the carrier
 of equality; both endpoints are checked against `T`. Plain `x = y` still
 infers the carrier. Neither notation asserts definitional equality.
 
-`A` and the elimination target `P` must belong to `U`; `B` is a family
-`A -> U`. Smaller types can be lifted, but larger types cannot be lowered.
-For example, `Truncate(U1, U0)` is valid and
-`Truncate(U0, U0)` is rejected. A family may need an explicit lift,
-such as `fun (a : A) => typed(U1, Unit)`.
+`A` must belong to `U`; `B` is a family `A -> U`. Smaller types can be
+lifted, but larger types cannot be lowered. `Trunc(U, A)` is a proposition in
+`A`'s own universe `U`: `Trunc(U1, U0)` is valid, a type in `U1`, and
+`Trunc(U0, U0)` is rejected. `mere_eliminate` maps a truncation in `U` into a
+proposition `P` of any universe `V`, given evidence that `P` is a
+proposition; nothing resizes a truncation into a smaller universe. A family
+may need an explicit lift, such as `fun (a : A) => typed(U1, Unit)`.
 
-The existing library truncation constructor returns U0 even when its input is
-large. These wrappers preserve that signature; they do not promise
-universe-preserving truncation. Elimination still requires evidence that its
-target is a proposition. See the [real-number foundation notes](../roadmaps/mathematics/reals-roadmap.md) for
-the implications and current development status.
+The archive's modules use an older truncation, `Truncate`, `TruncateIntro`,
+`TruncateProp` and `TruncateElim`, four assumptions that resize every
+truncation into `U0`, with excluded middle and choice over it listed as
+`LEM[Truncate]` and `Choice[Truncate]`. They remain only for the archive,
+until it retires ([K2.5](../roadmaps/hott/h1-truncation-migration.md#removing-the-legacy-assumptions)).
+The [real-number foundation notes](../roadmaps/mathematics/reals-roadmap.md)
+discuss what working without resizing implies for the reals.
 
 ### Source checking
 
