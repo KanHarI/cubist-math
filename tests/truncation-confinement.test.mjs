@@ -9,6 +9,7 @@
 import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
 import { mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -109,6 +110,31 @@ test("a file of the user's may not, nor a copy of an archive module outside the 
   const renamed = check("renamed.cubist");
   assert.equal(renamed.status, 0, renamed.stdout + renamed.stderr);
   assert.match(renamed.stdout, /double_negation assumes LEM\[Truncate\], Truncate, TruncateElim/);
+});
+
+// On a case-insensitive file system a path may spell the archive's file in
+// another case: it is the archive's file all the same, recorded as the root
+// lists it, so the check keeps the builtins and its transfer replays
+// (#332's review round 3). The module keeps the name its path gives.
+const caseInsensitive = existsSync(join(root, "ARCHIVE/FIRST-LIBRARY/CLASSICAL.cubist"));
+test("a path that spells the archive's file in another case is the archive's file", {
+  skip: !caseInsensitive && "this file system is case-sensitive: a path in another case names no archive file",
+}, async t => {
+  for (const path of ["archive/first-library/CLASSICAL.cubist", "ARCHIVE/FIRST-LIBRARY/classical.cubist"]) {
+    const run = spawnSync(process.execPath, [cli, "check", path], { cwd: root, encoding: "utf8", timeout: 60000 });
+    assert.equal(run.status, 0, `${path}: ${run.stdout}${run.stderr}`);
+    assert.match(run.stdout, /double_negation assumes LEM\[Truncate\], Truncate, TruncateElim/, path);
+  }
+  const program = new CubicalProgram(module, sourceReader({ path: join(root, "archive/first-library/CLASSICAL.cubist") }), { collectReferences: false });
+  t.after(() => program.dispose());
+  assert.equal((await program.check(await archived("classical"), "CLASSICAL")).complete, true);
+  const exported = program.export("CLASSICAL__double_negation");
+  assert.equal(exported.files.CLASSICAL, "archive/first-library/classical.cubist");
+  const session = new WorkbenchSession(module, { fromLibrary: libraryProvenance(moduleListing, fetchText),
+    fromArchive: archiveProvenance(moduleListing, fetchText) });
+  t.after(() => session.dispose());
+  const loaded = await session.load(exported);
+  assert.ok(loaded.view.axioms.map(name => loaded.view.symbols[name].name).includes("LEM[Truncate]"));
 });
 
 // A file aliased into the archive's place, as the fingerprint tool's

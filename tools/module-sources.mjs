@@ -21,10 +21,16 @@ const text = async path => {
   catch (error) { if (error.code === "ENOENT") return null; throw error; }
 };
 
-// A path with every symbolic link resolved, as reading the file resolves them.
-// A path that does not exist stays as written; reading it reports the error.
+// A path with every symbolic link resolved, as reading the file resolves them,
+// and each name spelled as its directory entry is: on a case-insensitive file
+// system, archive/first-library/CLASSICAL.cubist and
+// ARCHIVE/FIRST-LIBRARY/classical.cubist are the archive's classical.cubist,
+// which provenance and a transfer's file name as the root lists it. The
+// operating system's realpath gives that spelling; Node's own keeps the
+// caller's. A path that does not exist stays as written; reading it reports
+// the error.
 const real = path => {
-  try { return realpathSync(resolve(path)); }
+  try { return realpathSync.native(resolve(path)); }
   catch (error) { if (error.code === "ENOENT") return resolve(path); throw error; }
 };
 

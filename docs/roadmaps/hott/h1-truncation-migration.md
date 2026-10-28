@@ -679,7 +679,11 @@ transition land together.
      one, nor a file elsewhere aliased into the archive's place, as the
      fingerprint's `--examples` alias documentation examples. A link into
      the archive is the archive's, renamed or not, and a copy outside it is
-     not. Unlike the library's labels, provenance is not transitive, so a
+     not. A real path spells each name as its directory entry does
+     (`realpathSync.native`), so on a case-insensitive file system a path
+     in another case, `archive/first-library/CLASSICAL.cubist` or
+     `ARCHIVE/FIRST-LIBRARY/classical.cubist`, is the archive's
+     `classical.cubist`, recorded as the root lists it for a transfer. Unlike the library's labels, provenance is not transitive, so a
      module of the user's may import the archive and use its declarations
      over the builtins.
    - **Where written.** A builtin is the archive's when the module its
