@@ -1944,7 +1944,7 @@ export class Translator {
   // in length.
   goalText(goal,width=160) {
     try {return this.checker.displayGoal?.(goal.scope.shownContext([goal.target]),goal.scope.dimensions,goal.target,null,
-      {width,notation:notationForScope(goal.scope)}).goal??sourceText(goal.target);}
+      {width,notation:notationForScope(goal.scope),telescope:false}).goal??sourceText(goal.target);}
     catch (control) {propagateElaborationStop(control);return "(too large to show)";}
   }
   // Two goals one diagnostic shows, named together when they share a scope,
@@ -1953,7 +1953,7 @@ export class Translator {
     if(goal.scope!==other.scope||!this.checker.displayGoal)return [this.goalText(goal,width),this.goalText(other,width)];
     try {
       const shown=this.checker.displayGoal(goal.scope.shownContext([goal.target,other.target]),goal.scope.dimensions,goal.target,other.target,
-        {width,notation:notationForScope(goal.scope)});
+        {width,notation:notationForScope(goal.scope),telescope:false});
       return [shown.goal,shown.built];
     } catch (control) {propagateElaborationStop(control);return ["(too large to show)","(too large to show)"];}
   }

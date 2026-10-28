@@ -870,10 +870,12 @@ shadowed `unat` or `bnat_numerals` prints a value as its constructors, and
 a model variable whose name a named notation takes prints its numeral as
 the call; this also covers `unat.(n)` and the literal readers' qualifiers,
 which main printed by name alone. A model's name is no qualifier where the
-printed text binds that name anywhere, by a term, level or dimension
-binder: the printer writes only the term's binders, so `textBinders`
-(`web/display-naming.mjs`) reads them all from the term, whichever form
-prints them. Operators and a model's bare operators
+display writes that name for a variable, a binder or a dimension: the
+printer collects the names as it writes them (`printedNames` in
+`web/cubical-source-text.mjs`), so a binder it leaves out, as an
+equality's coordinate, takes no name, and a display of several texts, as
+a proof step's locals, goal and term or a mismatch's two types, reads the
+names all of them write (`unitNames`). Operators and a model's bare operators
 keep the name-only check
 ([pr-318-todo](../../reports/pr-318-todo.md)).
 `tests/numeral-readback.test.mjs` combines each way of shadowing a reader's
@@ -882,8 +884,10 @@ each numeral kind, and reads every printed text back on each surface: a
 print, a type mismatch, a `use` message, the elaboration view, a REPL and a
 contextual `typeof`. It also counts a printing scope's environment reads, so
 displays stay linear in the number of terms shown, classifies every form the
-printer handles or the core has by the binders it prints, and reads back a
-numeral under a path dimension of its reader's name.
+printer handles or the core has by the binders it prints, checks that each
+display's names are exactly the variable, binder and dimension names its
+texts show, and reads back a numeral under a path dimension of its reader's
+name, a proof step's goal under its locals, and a literal in an equality.
 [ring_numeral_display.cubist](../../../cubist-tests/ring_numeral_display.cubist)
 and [numeral_display_scopes.cubist](../../../cubist-tests/numeral_display_scopes.cubist)
 check these displays with only the algebra and the number modules imported,

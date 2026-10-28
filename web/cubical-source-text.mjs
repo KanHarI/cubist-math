@@ -1,5 +1,5 @@
 import { displayFreeNames } from "./translator/display-names.mjs";
-import { inductionBinders, textBinders } from "./display-naming.mjs";
+import { inductionBinders } from "./display-naming.mjs";
 import { cubicalText } from "./cubical-notation.mjs";
 import { renameLevel, universeText } from "./cubical-levels.mjs";
 import { localName } from "./translator/names.mjs";
@@ -35,6 +35,37 @@ const operatorLevel = { "+": LEVEL.plus, "-": LEVEL.plus, "*": LEVEL.times, "/":
 // here, where names are settled, was the source of #310's captures
 // (web/README.md, "Displaying terms").
 export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
+  return render(term, symbols, limit, context, null);
+}
+
+// The names a source text of `term` writes for variables, binders and
+// dimensions, each with what it names (`var:` and the variable's name, or
+// `dim`): the printer's own, written as it prints, so a binder it leaves
+// out, as the coordinate of an equality, is not one, and a variable it
+// shows under a name the naming gave, as m1, is. It prints every
+// abbreviation it can, so it reaches at least as far into the term as the
+// text does. A display of several texts, as a goal with its locals, merges
+// theirs (unitNames) and gives each text the whole (`context.shown`, or a
+// function that computes it once, when a text first asks): a name any of
+// them shows is read there as what it shows.
+export function printedNames(term, symbols = {}, limit = 4000, context = {}) {
+  const names = new Map();
+  render(term, symbols, limit, context, names);
+  return names;
+}
+
+// Names several texts of one display show, merged, and `locals`, a
+// telescope's names the display writes beside them.
+export function unitNames(maps, locals = []) {
+  const names = new Map();
+  for (const map of maps) for (const [name, owners] of map) names.set(name, new Set([...names.get(name) ?? [], ...owners]));
+  for (const name of locals) names.set(name, new Set([...names.get(name) ?? [], `var:${name}`]));
+  return names;
+}
+
+// `written` collects the names the text writes (printedNames), and is null
+// where the text is printed.
+function render(term, symbols, limit, context, written) {
   let budget = limit, selection = context.selection ?? null, selectionIdentity = context.selectionIdentity;
   let selectionReceiver = context.selectionReceiver ?? null;
   // A numeral or literal prints abbreviated only where the scope it is
@@ -47,16 +78,24 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
   const reads = typeof context.reads === "function" ? context.reads : () => undefined;
   const opens = typeof context.opens === "function" ? context.opens : () => false;
   const known = identity => identity !== undefined && identity !== null;
-  const selects = entry => selection === entry.notation && known(selectionIdentity) && selectionIdentity === entry.identity;
-  // The names the printed text binds, anywhere, by any form: its term and
-  // level binders and its dimensions (textBinders, display-naming.mjs). A
-  // model's notation is read by the model's name, which any of them may
-  // take where the qualifier is read, so a model's name is not written
-  // where the text binds it; a named notation is read before any value or
-  // dimension. A bare numeral reads no name.
-  let binders = null;
-  const binds = name => (binders ??= textBinders(term)).get(name);
-  const qualifies = entry => !(entry.attached && binds(entry.notation))
+  // A name written for a variable, a binder or a dimension, recorded where
+  // the names are collected.
+  const write = (name, owner) => {
+    if (written) written.set(name, new Set([...written.get(name) ?? [], owner]));
+    return name;
+  };
+  // What each name the display writes names (printedNames): this text's,
+  // or the whole display's where it is one of several. A model's notation
+  // is read by the model's name, which a variable, a binder or a dimension
+  // the display shows by that name takes, wherever it shows it, so a
+  // model's name is not written as a qualifier there; a named notation is
+  // read before any value or dimension. A bare numeral reads no name.
+  let shown = null;
+  const shows = name => (shown ??= (typeof context.shown === "function" ? context.shown() : context.shown)
+    ?? printedNames(term, symbols, limit, context)).get(name);
+  const selects = entry => written ? true
+    : selection === entry.notation && known(selectionIdentity) && selectionIdentity === entry.identity;
+  const qualifies = entry => written ? true : !(entry.attached && shows(entry.notation))
     && known(entry.identity) && reads(entry.notation) === entry.identity;
   // A reading among `entries` that prints the text: bare, qualified, or
   // none, when no notation in scope reads it back.
@@ -81,13 +120,13 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
   // Interval formulas are disjunctions of conjunctions of literals; `i:0` is
   // the reversed coordinate. They print in the source's notation: ~i, i & j
   // and i | j, where & binds tighter than |, and both tighter than @.
-  const literal = text => text.endsWith(":0") ? `~${text.slice(0, -2)}` : text.replace(/:1$/, "");
+  const literal = text => text.endsWith(":0") ? `~${write(text.slice(0, -2), "dim")}` : write(text.replace(/:1$/, ""), "dim");
   const conjunction = clause => clause.length ? clause.map(literal).join(" & ") : "1";
   const interval = value => value.length ? value.map(conjunction).join(" | ") : "0";
   // A face formula is a disjunction of conjunctions too, of equations `i:0`.
   // A Glue piece or a glue value on one equation is face(i, 0, …), and on any
   // other face face_when(on(i, 0) and on(j, 1) or …, …).
-  const equation = text => `${text.slice(0, text.lastIndexOf(":"))}, ${text.slice(-1)}`;
+  const equation = text => `${write(text.slice(0, text.lastIndexOf(":")), "dim")}, ${text.slice(-1)}`;
   const onFace = (formula, parts) => formula.length === 1 && formula[0].length === 1
     ? `face(${equation(formula[0][0])}, ${parts.join(", ")})`
     : `face_when(${formula.length ? formula.map(clause => clause.length ? clause.map(text => `on(${equation(text)})`).join(" and ") : "1").join(" or ") : "0"}, ${parts.join(", ")})`;
@@ -122,7 +161,9 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
     for (const name of list) bound.set(name, (bound.get(name) ?? 0) + 1);
     try { return fn(); } finally { for (const name of list) bound.set(name, bound.get(name) - 1); }
   };
-  const variable = name => bound.get(name) ? name : label(name);
+  const shownAs = name => bound.get(name) ? name : label(name);
+  const variable = name => write(shownAs(name), `var:${name}`);
+  const binder = name => write(name, `var:${name}`);
   // A definition, type or constructor the naming marked qualified, as one
   // whose label the text shows for a dimension (display-naming.mjs,
   // qualified), by the spelling it gave, module::name.
@@ -151,7 +192,11 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
   // binders apart from those free in their bodies. Definitions keep their
   // labels.
   const fallback = t => {
-    const scope = new Map([...bound.keys()].filter(name => bound.get(name)).map(name => [name, variable(name)]));
+    // Kernel notation writes no abbreviation, and its own binders scope
+    // only within it, so they are not collected; it writes the variables
+    // free in it as the scope shows them, which are.
+    if (written) for (const name of free(t)) variable(name);
+    const scope = new Map([...bound.keys()].filter(name => bound.get(name)).map(name => [name, shownAs(name)]));
     // forSource has marked each definition named as a dimension of the term
     // or of its context qualified, which kernel notation shows by its
     // kernel name.
@@ -198,11 +243,11 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
     const hypotheses = clause => clause.results.some(result => mentions(clause.body, result));
     const shown = clauses.map(clause => {
       const { name, args, results, dims, body } = clause;
-      return `${name}${args.length ? `(${args.join(", ")})` : ""}${dims.map(dim => ` @ ${dim}`).join("")}`
-        + `${hypotheses(clause) ? ` with ${results.join(", ")}` : ""} => `
+      return `${name}${args.length ? `(${args.map(binder).join(", ")})` : ""}${dims.map(dim => ` @ ${write(dim, "dim")}`).join("")}`
+        + `${hypotheses(clause) ? ` with ${results.map(binder).join(", ")}` : ""} => `
         + `${under([...args, ...results], () => show(body))};`;
     });
-    return `${clauses.some(hypotheses) ? "induction" : "match"} ${show(value)}${named ? ` as ${motive.name}` : ""} `
+    return `${clauses.some(hypotheses) ? "induction" : "match"} ${show(value)}${named ? ` as ${binder(motive.name)}` : ""} `
       + `return ${under(motive.name, () => show(motive.body))} { ${shown.join(" ")} }`;
   };
   // The text of a term and the precedence level of its outermost form.
@@ -221,19 +266,19 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       case "Pi": case "Sigma": {
         const pi = t.tag === "Pi";
         if (mentions(t.body, t.name))
-          return [`${pi ? "forall" : "exists"} ${t.name} : ${show(t.domain)}. ${under(t.name, () => show(t.body))}`, LEVEL.binder];
+          return [`${pi ? "forall" : "exists"} ${binder(t.name)} : ${show(t.domain)}. ${under(t.name, () => show(t.body))}`, LEVEL.binder];
         const level = pi ? LEVEL.arrow : LEVEL.and;
         return [`${sub(t.domain, level + 1)} ${pi ? "->" : "and"} ${under(t.name, () => sub(t.body, level))}`, level];
       }
       case "Sum": return [`${sub(t.left, LEVEL.or + 1)} or ${sub(t.right, LEVEL.or)}`, LEVEL.or];
       // Level quantification (G0) in its source syntax: the bound is UU0.
-      case "LPi": return [`forall ${t.name} < UU0. ${under(t.name, () => show(t.body))}`, LEVEL.binder];
-      case "LLam": return [`fun (${t.name} < UU0) => ${under(t.name, () => show(t.body))}`, LEVEL.binder];
+      case "LPi": return [`forall ${binder(t.name)} < UU0. ${under(t.name, () => show(t.body))}`, LEVEL.binder];
+      case "LLam": return [`fun (${binder(t.name)} < UU0) => ${under(t.name, () => show(t.body))}`, LEVEL.binder];
       case "Lam": {
         // A binder of no domain, as spelledOut gives a function whose
         // domain no type it reads gives, stands alone: fun x => body, its
         // type given by where it is checked.
-        if (!t.domain) return [`fun ${t.name} => ${under(t.name, () => show(t.body))}`, LEVEL.binder];
+        if (!t.domain) return [`fun ${binder(t.name)} => ${under(t.name, () => show(t.body))}`, LEVEL.binder];
         // fun (x, y : A, z : B) => body, each domain in the scope of the
         // binders before it
         const groups = [], names = [];
@@ -245,7 +290,7 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
           names.push(body.name);
           body = body.body;
         }
-        const binders = groups.map(group => `${group.names.join(", ")} : ${group.domain}`).join(", ");
+        const binders = groups.map(group => `${group.names.map(binder).join(", ")} : ${group.domain}`).join(", ");
         return [`fun (${binders}) => ${under(names, () => show(body))}`, LEVEL.binder];
       }
       // Eliminators print as the source forms that build them. The motive's
@@ -259,17 +304,17 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
         const successor = under([k, h], () => show(step.body.body));
         // `as k` is written only where the motive or the successor clause uses k.
         const named = mentions(motive.body, motive.name) || mentions(step.body, step.name);
-        return [`induction ${show(t.value)}${named ? ` as ${k}` : ""} return ${type} { zero => ${show(t.zero)}; `
-          + `succ ${h} => ${successor}; }`, LEVEL.binder];
+        return [`induction ${show(t.value)}${named ? ` as ${binder(k)}` : ""} return ${type} { zero => ${show(t.zero)}; `
+          + `succ ${binder(h)} => ${successor}; }`, LEVEL.binder];
       }
       case "SumRec": {
         const { motive, left, right } = t;
         if ([motive, left, right].some(branch => branch?.tag !== "Lam")) return fallback(t);
         // `as z` is written only where the return type uses z, as the linter asks.
         const named = mentions(motive.body, motive.name);
-        return [`match ${show(t.value)}${named ? ` as ${motive.name}` : ""} return ${under(motive.name, () => show(motive.body))} { `
-          + `left ${left.name} => ${under(left.name, () => show(left.body))}; `
-          + `right ${right.name} => ${under(right.name, () => show(right.body))}; }`, LEVEL.binder];
+        return [`match ${show(t.value)}${named ? ` as ${binder(motive.name)}` : ""} return ${under(motive.name, () => show(motive.body))} { `
+          + `left ${binder(left.name)} => ${under(left.name, () => show(left.body))}; `
+          + `right ${binder(right.name)} => ${under(right.name, () => show(right.body))}; }`, LEVEL.binder];
       }
       // A declared type's eliminator on its own, as evaluation leaves a
       // function by cases after eta reduction, is the function that applies
@@ -344,13 +389,13 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
             : model?.tag === "DefRef" && !symbols[model.name]?.printing?.some(entry => entry.modelRules)
               ? qualifiedText(label(model.name), model) : null;
           if (args.length === at + 2 && value !== null && /^[A-Za-z_][A-Za-z0-9_]*$/.test(name ?? "")) {
+            if (written) return atom(`${name}.(${value})`);
             if (model.tag === "DefRef" && selection === name && selectionReceiver?.tag === "DefRef"
               && selectionReceiver.name === model.name) return atom(value);
-            // A model variable is the binder of its name where one is
-            // around it: display naming names no binder as a dimension, or
-            // as a variable free where it binds.
-            const binder = binds(name);
-            if ((!binder || model.tag === "Var" && binder === "term" && bound.get(name))
+            // A model variable's name may show only that variable; a
+            // declared model's, nothing the display shows.
+            const owners = shows(name);
+            if ((!owners || model.tag === "Var" && [...owners].every(owner => owner === `var:${model.name}`))
               && opens(name, model, !!bound.get(name)) === true)
               return atom(`${name}.(${value})`);
           }
@@ -438,12 +483,12 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
         if (!varies(t.family, t.dim))
           return [`${sub(t.left, LEVEL.compare + 1)} = ${sub(t.right, LEVEL.compare + 1)}`, LEVEL.compare];
         // A dependent path type, as the source writes it.
-        return atom(`PathP(fun (${t.dim} : Interval) => ${show(t.family)}, ${show(t.left)}, ${show(t.right)})`);
+        return atom(`PathP(fun (${write(t.dim, "dim")} : Interval) => ${show(t.family)}, ${show(t.left)}, ${show(t.right)})`);
       // A path, as the source writes it where its type is known; one that
       // does not vary is refl.
       case "PLam":
         if (!varies(t.body, t.dim) && !varies(t.family, t.dim)) return atom(`refl(${show(t.body)})`);
-        return [`path ${t.dim} => ${show(t.body)}`, LEVEL.binder];
+        return [`path ${write(t.dim, "dim")} => ${show(t.body)}`, LEVEL.binder];
       // Glue, as the source writes it; a glue term without its type, which
       // the place it is checked at gives.
       case "Glue":
@@ -456,9 +501,9 @@ export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
       // A composition prints as its box (L2.8), as the source writes it.
       case "Comp": {
         const face = formula => formula.length ? formula.map(clause => clause.length
-          ? clause.map(text => `${text.slice(0, text.lastIndexOf(":"))} = ${text.slice(-1)}`).join(" and ") : "1").join(" or ") : "0";
+          ? clause.map(text => `${write(text.slice(0, text.lastIndexOf(":")), "dim")} = ${text.slice(-1)}`).join(" and ") : "1").join(" or ") : "0";
         const walls = t.system.map(tube => `on ${face(tube.face)} => ${show(tube.term)}; `).join("");
-        return atom(`compose ${t.dim} in ${show(t.family)} from ${show(t.base)} { ${walls}}`);
+        return atom(`compose ${write(t.dim, "dim")} in ${show(t.family)} from ${show(t.base)} { ${walls}}`);
       }
       default: return fallback(t);
     }
