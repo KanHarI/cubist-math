@@ -54,10 +54,10 @@ def field_asymptotic_limits_equal(
       let convergenceBound := leftBound + rightBound;
       let bound := tailBound + convergenceBound;
       let largeConvergence := index_sum_right(tailBound, convergenceBound);
-      let largeLeft := nat_le_trans(
+      let largeLeft := unat_le_trans(
         leftBound, convergenceBound, bound, index_sum_left(leftBound, rightBound), largeConvergence
       );
-      let largeRight := nat_le_trans(
+      let largeRight := unat_le_trans(
         rightBound, convergenceBound, bound, index_sum_right(leftBound, rightBound),
         largeConvergence
       );
