@@ -689,10 +689,19 @@ transition land together.
      archive module is refused there: a named notation's operator, numeral,
      literal and unary minus rules, selected by `use` or applied qualified
      or as an operator section, and a model's attached notation. A theory's
-     fields, its parents' and an initial model's operations are elaborated
-     in the theory's own module, which refuses them there. Syntax the
-     archive writes stays the archive's wherever it is expanded, as its
-     declarations do.
+     fields, its parents' and its derived definitions are elaborated in the
+     theory's own module, which refuses them there; an initial or free
+     model's declared type uses no assumption at all (E850, E507), so its
+     generated members never carry a builtin. Syntax the archive writes
+     stays the archive's wherever it is expanded, as its declarations do.
+   - **A refusal is no failed attempt.** Where elaboration tries an
+     argument speculatively, to infer its type for an implicit parameter, a
+     hole, a constructor's parameters or a literal rule's parse, a failure
+     is a reason to try something else or to say that nothing determines
+     the parameter (E388). The confinement's refusal is a `SourceRefusal`
+     (`web/translator/control.mjs`), which those attempts report as it is:
+     `propagateLimit` rethrows it, as it rethrows running out, and a
+     recursive match keeps it rather than trying its second elaboration.
    - **The library's labels had the same flaw**, fixed the same way: a file
      elsewhere aliased into the library's place took bare labels. The
      library also requires its file of the module's own name, since a bare
@@ -718,9 +727,13 @@ transition land together.
    - **Replays keep it.** `ReplayInputs` records each module's archive
      provenance with its library provenance, so the workspace console's
      replay of an archive module checks it with its builtins; the console's
-     own entries are modules of their own, never the archive's. The workbench asks
-     which transferred sources are the archive's text
-     (`archiveProvenance`), as it asks for the library's; without that, a
+     own entries are modules of their own, never the archive's. A
+     transfer carries the file each source was read from
+     (`CubicalProgram.export`'s `files`), and the workbench authenticates
+     that file (`archiveProvenance`, as `libraryProvenance` for the
+     library's labels): a module read under another name, through an alias
+     or a link, replays as the archive's when its file is a file the
+     archive lists and its text is that file's. Without that provenance, a
      transfer of an archive declaration does not replay completely and is
      refused.
    - The labels `LEM[Truncate]` and `Choice[Truncate]` stay, so
@@ -738,8 +751,13 @@ transition land together.
      file aliased under another name is not; each notation mechanism above
      is refused where an archive module expands a rule written outside the
      archive, and accepted for one the archive writes, and a theory's
-     fields and an initial model's operations are refused where the theory
-     is written; a program checked again refuses the builtins, and gives a
+     parent and derived definition are refused where the theory is
+     written, beside an initial model of it that verifies either way; the
+     refusal is reported through an implicit parameter's, a hole's, a
+     named argument's, a constructor's and a literal rule's inference; a
+     workbench transfer of a declaration over an aliased or renamed archive
+     file replays as the archive's, and one naming a file the archive does
+     not hold is refused; a program checked again refuses the builtins, and gives a
      library axiom its qualified label, once the root no longer holds the
      same text; with the browser's
      reader, the unedited archive module checks, and an edited one, a

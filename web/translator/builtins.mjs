@@ -8,6 +8,7 @@ import {equiv,withNativeReferences} from "./equivalence.mjs";
 import {halfAdjointEquiv,publicUnivalencePath,publicUnivalenceBeta} from "./public-equivalence.mjs";
 import {dependentPathToTransport,transportToDependentPath} from "./path-over.mjs";
 import {libraryAssumption} from "../cubical-assumptions.mjs";
+import {SourceRefusal} from "./control.mjs";
 
 export const builtinHandlers = new Map([
   ["ua",ua],
@@ -102,7 +103,12 @@ function ua({t,builtin,n,scope,tr,inferred}) {
 // docs/roadmaps/hott/h1-truncation-migration.md). They leave with the
 // archive.
 export const legacyBuiltins=new Set(["Truncate","TruncateIntro","TruncateProp","TruncateElim","LEM","Choice"]);
-export const legacyConfinement=builtin=>Error(`${builtin} is the archive's legacy builtin, accepted only in archive modules: elsewhere use the library's Trunc, from h1_truncation, and its axioms LEM and Choice, from classical_axioms.`);
+const confinement=builtin=>`${builtin} is the archive's legacy builtin, accepted only in archive modules: elsewhere use the library's Trunc, from h1_truncation, and its axioms LEM and Choice, from classical_axioms.`;
+// A refusal, which a speculative elaboration reports and never takes for a
+// failed attempt (control.mjs, SourceRefusal): an argument whose type is
+// inferred, as an implicit parameter's or a literal rule's parse is,
+// reports it, not that nothing determines the parameter.
+export const legacyConfinement=builtin=>new SourceRefusal(confinement(builtin));
 // Whether the occurrence `node` was written in the archive: in the module its
 // origin names, where the source text holding it was authored, not the
 // module being checked. A notation's rule, a theory's parent, an initial or

@@ -136,26 +136,18 @@ test("a file aliased into the archive's place is not the archive's", async t => 
 // archive writes and an archive module expands is not, and is refused where
 // it is expanded (#332's review, finding 2). Each mechanism that expands
 // syntax written in one module while another is checked: a named
-// notation's operator, numeral and unary minus rules, selected by use or
-// applied qualified, and a model's attached notation. A theory's fields, its
-// parents' and an initial model's operations are elaborated where the theory
-// is written, which refuses them there.
+// notation's operator, numeral, literal and unary minus rules, selected by
+// use or applied qualified, and a model's attached notation. A theory's
+// fields, and its parents', are elaborated where the theory is written,
+// which refuses them there; so is a theory's derived definition, which an
+// initial model of it in another module uses where it was checked, and the
+// initial model itself is not affected (#332's review round 2, finding 3).
 test("a builtin in syntax written outside the archive is refused where an archive module expands it", async t => {
   const T = "Truncate(U0, Unit)";
   const named = rules => `import unat;\ndef plus(x, y : UNat) : UNat := add(x, y);\nnotation lib { ${rules} numeral(n : UNat) := n; }\n`;
-  const cases = [
-    ["an operator rule selected by use", named(`x + y := (fun (T : U0) => plus(x, y))(${T});`), "use lib;\ndef z : UNat := 1 + 2;"],
-    ["an operator rule applied qualified", named(`x + y := (fun (T : U0) => plus(x, y))(${T});`), "def z : UNat := lib.(1 + 2);"],
-    ["a numeral rule", `import unat;\nnotation lib { numeral(n : UNat) := (fun (T : U0) => n)(${T}); }\n`, "use lib;\ndef z : UNat := 3;"],
-    ["a unary minus rule", `import unat;\nnotation lib { -x := (fun (T : U0) => x)(${T}); numeral(n : UNat) := n; }\n`, "use lib;\ndef z : UNat := -3;"],
-    ["a model's attached notation", `import unat;\ntheory Mag(U < UU0) { M : U; op(x, y : M) : M notation x * y; }\n`
-      + `def m : Mag(U0) := Mag.make(M := UNat, op := fun (x, y : UNat) => x);\nnotation m { numeral(n : UNat) := (fun (T : U0) => n)(${T}); }\n`,
-      "def z : UNat := m.(3);"],
-    ["a theory's parent", `theory P(U < UU0) { M : U; w : ${T} -> M; }\n`, "theory C(U < UU0) extends P {}"],
-    ["an initial model", `import hlevels;\ntheory P(U < UU0) { M : set U; op(x : M, w : ${T}) : M; }\n`, "initial N : P(U0);"],
-  ];
   const check = async (author, authorPlace, user) => {
-    const files = { [`${authorPlace}/author`]: author, "archive/user": `import author;\nimport unat;\nimport hlevels;\n${user}\n` };
+    const files = { [`${authorPlace}/author`]: author,
+      "archive/user": `import author;\nimport unat;\nimport hlevels;\nimport lexemes;\n${user}\n` };
     const reader = moduleReader((place, name) => files[`${place}/${name}`]
       ?? (place === "library" ? readFile(join(root, "library", `${name}.cubist`), "utf8").catch(() => null) : null));
     const program = new CubicalProgram(module, reader, { collectReferences: false });
@@ -165,19 +157,63 @@ test("a builtin in syntax written outside the archive is refused where an archiv
         .map(output => [`${output.sourceModule}.${output.name}`, output.verified ? labels({ ...result, outputs: result.imports }, output.name) : output.code]));
     } finally { program.dispose(); }
   };
-  for (const [label, author, user] of cases) {
-    const outside = await check(author, "library", user), inside = await check(author, "archive", user);
-    const users = verdict => Object.entries(verdict).filter(([name]) => name.startsWith("user.") && name !== "user.N");
-    if (label.startsWith("a theory") || label.startsWith("an initial")) {
-      // Refused where it is written, and so unavailable to the archive.
-      const theory = Object.entries(outside).find(([name]) => name === "author.P");
-      assert.deepEqual(theory, ["author.P", "E491"], label);
-      assert.ok(Object.entries(outside).filter(([name]) => name.startsWith("user.")).every(([, verdict]) => verdict === "E340"), `${label}: ${JSON.stringify(outside)}`);
-      assert.deepEqual(inside["author.P"], ["Truncate"], label);
-    } else {
-      assert.deepEqual(users(outside), [["user.z", "E491"]], label);
-      assert.deepEqual(users(inside), [["user.z", ["Truncate"]]], label);
-    }
+  const users = verdict => Object.entries(verdict).filter(([name]) => name.startsWith("user."));
+  const notations = [
+    ["an operator rule selected by use", named(`x + y := (fun (T : U0) => plus(x, y))(${T});`), "use lib;\ndef z : UNat := 1 + 2;"],
+    ["an operator rule applied qualified", named(`x + y := (fun (T : U0) => plus(x, y))(${T});`), "def z : UNat := lib.(1 + 2);"],
+    ["a numeral rule", `import unat;\nnotation lib { numeral(n : UNat) := (fun (T : U0) => n)(${T}); }\n`, "use lib;\ndef z : UNat := 3;"],
+    ["a literal rule", `import unat;\nimport lexemes;\ncomputable def glyph_count(s : Lexeme) : Parsed(U0, UNat) := ok(length(s));\n`
+      + `notation lib { literal(s : Lexeme) := (fun (T : U0) => glyph_count(s))(${T}); }\n`, "def z : UNat := lib.(007);"],
+    ["a unary minus rule", `import unat;\nnotation lib { -x := (fun (T : U0) => x)(${T}); numeral(n : UNat) := n; }\n`, "use lib;\ndef z : UNat := -3;"],
+    ["a model's attached notation", `import unat;\ntheory Mag(U < UU0) { M : U; op(x, y : M) : M notation x * y; }\n`
+      + `def m : Mag(U0) := Mag.make(M := UNat, op := fun (x, y : UNat) => x);\nnotation m { numeral(n : UNat) := (fun (T : U0) => n)(${T}); }\n`,
+      "def z : UNat := m.(3);"],
+  ];
+  for (const [label, author, user] of notations) {
+    assert.deepEqual(users(await check(author, "library", user)), [["user.z", "E491"]], label);
+    assert.deepEqual(users(await check(author, "archive", user)), [["user.z", ["Truncate"]]], label);
+  }
+  // A theory's parent: refused where it is written, and so unavailable to an
+  // archive module that extends it; in the archive, the child and its
+  // generated members carry it.
+  const parent = [`theory P(U < UU0) { M : U; w : ${T} -> M; }\n`, "theory C(U < UU0) extends P {}"];
+  const outside = await check(parent[0], "library", parent[1]), inside = await check(parent[0], "archive", parent[1]);
+  assert.equal(outside["author.P"], "E491");
+  assert.ok(users(outside).every(([, verdict]) => verdict === "E340"), JSON.stringify(outside));
+  assert.deepEqual(users(inside).map(([name]) => name), ["user.C", "user.C.make", "user.C.M", "user.C.w", "user.C.p"]);
+  assert.ok(users(inside).every(([, verdict]) => JSON.stringify(verdict) === '["Truncate"]'), JSON.stringify(inside));
+  // An initial model of a theory whose derived definition writes it: the
+  // derived definition is refused where it is written, the initial model and
+  // its generated members verify either way, and only a use of the derived
+  // definition carries the builtin, in the archive.
+  const initial = [`import hlevels;\ntheory P(U < UU0) { M : set U; c : M; def dropped(w : ${T}) : M := c; }\n`,
+    `initial N : P(U0);\ndef used(w : ${T}) : N := P.dropped(N.model, w);`];
+  const generated = ["user.N", "user.N.model", "user.N.fold_map", "user.N.fold"].map(name => [name, []]);
+  const library = await check(initial[0], "library", initial[1]), archive = await check(initial[0], "archive", initial[1]);
+  assert.equal(library["author.P.dropped"], "E491");
+  assert.deepEqual(users(library), [...generated, ["user.used", "E340"]]);
+  assert.deepEqual(archive["author.P.dropped"], ["Truncate"]);
+  assert.deepEqual(users(archive), [...generated, ["user.used", ["Truncate"]]]);
+});
+
+// A refusal is no failed attempt: where elaboration infers an argument's
+// type speculatively, as for an implicit parameter, a hole, a constructor's
+// parameters or a literal rule's parse, the legacy builtin's refusal is
+// reported, not that nothing determines the argument (#332's review round
+// 2, finding 2).
+test("a legacy builtin's refusal is reported through speculative inference, not taken for a failed attempt", async t => {
+  const T = "TruncateIntro(U0, Unit, tt)";
+  const sources = {
+    implicit: `def identity_{{A : U0}}(x : A) := x;\ndef z := identity_(${T});`,
+    hole: `def identity_(A : U0, x : A) := x;\ndef z := identity_(_, ${T});`,
+    named: `def identity_(A : U0, x : A) := x;\ndef z := identity_(x := ${T}, A := _);`,
+    constructor: `inductive Box(A : U0) { box(a : A); }\ndef z := box(${T});`,
+    literal: `import unat;\nimport lexemes;\ncomputable def glyph_count(s : Lexeme) : Parsed(U0, UNat) := ok(length(s));\n`
+      + `notation count { literal(s : Lexeme) := (fun (w : Truncate(U0, Unit)) => glyph_count(s))(${T}); }\ndef z : UNat := count.(007);`,
+  };
+  for (const [name, source] of Object.entries(sources)) {
+    const { result } = await checkProgram(t, source, { module, name: `refusal_${name}` });
+    assert.match(verdicts(result).z, /^E491: /, name);
   }
 });
 
@@ -277,6 +313,43 @@ test("a workbench transfer replays an archive module only as the archive holds i
   await assert.rejects(load(exported.sources, { fromLibrary }), /did not replay completely/);
   const edited = { ...exported.sources, classical: `${exported.sources.classical}\ndef extra := tt;\n` };
   await assert.rejects(load(edited, { fromLibrary, fromArchive }), /did not replay completely/);
+});
+
+// A transfer carries the file each source was read from, and the workbench
+// authenticates that file, so a module read under another name, through an
+// alias or a link, replays as the archive's when its file is the archive's,
+// and never by a file the archive does not hold (#332's review round 2,
+// finding 1).
+test("a workbench transfer authenticates each source by the file it was read from, under any name", async t => {
+  const classical = join(root, "archive/first-library/classical.cubist");
+  const fromArchive = archiveProvenance(moduleListing, fetchText), fromLibrary = libraryProvenance(moduleListing, fetchText);
+  const load = async payload => {
+    const session = new WorkbenchSession(module, { fromLibrary, fromArchive });
+    t.after(() => session.dispose());
+    const loaded = await session.load(payload);
+    return loaded.view.axioms.map(name => loaded.view.symbols[name].name);
+  };
+  // An alias of the archive's file, as the fingerprint tool reads one.
+  const aliased = new CubicalProgram(module, sourceReader({ files: new Map([["archive/borrowed", classical]]) }), { collectReferences: false });
+  t.after(() => aliased.dispose());
+  await aliased.check("import borrowed;\ndef again := double_negation;", "workbench");
+  const borrowed = aliased.export("workbench__again");
+  assert.equal(borrowed.files.borrowed, "archive/first-library/classical.cubist");
+  assert.ok((await load(borrowed)).includes("LEM[Truncate]"));
+  // A renamed link to it, checked as a file.
+  const directory = await mkdtemp(join(tmpdir(), "cubist-transfer-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const link = join(directory, "renamed.cubist");
+  await symlink(classical, link);
+  const linked = new CubicalProgram(module, sourceReader({ path: link }), { collectReferences: false });
+  t.after(() => linked.dispose());
+  assert.equal((await linked.check(await archived("classical"), "renamed")).complete, true);
+  const renamed = linked.export("renamed__double_negation");
+  assert.ok((await load(renamed)).includes("LEM[Truncate]"));
+  // A file the archive does not hold, or other text, is not the archive's.
+  for (const files of [{ borrowed: "cubist-tests/truncation_legacy_confined.cubist" }, { borrowed: "archive/first-library/../../library/unat.cubist" },
+    { borrowed: "archive/first-library/truncation.cubist" }])
+    await assert.rejects(load({ ...borrowed, files: { ...borrowed.files, ...files } }), /did not replay completely/, JSON.stringify(files));
 });
 
 // The migration verifier reads a baseline from the archive at its revision,

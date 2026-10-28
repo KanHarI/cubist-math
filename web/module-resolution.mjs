@@ -151,6 +151,13 @@ export function moduleReader(read) {
     const origin = await originOf(name);
     return origin?.root === "archive" && origin.text === text;
   };
+  // The file `text` was read from, as a root's path, when it is that file's
+  // text: what a transfer carries so that its receiver authenticates the
+  // same file (rootProvenance), whatever name the module has.
+  readSource.fileOf = async (name, text) => {
+    const origin = await originOf(name);
+    return origin?.text === text ? origin.file : null;
+  };
   readSource.beginCheck = () => { probes.clear(); originProbes.clear(); };
   // Called after a module's imports are loaded: a refusal message when one of
   // them is not the module this importer would have loaded under that name.
@@ -174,16 +181,23 @@ export function moduleReader(read) {
   return readSource;
 }
 
-// Whether a source given as text, as a transfer gives one, is the module
-// `name` exactly as a root holds it, read through `fetchText` as
-// listedReader reads it: the provenance of a module no reader placed. Only
-// a library module names its axioms by their bare names (fromLibrary), and
+// Whether a source given as text, as a transfer gives one, is the text of a
+// root's file, read through `fetchText` as listedReader reads it: the
+// provenance of a module no reader placed. `file` is the file the transfer
+// says the module was read from (CubicalProgram.export), a root's path, so
+// that a module read under another name, through an alias or a link, is
+// authenticated by its file, as its reader authenticated it; without one,
+// the root's file of the module's name. Only a library module names its
+// axioms by their bare names (fromLibrary), its file of its own name, and
 // only an archive module may use the archive's legacy builtins
-// (fromArchive). A text that cannot be compared, as when the root is
-// unreachable, is not the root's.
-const rootProvenance = root => (listing, fetchText) => async (name, text) => {
-  if (!listing[root]?.includes(name)) return false;
-  try { return await fetchText(`${moduleRoots[root]}${name}.cubist`) === text; } catch { return false; }
+// (fromArchive). A file the root does not list, and a text that cannot be
+// compared, as when the root is unreachable, are not the root's.
+const rootProvenance = root => (listing, fetchText) => async (name, text, file = null) => {
+  const path = file ?? `${moduleRoots[root]}${name}.cubist`;
+  const own = path.startsWith(moduleRoots[root]) && path.endsWith(".cubist")
+    ? path.slice(moduleRoots[root].length, -".cubist".length) : null;
+  if (own === null || !listing[root]?.includes(own) || root === "library" && own !== name) return false;
+  try { return await fetchText(path) === text; } catch { return false; }
 };
 export const libraryProvenance = rootProvenance("library");
 export const archiveProvenance = rootProvenance("archive");

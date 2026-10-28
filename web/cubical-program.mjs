@@ -92,6 +92,9 @@ export class CubicalProgram {
     this.sourceAsts = new Map();
     this.simpRegistries = new Map();
     this.gaps = []; this.evaluations = []; this.prints = []; this.links = []; this.sources = {}; this.completed = 0;
+    // The root's file each module was read from, by its path there, when its
+    // text is that file's (module-resolution.mjs, fileOf).
+    this.sourceFiles = {};
     // What each directive (evaluate, print, simp_rule, simp_set) spent (fuel.mjs).
     this.directiveFuel = [];
     // Proof statements of each checked module, with their goals (see steps()).
@@ -159,9 +162,12 @@ export class CubicalProgram {
       // it use the archive's legacy builtins (builtins.mjs,
       // legacyConfinement). That is the module's own text, whatever it
       // imports, since the builtins are refused where they are written.
-      let archive = false;
+      let archive = false, file = null;
       try { archive = await this.readSource.fromArchive?.(name, text) ?? false; } catch { archive = false; }
-      const entry = { text, ast, library: false, archive };
+      // The root's file it was read from, which an export carries so that a
+      // transfer's receiver authenticates the same file (export).
+      try { file = await this.readSource.fileOf?.(name, text) ?? null; } catch { file = null; }
+      const entry = { text, ast, library: false, archive, file };
       prepared.set(name, entry);
       if(!this.modules.has(name))discovery.total += ast.declarations.length;
       onProgress({ completed: this.completed, total: null, current: name,
@@ -395,6 +401,8 @@ export class CubicalProgram {
         ({ text, ast, library, archive } = entry);
         this.libraryModules.set(name, library);
         this.archiveSources.set(name, archive);
+        if (entry.file) this.sourceFiles[name] = entry.file;
+        else delete this.sourceFiles[name];
       }
       catch (error) {
         if (name === main) throw error;
@@ -853,8 +861,10 @@ export class CubicalProgram {
   }
   export(binding = null, side = "expression") {
     const view = binding ? this.inspect(binding) : null;
+    // Each source's file goes with it, so that the receiver authenticates
+    // what the check did (module-resolution.mjs, rootProvenance).
     return { format: "thth-cubical", version: 1, main: this.main,
-      source: this.metadata.source, sources: this.sources, binding, side,
+      source: this.metadata.source, sources: this.sources, files: { ...this.sourceFiles }, binding, side,
       // Syntax is informational. Import must replay the supplied source first.
       ...(view ? { expression: view.expression, type: view.type, context: view.context } : {}) };
   }

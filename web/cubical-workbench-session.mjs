@@ -50,8 +50,11 @@ export class WorkbenchSession {
       if (typeof payload.sources?.[name] !== "string") throw new Error(`Missing source module ${name}.`);
       return payload.sources[name];
     };
-    if (this.fromLibrary) read.fromLibrary = this.fromLibrary;
-    if (this.fromArchive) read.fromArchive = this.fromArchive;
+    // Each source is authenticated by the file its transfer says it was read
+    // from, which the provenance reads again.
+    const file = name => typeof payload.files?.[name] === "string" ? payload.files[name] : null;
+    if (this.fromLibrary) read.fromLibrary = (name, text) => this.fromLibrary(name, text, file(name));
+    if (this.fromArchive) read.fromArchive = (name, text) => this.fromArchive(name, text, file(name));
     this.program = new CubicalProgram(this.module, read);
     // A transfer replays its sources: one that does not check completely
     // is no transfer of what was checked, and is refused.
