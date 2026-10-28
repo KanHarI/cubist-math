@@ -442,5 +442,5 @@ export const cubistTestModules = [
   "inspection_square_boundary", "assembly_fixture", "assembly_generic_assumptions", "glue_printed",
   "admission_two", "reduction_demo", "f4_extension_loops", "f4_extension_loops_false", "fingerprint_fixture",
   "documentation_helper", "documentation_use", "declared_match_operator_call", "declarations_definitions",
-  "declarations_axioms", "continuum_axioms"
+  "declarations_axioms", "continuum_axioms", "match_hypotheses"
 ];

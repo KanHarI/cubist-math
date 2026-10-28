@@ -404,6 +404,14 @@ def le_succ(n : UNat) := induction n as k return (k &lt;= succ(k)) {
   succ h =&gt; h;
 };</code></pre>
             <p>In <code>le_succ</code>, the zero branch needs <code>0 &lt;= 1</code>, which is <code>Unit</code>. The successor branch has <code>h : k &lt;= succ(k)</code> and needs <code>succ(k) &lt;= succ(succ(k))</code>, which computes to <code>k &lt;= succ(k)</code>: exactly <code>h</code>. The library proves <code>n &lt;= n</code> the same way, as <code>unat_le_refl</code>, and so <code>n &lt; succ(n)</code>, which computes to <code>n &lt;= n</code>.</p>
+            <p>A hypothesis whose type mentions the matched number is taken at each constructor, under its own name, by a match expression as by the <a href="#dependent-match">match statement</a>. In <code>le_zero</code>, <code>h</code> is <code>succ(k) &lt;= 0</code> in the successor clause, which computes to <code>Void</code>:</p>
+            <pre><code data-check="accept">import unat;
+use unat;
+
+def le_zero(n : UNat, h : n &lt;= 0) : n = 0 := match n {
+  zero =&gt; refl(0);
+  succ(k) =&gt; absurd(h);
+};</code></pre>
 
           </section>
           <section id="binary">

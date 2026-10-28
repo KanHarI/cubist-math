@@ -1,0 +1,208 @@
+// Hypotheses about a matched variable (work-plan L2.2a): a match expression,
+// as a definition's body or inside one, takes each hypothesis whose type
+// mentions the variable at each constructor, under its own name, as the
+// match statement does, whatever the result type mentions and whichever
+// clause uses it. tests/match-hypotheses.test.mjs checks each case by name.
+// An induction expression does so only where its result type mentions the
+// variable.
+
+import unat;
+import hlevels;
+use unat;
+
+// A hypothesis used only in the last clause, which no later clause type
+// checks while the match is elaborated.
+computable def le_zero_absurd(n : UNat, h : n <= 0) : n = 0 := match n {
+    zero => refl(0);
+    succ(k) => absurd(h);
+  };
+
+// Three values, recursive: in succ(i), zero, _ the hypothesis ab is
+// succ(i) <= 0, though the result type mentions neither b nor ab.
+computable def le_trans_expression(a, b, c : UNat, ab : a <= b, bc : b <= c) :
+  a <= c := match a, b, c {
+    zero, _, _ => tt;
+    succ(i), zero, _ => absurd(ab);
+    succ(i), succ(j), zero => absurd(bc);
+    succ(i), succ(j), succ(k) => le_trans_expression(i, j, k, ab, bc);
+  };
+
+// Two values, the hypothesis used in a clause of the inner match, the
+// result type a number.
+computable def subtract(n, m : UNat, h : m <= n) : UNat := match n, m {
+    _, zero => n;
+    zero, succ(j) => absurd(h);
+    succ(i), succ(j) => subtract(i, j, h);
+  };
+
+evaluate subtract(5, 2, tt) expecting 3;
+
+// A hypothesis passed whole to a helper that states it at the constructor.
+def succ_le_zero_void(k : UNat, h : succ(k) <= 0) : Void := h;
+
+computable def pass_whole(n : UNat, h : n <= 0) : n = 0 := match n {
+    zero => refl(0);
+    succ(k) => absurd(succ_le_zero_void(k, h));
+  };
+
+def below_succ(k : UNat, below : forall m : UNat. m < succ(k) -> Unit) : Unit := tt;
+
+computable def pass_below(n : UNat, below : forall m : UNat. m < n -> Unit) : Unit := match n {
+    zero => tt;
+    succ(k) => below_succ(k, below);
+  };
+
+// Not a definition's whole body: no recursion, and a result type that does
+// not mention the value.
+def inner_last(n : UNat, h : n <= 0) : UNat := succ(match n {
+      zero => 0;
+      succ(k) => absurd(h);
+    });
+
+def inner_first(n : UNat, h : 1 <= n) : UNat := succ(match n {
+      succ(k) => k;
+      zero => absurd(h);
+    });
+
+// A return type over the name as binds.
+computable def le_zero_return(n : UNat, h : n <= 0) : n = 0 := match n as m return m = 0 {
+    zero => refl(0);
+    succ(k) => absurd(h);
+  };
+
+// A declared type with three constructors, the hypothesis used in the last
+// clause only, and one with parameters.
+inductive Order : U0 {
+  less;
+  equal;
+  greater;
+}
+
+computable def IsLess(o : Order) : U0 := match o {
+    less => Unit;
+    equal => Void;
+    greater => Void;
+  };
+
+computable def last_only(o : Order, h : IsLess(o)) : UNat := match o {
+    less => 1;
+    equal => 2;
+    greater => absurd(h);
+  };
+
+evaluate last_only(less, tt) expecting 1;
+
+inductive List(U < UU0, A : U) : U {
+  nil;
+  cons(head : A, tail : List(U, A));
+}
+
+def IsNil(xs : List(U0, UNat)) : U0 := match xs {
+    nil => Unit;
+    cons(x, rest) => Void;
+  };
+
+def nil_of(xs : List(U0, UNat), h : IsNil(xs)) : xs = nil := match xs {
+    nil => refl(typed(List(U0, UNat), nil));
+    cons(x, rest) => absurd(h);
+  };
+
+// What checked before checks as it did: a hypothesis given its type,
+// used in an earlier clause, or curried into the result type; a hypothesis
+// eta-expanded; two values whose result type mentions the second; the
+// match statement; and a return type that mentions the value itself, whose
+// clauses see each hypothesis as it is.
+computable def le_zero_typed(n : UNat, h : n <= 0) : n = 0 := match n {
+    zero => refl(0);
+    succ(k) => absurd(typed(Void, h));
+  };
+
+computable def positive_first(a, b : UNat, h : 1 <= a) : 1 <= a + b := match a {
+    zero => absurd(h);
+    succ(k) => tt;
+  };
+
+computable def le_zero_curried(n : UNat) : n <= 0 -> n = 0 := match n {
+    zero => fun (h : Unit) => refl(0);
+    succ(k) => fun (h : Void) => absurd(h);
+  };
+
+computable def pass_below_eta(n : UNat, below : forall m : UNat. m < n -> Unit) : Unit := match n {
+    zero => tt;
+    succ(k) => below_succ(k, fun (m : UNat, lt : m < succ(k)) => below(m, lt));
+  };
+
+computable def le_step(a, b : UNat, h : a <= b) : a <= succ(b) := match a, b {
+    zero, _ => tt;
+    succ(i), zero => absurd(h);
+    succ(i), succ(j) => le_step(i, j, h);
+  };
+
+// The statements of le_zero_absurd and le_trans_expression: the same terms.
+computable def le_zero_statement(n : UNat, h : n <= 0) : n = 0 {
+  match n {
+    zero => {
+      exact refl(0);
+    }
+    succ(k) => {
+      exact absurd(h);
+    }
+  }
+}
+
+computable def le_trans_statement(a, b, c : UNat, ab : a <= b, bc : b <= c) : a <= c {
+  match a, b, c {
+    zero, _, _ => {
+      exact tt;
+    }
+    succ(i), zero, _ => {
+      exact absurd(ab);
+    }
+    succ(i), succ(j), zero => {
+      exact absurd(bc);
+    }
+    succ(i), succ(j), succ(k) => {
+      exact le_trans_statement(i, j, k, ab, bc);
+    }
+  }
+}
+
+def le_zero_kept(n : UNat, h : n <= 0) : n <= 0 := typed(n <= 0, match n return n <= 0 {
+      zero => h;
+      succ(k) => h;
+    });
+
+// An induction, whose hypotheses named after with keep the result type:
+// it generalizes a hypothesis only where its result type mentions the value.
+def count(n : UNat, h : n = n) : UNat := induction n {
+    zero => 0;
+    succ(k) with previous => succ(previous);
+  };
+
+// A hypothesis about another value, and an accumulator.
+computable def count_into(n, total : UNat, same : total = total) : UNat := match n {
+    zero => total;
+    succ(k) => count_into(k, succ(total), refl(succ(total)));
+  };
+
+evaluate count_into(2, 3, refl(3)) expecting 5;
+
+// Higher constructors: a path clause and a generated squash clause, with
+// a hypothesis about the value bound again in each.
+inductive Circle {
+  base;
+  loop : base = base;
+}
+
+def circle_kept(x : Circle, h : x = x) : Unit := match x {
+    base => tt;
+    loop @ i => tt;
+  };
+
+inductive Merely(A : U0) : prop {
+  point(a : A);
+}
+
+def merely_kept(t : Merely(UNat), h : t = t) : Unit := match t {
+    point(a) => tt;
+  };
