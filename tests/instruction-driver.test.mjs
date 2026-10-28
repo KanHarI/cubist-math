@@ -160,6 +160,21 @@ test("every definition behind Euclid's theorem derives in instruction mode", asy
   for (const rule of ["pathAt", "system", "systemTube", "comp"]) assert.ok(rules.has(rule), rule);
 });
 
+// A system's face can mention a dimension that no tube does, as a
+// composition at an endpoint of NUM1's transports does: alpha equality
+// keeps that dimension's renaming when it compares the face.
+test("alpha equality renames a bound dimension that only a face mentions", async t => {
+  const kernel = new CubicalKernel(await createCubical());
+  t.after(() => kernel.dispose());
+  const unit = kernel.term("Unit"), point = kernel.term("Point");
+  const zero = dim => kernel.formula("face", [[0n, 1n << BigInt(dim)]]);
+  const comp = (bind, face) => kernel.term("Comp", bind, unit, kernel.term("Tube", zero(face), point, 0), point);
+  const plam = (bind, body) => kernel.term("PLam", bind, unit, body);
+  const alpha = (a, b) => new InstructionDriver(kernel).alpha(a, b);
+  assert.equal(alpha(plam(2, comp(3, 2)), plam(1, comp(2, 1))), true, "the same binders, renamed");
+  assert.equal(alpha(plam(2, plam(3, comp(4, 2))), plam(1, plam(2, comp(4, 2)))), false, "the outer binder against the inner one");
+});
+
 test("a derived term is its source: a constructor at a type that reduces keeps that type", async t => {
   const { program } = await checkTestModule(t, "driver_sums");
   const kernel = program.kernel;
