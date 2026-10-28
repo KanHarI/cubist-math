@@ -180,12 +180,18 @@ test("a saved benchmark pins no source it did not measure", async t => {
   // tree's 0xfe there decodes as it does.
   const scratch = await mkdtemp(join(tmpdir(), "cubist-pins-"));
   t.after(() => rm(scratch, { recursive: true, force: true }));
-  const git = args => execFileSync("git", args, { cwd: scratch, encoding: "utf8" });
+  // The scratch repository ignores the user's Git configuration: no global or
+  // system settings, so no commit signing, hooks or identity of theirs.
+  const isolated = { ...process.env, GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1",
+    GIT_AUTHOR_NAME: "test", GIT_AUTHOR_EMAIL: "test@example.com",
+    GIT_COMMITTER_NAME: "test", GIT_COMMITTER_EMAIL: "test@example.com" };
+  const git = args => execFileSync("git", ["-c", "commit.gpgsign=false", "-c", "core.hooksPath=/dev/null", ...args],
+    { cwd: scratch, encoding: "utf8", env: isolated });
   const bytes = byte => Buffer.from(`// ${byte}\ncomputable def odd : Unit := tt;\n`, "latin1");
   git(["init", "-q"]);
   await writeFile(join(scratch, "invalid.cubist"), bytes("\xff"));
   git(["add", "invalid.cubist"]);
-  git(["-c", "user.name=test", "-c", "user.email=test@example.com", "commit", "-q", "-m", "invalid UTF-8"]);
+  git(["commit", "-q", "-m", "invalid UTF-8"]);
   const scratchRevision = git(["rev-parse", "HEAD"]).trim(), invalid = bytes("\xfe").toString();
   assert.equal(invalid, bytes("\xff").toString(), "both bytes decode to U+FFFD");
   assert.deepEqual(pinnedSources([{ name: "invalid", path: "invalid.cubist", text: invalid }],
