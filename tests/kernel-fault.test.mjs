@@ -64,8 +64,8 @@ test("an engine error out of an export ends the instance: no later call enters i
   fresh.dispose();
 });
 
-// A REPL value form computes in the runtime (web/cubical-runtime.mjs), whose
-// snapshot reads the checked term from the kernel. An engine error out of
+// A REPL value form computes in the runtime (web/cubical-runtime.mjs), which
+// reads the checked term from the kernel as its walk demands it. An engine error out of
 // one of those reads ends the entry at that statement, as anywhere else, and
 // a session rebased on a new instance replays the entries that extended it.
 // The error is injected beneath the guard, as the engine's RangeError, at
