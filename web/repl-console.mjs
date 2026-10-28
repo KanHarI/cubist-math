@@ -152,25 +152,30 @@ export function createReplConsole(root, { run, reset, greeting = [], label = "RE
 // statement, each with the entry repl_N it was checked as. A kernel failure
 // stops the worker (a fatal reply, WorkerRequests), and a new one starts,
 // whose number `generation()` gives. On it the record is restored
-// (repl-restore), before the next entry or at once by `restore`: each
-// recorded statement is checked again as the entry it was, and nothing
-// else, so what was refused stays refused, and a query is not run again.
-// What no longer checks is named, statement by statement, and when the
-// record cannot be restored the session is gone; the note says which
-// (restartNote). The entry that failed is not run again. With
-// `restoreAfterFault`, a REPL with a worker of its own restores at once on a
-// new one after its entry failed so; a page that rebuilds what it holds
-// after a failure restores the session itself. A session over a proof is
-// restored only once the new worker has checked it (`restorable`): until
-// then an entry is refused, and the record kept. A reset forgets the
-// session, and what a restore or an entry begun before it answers is not
-// kept (`epoch`).
-export function recordedSession(request, { fresh = false, generation = () => 0, restoreAfterFault = true, restorable = () => true } = {}) {
+// (repl-restore): each recorded statement is checked again as the entry it
+// was, and nothing else, so what was refused stays refused, and a query is
+// not run again. What no longer checks is named, statement by statement,
+// and when the record cannot be restored the session is gone; the note says
+// which (restartNote). The entry that failed is not run again.
+//
+// Every restore is maintenance of the page's worker (`maintain`,
+// worker-maintenance.mjs), so the page's other requests wait for it: one
+// that the page's rebuild after a failure makes, with the rebuild's own
+// `send`; one before the next entry; and, with `restoreAfterFault`, one a
+// REPL with a worker of its own makes at once after its entry failed so.
+// Whether to restore is decided when the restore runs: not again on a
+// worker restored already, and not yet while the worker cannot
+// (`restorable`), as a new worker before it has checked the proof the
+// session is over, when an entry is refused and the record kept. A reset
+// forgets the session, and what a restore or an entry begun before it
+// answers is not kept (`epoch`).
+export function recordedSession(request, { fresh = false, generation = () => 0, restoreAfterFault = true,
+  restorable = () => true, maintain = work => work(request) } = {}) {
   let record = null, at = generation(), epoch = 0;
-  async function restore(send = request) {
+  async function restoreWith(send) {
+    if (generation() === at || !record || !restorable()) return [];
     const kept = record, begun = epoch;
     record = null;
-    if (!kept) { at = generation(); return []; }
     try {
       const restored = await send("repl-restore", { fresh, record: kept });
       if (begun !== epoch) return [];
@@ -181,13 +186,18 @@ export function recordedSession(request, { fresh = false, generation = () => 0, 
       return [{ kind: "error", text: withCode(error.message) }, { kind: "info", text: restartNote({ replayed: true }) }];
     } finally { if (begun === epoch) at = generation(); }
   }
+  const restore = send => send ? restoreWith(send) : maintain(restoreWith);
+  // A new worker, and nothing recorded to restore on it.
+  const nothingToRestore = () => { if (generation() !== at && !record) at = generation(); };
   return {
     reset() { record = null; at = generation(); epoch++; },
     restore,
     async run(input) {
-      const begun = epoch, due = generation() !== at;
-      if (due && record && !restorable()) throw new Error("Check a proof first.");
-      const restored = due ? await restore() : [];
+      const begun = epoch;
+      nothingToRestore();
+      const restored = generation() !== at ? await restore() : [];
+      // A record the worker could not restore yet waits, and so does the entry.
+      if (generation() !== at && record) throw new Error("Check a proof first.");
       try {
         const answer = await request("repl", { input, fresh, record: true });
         if (begun === epoch) { record = answer.record; at = generation(); }
@@ -202,15 +212,13 @@ export function recordedSession(request, { fresh = false, generation = () => 0, 
 }
 
 // A REPL with its own worker and an empty program, for pages without a proof.
-// The worker starts on first use, and again after a kernel failure stops it.
+// The worker starts on first use, and again after a kernel failure stops it;
+// such a failure begins the next generation.
 export function standaloneRepl() {
   let worker = null, workers = 0;
   const request = (command, args) => {
-    if (!worker) {
-      worker = new WorkerRequests(new Worker(new URL("./cubical-worker.mjs", import.meta.url), { type: "module" }),
-        { onError: error => { if (error.fatal) worker = null; } });
-      workers++;
-    }
+    worker ??= new WorkerRequests(new Worker(new URL("./cubical-worker.mjs", import.meta.url), { type: "module" }),
+      { onError: error => { if (error.fatal) { worker = null; workers++; } } });
     return worker.request(command, args);
   };
   const session = recordedSession(request, { fresh: true, generation: () => workers });

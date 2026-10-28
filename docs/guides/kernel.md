@@ -1095,11 +1095,15 @@ request it held and tells the page. The page starts a new worker and builds
 again, by its usual paths, what it held. The proof page checks the current
 source again, as after a compiler update, or the latest example its
 reference page sent meanwhile, restores its console's session, and reads its
-result, inspector, contexts and generated declarations from that check;
-every other request waits until that is done, so that none runs out its
-deadline behind it. A REPL keeps the record its worker returns with each
-entry (`ReplSession.record`): the statements that extended its session, each
-with the entry `repl_N` it was checked as. On a new worker the record is
+result, inspector, contexts and generated declarations from that check.
+That rebuild, and every restore of a console's session however it starts,
+is maintenance of the worker (`workerMaintenance` in
+`web/worker-maintenance.mjs`): it runs once the requests already sent have
+settled, and every other request waits until it is done and is sent only
+then, so that none runs out its deadline behind it. A REPL keeps the record
+its worker returns with each entry (`ReplSession.record`): the statements
+that extended its session, each with the entry `repl_N` it was checked as.
+On a new worker the record is
 restored (`recordedSession` in `web/repl-console.mjs`): each recorded
 statement is checked again as that entry, and nothing else, so what was
 refused stays refused, and each statement that no longer checks is named.

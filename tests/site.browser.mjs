@@ -266,6 +266,15 @@ export default async options => {
     if (listsHeld) await listsHeld;
     await route.fulfill({ body: lists, contentType: "text/plain" });
   });
+  // The hlevels module, which the proof page's console imports, a stand-in
+  // too (nothing else these pages load imports it): held up while
+  // `hlevelsHeld` is pending, and each request for it announced.
+  let hlevelsHeld = null, hlevelsAsked = () => {};
+  await injected.route("**/hlevels.cubist*", async route => {
+    hlevelsAsked();
+    if (hlevelsHeld) await hlevelsHeld;
+    await route.fulfill({ body: "def lifted : Unit := tt;\n", contentType: "text/plain" });
+  });
   const fault = "E668: The kernel's WebAssembly instance failed (Maximum call stack size exceeded), and is not used again: nothing computed after the failure is kept.";
   const restarted = [fault, "The kernel was restarted. The session's entries were checked again."];
   const entries = async (target, texts) => {
@@ -364,12 +373,12 @@ export default async options => {
   await until("#status", text => text.endsWith("checked · no axioms"));
   await workspace.locator("#collect-contexts").check();
   await until("#context-panel [role=status]", text => text.startsWith("Open a context"));
-  // A statement the session refuses, and an entry of two statements, the
-  // first of which extends the session.
+  // An import, a statement the session refuses, and an entry of two
+  // statements, the first of which extends the session.
   const unknown = "E237: Unknown command /fail-next-kernel-call. /help lists the commands.";
-  assert.deepEqual((await entries(workspace, ["let kept := tt;", "let surprise := added;", "let saved := base; typeof absent;",
-    "/fail-next-kernel-call"])).slice(-5),
-    ["kept : Unit", "E343: Untranslated name: added", "saved : Unit", "E343: Untranslated name: absent", unknown]);
+  assert.deepEqual((await entries(workspace, ["import hlevels;", "let kept := tt;", "let surprise := added;",
+    "let saved := base; typeof absent;", "/fail-next-kernel-call"])).slice(-6),
+    ["Imported hlevels.", "kept : Unit", "E343: Untranslated name: added", "saved : Unit", "E343: Untranslated name: absent", unknown]);
   // The source, edited and not checked: base is gone, and added is there.
   await workspace.locator("#edit-mode").click();
   await workspace.locator("#editor").fill(helped.replace("def base", "def added"));
@@ -426,9 +435,26 @@ export default async options => {
   await workspace.locator("#check").click();
   await until("#source-notice", text => text.startsWith("The kernel's WebAssembly instance failed while checking"));
   assert.deepEqual((await entries(workspace, ["typeof kept;"])).slice(-2), [unknown, "Check a proof first."]);
+  // The next check, and an entry made while it runs: the session is restored
+  // once the check is done, its import held up past the thirty seconds an
+  // inspection has, and the inspection the check asks for waits for the
+  // restore rather than run out its time behind it.
+  let imported;
+  hlevelsHeld = new Promise(resolve => { imported = resolve; });
+  const importing = new Promise(resolve => { hlevelsAsked = resolve; });
   await workspace.locator("#check").click();
   await workspace.waitForFunction(() => document.querySelector("#diagnostic").hidden);
-  assert.deepEqual((await entries(workspace, ["typeof kept;"])).slice(-2), [restarted[1], "Unit"]);
+  await workspace.locator(".repl-text").last().fill("typeof kept;");
+  await workspace.locator(".repl-text").last().press("Enter");
+  await Promise.race([importing, new Promise((_, reject) =>
+    setTimeout(() => reject(new Error("No restore read the import.")), 120000))]);
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  await workspace.clock.runFor(31000);
+  imported();
+  hlevelsHeld = null; hlevelsAsked = () => {};
+  await workspace.waitForFunction(() => !document.querySelector(".repl-form.busy"));
+  assert.deepEqual((await entries(workspace, [])).slice(-2), [restarted[1], "Unit"]);
+  assert.deepEqual((await entries(workspace, ["typeof lifted;"])).slice(-1), ["Unit"]);
   await workspace.close();
   console.log("PASS proof page: after a kernel fails in a check, the console's session waits for the next one");
   // An embedded proof page, a reference page's inspector: its kernel fails

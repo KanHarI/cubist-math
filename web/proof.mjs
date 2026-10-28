@@ -3,6 +3,7 @@ import { cubicalSourceFile } from "./cubical-sources.mjs";
 import { proofCatalog, proofTopics, proofsInTopic } from "./proof-library.mjs";
 import { proofRequestWatchdog } from "./proof-watchdog.mjs";
 import { WorkerRequests } from "./worker-requests.mjs";
+import { workerMaintenance } from "./worker-maintenance.mjs";
 import { renderMathNotation } from "./math-notation.mjs";
 import { axiomLabels } from "./axiom-labels.mjs";
 import { saveWorkbenchTransfer } from "./workbench-transfer.mjs";
@@ -265,17 +266,27 @@ function refreshStatus() {
         ? "Ready to check"
         : "Loading kernel…";
 }
-// While a new worker replaces one that a kernel failure stopped, and the
-// page builds again on it what it held (rebuild), a request waits until that
-// is done, unless it is the rebuild's own (`internal`): so no request's
-// deadline runs while the rebuild's check or restore is ahead of it. When
-// the page stops replacing workers (halted), a request fails at once.
+// The page's maintenance of its worker (worker-maintenance.mjs): the
+// rebuild after a kernel failure (restartAfterFault) and every restore of the
+// console's session (recordedSession). A request waits until no
+// maintenance is under way or asked for, unless it is maintenance's own
+// (`internal`), and is sent only then, its deadline starting as it is sent:
+// so none runs behind a rebuild's check or a restore. When maintenance
+// ends, an example the embedding page sent meanwhile is checked. When the
+// page stops replacing workers (halted), a request fails at once.
 // `replaced` bounds the replacements (restartAfterFault). `checkedBy` is the
-// worker that holds a checked proof, and `checking` settles with the check
-// last sent, for the console (recordedSession).
-let rebuilding = null, halted = null, replaced = false, checkedBy = null, checking = Promise.resolve();
+// worker that holds a checked proof, on which the console can restore.
+let halted = null, replaced = false, checkedBy = null;
+const upkeep = workerMaintenance({ onIdle: () => {
+  refreshStatus();
+  if (ready && queuedExample) runExample(queuedExample);
+} });
 function request(command, args = {}, { internal = false } = {}) {
-  if (rebuilding && !internal) return rebuilding.then(() => request(command, args));
+  const send = () => sendToWorker(command, args);
+  return internal ? upkeep.internal(send) : upkeep.request(send);
+}
+const internal = (command, args) => request(command, args, { internal: true });
+function sendToWorker(command, args) {
   if (!ready) return Promise.reject(halted ?? new Error("The checking worker is unavailable. Reload the page to restart it."));
   const currentWorker = worker;
   const watchdog = proofRequestWatchdog(command, () => {
@@ -289,7 +300,7 @@ function request(command, args = {}, { internal = false } = {}) {
     watchdog.progress(progress);
     checkingProgress(progress);
   });
-  if (command === "check") checking = result.then(() => { checkedBy = currentWorker; }, () => {});
+  if (command === "check") result.then(() => { checkedBy = currentWorker; }, () => {});
   refreshStatus();
   return result.finally(() => { watchdog.stop(); refreshStatus(); });
 }
@@ -305,7 +316,7 @@ function showExample({ source, offset }) {
   focusOffset = Number.isInteger(offset) ? offset : null;
 }
 async function runExample(example) {
-  if (!ready && !halted || rebuilding) { queuedExample = example; return; }
+  if (!ready && !halted || upkeep.busy) { queuedExample = example; return; }
   showExample(example);
   await check();
 }
@@ -1194,7 +1205,7 @@ async function serverVersion() {
   }
 }
 async function refreshCompiler() {
-  if (worker?.pendingCount || !ready || rebuilding) return false;
+  if (worker?.pendingCount || !ready || upkeep.busy) return false;
   const version = await serverVersion();
   if (!version || version === workerVersion) return false;
   ready = false;
@@ -1264,17 +1275,12 @@ function restartAfterFault(error) {
   $("source-notice").textContent = recheck
     ? "The kernel's WebAssembly instance failed, so a new checking worker checks your current source again; edits are preserved."
     : "The kernel's WebAssembly instance failed while checking, so a new checking worker waits for the next check.";
-  // A failure of the new worker's rebuild may start another, which this
-  // one's end must not forget. An example sent meanwhile is checked once the
-  // rebuild is done.
-  const current = startWorker(workerVersion, { onReady: () => rebuild(recheck) }).then(({ started }) => started)
-    .catch(diagnostic).finally(() => {
-      if (rebuilding !== current) return;
-      rebuilding = null;
-      refreshStatus();
-      if (ready && queuedExample) runExample(queuedExample);
-    });
-  rebuilding = current;
+  // The new worker and its rebuild are maintenance, taken up at once: what
+  // is asked from here on waits for them.
+  upkeep.run(async () => {
+    const { started } = await startWorker(workerVersion, { onReady: () => rebuild(recheck) });
+    await started;
+  }).catch(diagnostic);
 }
 // What the page held, built again on a new worker: the source checked again,
 // or the latest example the embedding page sent while the worker started,
@@ -1283,7 +1289,6 @@ function restartAfterFault(error) {
 // inspector's view and the contexts, waits for the rebuild like any other
 // request, so the rebuild's own requests are the check and the restore.
 async function rebuild(recheck) {
-  const internal = (command, args) => request(command, args, { internal: true });
   if (queuedExample) showExample(queuedExample);
   else if (!recheck) return;
   const args = checkArgs(), reply = internal("check", args);
@@ -1313,17 +1318,13 @@ contextual=createContextualConsole($("context-panel"),{request});
 // The console runs over the last checked version of this file. Its session
 // is restored on a worker that replaced one: by the rebuild, or, when the
 // rebuild checked nothing, before its next entry once the new worker has
-// checked the source (recordedSession). An entry waits for any rebuild, and
-// for the check last sent, to finish first.
+// checked the source (recordedSession). Each restore is maintenance, run
+// once the requests already sent, a check among them, have settled.
 const consoleSession = recordedSession(request, { generation: () => workers, restoreAfterFault: false,
-  restorable: () => checkedBy === worker });
+  restorable: () => ready && checkedBy === worker, maintain: work => upkeep.run(() => work(internal)) });
 const replConsole = embedded ? null : createReplConsole($("repl"), {
   label: "Console input: a Cubist term or declaration",
-  run: async input => {
-    while (rebuilding) await rebuilding;
-    await checking;
-    return consoleSession.run(input);
-  },
+  run: consoleSession.run,
   reset: () => { consoleSession.reset(); return request("repl-reset", {}); },
 });
 await startWorker();
