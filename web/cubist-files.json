@@ -2519,8 +2519,12 @@
    "summary": "The continuum hypotheses of [`continuum_hypothesis`](continuum_hypothesis.cubist) as optional assumptions, each for every universe `U < UU0`: `def CH := axiom ContinuumHypothesis;`, `DecidableCH`, `GCH` and `DecidableGCH` likewise. A module states that it may rely on them by importing this one; importing `continuum_hypothesis` alone, for the statements and the conditional proofs, assumes none. Every result lists the ones it relies on."
   },
   {
+   "path": "library/continuum_classical.cubist",
+   "summary": "The decidable continuum hypothesis gives excluded middle at the same universe, `DecidableContinuumHypothesis(U) -> ExcludedMiddle(U)` (`decidable_ch_excluded_middle`), with no assumption and no propositional resizing, and computable; so does the decidable generalized one (`decidable_gch_excluded_middle`). For a set `A` and a proposition `P`, the subsets of `A` that are singletons or for which `P` holds (`SingletonsOrAll`) lie between `A` and its powerset; any cardinality dichotomy between the two decides `P` (`dichotomy_decides`), by Cantor's diagonal argument at either end. Deciding every proposition of `U` gives excluded middle at `U` (`excluded_middle_from_decisions`). It imports [`classical_axioms`](classical_axioms.cubist) for the statement `ExcludedMiddle` alone."
+  },
+  {
    "path": "library/continuum_hypothesis.cubist",
-   "summary": "Universe-indexed CH and GCH over full powersets, with stronger cardinality-dichotomy variants (`DecidableContinuumHypothesis`, `DecidableGeneralizedContinuumHypothesis`); checked implications from each dichotomy to its negative statement and from each GCH to its CH. Infinitude means a mere injection from `Nat`. Generic mere cardinal comparisons, equinumerosity and the separate `CantorContinuumHypothesis` over binary sequences are included. Statements are explicit hypotheses, which this module never assumes; [`continuum_axioms`](continuum_axioms.cubist) assumes four of them. The implications to excluded middle and choice remain follow-ups."
+   "summary": "Universe-indexed CH and GCH over full powersets, with stronger cardinality-dichotomy variants (`DecidableContinuumHypothesis`, `DecidableGeneralizedContinuumHypothesis`); checked implications from each dichotomy to its negative statement and from each GCH to its CH. Infinitude means a mere injection from `Nat`. Generic mere cardinal comparisons, an injection's comparison (`injection_cardinal_le`), equinumerosity and the separate `CantorContinuumHypothesis` over binary sequences are included. Statements are explicit hypotheses, which this module never assumes; [`continuum_axioms`](continuum_axioms.cubist) assumes four of them. The implication to excluded middle is proved in [`continuum_classical`](continuum_classical.cubist); the implication to choice remains a follow-up."
   },
   {
    "path": "library/contractible_maps.cubist",
@@ -2552,7 +2556,7 @@
   },
   {
    "path": "library/hlevels.cubist",
-   "summary": "Contractible types, propositions and sets in every universe below `UU0`, with `HasLevel(U, n, A)` defined by recursion on `n`, so that `IsSet` is level 1 by conversion. Propositions are sets, levels are cumulative, having a level is a proposition, and a retract, such as a type equivalent to another by an inverse, a function type, a type of pairs, a product or a subtype keeps the level of the types it is made from. Contractible types are closed under the same constructions except subtypes, since a subtype can be empty, and being contractible is a proposition. Negations are propositions (`not_is_prop`), and so is the decision of a proposition (`Decidable`, `decision_is_prop`). A type with decidable equality, such as `UNat`, is a set (Hedberg)."
+   "summary": "Contractible types, propositions and sets in every universe below `UU0`, with `HasLevel(U, n, A)` defined by recursion on `n`, so that `IsSet` is level 1 by conversion. Propositions are sets, levels are cumulative, having a level is a proposition, and a retract, such as a type equivalent to another by an inverse, a function type, a type of pairs, a product or a subtype keeps the level of the types it is made from; elements of a subtype with equal first components are equal (`subtype_injective`). Contractible types are closed under the same constructions except subtypes, since a subtype can be empty, and being contractible is a proposition. Negations are propositions (`not_is_prop`), and so is the decision of a proposition (`Decidable`, `decision_is_prop`). A type with decidable equality, such as `UNat`, is a set (Hedberg)."
   },
   {
    "path": "library/integers.cubist",
@@ -2576,7 +2580,7 @@
   },
   {
    "path": "library/powersets.cubist",
-   "summary": "Generic proposition-valued `PowerSet(U, A) : next(U)` and binary `DecidablePowerSet(U, A) : U`, using `Binary` for characteristic functions, with checked setness of both. No identification between full and decidable powersets is assumed."
+   "summary": "Generic proposition-valued `PowerSet(U, A) : next(U)` and binary `DecidablePowerSet(U, A) : U`, using `Binary` for characteristic functions, with checked setness of both. No identification between full and decidable powersets is assumed. The singletons of a set, which determine their elements (`singleton`, `singleton_injective`, `IsSingleton`), and Cantor's diagonal argument: for every `f : A -> PowerSet(U, A)`, the subset of elements outside their own subset is no value of `f` (`diagonal_subset`, `cantor_diagonal`), since no type is equal to its own negation (`not_own_negation`)."
   },
   {
    "path": "library/prime_numbers.cubist",
