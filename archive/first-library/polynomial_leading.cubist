@@ -42,7 +42,7 @@ def convolution_top(K : AlgebraicField, m : UNat) :=
           fun (a : af_carrier(K)) => field_add(
             K, field_mul(K, f(0), a), convolution(K, add_count(k, n), series_tail(K, f), g)
           )
-        ), sg(succ(add_count(k, n)), nat_le_add(k, n))
+        ), sg(succ(add_count(k, n)), unat_le_add(k, n))
       ),
       trans(
         cong(
@@ -104,8 +104,8 @@ def support_product_degrees_step(
         ),
         sg(
           succ(j),
-          nat_le_trans(
-            n, succ(add_count(m, n)), j, nat_le_step(n, add_count(m, n), nat_le_add(m, n)), above
+          unat_le_trans(
+            n, succ(add_count(m, n)), j, unat_le_step(n, add_count(m, n), unat_le_add(m, n)), above
           )
         )
       ),

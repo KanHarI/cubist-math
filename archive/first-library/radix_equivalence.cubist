@@ -17,10 +17,10 @@ def radix_decode_positive(extra : UNat, p : RadixPositive(extra)) :
       fun (
         d : RadixDigit(succ(succ(extra))), q : RadixPositive(extra),
         ih : 1 <= radix_positive_to_nat(extra, q)
-      ) => nat_add_positive(
+      ) => unat_add_positive(
         succ(succ(extra)) * radix_positive_to_nat(extra, q),
         radix_digit_value(succ(succ(extra)), d),
-        nat_add_positive(
+        unat_add_positive(
           radix_positive_to_nat(extra, q),
           radix_positive_to_nat(extra, q) + extra * radix_positive_to_nat(extra, q), ih
         )

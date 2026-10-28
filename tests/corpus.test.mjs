@@ -33,8 +33,8 @@ test("the complete canonical .cubist corpus checks with the sole native kernel",
   // and lists (7), which it imports; hlevels' prop_over_unique (B8 of
   // the rational normalization debugging plan) added 1; and unat's order
   // lemmas and equality decision (NT1 of the archive retirement) added 8
-  // and removed hlevels' decision.
+  // and removed hlevels' decision and primes' 9 copies.
   assert.deepEqual(report.importErrors, []);
-  assert.equal(report.declarations.length, 3865, "The corpus must not silently lose modules.");
+  assert.equal(report.declarations.length, 3856, "The corpus must not silently lose modules.");
   t.diagnostic(JSON.stringify(report.counts));
 });

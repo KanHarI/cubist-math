@@ -1,153 +1,16 @@
 import unat;
 use unat;
 
-// Prime numbers and the order on the natural numbers, over unat's arithmetic.
+// Prime numbers, over unat's arithmetic and order.
 // Every definition below is checked from source. No axioms and no imported
 // instruction snapshots.
 
-def unat_zero_ne_succ(n : UNat, p : (0 = succ(n))) :=
-  path_induction(
-    UNat,
-    (
-      fun (x : UNat) => (
-        fun (y : UNat) => (
-          fun (path_ : (x = y)) => ((fun (n2 : UNat) => induction n2 as k return U0 {
-                zero => Unit;
-                succ h => Void;
-              })(x) -> (fun (n2 : UNat) => induction n2 as k return U0 {
-                zero => Unit;
-                succ h => Void;
-              })(y))
-        )
-      )
-    ), (fun (x : UNat) => (fun (t : (fun (n2 : UNat) => induction n2 as k return U0 {
-              zero => Unit;
-              succ h => Void;
-            })(x)) => t)), 0, succ(n), p
-  )(tt);
-
-def nat_le_zero(n : UNat) := induction n as k return ((k <= 0) -> (k = 0)) {
-    zero => (fun (x : Unit) => refl(0));
-    succ ignored => (fun (h : Void) => typed((succ(k) = 0), absurd(h)));
-  };
-
-def nat_le_step(a : UNat) :=
-  induction a as a2 return (forall c : UNat. ((a2 <= c) -> (a2 <= succ(c)))) {
-    zero => (fun (c : UNat) => (fun (x : Unit) => tt));
-    succ h => (
-      fun (c : UNat) => induction c as k return ((succ(a2) <= k) -> (succ(a2) <= succ(k))) {
-        zero => (fun (v : Void) => typed((succ(a2) <= 1), absurd(v)));
-        succ ignored => (fun (v : (a2 <= k)) => h(k, v));
-      }
-    );
-  };
-
-def nat_le_trans(a : UNat) :=
-  induction a as a2 return (
-    forall c : UNat. (forall d : UNat. ((a2 <= c) -> ((c <= d) -> (a2 <= d))))
-  ) {
-    zero => (fun (c : UNat) => (fun (d : UNat) => (fun (x : Unit) => (fun (x2 : (c <= d)) => tt))));
-    succ h => (
-      fun (c : UNat) => induction c as k return (
-        forall d : UNat. ((succ(a2) <= k) -> ((k <= d) -> (succ(a2) <= d)))
-      ) {
-        zero => (
-          fun (d : UNat) => (
-            fun (v : Void) => (fun (x : Unit) => typed((succ(a2) <= d), absurd(v)))
-          )
-        );
-        succ ignored => (
-          fun (d : UNat) => induction d as k2 return (
-            (a2 <= k) -> ((succ(k) <= k2) -> (succ(a2) <= k2))
-          ) {
-            zero => (fun (x : (a2 <= k)) => (fun (v : Void) => typed((succ(a2) <= 0), absurd(v))));
-            succ ignored2 => (fun (ac : (a2 <= k)) => (fun (cd : (k <= k2)) => h(k, k2, ac, cd)));
-          }
-        );
-      }
-    );
-  };
-
-// Compare two naturals.
-// Either a <= b or b < a, with evidence for the selected case.
-def nat_le_total(a : UNat) :=
-  induction a as a2 return (forall c : UNat. ((a2 <= c) or (succ(c) <= a2))) {
-    zero => (fun (c : UNat) => typed(((0 <= c) or (succ(c) <= 0)), left(tt)));
-    succ h => (
-      fun (c : UNat) => induction c as k return ((succ(a2) <= k) or (succ(k) <= succ(a2))) {
-        zero => typed(((succ(a2) <= 0) or (1 <= succ(a2))), right(tt));
-        succ ignored => h(k);
-      }
-    );
-  };
-
-def nat_le_succ_split(a : UNat) :=
-  induction a as a2 return (forall c : UNat. ((a2 <= succ(c)) -> ((a2 <= c) or (a2 = succ(c))))) {
-    zero => (fun (c : UNat) => (fun (x : Unit) => typed(((0 <= c) or (0 = succ(c))), left(tt))));
-    succ h => (
-      fun (c : UNat) => induction c as k return (
-        (succ(a2) <= succ(k)) -> ((succ(a2) <= k) or (succ(a2) = succ(k)))
-      ) {
-        zero => (
-          fun (v : (a2 <= 0)) => typed(
-            ((succ(a2) <= 0) or (succ(a2) = 1)),
-            right(cong((fun (n : UNat) => succ(n)), nat_le_zero(a2, v)))
-          )
-        );
-        succ ignored => (
-          fun (v : (a2 <= succ(k))) => match h(k, v) return (
-            (succ(a2) <= succ(k)) or (succ(a2) = succ(succ(k)))
-          ) {
-            left ac => typed(((succ(a2) <= succ(k)) or (succ(a2) = succ(succ(k)))), left(ac));
-            right ac => typed(
-              ((succ(a2) <= succ(k)) or (succ(a2) = succ(succ(k)))),
-              right(cong((fun (n : UNat) => succ(n)), ac))
-            );
-          }
-        );
-      }
-    );
-  };
-
-def nat_le_add(a : UNat) := induction a as a2 return (forall c : UNat. (c <= (a2 + c))) {
-    zero => (fun (c : UNat) => unat_le_refl(c));
-    succ h => (fun (c : UNat) => nat_le_step(c, (a2 + c), h(c)));
-  };
-
-def nat_eq_decidable(a : UNat) :=
-  induction a as a2 return (forall c : UNat. ((a2 = c) or ((a2 = c) -> Void))) {
-    zero => (fun (c : UNat) => induction c as k return ((0 = k) or ((0 = k) -> Void)) {
-        zero => typed(((0 = 0) or ((0 = 0) -> Void)), left(refl(0)));
-        succ ignored => typed(
-          ((0 = succ(k)) or ((0 = succ(k)) -> Void)), right(unat_zero_ne_succ(k))
-        );
-      });
-    succ h => (
-      fun (c : UNat) => induction c as k return ((succ(a2) = k) or ((succ(a2) = k) -> Void)) {
-        zero => typed(
-          ((succ(a2) = 0) or ((succ(a2) = 0) -> Void)),
-          right((fun (p : (succ(a2) = 0)) => unat_zero_ne_succ(a2, sym(p))))
-        );
-        succ ignored => match h(k) return ((succ(a2) = succ(k)) or ((succ(a2) = succ(k)) -> Void)) {
-          left p => typed(
-            ((succ(a2) = succ(k)) or ((succ(a2) = succ(k)) -> Void)),
-            left(cong((fun (n : UNat) => succ(n)), p))
-          );
-          right np => typed(
-            ((succ(a2) = succ(k)) or ((succ(a2) = succ(k)) -> Void)),
-            right((fun (p : (succ(a2) = succ(k))) => np(unat_succ_injective(a2, k, p))))
-          );
-        };
-      }
-    );
-  };
-
 def nat_quotient_bound(d, q : UNat) := induction q as q2 return (q2 <= (q2 * succ(succ(d)))) {
     zero => tt;
-    succ h => nat_le_trans(
+    succ h => unat_le_trans(
       q2, (q2 * succ(succ(d))), succ((d + (q2 * succ(succ(d))))), h,
-      nat_le_step(
-        (q2 * succ(succ(d))), (d + (q2 * succ(succ(d)))), nat_le_add(d, (q2 * succ(succ(d))))
+      unat_le_step(
+        (q2 * succ(succ(d))), (d + (q2 * succ(succ(d)))), unat_le_add(d, (q2 * succ(succ(d))))
       )
     );
   };
@@ -221,7 +84,7 @@ def bounded_least_search(
                       fun (x : UNat) => (
                         fun (y : UNat) => (fun (path_ : (x = y)) => (P(x) -> P(y)))
                       )
-                    ), (fun (x : UNat) => (fun (t : P(x)) => t)), j, 0, nat_le_zero(j, bound)
+                    ), (fun (x : UNat) => (fun (t : P(x)) => t)), j, 0, unat_le_zero(j, bound)
                   )(p)
                 )
               )
@@ -287,7 +150,7 @@ def bounded_least_search(
                         and (P(i) and (forall j : UNat. ((succ(j) <= i) -> (P(j) -> Void))))
                       ),
                       (
-                        nat_le_step(i, n2, bound),
+                        unat_le_step(i, n2, bound),
                         typed(
                           (P(i) and (forall j : UNat. ((succ(j) <= i) -> (P(j) -> Void)))),
                           (proof, minimal)
@@ -355,7 +218,7 @@ def bounded_least_search(
             (
               fun (j : UNat) => (
                 fun (bound : (j <= succ(n2))) => (
-                  fun (p : P(j)) => match nat_le_succ_split(j, n2, bound) return Void {
+                  fun (p : P(j)) => match unat_le_succ_split(j, n2, bound) return Void {
                     left small => oldNone(j, small, p);
                     right same => np(
                       path_induction(
@@ -399,7 +262,7 @@ def Divides(d, n : UNat) := (exists q : UNat. ((q * d) = n));
 def nontrivial_divisibility_decidable(d, n : UNat) :=
   match bounded_least_search(
     (fun (q : UNat) => ((q * succ(succ(d))) = n)),
-    (fun (q : UNat) => nat_eq_decidable((q * succ(succ(d))), n)), n
+    (fun (q : UNat) => unat_decide((q * succ(succ(d))), n)), n
   ) return (Divides(succ(succ(d)), n) or (Divides(succ(succ(d)), n) -> Void)) {
     left witness_ => unpack witness_ as (i, data) return (
       Divides(succ(succ(d)), n) or (Divides(succ(succ(d)), n) -> Void)
@@ -500,17 +363,11 @@ def factorial(n : UNat) := induction n as k return UNat {
     succ h => (succ(k) * h);
   };
 
-def nat_add_positive(x : UNat) :=
-  induction x as k return (forall y : UNat. ((1 <= k) -> (1 <= (k + y)))) {
-    zero => (fun (y : UNat) => (fun (v : Void) => typed((1 <= y), absurd(v))));
-    succ ignored => (fun (y : UNat) => (fun (x2 : Unit) => tt));
-  };
-
 // Positive factorial.
 // Every factorial is at least one.
 def factorial_positive(n : UNat) := induction n as n2 return (1 <= factorial(n2)) {
     zero => tt;
-    succ h => nat_add_positive(factorial(n2), (n2 * factorial(n2)), h);
+    succ h => unat_add_positive(factorial(n2), (n2 * factorial(n2)), h);
   };
 
 // Divisor of a factorial.
@@ -519,9 +376,9 @@ def bounded_divisor_of_factorial(d, n : UNat) :=
   induction n as n2 return ((succ(succ(d)) <= n2) -> Divides(succ(succ(d)), factorial(n2))) {
     zero => (fun (v : Void) => typed(Divides(succ(succ(d)), 1), absurd(v)));
     succ ih => (
-      fun (bound : (succ(succ(d)) <= succ(n2))) => match nat_le_succ_split(succ(succ(d)), n2, bound) return Divides(
-        succ(succ(d)), factorial(succ(n2))
-      ) {
+      fun (bound : (succ(succ(d)) <= succ(n2))) => match unat_le_succ_split(
+        succ(succ(d)), n2, bound
+      ) return Divides(succ(succ(d)), factorial(succ(n2))) {
         left small => divides_transitive(
           succ(succ(d)), factorial(n2), factorial(succ(n2)), ih(small),
           typed(Divides(factorial(n2), factorial(succ(n2))), (succ(n2), refl(factorial(succ(n2)))))
