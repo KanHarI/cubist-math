@@ -17,12 +17,17 @@ export function applyKernelReplayPolicy(kernel,policy,{resetDeadline=true}={}) {
   if(resetDeadline)kernel.setDeadline(policy.deadlineDuration);
 }
 
+// Each module's provenance is recorded with its text: whether the check
+// authenticated it, and every module it imports, as library/ holds it
+// (CubicalProgram.discover). A replay reads no files, so it cannot
+// authenticate them again, and its reader answers from the record.
 export class ReplayInputs {
   #events=[];
   constructor({revision,main,prepared,readSource,fuelLimits,kernel,collectReferences,testMode=false}) {
     this.revision=revision;this.main=main;
     this.modules=Object.freeze(Object.fromEntries([...prepared].map(([name,entry])=>[name,Object.freeze({
       text:entry.text??null,error:entry.error?.message??null,nameBased:!!readSource.nameBased?.(name),
+      library:entry.library===true,
     })])));
     this.fuelLimits=Object.freeze(Object.fromEntries(Object.entries(fuelLimits).map(([kind,limits])=>
       [kind,limits?Object.freeze({...limits}):undefined])));
@@ -55,6 +60,7 @@ export function replayReader(snapshot) {
     return entry.text;
   };
   read.nameBased=name=>get(name).nameBased;
+  read.fromLibrary=async(name,text)=>get(name).library&&get(name).text===text;
   // A refusal of the root's imports must also survive, although its text
   // is supplied directly to check() rather than read through this function.
   read.checkImports=name=>get(name).error;

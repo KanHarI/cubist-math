@@ -504,9 +504,11 @@ function diagnosticLocations(target, diagnostic) {
   }
 }
 
+// An assumption as the check published it (CubicalProgram.assumptionSymbols):
+// its label, and the site of the axiom definition it was recorded from.
 function axiomInfo(binding) {
   return decorate({ binding, name: last.assumptionLabels?.[binding] ?? binding, role: "explicit axiom",
-    ...[...last.outputs, ...last.imports].find(o => o.binding === binding),
+    ...(last.symbols ?? []).find(o => o.binding === binding),
   });
 }
 // A diagnostic's code, linked to its entry in the errors chapter, and the
@@ -544,7 +546,7 @@ function renderAxioms(target, axioms, extensions = []) {
     button.className = "reference";
     button.dataset.axiom = binding;
     button.textContent = last.assumptionLabels?.[binding] ?? axiomLabels[binding] ?? binding;
-    button.title = `Inspect ${binding} and its declared type`;
+    button.title = `Inspect ${button.textContent} and its declared type`;
     button.onclick = () => inspect(axiomInfo(binding));
     target.append(button);
   }

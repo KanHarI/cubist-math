@@ -98,6 +98,15 @@ await browserTest(async ({ browser, base }) => {
   assert.deepEqual(await inspector.locator("#inspect-constructors li code").allTextContents(), ["zero : UNat", "succ : UNat -> UNat"]);
   assert.match(await page.locator(".drawer-head a").getAttribute("href"), /proof\.html\?proof=unat&name=UNat$/);
   console.log("PASS reference excerpts: checked with their module, linked names, the module's workspace link");
+  // A print is reported with the assumptions its term relies on (#317's
+  // review round 2, finding 4).
+  await page.goto(new URL("reference/assumptions.html", base).href);
+  const printed = page.locator('pre > code[data-check="accept"]', { hasText: "print(inspect(LEM(U0)));" });
+  await printed.scrollIntoViewIfNeeded();
+  const printedBar = printed.locator("xpath=../following-sibling::div[contains(@class, 'example-bar')][1]").locator("span").first();
+  await printedBar.filter({ hasText: "print inspect" }).waitFor();
+  assert.match(await printedBar.textContent(), /print inspect at line 3: LEM\(U0\), assumes LEM$/);
+  console.log("PASS reference prints: each with the assumptions its term relies on");
   // The reference's REPL bar opens and closes.
   const dockToggle = page.locator(".repl-dock-toggle");
   await dockToggle.click();
@@ -142,6 +151,24 @@ await browserTest(async ({ browser, base }) => {
   await enter("y");
   assert.deepEqual(await lastResults(3), ["forall x : UNat. forall y : UNat. x + y = y + x", "y : UNat", "5"]);
   console.log("PASS library module in the workspace, with its console");
+  // Every link to an axiom shows its definition's source: the axioms a
+  // result relies on, and the inspector's axiom lists (#317's review round
+  // 6, finding 3).
+  await page.goto(new URL("proof.html?proof=h1_classical", base).href);
+  const axiomSource = async button => {
+    await button.click();
+    await page.locator("#inspect-name").filter({ hasText: /^LEM$/ }).waitFor();
+    await page.locator("#view-source:not([hidden])").waitFor();
+    assert.match(await page.locator("#view-source").getAttribute("href"), /^proof\.html\?proof=classical_axioms&name=LEM&offset=\d+$/);
+  };
+  await axiomSource(page.locator("#result .axiom-dependencies button", { hasText: /^LEM$/ }).first());
+  const userOfLEM = page.locator("#result > div", { has: page.locator(".axiom-dependencies button", { hasText: /^LEM$/ }) }).first().locator("button").first();
+  for (const list of ["#inspect-axioms", "#kernel-axioms-list"]) {
+    await userOfLEM.click();
+    await page.locator(`${list} button`, { hasText: /^LEM$/ }).waitFor();
+    await axiomSource(page.locator(`${list} button`, { hasText: /^LEM$/ }));
+  }
+  console.log("PASS axiom links show their definitions' source");
   await page.goto(new URL("repl.html", base).href);
   for (const text of ["import unat;", "use unat;", "let x := 7;", "typeof x;", "evaluate x;", "def wrong : x = 8 {\n  exact refl(7);\n}"]) await enter(text);
   assert.deepEqual(await lastResults(4), ["x : UNat", "UNat", "7", "E606: Type mismatch: found 7 = 7, expected x = 8."]);
@@ -165,33 +192,45 @@ await browserTest(async ({ browser, base }) => {
   console.log("PASS REPL page: the kernel's recursion guard in the worker, and the worker after it");
   // A kernel instance that fails, as when the engine's own stack runs out
   // inside it, is never entered again: the worker replaces it, says so, and
-  // checks the session's entries again on the new one. The failure is
-  // injected: the first folded normal form (evaluate !!) throws the engine's
-  // RangeError out of the kernel's export.
+  // checks the session's entries again on the new one. The failures are
+  // injected as the engine's RangeError out of the kernel's exports, once
+  // each: the first export a runtime value form's snapshot calls
+  // (cubical-runtime.mjs), then the first folded normal form (evaluate !!).
   const injected = await browser.newContext();
-  await injected.route("**/dist/cubical.mjs*", async route => {
-    const response = await route.fetch(), body = await response.text();
-    assert.match(body, /export default Module;\s*$/);
-    await route.fulfill({ response, body: body.replace(/export default Module;\s*$/, `let injected = false;
-export default async options => {
-  const module = await Module(options), normalize = module._cb_normalize_folded;
-  module._cb_normalize_folded = (...args) => {
-    if (!injected) { injected = true; throw new RangeError("Maximum call stack size exceeded"); }
-    return normalize(...args);
-  };
-  return module;
-};`) });
+  const inject = (pattern, edit) => injected.route(pattern, async route => {
+    const response = await route.fetch(), body = await response.text(), edited = edit(body);
+    assert.notEqual(edited, body, pattern);
+    await route.fulfill({ response, body: edited });
   });
+  // The runtime's snapshot arms the next export call to fail, once.
+  await inject("**/cubical-runtime.mjs*", body => body.replace("function snapshot(kernel, judgement, budget) {",
+    "$& globalThis.armKernelFault?.();"));
+  await inject("**/dist/cubical.mjs*", body => body.replace(/export default Module;\s*$/, `let armed = false, snapshots = 0, normals = 0;
+globalThis.armKernelFault = () => { if (!snapshots++) armed = true; };
+const overflow = () => { throw new RangeError("Maximum call stack size exceeded"); };
+export default async options => {
+  const module = await Module(options);
+  for (const name of Object.keys(module).filter(name => name.startsWith("_cb_"))) {
+    const call = module[name];
+    module[name] = (...args) => {
+      if (armed) { armed = false; overflow(); }
+      if (name === "_cb_normalize_folded" && !normals++) overflow();
+      return call(...args);
+    };
+  }
+  return module;
+};`));
   const faulty = await injected.newPage();
   await faulty.goto(new URL("repl.html", base).href);
-  for (const text of ["import unat;", "use unat;", "let x := 7;", "evaluate !!x;", "evaluate x + 1;", "typeof x;"]) {
+  for (const text of ["import unat;", "use unat;", "let x := 7;", "evaluate x + 1;", "evaluate !!x;", "evaluate x + 1;", "typeof x;"]) {
     await faulty.locator(".repl-text").last().fill(text);
     await faulty.locator(".repl-text").last().press("Enter");
     await faulty.waitForFunction(() => !document.querySelector(".repl-form.busy"));
   }
-  assert.deepEqual((await faulty.locator(".repl-log").last().locator(".repl-result").allTextContents()).slice(-4), [
-    "E666: The kernel's WebAssembly instance failed (Maximum call stack size exceeded), and is not used again: nothing computed after the failure is kept.",
-    "The kernel was restarted, and the session's entries were checked again.", "8", "UNat"]);
+  const faultLines = ["E668: The kernel's WebAssembly instance failed (Maximum call stack size exceeded), and is not used again: nothing computed after the failure is kept.",
+    "The kernel was restarted, and the session's entries were checked again."];
+  assert.deepEqual((await faulty.locator(".repl-log").last().locator(".repl-result").allTextContents()).slice(-6),
+    [...faultLines, ...faultLines, "8", "UNat"]);
   await injected.close();
   console.log("PASS REPL page: a failed kernel instance is replaced, and the session goes on");
   // Slash commands: /modules lists what import can load; /clear and /restart

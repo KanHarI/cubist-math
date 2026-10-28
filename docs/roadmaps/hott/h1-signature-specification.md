@@ -1460,12 +1460,13 @@ inductive Quotient(U, V < UU0, A : U, R : A -> A -> V) : set {
    [removal plan](h1-truncation-migration.md#removing-the-legacy-assumptions).
 5. **`LEM` and `Choice` are restated over `Trunc`** when the rebuilt library
    adopts it. They remain non-computing assumptions. Under the removal plan
-   of 2026-10-20, revised on 2026-10-21, they become definitions
+   of 2026-10-20, revised on 2026-10-21, they became definitions
    `def LEM := axiom ExcludedMiddle;` and `def Choice := axiom AxiomOfChoice;`
    in `library/classical_axioms.cubist`, reusing its types restated over
-   `Trunc`. The axiom closes the type family's universe and ordinary
-   parameters uniformly; the builtin signatures, with or without a truncation
-   former, go with the legacy truncation.
+   `Trunc` (K2.5 step 1, 2026-10-26). The axiom closes the type family's
+   universe and ordinary parameters uniformly. The builtin signatures with a
+   truncation former are retired; those without one, labelled
+   `LEM[Truncate]` and `Choice[Truncate]`, go with the legacy truncation.
 6. **The ordinary migration check stays strict.** Intentional changes of
    public universes, hypotheses or assumption lists are allowed only through
    the ledger of 8.5. The new axiom transition retires affected historical
@@ -1583,10 +1584,11 @@ local experiment; the archive is unchanged.
   fails, as today.
 - Removing `Truncate`, `TruncateIntro`, `TruncateProp` and `TruncateElim`
   from a declaration's dependencies is recorded, not assumed: the verifier
-  checks the actual delta. A rebuilt LEM or Choice over a checked admitted
-  truncation has a distinct label; replacement of its legacy signature is
-  pinned explicitly, rather than listed as retention or as an arbitrary new
-  assumption. Every local definition named in a ledgered public type must
+  checks the actual delta. The library's axioms `LEM` and `Choice` have
+  labels distinct from the legacy `LEM[Truncate]` and `Choice[Truncate]`
+  (until K2.5 step 1, a rebuilt signature over a checked admitted truncation
+  had its own); replacement of a legacy signature is pinned explicitly,
+  rather than listed as retention or as an arbitrary new assumption. Every local definition named in a ledgered public type must
   be identical or ledgered and inside the comparison scope. Value pins close
   over the meanings of other helpers, even when their names stay folded.
 - The legacy assumptions are removed from `web/cubical-assumptions.mjs` only

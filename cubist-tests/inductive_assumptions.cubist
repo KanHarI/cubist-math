@@ -30,10 +30,13 @@ inductive InArgument {
   a(t : Truncate(U0, UNat));
 }
 
-// Error: E507: d's argument t uses the assumption Truncate: a declared type's parameters and
+// Two uses of excluded middle, which are equal.
+def Settled(A : U0, nn : (A -> Void) -> Void) := LEM(U0, A, nn) = LEM(U0, A, nn);
+
+// Error: E507: d's argument t uses the assumption LEM: a declared type's parameters and
 //   constructors cannot use assumptions, since its signature is closed.
 inductive InDefinition {
-  d(t : ExcludedMiddle(U0));
+  d(t : Settled(Unit, fun (k : Unit -> Void) => k(tt)));
 }
 
 // Error: E507: r's type uses the assumption Truncate: a declared type's parameters and constructors

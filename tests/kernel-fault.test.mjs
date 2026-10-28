@@ -12,6 +12,9 @@ import { fileURLToPath } from "node:url";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalKernel, KernelFault, moduleFault } from "../web/cubical-kernel.mjs";
 import { InstructionGraph } from "../web/cubical-instructions.mjs";
+import { CubicalProgram } from "../web/cubical-program.mjs";
+import { ReplSession } from "../web/repl-session.mjs";
+import { sourceReader } from "../tools/module-sources.mjs";
 
 // Unit eliminations nested through definitions: a head query recurses once
 // a level, so near the end of the engine's stack it overflows inside the
@@ -60,6 +63,42 @@ test("an engine error out of an export ends the instance: no later call enters i
   fresh.dispose();
 });
 
+// A REPL value form computes in the runtime (web/cubical-runtime.mjs), whose
+// snapshot reads the checked term from the kernel. An engine error out of
+// one of those reads ends the entry at that statement, as anywhere else, and
+// a session rebased on a new instance replays the entries that extended it.
+// The error is injected beneath the guard, as the engine's RangeError, at
+// the first export the snapshot calls.
+const stackOf = () => {
+  const limit = Error.stackTraceLimit;
+  Error.stackTraceLimit = 100;
+  try { return new Error().stack; } finally { Error.stackTraceLimit = limit; }
+};
+test("a failure in a runtime value form's kernel reads ends the entry, and a rebased session goes on", async () => {
+  const module = await createCubical();
+  let armed = false, injectedIn = null;
+  for (const name of Object.keys(module).filter(name => name.startsWith("_cb_"))) {
+    const call = module[name];
+    module[name] = (...args) => {
+      if (armed && /\bat snapshot\b/.test(stackOf())) {
+        armed = false; injectedIn = name;
+        throw new RangeError("Maximum call stack size exceeded");
+      }
+      return call(...args);
+    };
+  }
+  const session = new ReplSession(new CubicalProgram(module, sourceReader(), { collectReferences: false }));
+  await session.run("import unat; use unat; let x := 7;");
+  armed = true;
+  assert.deepEqual(await session.run("evaluate x + 1; let y := 2;"), [{ kind: "error", text: "E668: The kernel's WebAssembly "
+    + "instance failed (Maximum call stack size exceeded), and is not used again: nothing computed after the failure is kept." }]);
+  assert.ok(injectedIn && session.faulted && moduleFault(module));
+  const rebased = await session.rebase(new CubicalProgram(await createCubical(), sourceReader(), { collectReferences: false }));
+  assert.deepEqual(await rebased.run("evaluate x + 1; typeof x; typeof y;"),
+    [{ kind: "value", text: "8" }, { kind: "type", text: "UNat" }, { kind: "error", text: "E343: Untranslated name: y" }]);
+  assert.equal(rebased.faulted, false);
+});
+
 // The engine's stack is made smaller than the kernel's recursion guard
 // assumes (--stack-size), so nested eliminators overflow it inside the
 // instance: a genuine engine error, in a REPL entry over a checked file.
@@ -79,7 +118,7 @@ def parity(n : UNat) : Lamp := match n { zero => dark; succ(m) => toggle(parity(
     "def again : bright = lit := refl(lit);", "evaluate toggle(bright);", "quit"].join("\n") + "\n";
   const run = spawnSync(process.execPath, ["--stack-size=350", cli], { cwd: directory, input, encoding: "utf8", timeout: 120000 });
   assert.equal(run.status, 0, run.stderr);
-  assert.match(run.stderr, /^E666: The kernel's WebAssembly instance failed \(Maximum call stack size exceeded\), and is not used again: nothing computed after the failure is kept\.$/m);
+  assert.match(run.stderr, /^E668: The kernel's WebAssembly instance failed \(Maximum call stack size exceeded\), and is not used again: nothing computed after the failure is kept\.$/m);
   assert.match(run.stderr, /^The kernel was restarted: the last source checked, and the session's entries, were checked again\.$/m);
   assert.doesNotMatch(run.stdout + run.stderr, /deep :|unchecked/);
   assert.match(run.stdout, /^bright : Lamp\n[\s\S]*^again : bright = lit\ndark$/m);

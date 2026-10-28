@@ -1,8 +1,13 @@
 import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
+import { CubicalProgram } from "../web/cubical-program.mjs";
 import { WorkbenchSession } from "../web/cubical-workbench-session.mjs";
+import { libraryProvenance } from "../web/module-resolution.mjs";
+import { moduleListing } from "../web/module-listing.mjs";
+import { sourceReader } from "../tools/module-sources.mjs";
 import { traceSnapshot } from "../web/cubical-workbench-trace.mjs";
 
 const module = await createCubical();
@@ -172,4 +177,67 @@ test("workbench normalization keeps a named function folded and checks the resul
   assert.equal(next.view.expression.first.tag, "DefRef");
   assert.equal(next.view.expression.second.tag, "Point");
   assert.equal(session.program.checker.driver.graph.judgement(next.checked.judgement).kind, "typing");
+});
+
+// A transfer's sources are text no reader placed: the workbench asks which
+// are the library's, as library/ holds them, so a library axiom keeps its
+// bare name, and an edited import, or no way to ask, leaves it qualified
+// (#317's review round 3, finding 4).
+test("a transfer keeps the library's labels only for the library's own text", async t => {
+  const program = new CubicalProgram(module, sourceReader(), { collectReferences: false });
+  t.after(() => program.dispose());
+  await program.check("import classical_axioms;\ndef excluded : ExcludedMiddle(U0) := LEM(U0);", "workbench");
+  const exported = program.export("workbench__excluded");
+  const fromLibrary = libraryProvenance(moduleListing, path => readFile(new URL(`../${path}`, import.meta.url), "utf8"));
+  const label = async (sources, options) => {
+    const session = new WorkbenchSession(module, options);
+    t.after(() => session.dispose());
+    const loaded = await session.load({ ...exported, sources });
+    return Object.values(loaded.view.symbols).filter(symbol => symbol.kind === "axiom").map(symbol => symbol.name).sort();
+  };
+  assert.deepEqual(await label(exported.sources, { fromLibrary }), ["Choice", "LEM"]);
+  assert.deepEqual(await label(exported.sources, {}), ["classical_axioms::Choice", "classical_axioms::LEM"]);
+  const edited = { ...exported.sources, h1_truncation: `${exported.sources.h1_truncation}\ndef extra := tt;\n` };
+  assert.deepEqual(await label(edited, { fromLibrary }), ["classical_axioms::Choice", "classical_axioms::LEM"]);
+});
+
+// Provenance only names axioms: a transfer whose library text cannot be
+// fetched keeps its own sources, with qualified labels, and loads the term
+// that was checked, over classical_axioms's LEM; one that does not replay
+// completely, which would load another term, is refused (#317's review
+// round 4, finding 1).
+test("a transfer whose provenance cannot be read keeps its sources, and an incomplete one is refused", async t => {
+  const program = new CubicalProgram(module, sourceReader(), { collectReferences: false });
+  t.after(() => program.dispose());
+  await program.check("import classical_axioms;\ndef e := LEM(U0);", "workbench");
+  const exported = program.export("workbench__e");
+  const offline = () => Promise.reject(new Error("offline"));
+  for (const fromLibrary of [libraryProvenance(moduleListing, offline), offline]) {
+    const session = new WorkbenchSession(module, { fromLibrary });
+    t.after(() => session.dispose());
+    const loaded = await session.load(exported);
+    assert.deepEqual(loaded.view.axioms.map(name => loaded.view.symbols[name].name), ["classical_axioms::LEM"]);
+  }
+  const session = new WorkbenchSession(module);
+  t.after(() => session.dispose());
+  const { h1_truncation, ...missing } = exported.sources;
+  assert.equal(typeof h1_truncation, "string");
+  await assert.rejects(session.load({ ...exported, sources: missing }), /did not replay completely/);
+});
+
+// Complete means every declaration of every module checks, an import's as
+// the main module's: a transfer whose import fails a declaration is
+// refused, though the declarations it uses check (#317's review round 5,
+// finding 2).
+test("a transfer whose import fails a declaration is refused", async t => {
+  const dep = "def kept := tt;\n";
+  const program = new CubicalProgram(module, async name => name === "dep" ? dep : null, { collectReferences: false });
+  t.after(() => program.dispose());
+  await program.check("import dep;\ndef use_ := kept;", "workbench");
+  const exported = program.export("workbench__use_");
+  const session = new WorkbenchSession(module);
+  t.after(() => session.dispose());
+  await assert.rejects(session.load({ ...exported, sources: { dep: `def bad : Void := tt;\n${dep}` } }),
+    /did not replay completely: Type mismatch/);
+  assert.equal((await session.load(exported)).view.type.tag, "Unit");
 });

@@ -41,6 +41,42 @@ test("statements end at ; outside brackets, and a block declaration at its brace
     ["def t : compose j in U0 from Unit {} {\n  exact tt;\n}"]);
 });
 
+// A definition is shown with every assumption it relies on: an axiom of the
+// session, one imported, or one reached through earlier entries.
+test("a definition that relies on assumptions is shown with every one of them", async t => {
+  const repl = await session(t);
+  assert.deepEqual(texts(await repl.run("import classical_axioms;")), ["info: Imported classical_axioms."]);
+  assert.deepEqual(texts(await repl.run("def Pointed := axiom Unit;")),
+    ["defined: Pointed : Unit", "info: Pointed assumes repl_2::Pointed"]);
+  assert.deepEqual(texts(await repl.run("let both : ExcludedMiddle(U0) and Unit := (LEM(U0), Pointed);")),
+    ["defined: both : ExcludedMiddle(U0) and Unit", "info: both assumes LEM, repl_2::Pointed"]);
+  assert.deepEqual(texts(await repl.run("let again := both;")),
+    ["defined: again : ExcludedMiddle(U0) and Unit", "info: again assumes LEM, repl_2::Pointed"]);
+  assert.deepEqual(texts(await repl.run("let plain := tt;")), ["defined: plain : Unit"]);
+});
+
+// Every result is shown with the assumptions it relies on, whichever entry
+// asks: typeof, a print of a type or an inspection, a print in a declaring
+// entry; a result that relies on none says nothing more, and evaluation
+// refuses an assumption (#317's review round 2, finding 4).
+test("every result that relies on assumptions is shown with them, and one that relies on none is quiet", async t => {
+  const repl = await session(t);
+  await repl.run("import classical_axioms;");
+  await repl.run("def Pointed := axiom Unit;");
+  await repl.run("let both : ExcludedMiddle(U0) and Unit := (LEM(U0), Pointed);");
+  assert.deepEqual(texts(await repl.run("typeof both;")),
+    ["type: ExcludedMiddle(U0) and Unit", "info: assumes LEM, repl_2::Pointed"]);
+  assert.deepEqual(texts(await repl.run("print(typeof(Pointed));")), ["value: Unit", "info: assumes repl_2::Pointed"]);
+  assert.deepEqual(texts(await repl.run("print(inspect(Pointed));")).at(-1), "info: assumes repl_2::Pointed");
+  assert.deepEqual(texts(await repl.run("def shown := tt;\nprint(typeof(both));")).slice(1),
+    ["value: ExcludedMiddle(U0) and Unit", "info: assumes LEM, repl_2::Pointed"]);
+  assert.match(texts(await repl.run("evaluate Pointed;"))[0], /^error: /);
+  assert.deepEqual(texts(await repl.run("typeof tt;")), ["type: Unit"]);
+  assert.deepEqual(texts(await repl.run("print(typeof(tt));")), ["value: Unit"]);
+  assert.deepEqual(texts(await repl.run("print(inspect(tt));")), ["value: ⋆"]);
+  assert.deepEqual(texts(await repl.run("evaluate tt;")), ["value: tt"]);
+});
+
 test("let binds, typeof shows the type, and evaluate the value", async t => {
   const repl = await session(t);
   assert.deepEqual(texts(await repl.run("import unat;")), ["info: Imported unat."]);
@@ -112,7 +148,7 @@ test("plain evaluation preserves selected notation and non-computing assumption 
   await repl.run("import classical;");
   const previous = repl.previous, accepted = [...repl.accepted];
   assert.deepEqual(texts(await repl.run("evaluate double_negation;")), [
-    "error: E324: The evaluated term depends on non-computing assumptions: LEM, Truncate, TruncateElim. Path to LEM: double_negation (classical) → LEM.",
+    "error: E324: The evaluated term depends on non-computing assumptions: LEM[Truncate], Truncate, TruncateElim. Path to LEM[Truncate]: double_negation (classical) → LEM[Truncate].",
   ]);
   assert.equal(repl.previous, previous);
   assert.deepEqual(repl.accepted, accepted);

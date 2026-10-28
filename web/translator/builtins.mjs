@@ -90,24 +90,18 @@ function ua({t,builtin,n,scope,tr,inferred}) {
   return fn;
 }
 
+// The archive's legacy assumptions over Truncate. LEM and Choice reach this
+// only where nothing binds them: the library's classical_axioms declares
+// both, over Trunc, and an import of it shadows these.
 function Truncate({t,builtin,n,scope,tr,inferred}) {
   if(!n.args.length)throw Error(`${builtin} needs a universe argument.`);
-  let start=0, truncateFormer=null;
-  // Rebuilt classical assumptions explicitly name their declared
-  // truncation: LEM(Trunc, U, ...), Choice(Trunc, U, ...). The old
-  // LEM(U, ...) and Choice(U, ...) signatures remain available.
-  let universe=tr(n.args[0],null);
-  if(["LEM","Choice"].includes(builtin) && universe.tag!=="U") {
-    truncateFormer=universe; start=1;
-    if(n.args.length<2)throw Error(`${builtin} with a truncation former needs a universe argument.`);
-    universe=tr(n.args[1],null);
-  }
+  const universe=tr(n.args[0],null);
   if(universe.tag!=="U"||!t.checker.assume)throw Error("Logical assumptions require a universe and an explicit native context.");
   scope.spend("queries");
   // One generic assumption each, for the universes below UU0.
   if(!finiteLevel(universe.level))throw scope.unit.locate(Error(`${builtin} holds only for universes below UU0.`),n.args[0]);
-  let fn=T.levelApply(libraryAssumption(t.checker,builtin,scope.context,truncateFormer),universe.level);
-  for(const arg of n.args.slice(start+1)) {
+  let fn=T.levelApply(libraryAssumption(t.checker,builtin),universe.level);
+  for(const arg of n.args.slice(1)) {
     const type=scope.nf(inferred(fn).type);
     if(type.tag!=="Pi")throw Error(`Too many arguments to ${builtin}.`);
     fn=T.app(fn,tr(arg,type.domain));
