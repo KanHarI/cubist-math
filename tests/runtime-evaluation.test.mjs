@@ -64,9 +64,10 @@ print(evaluate(typed(Unit and Circle, (tt, base))));
   assert.deepEqual(by(runtime), Array(6).fill("runtime"));
   assert.deepEqual(by(kernel), Array(6).fill("kernel"));
   const [, , unused, single, shared] = runtime.prints.map(print => print.valueForm);
-  // g24(tt) would cost 2^24 calls: the unused argument is never forced,
-  // and the steps are mostly the snapshot's copy of g0 to g24.
+  // g24(tt) would cost 2^24 calls: the unused argument is never forced, and
+  // none of g0 to g24 is even copied from the kernel.
   assert.ok(unused.steps < 10000, `the unused argument took ${unused.steps} steps`);
+  assert.equal(unused.snapshotDefinitions, 1);
   // Both components are the one argument thunk, computed once.
   assert.ok(shared.steps < 1.5 * single.steps, `the shared pair took ${shared.steps} steps, one number ${single.steps}`);
   // Each observation spends the query of fuel the head query it stands for
@@ -191,6 +192,10 @@ ${twice([
   ]);
   assert.deepEqual(computedBy(pairs), [...Array(9).fill("runtime"), pathConstructor, ...Array(4).fill("runtime"), pathConstructor,
     ...Array(3).fill("runtime")]);
+  // The query copies what the walk reaches: for `2/3 + 1/6`, under a tenth
+  // of the 32,015 nodes the closure of its judgement holds, the field's
+  // laws' proofs among them.
+  assert.ok(pairs[0].snapshotNodes < 3200, `copied ${pairs[0].snapshotNodes} nodes`);
 });
 
 // The binary integer and rational contracts (tests/fixtures/contracts/), each

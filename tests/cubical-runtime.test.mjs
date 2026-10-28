@@ -6,6 +6,7 @@ import createCubical from "../web/dist/cubical.mjs";
 import { CubicalKernel } from "../web/cubical-kernel.mjs";
 import { InstructionGraph } from "../web/cubical-instructions.mjs";
 import { InstructionDriver } from "../web/cubical-instruction-driver.mjs";
+import { CubicalDeclarationTransaction } from "../web/cubical-transaction.mjs";
 import { RuntimeQuery, RuntimeError } from "../web/cubical-runtime.mjs";
 import { checkProgram } from "./check-program.mjs";
 import { budget } from "./timing.mjs";
@@ -280,15 +281,98 @@ test("definition sharing does not depend on syntax interning", async t => {
   assert.equal(query.stats.beta, beta);
 });
 
-test("snapshots survive kernel disposal and handles remain local to their query", async t => {
-  const { query, kernel } = await setup(t, "def value : Unit and Unit := (tt, tt);");
+// A query reads the kernel when its walk first demands a node, a definition
+// or a signature: what it never demands is never copied.
+test("a query copies only what its walk demands", async t => {
+  const { query, kernel } = await setup(t, `
+import unat; use unat;
+def unused_ : UNat := 2 * 255;
+def helper(x : Unit) : Unit := x;
+def value : Unit and UNat := (helper(tt), unused_);
+`);
+  const runtime = query("value");
+  assert.deepEqual([runtime.stats.snapshotNodes, runtime.stats.snapshotDefinitions], [0, 0]);
+  const pair = await runtime.observe();
+  // The root's definition: its reference, the application of an identity
+  // that ascribes its type, without the type, and the pair, without its
+  // components or their definitions.
+  assert.equal(runtime.stats.snapshotDefinitions, 1);
+  assert.equal(runtime.stats.snapshotNodes, 5);
+  assert.deepEqual(await runtime.observe(pair.first), { kind: "Point" });
+  assert.equal(runtime.stats.snapshotDefinitions, 2, "helper, and still not the unused component");
+  // Demanded, the second component's definitions are copied: unused_, the
+  // multiplication and what it reaches.
+  const natural = kernel.signatures.get("unat__UNat").index;
+  assert.equal(await unary(runtime, natural, pair.second), 510);
+  assert.ok(runtime.stats.snapshotDefinitions > 2);
+  assert.equal(runtime.retainedObjects().snapshotNodes, runtime.stats.snapshotNodes);
+});
+
+// The kernel's handles name what they named when the query was made until
+// the session is disposed or a checkpoint open then ends; a read after that
+// expires, and what the query copied and computed before stays observable.
+test("unread syntax expires with the kernel's handles, and what was read survives", async t => {
+  const { program, query, kernel, graph } = await setup(t, "def value : Unit and Unit := (tt, (fun (u : Unit) => u)(tt));");
+  // Made with no checkpoint open, a query survives later declarations,
+  // accepted or refused: no handle it holds moves.
+  const outside = query("value");
+  const later = await program.check("def other : Unit := tt;\ndef refused : Unit := Unit;", "later");
+  assert.deepEqual(later.outputs.filter(output => output.name !== "value").map(output => [output.name, output.verified]),
+    [["other", true], ["refused", false]]);
+  const fields = await outside.observe();
+  assert.deepEqual(await outside.observe(fields.second), { kind: "Point" });
+  // Made while a declaration's checkpoint is open, a query expires when it
+  // is committed or rolled back, which move or drop the handles made since.
+  for (const accept of [false, true]) {
+    const transaction = new CubicalDeclarationTransaction(kernel, program.checker), unit = graph.unit(), point = graph.point();
+    const applied = graph.apply(graph.lambda(graph.extend(unit, "y"), point), point);
+    const inner = new RuntimeQuery(kernel, graph.pair(graph.sigma(graph.extend(unit, "x"), unit), point, applied));
+    t.after(() => inner.dispose());
+    const pair = await inner.observe();
+    assert.deepEqual(await inner.observe(pair.first), { kind: "Point" });
+    transaction.finish(accept);
+    assert.equal((await inner.observe(inner.root)).kind, "Pair", "computed before, still observable");
+    assert.deepEqual(await inner.observe(pair.first), { kind: "Point" });
+    await assert.rejects(inner.observe(pair.second), fails("expired"));
+  }
+  // Disposal expires every query; handles stay local to their query.
   const first = query("value"), second = query("value"), root = first.root;
-  kernel.dispose();
   const pair = await first.observe(root);
-  assert.deepEqual(await first.observe(pair.second), { kind: "Point" });
+  assert.deepEqual(await first.observe(pair.first), { kind: "Point" });
+  kernel.dispose();
+  assert.equal((await first.observe(root)).kind, "Pair");
+  assert.deepEqual(await first.observe(pair.first), { kind: "Point" });
+  await assert.rejects(first.observe(pair.second), fails("expired"));
   await assert.rejects(second.observe(root), fails("input"));
   first.dispose();
   await assert.rejects(first.observe(root), fails("disposed"));
+});
+
+// A lazy read is work and cells of the observation that demands it: a
+// limit can stop the query in the middle of copying, as it stops a force.
+// After a cell stop what was computed stays observable; an exhausted work
+// budget ends the query's observations, as before.
+test("lazy reads count against the query's work and cells", async t => {
+  const { query } = await setup(t, `
+def helper(x : Unit) : Unit := x;
+def value : Unit and Unit := (helper(tt), tt);
+`);
+  const calibration = query("value");
+  await calibration.observe();
+  const before = calibration.stats;
+  await calibration.observe((await calibration.observe()).first);
+  const after = calibration.stats;
+  assert.ok(after.snapshotNodes > before.snapshotNodes && after.snapshotDefinitions > before.snapshotDefinitions);
+  for (const [option, counter, kind] of [["maxCells", "allocatedCells", "resource"], ["maxSteps", "steps", "budget"]]) {
+    // Enough for the pair, and for the force of its first component up to
+    // the read of its syntax.
+    const runtime = query("value", { [option]: before[counter] + 2 }), pair = await runtime.observe();
+    assert.deepEqual(runtime.stats, before);
+    await assert.rejects(runtime.observe(pair.first), error => fails(kind)(error)
+      && error.limit === before[counter] + 2 && error.stats.snapshotNodes === before.snapshotNodes);
+    if (kind === "resource") assert.equal((await runtime.observe()).kind, "Pair");
+    else await assert.rejects(runtime.observe(), fails("budget"));
+  }
 });
 
 test("disposal rejects completed forces before the default-slice observation publishes", async t => {

@@ -69,6 +69,10 @@ export class CubicalKernel {
     // its checkpoint (kernel/src/checkpoint.c): what is read of them is
     // kept from one declaration to the next (forgetNodes).
     this.settled = 0;
+    // Whether a declaration's checkpoint is open, and how many have ended
+    // (handleToken).
+    this.checkpointOpen = false;
+    this.generation = 0;
     this.nextSymbol = 1;
     this.stepBudget = 10000000n;
     // The most steps one query may grow to (withGrowingBudget).
@@ -307,7 +311,19 @@ export class CubicalKernel {
   // rolled back.
   // At a declaration's end, after its commit or rollback: the nodes there
   // are now settled until the next checkpoint's commit or rollback.
-  forgetNodes() { this.nodes.clear(); this.settled = this.arena().nodes + 1; }
+  forgetNodes() {
+    this.nodes.clear(); this.settled = this.arena().nodes + 1;
+    this.checkpointOpen = false; this.generation++;
+  }
+  // A token for the node, definition and signature handles a reader holds
+  // now, as a runtime query does across operations (web/cubical-runtime.mjs):
+  // handlesHeld(token) says whether they still name what they named. Only a
+  // checkpoint's commit or rollback moves or drops handles, those made since
+  // it (kernel/src/checkpoint.c), and disposal drops them all, so handles
+  // taken with no checkpoint open stay valid until disposal, and handles
+  // taken while one is open until it ends.
+  handleToken() { return { open: this.checkpointOpen, generation: this.generation }; }
+  handlesHeld(token) { return Boolean(this.handle) && (!token.open || token.generation === this.generation); }
   // Syntactic equality only: no reduction and no typing judgement.
   alphaEqual(left, right) {
     this.assertOpen();

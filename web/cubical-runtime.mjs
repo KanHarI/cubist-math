@@ -33,7 +33,8 @@ class Budget {
     this.milliseconds = options.milliseconds ?? 30000;
     for (const n of [this.maxSteps, this.maxCells, this.slice, this.milliseconds])
       if (!Number.isSafeInteger(n) || n < 1) throw new TypeError("Runtime limits must be positive safe integers.");
-    this.stats = { steps: 0, allocatedCells: 0, forces: 0, hits: 0, beta: 0, iota: 0, maxFrames: 0, snapshotNodes: 0 };
+    this.stats = { steps: 0, allocatedCells: 0, forces: 0, hits: 0, beta: 0, iota: 0, maxFrames: 0, snapshotNodes: 0,
+      snapshotDefinitions: 0 };
   }
   start({ milliseconds = this.milliseconds, signal } = {}) {
     if (!Number.isSafeInteger(milliseconds) || milliseconds < 1)
@@ -59,10 +60,19 @@ class Budget {
   }
 }
 
-// Copy the immutable dependency graph before yielding control. Runtime cells
-// subsequently hold snapshot indices, never live kernel handles. Rollback,
-// compaction and kernel disposal therefore cannot change retained values.
-function snapshot(kernel, judgement, budget) {
+// The query reads the kernel lazily: at first only the judgement, then each
+// node, definition and signature when the walk first demands it, so that a
+// definition the walk never reaches, as a law's proof in a model it only
+// projects an operation from, is never copied. Each read is counted in the
+// query's work and cells, as the eager copy's were. What is read is copied:
+// runtime cells hold copied syntax and kernel indices, never a kernel
+// object. A handle names what it named when the query was made until the
+// session is disposed or, for a query made while a declaration's checkpoint
+// is open, until that checkpoint is committed or rolled back, which moves
+// or drops the handles made since it (kernel.handlesHeld). A read after
+// either fails as "expired" instead of reading another state; what was
+// copied and computed before stays observable.
+function judged(kernel, judgement, budget) {
   budget.check(); kernel.assertOpen();
   const graph = new InstructionGraph(kernel);
   if (!Number.isInteger(judgement) || judgement <= 0 || judgement >= graph.count)
@@ -70,50 +80,36 @@ function snapshot(kernel, judgement, budget) {
   const checked = graph.judgement(judgement);
   if (checked.kind !== "typing" || checked.context.length)
     fail("input", "Runtime execution requires a closed, assumption-free typing judgement.");
-  const nodes = new Map(), definitions = new Map(), signatures = new Map();
-  const pending = [checked.term, checked.type];
+  return { kernel, held: kernel.handleToken(), nodes: new Map(), signatures: new Map(),
+    expression: checked.term, type: checked.type };
+}
+
+// A declared type's constructor descriptors, compiled from its admitted
+// record when one of its constructors is first demanded.
+function descriptors(kernel, index, budget) {
   const read = id => { budget.tick(); return kernel.node(id); };
-  while (pending.length) {
-    budget.tick();
-    const id = pending.pop();
-    if (!id || nodes.has(id)) continue;
-    const n = read(id);
-    budget.allocate(1 + n.children.length);
-    nodes.set(id, { kind: n.kind, payload: n.payload, children: [...n.children] });
-    pending.push(...n.children.filter(Boolean));
-    if (n.kind === "DefRef") {
-      const definition = kernel.definition(id);
-      budget.allocate();
-      definitions.set(id, definition.value);
-      pending.push(definition.value, definition.type);
-    }
-    if (!["Sort", "Elim"].includes(n.kind) || signatures.has(n.payload)) continue;
-    const s = kernel.signature(n.payload);
-    if (!s.admitted) fail("input", "Runtime execution requires an admitted signature.");
-    budget.allocate(1 + s.constructors.length);
-    const constructors = s.constructors.map(c => {
-      pending.push(c.type);
-      const count = c.data + c.positions;
-      if (c.dimensions || c.generated) return { data: c.data, count, arities: null, refused: pathConstructorRefused };
-      const arities = [];
-      let type = c.type, refused = null;
-      for (let i = 0; i < count; i++) {
-        const pi = read(type);
-        if (pi.kind !== "Pi") fail("input", "Invalid admitted constructor telescope.");
-        if (i >= c.data) {
-          let position = read(pi.children[0]), arity = 0;
-          while (position.kind === "Pi") { arity++; position = read(position.children[1]); }
-          if (position.kind !== "Var" || position.payload !== s.sort) refused = cubicalPositionsRefused;
-          arities.push(arity);
-        }
-        type = pi.children[1];
+  budget.tick();
+  const s = kernel.signature(index);
+  if (!s.admitted) fail("input", "Runtime execution requires an admitted signature.");
+  budget.allocate(1 + s.constructors.length);
+  return s.constructors.map(c => {
+    const count = c.data + c.positions;
+    if (c.dimensions || c.generated) return { data: c.data, count, arities: null, refused: pathConstructorRefused };
+    const arities = [];
+    let type = c.type, refused = null;
+    for (let i = 0; i < count; i++) {
+      const pi = read(type);
+      if (pi.kind !== "Pi") fail("input", "Invalid admitted constructor telescope.");
+      if (i >= c.data) {
+        let position = read(pi.children[0]), arity = 0;
+        while (position.kind === "Pi") { arity++; position = read(position.children[1]); }
+        if (position.kind !== "Var" || position.payload !== s.sort) refused = cubicalPositionsRefused;
+        arities.push(arity);
       }
-      return { data: c.data, count, arities: refused ? null : arities, refused };
-    });
-    signatures.set(n.payload, { constructors });
-  }
-  budget.check(); budget.stats.snapshotNodes = nodes.size;
-  return { nodes, definitions, signatures, expression: checked.term, type: checked.type };
+      type = pi.children[1];
+    }
+    return { data: c.data, count, arities: refused ? null : arities, refused };
+  });
 }
 
 // Public handles are opaque and belong to exactly one query. Applications
@@ -127,7 +123,7 @@ export class RuntimeQuery {
     this.#budget = new Budget(options);
     try {
       this.#budget.start(options);
-      this.#image = snapshot(kernel, judgement, this.#budget);
+      this.#image = judged(kernel, judgement, this.#budget);
       this.#root = this.#delay(this.#image.expression, null);
       this.#type = this.#delay(this.#image.type, null);
     } finally { this.#budget.finish(); }
@@ -154,18 +150,41 @@ export class RuntimeQuery {
     if (!cell) fail("input", "The value handle does not belong to this runtime query.");
     return cell;
   }
+  // The kernel, while the handles the query holds name what they named when
+  // it was made.
+  #kernel() {
+    const { kernel, held } = this.#image;
+    if (!kernel.handlesHeld(held))
+      fail("expired", "The kernel has changed since the runtime query was made: what it has not read can no longer be read.");
+    return kernel;
+  }
+  // A node of the checked syntax, copied when first demanded.
+  #node(id) {
+    const nodes = this.#image.nodes;
+    let n = nodes.get(id);
+    if (!n) {
+      this.#budget.tick();
+      const read = this.#kernel().node(id);
+      this.#budget.allocate(1 + read.children.length);
+      nodes.set(id, n = { kind: read.kind, payload: read.payload, children: [...read.children] });
+      this.#budget.stats.snapshotNodes = nodes.size;
+    }
+    return n;
+  }
   #list(code, env) {
     const items = [];
     for (let at = code; at;) {
       this.#budget.tick();
-      const n = this.#image.nodes.get(at);
+      const n = this.#node(at);
       if (n.kind !== "List") fail("input", "Malformed checked eliminator clauses.");
       this.#budget.allocate(); items.push(this.#delay(n.children[0], env)); at = n.children[1];
     }
     return items;
   }
   #descriptor(signature, index) {
-    const c = this.#image.signatures.get(signature)?.constructors[index];
+    const signatures = this.#image.signatures;
+    if (!signatures.has(signature)) signatures.set(signature, descriptors(this.#kernel(), signature, this.#budget));
+    const c = signatures.get(signature)[index];
     if (!c) fail("input", "A constructor requires an admitted signature.");
     if (c.refused) fail("unsupported", c.refused);
     return c;
@@ -206,13 +225,20 @@ export class RuntimeQuery {
           if (cell.operation === "apply") {
             push({ operation: "apply", argument: cell.argument }); force(cell.fn); continue;
           }
-          const n = this.#image.nodes.get(cell.code), c = n.children, env = cell.env;
+          const n = this.#node(cell.code), c = n.children, env = cell.env;
           const delay = id => this.#delay(id, env);
           switch (n.kind) {
             case "Var": task = { operation: "lookup", env, symbol: n.payload }; break;
+            // A definition's value is read at its first demand: one thunk per
+            // definition, however many references name it.
             case "DefRef":
-              if (!this.#definitions.has(n.payload))
-                this.#definitions.set(n.payload, this.#delay(this.#image.definitions.get(cell.code), null));
+              if (!this.#definitions.has(n.payload)) {
+                budget.tick();
+                const value = this.#kernel().definition(cell.code).value;
+                budget.allocate();
+                this.#definitions.set(n.payload, this.#delay(value, null));
+                budget.stats.snapshotDefinitions = this.#definitions.size;
+              }
               force(this.#definitions.get(n.payload)); break;
             case "Lam": case "LLam":
               returned(this.#value({ tag: n.kind, symbol: n.payload, body: c[1], env, domain: delay(c[0]) })); break;
@@ -232,7 +258,7 @@ export class RuntimeQuery {
             case "SumRec":
               push({ operation: "sum", left: delay(c[1]), right: delay(c[2]) }); force(delay(c[3])); break;
             case "Con": {
-              const instance = this.#image.nodes.get(c[0]);
+              const instance = this.#node(c[0]);
               if (instance.kind !== "Sort") fail("input", "A constructor requires a declared instance.");
               this.#descriptor(instance.payload, n.payload);
               returned(this.#value({ tag: "Con", signature: instance.payload, index: n.payload, instance: delay(c[0]), args: [] })); break;
@@ -328,12 +354,12 @@ export class RuntimeQuery {
   #eta(value) {
     // The kernel contracts path i => p @ i to p when i is not free in p,
     // which reads dimension formulas this fragment does not interpret.
-    if (value.tag === "PLam" && this.#image.nodes.get(value.body).kind === "PApp")
+    if (value.tag === "PLam" && this.#node(value.body).kind === "PApp")
       fail("unsupported", "Runtime η of a path abstraction is not implemented.");
     if (value.tag !== "Lam" && value.tag !== "LLam") return 0;
-    const body = this.#image.nodes.get(value.body);
+    const body = this.#node(value.body);
     if (body.kind !== (value.tag === "Lam" ? "App" : "LApp")) return 0;
-    const argument = this.#image.nodes.get(body.children[1]);
+    const argument = this.#node(body.children[1]);
     return argument.kind === "Var" && argument.payload === value.symbol && !this.#free(body.children[0], value.symbol)
       ? body.children[0] : 0;
   }
@@ -346,7 +372,7 @@ export class RuntimeQuery {
       const id = pending.pop();
       if (!id || seen.has(id)) continue;
       seen.add(id);
-      const n = this.#image.nodes.get(id);
+      const n = this.#node(id);
       if (n.kind === "Var" && n.payload === symbol) return true;
       const bound = binders.has(n.kind) && n.payload === symbol;
       n.children.forEach((child, i) => { if (!(bound && i === 1)) pending.push(child); });
