@@ -1049,7 +1049,7 @@ through it and left through `ck_leave`. The outermost step records its frame's
 address in `k->stack_base`, and `k->recursion` counts the steps entered. A
 step fails with `CC_ERROR_RESOURCE` and its caller's message (`K336` for
 reduction, `K337` normal forms, `K326` comparison, `K322` levels, `K207`
-positions) when `CC_RECURSION_LIMIT` (`512`) steps are already entered, or when
+positions) when `CC_RECURSION_LIMIT` (`448`) steps are already entered, or when
 its frame is more than `CC_STACK_BUDGET` (4 MiB) from the base. A nested step
 never moves the base, and a failed step is not entered. An operation's start,
 and a rollback, set `k->recursion` to `0`, so the next step records the base
@@ -1059,7 +1059,17 @@ native main thread's 8 MiB, and the WebAssembly build's (`-sSTACK_SIZE` in the
 `Makefile`). The steps bound a stack the kernel cannot measure: under
 WebAssembly the engine keeps frames on its own stack, about 0.5 MiB in a
 Chromium worker, and the cycles measured take 0.6 to 0.9 KiB of it a step,
-so their 512 steps end before it does.
+so their 448 steps end before it does. In a Chromium worker nested declared
+eliminators ran out of that stack at 622 steps and nested unit eliminations
+at 708, so the limit is 28% and 37% under them; in Node they ran out at
+about 1,100 and 1,686. The test suite and the library need at most 320
+steps.
+
+On 2026-10-28 the user decided the guard's three open questions: the step
+bound stays beside the byte bound, since no byte budget alone stops every
+cycle before an engine's stack runs out; the limit is 448 steps, for margin
+in a Chromium worker; and it holds on every platform, native included, so
+that a recursion is refused at the same depth wherever it is checked.
 
 An exception out of a WebAssembly export is never the kernel's answer: the
 engine's own stack ran out (a `RangeError`), or the instance trapped (a

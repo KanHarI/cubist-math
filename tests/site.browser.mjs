@@ -179,9 +179,9 @@ await browserTest(async ({ browser, base }) => {
     "evaluate count_into(2 * 255, 0);", "evaluate count_into(100 * 100 * 100, 0);", "evaluate x + 1;"]) await enter(text);
   assert.deepEqual(await lastResults(3), ["510", "E488: The runtime's evaluation of the value form exhausted its allocation budget of 20,000,000 cells.", "8"]);
   console.log("PASS REPL page: the runtime's value forms and its limits");
-  // Nested eliminators: past the kernel's recursion guard (ck_enter, 512
+  // Nested eliminators: past the kernel's recursion guard (ck_enter, 448
   // steps) a path judgement fails with K336, as often as asked, before the
-  // worker's own engine stack runs out at about 620 levels; the worker goes on.
+  // worker's own engine stack runs out at 622 levels; the worker goes on.
   for (const text of ["inductive Lamp { dark; lit; }", "def toggle(f : Lamp) : Lamp := match f { dark => lit; lit => dark; };",
     "def parity(n : UNat) : Lamp := match n { zero => dark; succ(m) => toggle(parity(m)); };",
     "def deep : parity(2 * 200) = dark := refl(dark);",

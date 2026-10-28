@@ -525,3 +525,12 @@ trace. No C rule changes.
    decides its eta rules by syntax, and the conversion search refuses to
    run inside an instruction. I1.2a established this before I1.2b deletes
    code.
+10. (2026-10-28) The recursion guard, `ck_enter`, bounds both stack bytes
+    (`CC_STACK_BUDGET`, 4 MiB) and steps (`CC_RECURSION_LIMIT`). The user
+    decided its three open questions: the step bound stays beside the byte
+    bound, since under WebAssembly the engine's own stack, which the kernel
+    cannot measure, runs out first; the limit is 448 steps, 28% and 37%
+    under the depths at which a Chromium worker's stack ran out for the
+    cycles measured (622 and 708); and it holds on every platform, native
+    included. The [kernel guide](../../guides/kernel.md) records the
+    measurements.

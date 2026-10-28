@@ -23,10 +23,11 @@ CUBICAL_EXPORTS = '["_cb_abi_version","_cb_new","_cb_optimizations","_cb_step_bu
 # places it by default, an overflow overwrote the session table and the
 # allocator's state, and the kernel went on. The stack's 8 MiB, a native main
 # thread's default, holds the kernel's recursion guard (ck_enter in
-# kernel/src/term_store.c): 4 MiB of stack, or 512 steps, below the outermost.
+# kernel/src/term_store.c): 4 MiB of stack, or 448 steps, below the outermost.
 # The steps end first on nested eliminators, about 3.6 KiB of this stack a
 # step, and before the engine's own stack, of which a step takes about
-# 0.85 KiB: a Chromium worker's runs out at about 620 steps, Node's at 1,100.
+# 0.85 KiB: a Chromium worker's runs out at 622 steps, the limit 28% under it,
+# and Node's at about 1,100.
 WASM_CFLAGS = -O3 -std=c11 -Wall -Wextra -Wpedantic -Werror -I$(CUBICAL_DIR)/include -I$(CUBICAL_DIR)/src
 WASM_LDFLAGS = --no-entry -sMODULARIZE -sEXPORT_ES6 -sENVIRONMENT=web,worker,node -sALLOW_MEMORY_GROWTH -sINITIAL_MEMORY=16777216 -sMAXIMUM_MEMORY=4294967296 -sSTACK_SIZE=8388608 -Wl,--stack-first -sABORTING_MALLOC=0 -sFILESYSTEM=0 -sEXPORTED_FUNCTIONS=$(CUBICAL_EXPORTS) -sEXPORTED_RUNTIME_METHODS='["UTF8ToString"]'
 # One build of web/dist at a time, under a lock (tools/build-stamp.mjs). A
