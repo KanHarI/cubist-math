@@ -683,7 +683,13 @@ transition land together.
      (`realpathSync.native`), so on a case-insensitive file system a path
      in another case, `archive/first-library/CLASSICAL.cubist` or
      `ARCHIVE/FIRST-LIBRARY/classical.cubist`, is the archive's
-     `classical.cubist`, recorded as the root lists it for a transfer. Unlike the library's labels, provenance is not transitive, so a
+     `classical.cubist`, recorded as the root lists it for a transfer.
+     A path is resolved as the operating system reads it, never collapsed
+     as text first, so `link/..` leaves the link's target, and the text is
+     read through that same real path (`fileAt` in
+     `tools/module-sources.mjs`; the command line and the verifier read
+     their files through `canonicalFile`): what is read and the file it is
+     vouched for are one file. Unlike the library's labels, provenance is not transitive, so a
      module of the user's may import the archive and use its declarations
      over the builtins.
    - **Where written.** A builtin is the archive's when the module its

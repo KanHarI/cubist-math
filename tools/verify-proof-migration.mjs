@@ -11,12 +11,12 @@ import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { resolve } from "node:path";
+import { isAbsolute } from "node:path";
 import { archiveModules } from "../web/cubist/modules.mjs";
 import { verifyMigration } from "./proof-migration.mjs";
 import { assertFreshBuild } from "./build-stamp.mjs";
 import { migrationSourceReader, historicalModulePaths, historicalMigrationSources, unaryNaturalBase } from "./migration-sources.mjs";
-import { placeOfFile } from "./module-sources.mjs";
+import { canonicalFile, placeOfFile } from "./module-sources.mjs";
 import { moduleRoots, searchOrder } from "../web/module-resolution.mjs";
 import { historicalRenamingAt, historicalSource } from "../web/cubist/legacy-syntax.mjs";
 import { parse } from "../web/cubist/parser.mjs";
@@ -35,7 +35,11 @@ const requestedBase = option("--base"), level = option("--level") ?? "identical"
 const ledgerFile = option("--ledger");
 const ledger = ledgerFile ? JSON.parse(await readFile(ledgerFile,"utf8")) : null;
 const base = requestedBase ?? ledger?.base ?? "HEAD";
-const editedRoot = resolve(root,option("--edited-root") ?? "archive/first-library");
+// Paths below the repository's root, as the operating system reads them:
+// resolve would drop a `link/..` as text, where reading leaves the link's
+// target (module-sources.mjs, canonicalFile).
+const fromRoot = path => isAbsolute(path) ? path : `${root}${path}`;
+const editedRoot = fromRoot(option("--edited-root") ?? "archive/first-library");
 const editedFile = option("--edited-file");
 const selected = option("--declarations")?.split(",");
 if (args.some(arg => arg.startsWith("--"))) throw new Error(`Unknown option: ${args.find(arg => arg.startsWith("--"))}`);
@@ -53,12 +57,13 @@ assertFreshBuild();
 
 const editedPlaces = new Map();
 const readEdited = async name => {
-  const candidates = editedFile && name===modules[0] ? [resolve(root,editedFile)]
+  const candidates = editedFile && name===modules[0] ? [fromRoot(editedFile)]
     : [`${editedRoot}/${name}.cubist`,`${root}archive/first-library/${name}.cubist`];
   for (const path of candidates) {
     try {
-      const text = await readFile(path,"utf8");
-      editedPlaces.set(name,placeOfFile(path)); return text;
+      // Read through the path its place is taken from: one file for both.
+      const file = canonicalFile(path), text = await readFile(file,"utf8");
+      editedPlaces.set(name,placeOfFile(file)); return text;
     } catch(error) { if(error.code!=="ENOENT")throw error; }
   }
   throw Error(`No edited source for ${name}.`);

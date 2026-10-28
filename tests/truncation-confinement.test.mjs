@@ -10,7 +10,7 @@ import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -135,6 +135,45 @@ test("a path that spells the archive's file in another case is the archive's fil
   t.after(() => session.dispose());
   const loaded = await session.load(exported);
   assert.ok(loaded.view.axioms.map(name => loaded.view.symbols[name].name).includes("LEM[Truncate]"));
+});
+
+// A link followed by .. leaves the link's target, as reading the file does:
+// a path that spells the archive's file through a link into another tree
+// reads that tree's file, and is vouched for as that file, outside the
+// archive (#332's review round 4). Reading and provenance take one path.
+test("a path through a link and .. is vouched for as the file it reads", async t => {
+  const directory = await mkdtemp(join(tmpdir(), "cubist-link-dotdot-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const project = join(directory, "project"), elsewhere = join(directory, "elsewhere");
+  for (const tree of [project, elsewhere]) await mkdir(join(tree, "archive/first-library"), { recursive: true });
+  await mkdir(join(elsewhere, "inner"));
+  const forged = "def forged(A : U0) := Truncate(U0, A);\n";
+  await writeFile(join(project, "archive/first-library/classical.cubist"), "def genuine(A : U0) := Truncate(U0, A);\n");
+  await writeFile(join(elsewhere, "archive/first-library/classical.cubist"), forged);
+  try { await symlink(join(elsewhere, "inner"), join(project, "link")); }
+  catch (error) { t.skip(`symbolic links cannot be made here (${error.code})`); return; }
+  // Spelled as text, project/link/../archive/… is the project's archive;
+  // read, it is elsewhere's file.
+  const through = `${project}/link/../archive/first-library/classical.cubist`;
+  assert.equal(await readFile(through, "utf8"), forged);
+  const verdict = async reader => {
+    const program = new CubicalProgram(module, reader, { collectReferences: false });
+    t.after(() => program.dispose());
+    await program.checkModules(["borrowed"], "fingerprint");
+    const output = program.symbols.borrowed__forged ?? program.symbols.borrowed__genuine;
+    return [output.name, output.verified ? true : output.code];
+  };
+  const aliased = (file, place = "archive") => {
+    const reader = sourceReader({ root: project, files: new Map([[`${place}/borrowed`, file]]) });
+    reader.place("fingerprint", "archive");
+    return reader;
+  };
+  assert.deepEqual(await verdict(aliased(through)), ["forged", "E491"]);
+  assert.deepEqual(await verdict(aliased(join(project, "archive/first-library/classical.cubist"))), ["genuine", true]);
+  // A checked file named so is placed and read as the same file.
+  const { result } = await checkProgram(t, await readFile(through, "utf8"), { module, name: "classical",
+    reader: sourceReader({ path: through, root: project }) });
+  assert.match(verdicts(result).forged, /^E491: /);
 });
 
 // A file aliased into the archive's place, as the fingerprint tool's
