@@ -163,7 +163,7 @@ test("a display numbers a variable named as a printed label apart from it", asyn
 test("inspection: no declared type mentions an assumption, so the view has no assumption's label to avoid", async t => {
   const { source, program, get } = await cases(t, "assumptions");
   for (const [name, text] of [["InParameter", "t : Truncate"], ["InGeneric", "t : Truncate"], ["InArgument", "t : Truncate"],
-    ["InDefinition", "t : ExcludedMiddle"], ["InResult", "Truncate(U0, UNat) -> InResult"]]) {
+    ["InDefinition", "t : Settled"], ["InResult", "Truncate(U0, UNat) -> InResult"]]) {
     assert.ok(get(name).reason.endsWith(` at ${at(source, text, `inductive ${name}`)}`), `${name}: ${get(name).reason}`);
     assert.equal(program.signatureView(`inductive_assumptions__${name}`), null, name);
   }

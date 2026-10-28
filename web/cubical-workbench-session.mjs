@@ -9,8 +9,11 @@ import { checkReduction, reduceView } from "./cubical-reduction.mjs";
 import { levelText } from "./cubical-levels.mjs";
 import { safeTrace, traceSources, traceSnapshot, traceCounters, traceCost } from "./cubical-workbench-trace.mjs";
 
+// A transfer's sources are text, which no reader placed: `fromLibrary` says
+// which of them is the library's (module-resolution.mjs, libraryProvenance),
+// so that a library axiom keeps its bare name; without it none is.
 export class WorkbenchSession {
-  constructor(module) { this.module = module; this.states = []; }
+  constructor(module, { fromLibrary = null } = {}) { this.module = module; this.states = []; this.fromLibrary = fromLibrary; }
   dispose() { this.program?.dispose(); }
   state(id) {
     const state = this.states[id];
@@ -39,11 +42,17 @@ export class WorkbenchSession {
     if (payload.format !== "thth-cubical" || payload.version !== 1)
       throw new Error("Unsupported cubical transfer format.");
     this.dispose(); this.states = [];
-    this.program = new CubicalProgram(this.module, async name => {
+    const read = async name => {
       if (typeof payload.sources?.[name] !== "string") throw new Error(`Missing source module ${name}.`);
       return payload.sources[name];
-    });
-    await this.program.check(payload.source, payload.main, progress);
+    };
+    if (this.fromLibrary) read.fromLibrary = this.fromLibrary;
+    this.program = new CubicalProgram(this.module, read);
+    // A transfer replays its sources: one that does not check completely
+    // is no transfer of what was checked, and is refused.
+    const replayed = await this.program.check(payload.source, payload.main, progress);
+    if (!replayed.complete)
+      throw new Error(`The transfer did not replay completely: ${replayed.gaps[0]?.reason ?? "a declaration did not check"}`);
     // Supplied term/type claims are informational; replay source for evidence.
     let view = this.program.inspect(payload.binding);
     if (payload.side === "type") {

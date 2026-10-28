@@ -1,20 +1,37 @@
 // K2.5: a ledger permits only a pinned public change, never an unchecked
 // declaration. Types and values include a checked hash and readable rendering.
 const LEGACY = new Set(["Truncate","TruncateIntro","TruncateProp","TruncateElim"]);
+// The archive's builtin excluded middle and choice over Truncate, and the
+// library's axioms over Trunc that replace them (h1-truncation-migration.md,
+// step 1). A replacement is listed explicitly, never inferred.
+export const REPLACEMENTS = new Map([["LEM[Truncate]","LEM"],["Choice[Truncate]","Choice"]]);
 const pins = ["oldPublicType","newPublicType","oldValue","newValue"];
 const lists = ["hypothesesAdded","assumptionsRemoved","assumptionsRetained","extensionsAdded","extensionsRetained"];
 const sorted = values => [...values].sort();
 const same = (a,b) => JSON.stringify(a) === JSON.stringify(b);
 
+// A comparison the ledger retired, when a later change invalidated its pins:
+// the last revision at which it passed, and its changes as they were pinned
+// then, kept as the record and not checked again.
+export function retiredComparison(ledger, module) {
+  return (ledger?.retired ?? []).find(record => record.comparison === module) ?? null;
+}
+
 export function validateLedger(ledger) {
   const entries = new Map();
   if (ledger === null) return entries;
   if (ledger?.version !== 2 || !Array.isArray(ledger.changes)) throw Error("A migration ledger has version 2 and a changes array, including value pins and explicit assumption replacements.");
+  if (ledger.retired !== undefined && (!Array.isArray(ledger.retired) || ledger.retired.some(record =>
+    !/^[A-Za-z_][A-Za-z_0-9]*$/.test(record?.comparison ?? "") || !/^[a-f0-9]{7,40}$/.test(record.lastPassing ?? "")
+    || typeof record.reason !== "string" || !Array.isArray(record.changes))
+    || new Set(ledger.retired.map(record => record.comparison)).size !== ledger.retired.length))
+    throw Error("A retired comparison names its module, its last passing revision, the reason and its recorded changes.");
   for (const entry of ledger.changes) {
     if (!/^[A-Za-z_][A-Za-z_0-9]*$/.test(entry.module ?? "") || !/^[A-Za-z_][A-Za-z_0-9]*$/.test(entry.declaration ?? ""))
       throw Error("Every ledger change names a module and declaration.");
     const key = `${entry.module}__${entry.declaration}`;
     if (entries.has(key)) throw Error(`Duplicate ledger change: ${key}.`);
+    if (retiredComparison(ledger, entry.module)) throw Error(`Ledger change ${key} belongs to the retired ${entry.module} comparison.`);
     if (![1,2,3,4,6,7].includes(entry.remedyGroup)) throw Error(`Ledger change ${key} needs an implemented remedy group of 8.4; group 5 waits for H2.`);
     for (const field of pins)
       if (!/^[a-f0-9]{40}$/.test(entry[field]?.hash ?? "") || typeof entry[field]?.text !== "string")
@@ -25,10 +42,9 @@ export function validateLedger(ledger) {
         throw Error(`Ledger change ${key} needs a list without duplicates for ${field}.`);
     }
     if (!Array.isArray(entry.assumptionsReplaced) || entry.assumptionsReplaced.some(change =>
-      !["LEM", "Choice"].includes(change?.old) || typeof change.new !== "string"
-      || !new RegExp(`^${change.old}\\[[A-Za-z_][A-Za-z_0-9.]*\\]$`).test(change.new))
+      !REPLACEMENTS.has(change?.old) || REPLACEMENTS.get(change.old) !== change.new)
       || new Set(entry.assumptionsReplaced.map(change => change.old)).size !== entry.assumptionsReplaced.length)
-      throw Error(`Ledger change ${key} needs explicit LEM/Choice replacements by their checked truncation signatures.`);
+      throw Error(`Ledger change ${key} may replace only LEM[Truncate] and Choice[Truncate], each by the library's axiom of its name.`);
     if (entry.assumptionsRemoved.some(name => !LEGACY.has(name)))
       throw Error(`Ledger change ${key} may remove only the four legacy truncation assumptions.`);
     if (entry.extensionsAdded.some(name => name !== "H1")) throw Error(`Ledger change ${key} may add only the recorded H1 extension.`);

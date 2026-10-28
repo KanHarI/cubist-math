@@ -14,16 +14,23 @@ export class CompilationBindings {
   #captures=new Map();
   #modelNotations=new Map();
   #published=new WeakMap();
+  // The module that first declared each key, module__name. Two modules'
+  // spellings can join to one key, as a::b__c and a__b::c do: the key stays
+  // the first module's, and its checker refuses the other's declaration.
+  #keyModules=new Map();
   constructor(revision,{table=new BindingTable(revision)}={}) {
     if(table.revision!==revision)throw new TypeError("Compilation binding revision mismatch.");
     this.revision=revision;this.table=table;
   }
   declaration(key) {return this.#declarations.get(key)??null;}
   declarationEntries() {return this.#declarations.entries();}
+  // The module that declared `key`, or undefined.
+  keyModule(key) {return this.#keyModules.get(key);}
   declare(module,declaration,key) {
     // A rejected duplicate does not reassign the original declaration's
     // identity or source owner. Reservation itself grants no checked value.
     if(this.#declarations.has(key))return this.#declarations.get(key).binding;
+    this.#keyModules.set(key,module);
     const index=this.#owners.get(module)??0;
     this.#owners.set(module,index+1);
     const owner=["declarations",module,String(index)];
@@ -46,7 +53,10 @@ export class CompilationBindings {
       register(identity,constructor.name,["constructor",String(index)]);
       // A refused constructor can still be described by its declared key.
       const name=`${module}__${constructor.name.text}`;
-      if(!this.#declarations.has(name))this.#declarations.set(name,this.#declarations.get(identity));
+      if(!this.#declarations.has(name)) {
+        this.#declarations.set(name,this.#declarations.get(identity));
+        this.#keyModules.set(name,module);
+      }
     }
     return binding;
   }

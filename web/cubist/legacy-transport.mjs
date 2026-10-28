@@ -2,13 +2,15 @@ import { parse, tokenize, languageKeywords } from "./parser.mjs";
 
 // Read a retired transport spelling only when migrating historical sources.
 // The current language accepts `transport value along path in family`.
-export function currentTransportSyntax(source) {
+// `bindable` lists the words the source's revision did not reserve
+// (legacy-syntax.mjs, historicalKeywords).
+export function currentTransportSyntax(source, bindable = languageKeywords) {
   if (!/\balong\b/.test(source)) return source;
   const tokens = tokenize(source), indices = new Map(tokens.map((token, index) => [token.start, index]));
   if (!["along", "by", "from"].every(word => tokens.some(token => token.text === word))) return source;
   // Already-current source can bind `along` as an ordinary name.
-  try { parse(source, false, { bindable: languageKeywords, historicalOver: true }); return source; } catch { /* Try the retired spelling. */ }
-  const syntax = parse(source, false, { bindable: languageKeywords, historicalTransport: true, historicalOver: true });
+  try { parse(source, false, { bindable, historicalOver: true }); return source; } catch { /* Try the retired spelling. */ }
+  const syntax = parse(source, false, { bindable, historicalTransport: true, historicalOver: true });
   const groupEnds = new Map(), opens = [];
   for (const token of tokens) {
     if (token.text === "(") opens.push(token.start);

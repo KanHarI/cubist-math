@@ -8,7 +8,7 @@ const module = await createCubical();
 // comments state each refusal (tests/cubist-tests.test.mjs); here, the
 // assumptions of the archive's lemmas and of the cases.
 const cases = (t, name) => checkTestModule(t, name, { module, options: { collectReferences: false } });
-const allowed = /^(LEM|Truncate(?:Intro|Prop|Elim)?)$/;
+const allowed = /^(LEM\[Truncate\]|Truncate(?:Intro|Prop|Elim)?)$/;
 const checkedWithoutNewAxioms = (p, name) => {
   const s = p.symbols[name];
   assert.equal(s?.verified, true, name);

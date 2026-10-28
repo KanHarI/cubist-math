@@ -273,3 +273,49 @@ test("context queries retain published declarations with explicit logical assump
   await query(session,"typeof merely(Unit, x)","type");
   await query(session,"witness merely(Unit, x)","error");
 });
+
+// Each result is reported with every assumption it relies on: through its
+// terms, and through the local hypotheses they use, whose types may use one;
+// an assumption-free result says nothing more (#317's review round 2,
+// finding 4).
+test("every context result reports the assumptions it relies on, and an assumption-free one none",async t=>{
+  const source="def Pointed := axiom Unit;\ndef f(A : U0, h : Pointed = Pointed, k : (Pointed = Pointed) -> Unit) : Unit { exact tt; }";
+  const {session}=await setup(t,source,"exact tt;");
+  const texts=async input=>(await session.run(input)).map(result=>`${result.kind}: ${result.text}`);
+  assert.deepEqual(await texts("let p := Pointed"),["defined: p : Unit","info: p assumes main::Pointed"]);
+  assert.deepEqual(await texts("let q := h"),["defined: q : main::Pointed = main::Pointed","info: q assumes main::Pointed"]);
+  assert.deepEqual(await texts("let s := k(h)"),["defined: s : Unit","info: s assumes main::Pointed"]);
+  assert.deepEqual(await texts("typeof Pointed"),["type: Unit","info: assumes main::Pointed"]);
+  assert.deepEqual(await texts("typeof p"),["type: Unit","info: assumes main::Pointed"]);
+  assert.deepEqual((await texts("Pointed")).at(-1),"info: assumes main::Pointed");
+  assert.deepEqual((await texts("inspect Pointed")).at(-1),"info: assumes main::Pointed");
+  assert.deepEqual(await texts("let r := A"),["defined: r : U0"]);
+  assert.deepEqual(await texts("typeof tt"),["type: Unit"]);
+});
+
+// Every command of the console states what its result relies on: the goal,
+// the locals, a proof experiment, as a term does. A proof that uses an
+// axiom says so, though the goal does not; a result that relies on nothing
+// says nothing more (#317's review round 3, finding 5).
+test("every console command reports what its result relies on, a proof experiment included",async t=>{
+  const source="def A := axiom Unit;\ndef f(h : A = A) : A = A { exact h; }\ndef g : Unit { exact tt; }";
+  const texts=session=>async input=>(await session.run(input)).map(result=>`${result.kind}: ${result.text}`);
+  const inProof=texts((await setup(t,source,"exact h;")).session);
+  for(const input of ["/goal","/locals","/prove { exact h; }","typeof h","evaluate h","h","inspect h","print(typeof(h))","let k := h"])
+    assert.equal((await inProof(input)).at(-1),input.startsWith("let")?"info: k assumes main::A":"info: assumes main::A",input);
+  assert.deepEqual((await inProof("/help")).map(line=>line.split(":")[0]),["help"]);
+  const plain=texts((await setup(t,source,"exact tt;")).session);
+  assert.deepEqual(await plain("/prove { exact A; }"),["proof: Checked against Unit. Source unchanged.","info: assumes main::A"]);
+  for(const input of ["/goal","/locals","/prove { exact tt; }"])assert.equal((await plain(input)).length,1,input);
+});
+
+// A context replays the check it was opened on, which reads no files: each
+// module keeps the provenance that check gave it, so the library's LEM is
+// LEM there too (#317's review round 3, finding 4).
+test("a context's results keep the library's labels",async t=>{
+  const source="import classical_axioms;\ndef excluded : ExcludedMiddle(U0) := LEM(U0);\ndef f : Unit { exact tt; }";
+  const {program,session}=await setup(t,source,"exact tt;");
+  assert.equal(program.checker.assumptionLabels.get(program.checker.axioms.get("classical_axioms__LEM")),"LEM");
+  assert.equal((await session.run("typeof LEM(U0)")).at(-1).text,"assumes LEM");
+  assert.equal((await session.run("let e := excluded")).at(-1).text,"e assumes LEM");
+});

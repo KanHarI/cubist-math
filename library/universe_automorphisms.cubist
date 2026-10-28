@@ -1,7 +1,7 @@
 // Excluded middle for U0 holds exactly when there merely is an automorphism F
 // of U0 with F(Unit) equivalent to Void (Booij, Escardó, Lumsdaine and
 // Shulman, "Parametricity, automorphisms of the universe, and excluded
-// middle", 2016). Without the truncations both directions use no assumption.
+// middle", 2016). Both directions use no assumption.
 // Equivalences are the contractible maps of contractible_maps, and an
 // equivalence gives an equality of types by univalence's glue_path.
 import classical_axioms;
@@ -78,23 +78,23 @@ computable def decided_from_swap(s : UnitToVoidAutomorphism) : PropositionsDecid
   );
 }
 
-def excluded_middle_from_swap(t : Truncate(U1, UnitToVoidAutomorphism)) : ExcludedMiddle(U0) {
+computable def excluded_middle_from_swap(t : Trunc(U1, UnitToVoidAutomorphism)) : ExcludedMiddle(U0) {
   intro A, nn;
-  exact TruncateElim(
-    U1, UnitToVoidAutomorphism, Truncate(U0, A), TruncateProp(U0, A),
+  exact mere_eliminate(
+    U1, U0, UnitToVoidAutomorphism, Trunc(U0, A), mere_is_prop(U0, A),
     fun (s : UnitToVoidAutomorphism) => stable_from_swap(
-      s, Truncate(U0, A), TruncateProp(U0, A),
-      fun (none : Truncate(U0, A) -> Void) => nn(fun (a : A) => none(TruncateIntro(U0, A, a)))
+      s, Trunc(U0, A), mere_is_prop(U0, A),
+      fun (none : Trunc(U0, A) -> Void) => nn(fun (a : A) => none(merely(U0, A, a)))
     ), t
   );
 }
 
 // From excluded middle to an automorphism: negate every proposition and fix
 // every other type.
-def decided_from_excluded_middle(lem : ExcludedMiddle(U0)) : PropositionsDecidable {
+computable def decided_from_excluded_middle(lem : ExcludedMiddle(U0)) : PropositionsDecidable {
   intro P, prop_;
-  exact TruncateElim(
-    U0, Decidable(U0, P), Decidable(U0, P), decision_is_prop(U0, P, prop_),
+  exact mere_eliminate(
+    U0, U0, Decidable(U0, P), Decidable(U0, P), decision_is_prop(U0, P, prop_),
     fun (d : Decidable(U0, P)) => d,
     lem(
       Decidable(U0, P), fun (no : Decidable(U0, P) -> Void) => no(right(fun (p : P) => no(left(p))))
@@ -191,20 +191,19 @@ computable def swap_from_decided(decide : PropositionsDecidable) : UnitToVoidAut
   exact (swap_equiv(decide), negate_unit_at(decide_proposition(decide, Unit)));
 }
 
-def swap_from_excluded_middle(lem : ExcludedMiddle(U0)) : Truncate(U1, UnitToVoidAutomorphism) {
-  exact TruncateIntro(
-    U1, UnitToVoidAutomorphism, swap_from_decided(decided_from_excluded_middle(lem))
-  );
+computable def swap_from_excluded_middle(lem : ExcludedMiddle(U0)) :
+  Trunc(U1, UnitToVoidAutomorphism) {
+  exact merely(U1, UnitToVoidAutomorphism, swap_from_decided(decided_from_excluded_middle(lem)));
 }
 
 // LEM_U0 <-> || exists F : U0 ~ U0. F(Unit) ~ Void ||.
-def excluded_middle_iff_universe_swap :
-  (ExcludedMiddle(U0) -> Truncate(U1, UnitToVoidAutomorphism))
-  and (Truncate(U1, UnitToVoidAutomorphism) -> ExcludedMiddle(U0)) {
+computable def excluded_middle_iff_universe_swap :
+  (ExcludedMiddle(U0) -> Trunc(U1, UnitToVoidAutomorphism))
+  and (Trunc(U1, UnitToVoidAutomorphism) -> ExcludedMiddle(U0)) {
   exact (swap_from_excluded_middle, excluded_middle_from_swap);
 }
 
 // Under the library's LEM assumption the automorphism exists outright.
 def universe_swap_from_assumption : UnitToVoidAutomorphism {
-  exact swap_from_decided(decided_from_excluded_middle(excluded_middle_assumed(U0)));
+  exact swap_from_decided(decided_from_excluded_middle(LEM(U0)));
 }
