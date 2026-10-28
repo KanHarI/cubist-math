@@ -176,6 +176,10 @@ across 372 loaded modules (368 archive entry modules and their imports), with it
 `LEM`, `Truncate`, `TruncateElim`, `TruncateIntro`, `TruncateProp`). The snapshot lists the loaded modules and
 pins their type digests and the digest of every declaration's assumption
 dependencies. The three current-language cost workloads introduce none.
+These labels are historical, as are those of the CB7 release and
+pre-retirement reports beside the snapshot in `tests/fixtures/`: K2.5 step 1
+relabelled the archive's builtin `LEM` and `Choice` as `LEM[Truncate]` and
+`Choice[Truncate]` on 2026-10-26, and a regenerated report records those.
 
 At clean commit `7f9b4d28` on Node 24.13.0 / Apple M3 Pro, median check time
 and maximum process RSS across three samples were:

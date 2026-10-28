@@ -969,14 +969,16 @@ def pole_path(A : U0, a : A) : north(A) = south(A) {
         <h3 id="quick-assumptions">Excluded middle, choice and computability</h3>
         <div class="quick-entry" id="quick-axioms">
           <h4>Excluded middle and choice</h4>
-          <p>There is no <code>axiom</code> declaration. <code>LEM</code> and <code>Choice</code> are the two classical assumptions, and their conclusions are truncations, <code>Truncate</code>, an assumption too. Each is generic over the universes below <code>UU0</code>.
+          <p>The library’s <code>classical_axioms</code> states <code>LEM</code> and <code>Choice</code>, the two classical assumptions, as axioms: definitions whose value is <code>axiom</code> of a statement, as in <code>def LEM := axiom ExcludedMiddle;</code>, each a name with a type and no computation rule. Their conclusions are truncations, <code>Trunc</code>, which is no assumption. Each is generic over the universes below <code>UU0</code>. A module states an axiom of its own the same way.
             <a href="reference/assumptions.html#axioms">Excluded middle, choice and computability →</a></p>
-          <pre><code data-check="accept">def excluded_middle(A : U0, nn : (A -&gt; Void) -&gt; Void) : Truncate(U0, A) {
+          <pre><code data-check="accept">import classical_axioms;
+
+def excluded_middle(A : U0, nn : (A -&gt; Void) -&gt; Void) : Trunc(U0, A) {
   exact LEM(U0, A, nn);
 }
 
-def merely(A : U0, a : A) : Truncate(U0, A) {
-  exact TruncateIntro(U0, A, a);
+computable def inhabited(A : U0, a : A) : Trunc(U0, A) {
+  exact merely(U0, A, a);
 }</code></pre>
         </div>
         <div class="quick-entry" id="quick-univalence">

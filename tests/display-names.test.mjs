@@ -12,7 +12,9 @@ import { sourceText } from "../web/cubical-source-text.mjs";
 test("each rule on each kind of name", () => {
   for (const [name, expected] of [["n11", "n"], ["U_1", "U"], ["UU_2", "UU"], ["native12", "x"], ["a1_", "a1_"],
     ["__assumption_T", "__assumption_T"], ["7", "7"]]) assert.equal(stem(name), expected, name);
-  for (const [name, expected] of [["paths__refl", "refl"], ["__assumption_T", "__assumption_T"], ["n", "n"]])
+  for (const [name, expected] of [["paths__refl", "refl"], ["__assumption_T", "__assumption_T"], ["n", "n"],
+    // An assumption shows without its mark (#317's review round 3).
+    ["mod__A1#", "A1"], ["mod__A1#_", "A1"], ["__assumption_T#", "__assumption_T"]])
     assert.equal(localName(name), expected, name);
   assert.equal(numberedName("U", 1), "U_1");
   assert.equal(numberedName("UU", 3), "UU_3");
@@ -29,7 +31,7 @@ test("each rule on each kind of name", () => {
 const names = [
   ...["x", "n", "a1", "U", "UU", "c_", "native", "_y"].flatMap(base => ["", "1", "11", "_2"]
     .flatMap(serial => ["", "mod__"].map(module => `${module}${base}${serial}`))),
-  "native0", "native42", "__assumption_T"];
+  "native0", "native42", "__assumption_T", "__assumption_T#", "mod__A1#", "mod__A1#_"];
 
 test("the predictions agree with one another on every name", () => {
   for (const name of names) {

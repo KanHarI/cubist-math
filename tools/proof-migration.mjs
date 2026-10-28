@@ -18,31 +18,43 @@ import { CubicalDeclarationTransaction } from "../web/cubical-transaction.mjs";
 import { parse, tokenize } from "../web/cubist/parser.mjs";
 import { sourceText } from "../web/cubical-source-text.mjs";
 import { forSource } from "../web/display-naming.mjs";
-import { validateLedger, ledgerMatches } from "./migration-ledger.mjs";
+import { validateLedger, ledgerMatches, retiredComparison, REPLACEMENTS } from "./migration-ledger.mjs";
 import { canonicalHasher } from "./canonical-hash.mjs";
 
 const SHADOW = "__migration_check";
 
-// Copy a checked term with its definition references renamed, sharing every
-// unchanged subterm.
-function mapDefinitions(rename, signatureName = name => name) {
-  const memo = new WeakMap();
-  function map(node) {
+// Copy a checked term with its definition references renamed, and its free
+// assumptions by `variableName`, sharing every unchanged subterm. Only a
+// free variable is renamed: a binder of the same spelling hides the
+// assumption in its body, so a term is memoized per the renamed names bound
+// around it (usually none).
+const termBinders = new Set(["Pi", "Lam", "Sigma", "W", "LPi", "LLam"]);
+export function mapDefinitions(rename, signatureName = name => name, variableName = name => name) {
+  const memos = new Map();
+  function map(node, bound = []) {
     if (!node || typeof node !== "object") return node;
+    const key = bound.join("\u0000");
+    let memo = memos.get(key);
+    if (!memo) memos.set(key, memo = new WeakMap());
     if (memo.has(node)) return memo.get(node);
     let result = node;
     if (Array.isArray(node)) {
-      const items = node.map(map);
+      const items = node.map(item => map(item, bound));
       if (items.some((item, index) => item !== node[index])) result = items;
     } else if (node.tag === "DefRef") {
       const name = rename(node.name);
+      if (name !== node.name) result = { ...node, name };
+    } else if (node.tag === "Var") {
+      const name = bound.includes(node.name) ? node.name : variableName(node.name);
       if (name !== node.name) result = { ...node, name };
     } else {
       let copy = null;
       if ((node.tag === "Sort" || node.tag === "Elim") && signatureName(node.signature) !== node.signature)
         copy = {...node,signature:signatureName(node.signature)};
+      // A binder hides a renamed name in its body.
+      const hides = termBinders.has(node.tag) && variableName(node.name) !== node.name && !bound.includes(node.name);
       for (const [key, value] of Object.entries(node)) {
-        const mapped = map(value);
+        const mapped = map(value, hides && key === "body" ? [...bound, node.name].sort() : bound);
         if (mapped !== value) (copy ??= { ...node })[key] = mapped;
       }
       if (copy) result = copy;
@@ -50,7 +62,7 @@ function mapDefinitions(rename, signatureName = name => name) {
     memo.set(node, result);
     return result;
   }
-  return map;
+  return node => map(node);
 }
 
 // modules: names of the library modules to compare, normally the edited
@@ -65,6 +77,10 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
   if (experimental !== undefined)
     throw new Error("H1 is no longer experimental: declared types are on by default, so drop the experimental option.");
   const allowedChanges = validateLedger(ledger);
+  for (const module of modules) {
+    const retired = retiredComparison(ledger, module);
+    if (retired) throw Error(`The ledger retired its ${module} comparison, which last passed at ${retired.lastPassing}: ${retired.reason}`);
+  }
   const compared = new Set(modules), shadowOf = module => `${module}${SHADOW}`;
   const editedSources = new Map();
   // A compared module's imports and qualified names, m::x, name its shadow,
@@ -92,6 +108,9 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
     ? name.slice(0, -SHADOW.length) : null;
   const readSource = (name, importer) => shadowModule(name) ? editedSource(shadowModule(name)) : readOriginal(name, importer);
   readSource.beginCheck = () => readOriginal.beginCheck?.();
+  // An original module read from library/ is the library's (its axioms'
+  // labels); an edited shadow never is.
+  readSource.fromLibrary = async (name, text) => !shadowModule(name) && (await readOriginal.fromLibrary?.(name, text) ?? false);
   readSource.checkImports = (importer, imports) => readOriginal.checkImports?.(importer, imports.filter(name => !shadowModule(name)));
   // An original module of a revision before L2.10j is read as it was then.
   readSource.nameBased = name => !shadowModule(name) && (readOriginal.nameBased?.(name) ?? false);
@@ -126,17 +145,23 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
   const ledgerVerified = new Set();
   const signatureCorrespondence = new Map();
   const signatureName = name => signatureCorrespondence.get(name) ?? name;
-  const standsIn = name => {
-    const parts = shadowBinding(name);
-    return !parts || identical.has(`${parts.module}__${parts.local.split("__")[0]}`);
-  };
+  // An edited axiom whose assumed statement is the original's stands for it,
+  // as a free assumption of its dependents' terms, types and lists: by its
+  // exact assumption, in a map of its own, never in `identical`.
+  const axiomCorrespondence = new Map();
+  const assumptionName = name => axiomCorrespondence.get(name) ?? name;
+  // An edited definition stands for the original only when its own exact
+  // identity was found identical: never because another declaration's
+  // name begins its own, as P's does P__x's, which identifiers allow.
+  const standsIn = name => !shadowBinding(name) || identical.has(originalName(name));
   // Generated unfolding helpers are named by a session serial; compare their
   // checked bodies instead of their names.
   const helper = name => /__unfolding_\d+$/.test(name) && views.has(name);
   let hashTerm;
   hashTerm = canonicalHasher({ definitionName: name => helper(name) ? `helper:${hashTerm(views.get(name).term)}`
-    : standsIn(name) ? originalName(name) : `edited:${name}`, signatureName });
-  const toOriginal = mapDefinitions(name => standsIn(name) && views.has(originalName(name)) ? originalName(name) : name, signatureName);
+    : standsIn(name) ? originalName(name) : `edited:${name}`, signatureName, freeVariableName: assumptionName });
+  const toOriginal = mapDefinitions(name => standsIn(name) && views.has(originalName(name)) ? originalName(name) : name,
+    signatureName, assumptionName);
   // Close each constructor schema over its admission symbols before
   // hashing. In particular, boundaries refer to bound earlier constructors.
   const signatureShape = (binding, hashChecked = null) => {
@@ -169,17 +194,14 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
     const visit = node => {
       if (!node || typeof node !== "object" || seen.has(node)) return;
       seen.add(node);
-      if (node.tag === "DefRef" && !standsIn(node.name)) {
-        const parts = shadowBinding(node.name);
-        found.add(`${parts.module}__${parts.local.split("__")[0]}`);
-      }
+      if (node.tag === "DefRef" && !standsIn(node.name)) found.add(originalName(node.name));
       for (const value of Array.isArray(node) ? node : Object.values(node)) visit(value);
     };
     visit(term);
     return found;
   };
   const rootsOf = bindings => [...new Set([...bindings].flatMap(binding => [...(roots.get(binding) ?? [binding])]))].sort();
-  const assumptions = binding => [...new Set((program.symbols[binding]?.axioms ?? [])
+  const assumptions = binding => [...new Set((program.symbols[binding]?.axioms ?? []).map(assumptionName)
     .map(name => checker.assumptionLabels.get(name) ?? name))].sort().join(",");
   // Kernel extensions under review are not assumptions: a migration that
   // adds or removes one changes what the result relies on all the same.
@@ -197,10 +219,11 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
     if (!signaturePins.has(name)) signaturePins.set(name, createHash("sha1").update(JSON.stringify(signatureShape(name,snapshotHash))).digest("hex"));
     return `${originalName(name)}:${signaturePins.get(name)}`;
   }, freeVariableName:name => {
+    name = assumptionName(name);
     const label = checker.assumptionLabels.get(name) ?? name, type = checker.assumptions.get(name);
     return type ? `${label}:${snapshotHash(type)}` : label;
   }});
-  const readableBindings = mapDefinitions(originalName, originalName);
+  const readableBindings = mapDefinitions(originalName, originalName, assumptionName);
   // Pin text uses the explicit unary view, and labels as the kernel names
   // them, no symbols, so that a pin reads alike however the elaborator
   // displays terms; it is named as every display is (forSource), closed,
@@ -235,8 +258,10 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
       const name = node.tag === "DefRef" ? node.name : ["Sort", "Elim"].includes(node.tag) ? node.signature : null;
       if (name) {
         if (helper(name)) visit(views.get(name).term);
+        // The module's own declarations, by the module that checked them,
+        // not by a binding's prefix, which another module's name may share.
         const binding = originalName(name);
-        if (binding.startsWith(`${module}__`)) found.add(`${module}__${binding.slice(module.length+2).split("__")[0]}`);
+        if (program.symbols[binding]?.sourceModule === module) found.add(binding);
       }
       for (const value of Array.isArray(node) ? node : Object.values(node)) visit(value);
     };
@@ -282,13 +307,10 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
         const oldAssumptions = list(assumptions(originalBinding)), newAssumptions = list(assumptions(editedBinding));
         const oldExtensions = list(extensions(originalBinding)), newExtensions = list(extensions(editedBinding));
         const removed = difference(oldAssumptions,newAssumptions), added = difference(newAssumptions,oldAssumptions);
-        const assumptionsReplaced = [];
-        for (const old of ["LEM", "Choice"]) {
-          const variants = added.filter(label => [...checker.assumptionOrigins].some(([symbol, origin]) =>
-            origin.kind === "generic-assumption" && origin.name === old && origin.truncateSignature
-            && checker.assumptionLabels.get(symbol) === label));
-          if (removed.includes(old) && variants.length === 1) assumptionsReplaced.push({old,new:variants[0]});
-        }
+        // A legacy builtin removed where the library's axiom of its name is
+        // added, which a ledger entry must still list.
+        const assumptionsReplaced = [...REPLACEMENTS].filter(([old,value]) => removed.includes(old) && added.includes(value))
+          .map(([old,value]) => ({old,new:value}));
         const observed = {module,declaration:name,oldPublicType:snapshot(before.type),newPublicType:snapshot(after.type,true),
           oldValue:snapshot(before.term),newValue:snapshot(after.term,true),assumptionsReplaced,
           hypothesesAdded:difference(newParameters.get(name) ?? [],oldParameters.get(name) ?? []),
@@ -347,6 +369,40 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
         if (same) report.typesPreserved++;
         else fail(name, through.length ? `${reason} It mentions changed definitions from: ${through.join(", ")}.` : reason);
       };
+      // An axiom has no definition to compare: its assumed statement is
+      // compared instead, as a declaration's public type is. The same
+      // statement, or at level types a convertible one, makes the edited
+      // axiom stand for the original; a changed one is reported, as a
+      // changed type is. What the statements rely on is compared first:
+      // every other assumption, by its correspondence, and every kernel
+      // extension.
+      const compareAxiom = (name, originalBinding, editedBinding) => {
+        const original = checker.axioms.get(originalBinding), edited = checker.axioms.get(editedBinding);
+        if (!original || !edited) return fail(name, "One version assumes this declaration as an axiom, and the other defines it.");
+        const [before, after] = [checker.assumptions.get(original), checker.assumptions.get(edited)];
+        const reliedOn = statement => [...new Set([...checker.requiredAssumptions(statement).keys()].map(assumptionName)
+          .map(name => checker.assumptionLabels.get(name) ?? name))].sort().join(",");
+        if (reliedOn(before) !== reliedOn(after))
+          return fail(name, `The axiom's statement relies on other assumptions: ${reliedOn(before) || "none"} -> ${reliedOn(after) || "none"}`);
+        if (extensions(originalBinding) !== extensions(editedBinding))
+          return fail(name, `Kernel extensions changed: ${extensions(originalBinding) || "none"} -> ${extensions(editedBinding) || "none"}`);
+        if (hashTerm(before) === hashTerm(after)) {
+          axiomCorrespondence.set(edited, original); report.identical++; return;
+        }
+        if (level === "identical") return fail(name, "The axiom's assumed statement changed.");
+        // As a public type is compared: bounded kernel conversion, rolled back.
+        let same, reason = "The axiom's assumed statement changed.";
+        const transaction = new CubicalDeclarationTransaction(program.kernel, checker);
+        program.kernel.setDeadline(typeTimeLimitMs);
+        try { same = checker.equal(before, toOriginal(after)); }
+        catch (error) {
+          same = false;
+          if (error.kind === "deadline")
+            reason = `The axiom's assumed statements were not shown convertible within ${typeTimeLimitMs} ms.`;
+        } finally { program.kernel.setDeadline(); transaction.finish(false); }
+        if (!same) return fail(name, reason);
+        axiomCorrespondence.set(edited, original); report.typesPreserved++;
+      };
       // Establish schema correspondences before comparing terms that use
       // them. This grants a verifier renaming, never kernel conversion
       // between different generative sorts.
@@ -366,6 +422,11 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
           continue;
         }
         if (symbol.kind === "inductive") {
+          continue;
+        }
+        // In source order, so that a statement's earlier definitions are decided.
+        if (checker.axioms.has(symbol.binding) || checker.axioms.has(output.binding)) {
+          compareAxiom(symbol.name, symbol.binding, output.binding);
           continue;
         }
         compare(symbol.name, views.get(symbol.binding), views.get(output.binding), symbol.binding, output.binding);

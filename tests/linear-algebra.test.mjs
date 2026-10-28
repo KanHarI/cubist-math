@@ -70,9 +70,9 @@ test("the general basis theorem derives maximality from choice, with its exact a
   assert.ok(assumptions("bourbaki_witt__bourbaki_witt").every(name => /^(Truncate|LEM)/.test(name)));
   assert.ok(assumptions("independent_extension__adjoin_independent").every(name => /^(Truncate|LEM)/.test(name)));
   const basisAxioms = assumptions("vector_basis_existence__vector_space_has_basis");
-  assert.ok(basisAxioms.includes("Choice"), JSON.stringify(basisAxioms));
-  assert.ok(basisAxioms.includes("LEM"), JSON.stringify(basisAxioms));
-  assert.ok(basisAxioms.every(name => /^(Choice|LEM|Truncate(?:Intro|Prop|Elim)?)$/.test(name)), JSON.stringify(basisAxioms));
+  assert.ok(basisAxioms.includes("Choice[Truncate]"), JSON.stringify(basisAxioms));
+  assert.ok(basisAxioms.includes("LEM[Truncate]"), JSON.stringify(basisAxioms));
+  assert.ok(basisAxioms.every(name => /^(Choice\[Truncate\]|LEM\[Truncate\]|Truncate(?:Intro|Prop|Elim)?)$/.test(name)), JSON.stringify(basisAxioms));
   assert.deepEqual(assumptions("linear_algebra_general_basis_regression__any_vector_space"), basisAxioms);
 });
 

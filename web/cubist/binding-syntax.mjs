@@ -14,7 +14,7 @@ const format = "cubist-bindings-1";
 // Opt in only after every binder and reference namespace of a family is
 // modelled. New parser kinds cannot silently enter nominal lookup paths.
 const migrated = new Set(["name", "number", "lambda", "forall", "exists", "binderGroup",
-  "pathLambda", "induction", "match", "clause", "pattern", "unpack", "def", "namedArgument", "call", "binary",
+  "pathLambda", "induction", "match", "clause", "pattern", "unpack", "def", "axiom", "namedArgument", "call", "binary",
   "unary", "pair", "projection", "member", "pathApply", "transport", "lift", "over", "prop", "set",
   "trunc", "typed", "exact", "let", "intro", "ext", "obtain", "simpOnly", "simpaOnly", "withUnfolding", "matchStatement", "rfl", "calc", "rw", "block", "term", "tactic", "hlevel","select","use","namedNotationRule"]);
 const freeze = value => {

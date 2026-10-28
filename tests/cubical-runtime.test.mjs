@@ -106,7 +106,9 @@ def unit_match : Unit := unit_induction(fun (x : Unit) => Unit, tt, tt);
 test("two fields share a demanded argument and unsupported siblings remain suspended", async t => {
   const { query } = await setup(t, `
 def shared : Unit and Unit := (fun (x : Unit) => typed(Unit and Unit, (x, x)))((fun (y : Unit) => y)(tt));
-def suspended : Unit and (tt = tt) := (tt, refl(tt));
+inductive Circle { base; loop : base = base; }
+def suspended : Unit and Circle := (tt, base);
+def abstraction : Unit and (tt = tt) := (tt, refl(tt));
 `);
   const shared = query("shared"), pair = await shared.observe();
   assert.equal(pair.kind, "Pair");
@@ -120,6 +122,9 @@ def suspended : Unit and (tt = tt) := (tt, refl(tt));
     await assert.rejects(suspended.observe(fields.second), fails("unsupported"));
     assert.deepEqual(await suspended.observe(fields.first), { kind: "Point" });
   }
+  // A path abstraction is a weak head; only applying it is cubical demand.
+  const abstraction = query("abstraction"), parts = await abstraction.observe();
+  assert.deepEqual(await abstraction.observe(parts.second), { kind: "PathAbstraction" });
 });
 
 test("admitted metadata preserves field order and higher-order hypothesis argument order", async t => {
@@ -159,7 +164,7 @@ def forest_result : UNat := depth(grow(fun (a, b : Flag) => match a return Fores
   }
 });
 
-test("partial constructors, eliminators and lifted hypotheses are functions", async t => {
+test("eliminators and lifted hypotheses are functions, and a partial constructor tells its arity", async t => {
   const { program, kernel, graph, query } = await setup(t, `
 inductive Tree { leaf; node(children : Unit -> Tree); }
 inductive Out { base_out; branches(children : Unit -> Out); }
@@ -170,11 +175,13 @@ def lifted := to_out(node(fun (u : Unit) => leaf));
 def identity(x : Unit) : Unit := x;
 `);
   const tree = kernel.signatures.get("main__Tree").index;
-  // The kernel constructor is a function here. Source-level eta expansion
-  // must not hide the distinction from a saturated nullary constructor.
+  // The kernel constructor is a function here, whose weak head is the
+  // constructor itself: its arity, not its arguments, tells it from a
+  // saturated nullary constructor.
   const partial = new RuntimeQuery(kernel, graph.construct(graph.sortBegin(tree), 1));
   t.after(() => partial.dispose());
-  assert.deepEqual(await partial.observe(), { kind: "Function" });
+  const unapplied = await partial.observe();
+  assert.deepEqual([unapplied.kind, unapplied.signature, unapplied.index, unapplied.args, unapplied.arity], ["Con", tree, 1, [], 1]);
   const lifted = query("lifted"), outer = await lifted.observe();
   assert.equal(outer.kind, "Con");
   assert.deepEqual(await lifted.observe(outer.args[0]), { kind: "Function" });
@@ -191,6 +198,70 @@ def identity(x : Unit) : Unit := x;
   const bare = new RuntimeQuery(kernel, typing);
   t.after(() => bare.dispose());
   assert.deepEqual(await bare.observe(), { kind: "Function" });
+});
+
+test("an observation is the kernel's weak head: η, functions, types and path abstractions", async t => {
+  const { query, kernel, graph } = await setup(t, `
+import lists; use unat;
+def identity_(U < UU0, A : U, x : A) : A := x;
+def successor := fun (n : UNat) => succ(n);
+def prepend := fun (xs : List(U0, UNat)) => cons(1, xs);
+def doubled := fun (n : UNat) => n + n;
+def generic := fun (U < UU0) => identity_(U);
+def carrier : U0 := UNat;
+def reflexive : tt = tt := refl(tt);
+def returned : tt = tt := path i => reflexive @ i;
+`);
+  // The kernel's weak head of each definition, as its spine names it.
+  const kernelHead = name => {
+    const { root, args } = kernel.spine(kernel.head(graph.judgement(graph.lookup(kernel.definitions.get(`main__${name}`))).term));
+    return root.kind === "Con" ? `Con ${root.payload}/${args.length}` : root.kind;
+  };
+  const observed = async name => {
+    const value = await query(name).observe();
+    return value.kind === "Con" ? `Con ${value.index}/${value.args.length}` : value.kind;
+  };
+  // η makes the successor function the constructor and the prepending one
+  // cons applied to its first argument; n + n uses its variable twice and
+  // is a function. Level lambdas contract alike.
+  for (const [name, kind, head] of [["successor", "Con 1/0", "Con 1/0"], ["prepend", "Con 1/1", "Con 1/1"],
+    ["doubled", "Function", "Lam"], ["generic", "LevelFunction", "LLam"], ["carrier", "Type", "Sort"],
+    ["reflexive", "PathAbstraction", "PLam"]]) {
+    assert.equal(await observed(name), kind, name);
+    assert.equal(kernelHead(name), head, name);
+  }
+  const prepend = query("prepend"), cons = await prepend.observe();
+  assert.equal(cons.arity, 2);
+  assert.equal(await unary(prepend, kernel.signatures.get("unat__UNat").index, cons.args[0]), 1);
+  // path i => p @ i contracts to p in the kernel, by reading the
+  // application's interval formula; the runtime does not interpret
+  // formulas, and says so.
+  await assert.rejects(query("returned").observe(), fails("unsupported"));
+  assert.equal(kernelHead("returned"), "PLam");
+});
+
+test("observeNow runs the same machine at once, under the same limits", async t => {
+  const { query } = await setup(t, "def pair : Unit and Unit := ((fun (x : Unit) => x)(tt), tt);");
+  const runtime = query("pair", { slice: 1 }), pair = runtime.observeNow();
+  assert.equal(pair.kind, "Pair");
+  assert.deepEqual(runtime.observeNow(pair.first), { kind: "Point" });
+  const forces = runtime.stats.forces;
+  assert.deepEqual(await runtime.observe(pair.first), { kind: "Point" });
+  assert.equal(runtime.stats.forces, forces, "the asynchronous observation reads the same forced cell");
+  // A deadline that passes mid-force resets the pending cells, and the
+  // query stays usable.
+  let now = 0;
+  t.mock.method(performance, "now", () => now += 1);
+  const timed = query("pair", { slice: 1, milliseconds: 3 });
+  assert.throws(() => timed.observeNow(), fails("deadline"));
+  t.mock.restoreAll();
+  assert.equal(timed.observeNow().kind, "Pair");
+  // One observation at a time, either kind, and none after disposal.
+  const busy = query("pair", { slice: 1 }), pending = busy.observe();
+  assert.throws(() => busy.observeNow(), fails("input"));
+  assert.equal((await pending).kind, "Pair");
+  busy.dispose();
+  assert.throws(() => busy.observeNow(), fails("disposed"));
 });
 
 test("definition sharing does not depend on syntax interning", async t => {

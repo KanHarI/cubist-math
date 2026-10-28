@@ -665,3 +665,17 @@ test("contextual outputs that show several terms are each one display", async ()
     }, { collectScopes: true });
   } finally { NativeCubicalElaborator.prototype.printedTogether = printedTogether; }
 });
+
+// An axiom's assumption prints by its label (#317) beside a numeral printed
+// by its reader, and the text reads back.
+test("a printed type that mentions an axiom and a numeral reads back", async () => {
+  const three = "b_positive(bp_odd(bp_one))";
+  const source = `import unat;\nimport bnat;\ndef Pick := axiom (BNat -> BNat);\n`
+    + `def p : Pick(${three}) = Pick(${three}) := refl(Pick(${three}));\nprint(typeof(p));\n`;
+  await withChecked(source, async (_, result) => {
+    const text = result.prints[0].text;
+    assert.equal(text, "main::Pick(bnat_numerals.(3)) = main::Pick(bnat_numerals.(3))");
+    await withChecked(`${source}def again : ${text} := refl(Pick(${three}));\n`, (_, again) =>
+      assert.deepEqual(again.outputs.filter(output => output.name === "again").map(output => [output.verified, output.reason ?? null]), [[true, null]]));
+  });
+});

@@ -134,6 +134,7 @@ export const diagnostics = [
   ["E005", "A qualified name names one module: module::name."],
   ["E006", "A qualified name is a module's name, ::, and a name, with no space between: unat::zero."],
   ["E007", "… names a module's declaration; a name declared or bound here is plain."],
+  ["E008", "An axiom is the whole value of a top-level definition without parameters: def Name := axiom Statement;"],
   // Files, modules and tools
   ["E201", "Could not load …: HTTP …"],
   ["E202", "The declaration limit must be a positive number of milliseconds."],
@@ -190,6 +191,8 @@ export const diagnostics = [
   ["E253", "… names a declaration of …, which is not imported here: import …;"],
   ["E254", "… declares no …, so … names nothing."],
   ["E255", "… is declared below its use: a declaration uses only the declarations above it."],
+  ["E256", "…::… and …::… would be one identity, …: rename one of them."],
+  ["E257", "The transfer did not replay completely: …"],
   // Terms
   ["E301", "Expected cubical syntax."],
   ["E302", "Expected a dimension binder."],
@@ -294,7 +297,7 @@ export const diagnostics = [
   ["E402", "… takes a universe below UU0."],
   ["E403", "Too many arguments to …."],
   ["E404", "… needs a universe argument."],
-  ["E405", "… with a truncation former needs a universe argument."],
+  ["E405", "… with a truncation former needs a universe argument.", "retired"],
   ["E406", "Logical assumptions require a universe and an explicit native context."],
   ["E407", "… holds only for universes below UU0."],
   ["E408", "Invalid arguments to …."],
@@ -376,6 +379,10 @@ export const diagnostics = [
   ["E484", "A demand mark, !, !! or !!!, starts a part of an expected value: the whole value, a pair's component, an injection's value or a constructor's argument; … is none of these."],
   ["E485", "evaluate e expecting _; would compute nothing: write !_ to compute the value's weak head, !!_ for its normal form, or !!!_ for its full normal form."],
   ["E486", "A !!! inside a !! part asks for a full normal form, which the !! part's normal form does not hold: write !!! on the outer part."],
+  ["E487", "The runtime's evaluation of the value form exhausted its work budget of … steps."],
+  ["E488", "The runtime's evaluation of the value form exhausted its allocation budget of … cells."],
+  ["E489", "The runtime's evaluation of the value form exceeded its time limit."],
+  ["E490", "The runtime failed to evaluate the value form: …"],
   // Inductive types and matching
   ["E501", "trunc(n) is supported up to n = …."],
   ["E502", "A sort is type, set, prop or trunc(n) for an integer n ≥ -1."],
@@ -454,8 +461,8 @@ export const diagnostics = [
   ["E580", "Binary naturals have bit constructors. Use nat_peano for zero/successor induction, or import unat for structural UNat."],
   // Checking
   ["E601", "Unsupported library assumption: …"],
-  ["E602", "Only LEM and Choice have rebuilt truncation signatures."],
-  ["E603", "Rebuilt LEM and Choice require an admitted proposition truncation."],
+  ["E602", "Only LEM and Choice have rebuilt truncation signatures.", "retired"],
+  ["E603", "Rebuilt LEM and Choice require an admitted proposition truncation.", "retired"],
   ["E604", "Instruction kernel: …"],
   ["E605", "An assumption needs a checked type."],
   ["E606", "Type mismatch: found …, expected …."],
@@ -518,6 +525,7 @@ export const diagnostics = [
   ["E663", "A path is applied at an interval point; found a face formula."],
   ["E664", "A transport's face is a face formula; found an interval point."],
   ["E665", "A partial element's face is a face formula; found an interval point."],
+  ["E666", "An axiom states a type, or a family of types: axiom T; or axiom F; where F(x) is a type."],
   // Arguments and their inference
   ["E701", "… has no implicit parameters: give its arguments in parentheses, as …(…)."],
   ["E702", "… has … implicit parameter…, …; the double braces give …."],

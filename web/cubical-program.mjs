@@ -37,7 +37,7 @@ function whenRead(object, key, compute) {
 export class CubicalProgram {
   constructor(module, readSource, options = {}) {
     const {onDeclarationStart,onDeclaration,collectReferences=true,collectScopes=false,collectGeneration=false,optimizations={},manageTransactions=true,
-      searchFuel,declarationFuel,experimental,representation,bundledUNat=true,prelude}=options;
+      searchFuel,declarationFuel,experimental,representation,bundledUNat=true,prelude,runtimeEvaluation=true}=options;
     this.options={...options};
     if(collectScopes&&!manageTransactions)throw new TypeError("Scope collection requires declaration transactions.");
     // The representation map τ to declared counterparts was the differential
@@ -55,6 +55,9 @@ export class CubicalProgram {
     this.kernel = new CubicalKernel(module);
     this.kernel.setOptimizations(optimizations);
     this.checker = new NativeCubicalElaborator(this.kernel);
+    // Value forms are observed by the runtime unless this is false, which
+    // leaves them to the kernel's head queries alone, for a comparison.
+    this.checker.runtimeEvaluation = runtimeEvaluation;
     this.readSource = readSource;
     // Nothing is imported automatically. Structural unary clients import
     // unat, which a reader with no library can still load from
@@ -75,7 +78,15 @@ export class CubicalProgram {
     this.manageTransactions = manageTransactions;
     this.localSymbols = {}; this.declarationBindings = new Map();
     this.declarationReferences = new Map();
-    this.modules = new Map(); this.symbols = {}; this.views = new Map();
+    // The program's declarations by binding, and nothing else: whatever
+    // looks a declaration up reads this table. An assumption is no
+    // declaration. What a rendered text calls each name is `displaySymbols`:
+    // a declaration as here, and an assumption by its label, as the
+    // checker's displays show it. Only rendering reads that table.
+    const checker = this.checker, symbols = this.symbols = {};
+    this.displaySymbols = new Proxy(symbols, { get: (declarations, name) => typeof name === "string" && checker.assumptionLabels.has(name)
+      ? { binding: name, name: checker.assumptionLabels.get(name), kind: "axiom" } : declarations[name] });
+    this.modules = new Map(); this.views = new Map();
     this.publications = new Map();
     this.generation = new Map();
     this.sourceAsts = new Map();
@@ -86,14 +97,30 @@ export class CubicalProgram {
     // Proof statements of each checked module, with their goals (see steps()).
     this.moduleSteps = new Map();
     this.failedImports = new Map();
+    // Whether each module checked is the library's, imports included.
+    this.libraryModules = new Map();
   }
   dispose() { this.scopeReady=false; this.kernel.dispose(); }
+  // Each assumption, as the pages and the inspector show it. An axiom's is
+  // defined where its axiom definition is: the declaration of the origin
+  // the checker recorded, in that origin's module, never one found by label
+  // or by an identity another module may spell: its site, so that every
+  // link to it can show its source, and its documentation. A legacy builtin
+  // has neither.
   assumptionSymbols() {
-    return Object.fromEntries([...this.checker.assumptions].map(([binding, type]) => [binding, {
-      binding, name: this.checker.assumptionLabels.get(binding) ?? binding, kind: "axiom", role: "explicit axiom",
-      verified: true, type: cubicalText(type, this.symbols, { dimensions: [] }), axioms: [binding],
-      description: "An explicit logical assumption from the library. Its full signature is shown in the Axioms section.",
-    }]));
+    return Object.fromEntries([...this.checker.assumptions].map(([binding, type]) => {
+      const origin = this.checker.assumptionOrigins.get(binding);
+      const declaration = origin?.kind === "axiom"
+        ? this.sourceAsts.get(origin.module)?.declarations.find(d => d.name.text === origin.declaration) : null;
+      const definition = declaration ? this.sourceSite(declaration, origin.module) : null;
+      return [binding, {
+        binding, name: this.checker.assumptionLabels.get(binding) ?? binding, kind: "axiom", role: "explicit axiom",
+        verified: true, type: cubicalText(type, this.displaySymbols, { dimensions: [] }), axioms: [binding],
+        ...(definition ? { definitionSite: definition.definitionSite } : {}),
+        description: definition?.description
+          || "An explicit logical assumption: a name with a type and no computation rule. Its full signature is shown in the Axioms section.",
+      }];
+    }));
   }
   // Read and parse a module and, before it, its imports, into
   // `discovery.prepared`, counting their declarations into `discovery.total`.
@@ -119,11 +146,23 @@ export class CubicalProgram {
         error.kind??="parse";
         throw new SourceUnit({checker:this.checker,source:text,moduleName:name}).locate(error,null);
       }
-      prepared.set(name, { text, ast });
+      // Provenance only names axioms: a module whose provenance cannot be
+      // read, as when library/ is unreachable, is the text it is, with
+      // qualified labels, and is never lost for it.
+      let own = false;
+      try { own = await this.readSource.fromLibrary?.(name, text) ?? false; } catch { own = false; }
+      const entry = { text, ast, library: false };
+      prepared.set(name, entry);
       if(!this.modules.has(name))discovery.total += ast.declarations.length;
       onProgress({ completed: this.completed, total: null, current: name,
         phase: "loading", unit: "declarations", instructions: this.checker.steps });
       for (const dependency of ast.imports) await this.discover(discovery, dependency, null, name, onProgress);
+      // Whether it is the library's, as library/ holds it, and so is every
+      // module it reads, transitively: only then do its axioms take their
+      // bare names as labels, since an axiom's statement is read through its
+      // imports.
+      entry.library = own && ast.imports.every(dependency => prepared.get(dependency)?.library
+        ?? this.libraryModules.get(dependency) ?? false);
       const refused = await this.readSource.checkImports?.(name, ast.imports);
       if (refused) prepared.set(name, { error: new Error(refused) });
     } catch (error) { prepared.set(name, { error }); }
@@ -214,15 +253,19 @@ export class CubicalProgram {
       else if(directive.kind==="evaluate")
         this.evaluations.push({module:name,name:directive.name,value:directive.normalText,start:directive.start});
       else if(directive.kind==="print")
-        this.prints.push({module:name,name:directive.name,text:directive.text,start:directive.start});
+        this.prints.push({module:name,name:directive.name,text:directive.text,start:directive.start,axioms:directive.axioms??[],
+          ...(directive.valueForm?{valueForm:directive.valueForm}:{})});
     }
     const byName = new Map(ast.declarations.map(d => [d.name.text, d]));
     for (const d of result.declarations) {
+      // A duplicate, of a name in its module or of an identity another
+      // module's declaration holds, is refused, and writes no record: the
+      // original symbol and its inspection data still own the name.
       if (d.duplicate) {
         this.gaps.push({module:name,name:d.name,duplicate:true,reason:d.reason,code:diagnosticCode(d.reason),
           start:d.errorStart,end:d.errorEnd,declarationStart:d.syntax.start,declarationEnd:d.syntax.end,
           ...(d.diagnostic?{diagnostic:d.diagnostic}:{})});
-        continue; // The original symbol and its inspection data still own the name.
+        continue;
       }
       // A theory's declarations bring their generated syntax (theories.mjs).
       const syntax = d.syntax ?? byName.get(d.name), binding = `${name}__${d.name}`;
@@ -252,7 +295,7 @@ export class CubicalProgram {
       // copied, which each declaration did, all of them.
       if (verified) {
         // A universe variable's source name stands for U(x): it names x.
-        const symbols = this.symbols, variables = Object.fromEntries((this.declarationBindings.get(binding) ?? [])
+        const symbols = this.displaySymbols, variables = Object.fromEntries((this.declarationBindings.get(binding) ?? [])
           .map(item => [item.term.tag === "Var" ? item.term.name
             : item.term.tag === "U" && item.term.level?.tag === "Var" ? item.term.level.name : null, { name: item.node.name }])
           .filter(([variable]) => variable));
@@ -330,12 +373,13 @@ export class CubicalProgram {
       if (visiting.has(name)) throw new Error(`Cyclic source import: ${name}`);
       if (this.modules.has(name)) return this.modules.get(name);
       visiting.add(name);
-      let ast;
+      let ast, library;
       try {
         const entry = prepared.get(name);
         if (!entry) throw new Error(`Source was not discovered: ${name}`);
         if (entry.error) throw entry.error;
-        ({ text, ast } = entry);
+        ({ text, ast, library } = entry);
+        this.libraryModules.set(name, library);
       }
       catch (error) {
         if (name === main) throw error;
@@ -366,7 +410,7 @@ export class CubicalProgram {
       let current = null;
       // A module of a revision before L2.10j, as the migration verifier reads
       // one, keeps its name-based operators and numerals (translate.mjs).
-      const translator = new Translator({ normalize: false, checker,definitionModule:name,testMode:!!this.options.testMode,simpRegistry,moduleName:name,sources:this.sources,collectGeneration:this.collectGeneration,
+      const translator = new Translator({ normalize: false, checker,definitionModule:name,libraryModule:library,testMode:!!this.options.testMode,simpRegistry,moduleName:name,sources:this.sources,collectGeneration:this.collectGeneration,
         scopePoints:scopeRecorder,compilationBindings:this.compilationBindings,
         onDirectiveStart:collectScopes?directive=>{
           this.onDirectiveStart?.(name,directive);
@@ -424,6 +468,10 @@ export class CubicalProgram {
     await load(main, source);
     if(collectScopes)this.scopeReady=true;
     const all = Object.values(this.symbols), outputs = all.filter(d => !d.sourceModule);
+    // A check is complete when every declaration of every module it holds
+    // checks, an import's as the main module's, every directive does, and
+    // every import loads.
+    const held = new Set(prepared.keys()), checked = all.every(d => d.verified || !held.has(d.sourceModule ?? main));
     this.main = main;
     // Goals are shown on demand; posting the result to the page reads them.
     let steps = null;
@@ -437,7 +485,7 @@ export class CubicalProgram {
       // Unused bindings that can be removed, in the checked module only; a
       // fresh parse, since elaboration annotates the syntax it checks.
       warnings: lint(source),
-      complete: outputs.length > 0 && outputs.every(d => d.verified)
+      complete: outputs.length > 0 && outputs.every(d => d.verified) && checked
         && !this.gaps.some(gap=>gap.directive||gap.duplicate) && failedHere.size === 0, sources: this.sources };
   }
   // A declared type's signature as the kernel admitted it (the H1
@@ -691,8 +739,10 @@ export class CubicalProgram {
     if (info && !info.verified) throw new Error(info.reason);
     let term, expected = null, context = [], dimensions = new Map();
     if (local) { term = local.term; context = [...local.context]; dimensions = local.dimensions; }
-    else if (this.checker.assumptions.has(binding)) {
-      term = { tag: "Var", name: binding }; expected = this.checker.assumptions.get(binding);
+    else if (this.checker.assumptions.has(this.checker.axioms.get(binding) ?? binding)) {
+      // An axiom definition is inspected as the assumption it states.
+      const name = this.checker.axioms.get(binding) ?? binding;
+      term = { tag: "Var", name }; expected = this.checker.assumptions.get(name);
     } else {
       const reference = this.kernel.definitions.get(binding);
       if (!reference) throw new Error("No checked native definition for this name.");
@@ -721,7 +771,7 @@ export class CubicalProgram {
     for (const [name, value] of Object.entries(variableNames)) symbols[name] = { ...value, local: true };
     const view = { backend: "cubical", name: binding,
       expression: checked.term, type: checked.type,
-      expressionText: cubicalText(checked.term, this.symbols, { dimensions }), typeText: cubicalText(checked.type, this.symbols, { dimensions }),
+      expressionText: cubicalText(checked.term, this.displaySymbols, { dimensions }), typeText: cubicalText(checked.type, this.displaySymbols, { dimensions }),
       dimensions: [...dimensions], context: context.map(([name, type]) => ({ name,
         label: variableNames[name]?.name ?? this.checker.assumptionLabels.get(name) ?? name,
         binding: variableNames[name]?.binding ?? (this.checker.assumptions.has(name) ? name : null), type })), symbols,
@@ -736,10 +786,16 @@ export class CubicalProgram {
     view.folded = foldedInspection(presentation, aliases);
     view.expressionText = cubicalText(view.folded.expression, symbols, { dimensions: [...dimensions.keys()] });
     view.typeText = cubicalText(view.folded.type, symbols, { dimensions: [...dimensions.keys()] });
-    if (info?.verified && !local) {
-      const module = info.sourceModule ?? this.main;
-      const declaration = this.sourceAsts.get(module)?.declarations.find(d => d.name.text === info.name);
-      if (declaration) view.statement = sourceStatement(this.sources[module], declaration, this.declarationReferences.get(binding));
+    // The declaration a view states: a declaration's own, in its module, or
+    // an assumption's axiom definition, by the origin the checker recorded,
+    // never by a label.
+    const origin = this.checker.assumptionOrigins.get(binding);
+    const stated = local ? null : info?.verified ? { module: info.sourceModule ?? this.main, name: info.name, binding }
+      : origin?.kind === "axiom" ? { module: origin.module, name: origin.declaration, binding: origin.binding } : null;
+    if (stated) {
+      const { module } = stated;
+      const declaration = this.sourceAsts.get(module)?.declarations.find(d => d.name.text === stated.name);
+      if (declaration) view.statement = sourceStatement(this.sources[module], declaration, this.declarationReferences.get(stated.binding));
       // Keep proof blocks compact, with their checked bodies available to inspect.
       if (declaration?.body) view.folded.reference = { tag: "DefRef", name: binding };
       if (!view.statement) {

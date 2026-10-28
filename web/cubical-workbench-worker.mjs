@@ -1,7 +1,14 @@
 import createCubical from "./dist/cubical.mjs";
 import { WorkbenchSession } from "./cubical-workbench-session.mjs";
+import { moduleListing } from "./module-listing.mjs";
+import { libraryProvenance } from "./module-resolution.mjs";
 let aborted = null;
-const session = new WorkbenchSession(await createCubical({ onAbort: reason => { aborted = String(reason); } }));
+// A transferred module is the library's when library/ holds that text.
+const fromLibrary = libraryProvenance(moduleListing, async path => {
+  const response = await fetch(new URL(`./${path}`, import.meta.url), { cache: "no-store" });
+  return response.ok ? response.text() : null;
+});
+const session = new WorkbenchSession(await createCubical({ onAbort: reason => { aborted = String(reason); } }), { fromLibrary });
 self.postMessage({ ready: true });
 let queue = Promise.resolve();
 self.onmessage = ({ data: { id, command, args } }) => {

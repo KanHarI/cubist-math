@@ -3,7 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { canonicalHasher } from "../tools/canonical-hash.mjs";
-import { verifyMigration } from "../tools/proof-migration.mjs";
+import { mapDefinitions, verifyMigration } from "../tools/proof-migration.mjs";
 import { identicalRewrites, rewriteModule, typePreservingRewrites } from "../tools/proof-rewrites.mjs";
 import { formatCubist } from "../web/cubist/formatter.mjs";
 import { migrationSourceReader } from "../tools/migration-sources.mjs";
@@ -386,18 +386,29 @@ test("ledgered public dependencies cannot be hidden outside a declaration scope"
   assert.match(unpinned.failures.find(item => item.name === "witness_").reason,/must be identical or have its own verified ledger entry/);
 });
 
-test("rebuilt classical assumptions require explicit, pinned replacements", async () => {
-  const source = async name => name === "replacement" ? before
-    : readFile(new URL(`../library/${name}.cubist`,import.meta.url),"utf8");
-  const before = "import h1_truncation;\ndef value(A : U0, h : (A -> Void) -> Void) := LEM(U0, A, h);\n";
-  const after = "import h1_truncation;\ndef value(A : U0, h : (A -> Void) -> Void) := LEM(Trunc, U0, A, h);\n";
+// The legacy builtin LEM[Truncate] replaced by the library's axiom LEM.
+test("the library's axioms replace legacy builtins only by explicit, pinned replacements", async () => {
+  // The library's axioms keep their bare labels only as read from library/.
+  const source = migrationSourceReader(async (place,name) => name === "replacement" ? (place === "archive" ? before : null)
+    : place === "library" ? readFile(new URL(`../library/${name}.cubist`,import.meta.url),"utf8").catch(() => null) : null,
+    ["replacement"]);
+  const before = "def value(A : U0, h : (A -> Void) -> Void) := LEM(U0, A, h);\n";
+  const after = "import classical_axioms;\ndef value(A : U0, h : (A -> Void) -> Void) := LEM(U0, A, h);\n";
   const run = async ledger => (await verifyMigration({modules:["replacement"],ledger,
     readOriginal:source,readEdited:async () => after}))[0];
   const change = {...(await run(null)).changes[0],remedyGroup:6};
-  assert.deepEqual(change.assumptionsReplaced,[{old:"LEM",new:"LEM[h1_truncation.Trunc]"}]);
+  assert.deepEqual(change.assumptionsReplaced,[{old:"LEM[Truncate]",new:"LEM"}]);
+  assert.deepEqual(change.assumptionsRemoved,["Truncate"]);
   assert.deepEqual(change.assumptionsRetained,[]);
   assert.deepEqual((await run({version:2,changes:[change]})).failures,[]);
   assert.match((await run({version:2,changes:[{...change,assumptionsReplaced:[]}]})).failures[0].reason,/assumptionsReplaced/);
+  await assert.rejects(run({version:2,changes:[{...change,assumptionsReplaced:[{old:"LEM[Truncate]",new:"Choice"}]}]}),
+    /may replace only LEM\[Truncate\] and Choice\[Truncate\]/);
+  const retired = changes => [{comparison:"replacement",lastPassing:"21f55b55",reason:"Retired.",changes}];
+  await assert.rejects(run({version:2,changes:[change],retired:retired([])}),
+    /belongs to the retired replacement comparison/);
+  await assert.rejects(run({version:2,changes:[],retired:retired([change])}),
+    /The ledger retired its replacement comparison, which last passed at 21f55b55: Retired\./);
 });
 
 test("pinned source resolution keeps archive imports isolated from library collisions", async () => {
@@ -412,4 +423,85 @@ test("pinned source resolution keeps archive imports isolated from library colli
   original.place("library_root","library");
   assert.equal(await original("collision","library_root"),rebuilt.get("collision"));
   assert.match(await original.checkImports("root",["collision"]),/loaded collision from library/);
+});
+
+// An axiom has no definition to compare: its assumed statement is compared,
+// and an unchanged one stands for the original in its dependents, in its own
+// module and in another. A changed statement is reported, as are its users.
+test("axioms compare by their assumed statements, and stand for the original in their dependents", async () => {
+  const client = "import axioms_fixture;\ndef again := use_;\n";
+  const run = async (before, after, modules = ["axioms_fixture"]) => verifyMigration({ modules,
+    readOriginal: async name => name === "axioms_fixture" ? before : name === "axiom_client" ? client : library(name),
+    readEdited: async name => name === "axioms_fixture" ? after : client });
+  const source = "def A := axiom Unit;\ndef use_ := A;\ndef Family(U < UU0) := forall X : U. X -> X;\ndef Assumed := axiom Family;\n";
+  const same = await run(source, source, ["axioms_fixture", "axiom_client"]);
+  assert.deepEqual(same.map(report => report.failures), [[], []]);
+  assert.deepEqual(same.map(report => report.identical), [4, 1]);
+  const [changed] = await run(source, source.replace("axiom Unit", "axiom Unit -> Unit"));
+  assert.deepEqual(changed.failures.map(failure => [failure.name, failure.reason]), [
+    ["A", "The axiom's assumed statement changed."],
+    ["use_", "Assumptions changed: axioms_fixture::A -> axioms_fixture__migration_check::A"],
+  ]);
+  const [defined] = await run(source, source.replace("def A := axiom Unit;", "def A := tt;"));
+  assert.match(defined.failures[0].reason, /One version assumes this declaration as an axiom, and the other defines it/);
+});
+
+// At level types an axiom's statement is compared as a public type is, by
+// bounded kernel conversion: (fun (X : U0) => X)(Unit) stands for Unit, and
+// the axiom's dependents keep their types. At level identical the statement
+// must be the same, and an unconvertible one fails at either level (#317's
+// review round 6, finding 2).
+test("at level types an axiom's convertible statement stands for the original", async () => {
+  const before = "def A := axiom Unit;\ndef use_ := A;\n";
+  const run = (after, level) => verifyMigration({ modules: ["axioms_fixture"], level,
+    readOriginal: async name => name === "axioms_fixture" ? before : library(name), readEdited: async () => after });
+  const convertible = before.replace("axiom Unit", "axiom (fun (X : U0) => X)(Unit)");
+  const [types] = await run(convertible, "types");
+  // use_'s type is A's statement, so it is preserved too, not identical.
+  assert.deepEqual([types.failures, types.typesPreserved, types.identical], [[], 2, 0]);
+  const [identical] = await run(convertible, "identical");
+  assert.deepEqual(identical.failures[0], { name: "A", reason: "The axiom's assumed statement changed." });
+  const [changed] = await run(before.replace("axiom Unit", "axiom Void"), "types");
+  assert.deepEqual(changed.failures[0], { name: "A", reason: "The axiom's assumed statement changed." });
+  // What a statement relies on is compared first: B's statement mentions A,
+  // which no longer stands for the original.
+  const chain = "def A := axiom U0;\ndef B := axiom A;\n";
+  const [dependent] = await verifyMigration({ modules: ["axioms_fixture"], level: "types",
+    readOriginal: async name => name === "axioms_fixture" ? chain : library(name), readEdited: async () => chain.replace("axiom U0", "axiom U1") });
+  assert.deepEqual(dependent.failures.map(failure => failure.name), ["A", "B"]);
+  assert.match(dependent.failures[1].reason, /^The axiom's statement relies on other assumptions: axioms_fixture::A -> /);
+});
+
+// Trust needs exact identity: an unchanged P never vouches for P__x, a
+// declaration whose name only begins like P's, whether P is an axiom or a
+// definition; the definition's case predates #317 (#317's review round 7,
+// finding 1). P__x's type is kept, but what depends on its value is not.
+test("an unchanged declaration never vouches for another whose name begins like its own", async () => {
+  const run = (before, after) => verifyMigration({ modules: ["axioms_fixture"], level: "types",
+    readOriginal: async name => name === "axioms_fixture" ? before : library(name), readEdited: async () => after });
+  const changed = source => source.replace("def P__x : U0 := Unit;", "def P__x : U0 := Void;");
+  const axiom = "def P := axiom Unit;\ndef P__x : U0 := Unit;\ndef A := axiom P__x;\ndef use_ := A;\n";
+  const [axiomReport] = await run(axiom, changed(axiom));
+  assert.deepEqual(axiomReport.failures.map(failure => failure.name), ["A", "use_"]);
+  const definition = "def P : Unit := tt;\ndef P__x : U0 := Unit;\ndef use_(y : P__x) : P__x := y;\n";
+  const [definitionReport] = await run(definition, changed(definition));
+  assert.deepEqual(definitionReport.failures.map(failure => failure.name), ["use_"]);
+});
+
+// The edited axiom stands for the original as a free variable only: a binder
+// of the same spelling keeps its occurrences (#317's review round 2,
+// finding 2). Nor does an axiom's assumption take a binder's name.
+test("the verifier renames only an axiom's free occurrences, never a binder's", async () => {
+  const variable = name => ({ tag: "Var", name });
+  const rename = mapDefinitions(name => name, name => name, name => name === "edited" ? "original" : name);
+  const term = { tag: "App", fn: { tag: "Lam", name: "edited", domain: { tag: "Unit" }, body: variable("edited") }, arg: variable("edited") };
+  assert.deepEqual(rename(term), { ...term, arg: variable("original") });
+  const before = "def F(m__migration_check__A : Unit or Unit) : m__migration_check__A = m__migration_check__A := "
+    + "refl(m__migration_check__A);\ndef A1 := axiom Unit or Unit;\ndef use_(x : Unit or Unit) : A1 = A1 := refl(A1);\n";
+  const after = before.replace("def use_(x : Unit or Unit) : A1 = A1 := refl(A1);", "def use_ := (fun (unused : Unit or Unit) => F)(A1);");
+  for (const level of ["types", "identical"]) {
+    const [report] = await verifyMigration({ modules: ["m"], level, readOriginal: async name => name === "m" ? before : library(name),
+      readEdited: async () => after });
+    assert.deepEqual(report.failures.map(failure => failure.name), ["use_"], level);
+  }
 });
