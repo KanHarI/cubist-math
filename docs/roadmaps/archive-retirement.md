@@ -111,7 +111,7 @@ Steps, each one or a few pull requests:
 | Step | Work |
 | --- | --- |
 | NT1 | The unary order and equality lemmas move to `unat`; the archive's users import them there. **Done** on 2026-10-28: `primes` keeps none of them, its users name the `unat_*` lemmas, and `nat_eq_decidable`'s users take `unat_decide`, or `unat_is_set` where they rebuilt it with Hedberg |
-| NT2 | EVAL7: divisibility, primality and Euclid in the library; every consumer of `euclid` moves to it |
+| NT2 | EVAL7: divisibility, primality and Euclid in the library; every consumer of `euclid` moves to it. The library modules are done (2026-10-28, [report](../reports/binary-euclid.md)): `bnat_order_laws`, `bnat_division`, `divisibility`, `prime_numbers` and `binary_euclid`; the consumers' move and the deletion remain |
 | NT3 | Least elements: the bounded search and `natural_minimum` in the library; `polynomial_degree` and `artin_degree` import it |
 | NT4 | Numerals: the binary results checked against `bnat_*` and completed; radix numerals rebuilt over binary `Nat`; the helper fixtures moved |
 | NT5 | Delete `primes`, `euclid`, `natural_minimum`, `binary_*` and `radix_*` (20 modules) from the archive, update the catalog's module table and record the rebuilt results |
