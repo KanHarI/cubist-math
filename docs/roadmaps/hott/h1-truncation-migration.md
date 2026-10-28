@@ -588,7 +588,7 @@ transition land together.
    after the fact and says nothing to a REPL entry.
 
    **Done on 2026-10-28.** The translator refuses each legacy builtin
-   outside an archive module, where it is written: a call of `Truncate`,
+   written outside an archive module: a call of `Truncate`,
    `TruncateIntro`, `TruncateProp` or `TruncateElim`, or of `LEM` or
    `Choice` where nothing binds them (the handler in
    `web/translator/builtins.mjs`), and such a name unbound and not called
@@ -597,18 +597,44 @@ transition land together.
    builtin, accepted only in archive modules: elsewhere use the library's
    Trunc, from h1_truncation, and its axioms LEM and Choice, from
    classical_axioms." A REPL or console entry meets it as a file does.
-   - **Provenance.** An archive module is one the module reader placed in
-     the archive's root whose text is what that root holds under its name
-     (`fromArchive` in `web/module-resolution.mjs`, beside `fromLibrary`),
-     as `CubicalProgram.discover` asks and the translator's
-     `archiveModule` records. A module's name vouches for nothing, and nor
-     does a place given to a source for its imports alone, as the audit's,
-     the fingerprint's and the benchmark's synthetic modules have one. A
-     file is placed by its real path, so a link into the archive is the
-     archive's and a copy outside it is not. Unlike the library's labels,
-     provenance is not transitive: the builtins are refused where they are
-     written, so a module of the user's may import the archive and use its
-     declarations over them.
+   - **Provenance.** An archive module is text read unedited from a file
+     that really lives in the archive's root, by its real path, under any
+     name (`fromArchive` in `web/module-resolution.mjs`, beside
+     `fromLibrary`), as `CubicalProgram.discover` asks and the program's
+     `archiveSources` records for the translator. The module reader keeps
+     the file each module was read from apart from its place, where its
+     imports resolve, and its name: `read` answers with the file it read,
+     `{ text, root, file }`, and a checked file brings its own
+     (`sourceReader` in `tools/module-sources.mjs`); an answer of text alone
+     vouches for its place's own file of that name, as the browser's and
+     the verifier's readers read. A module's name vouches for nothing, and
+     nor does a place given to a source for its imports alone, as the
+     audit's, the fingerprint's and the benchmark's synthetic modules have
+     one, nor a file elsewhere aliased into the archive's place, as the
+     fingerprint's `--examples` alias documentation examples. A link into
+     the archive is the archive's, renamed or not, and a copy outside it is
+     not. Unlike the library's labels, provenance is not transitive, so a
+     module of the user's may import the archive and use its declarations
+     over the builtins.
+   - **Where written.** A builtin is the archive's when the module its
+     syntax was written in is: the origin every syntax node carries names
+     its authored module, through every expansion (`writtenInArchive`). So
+     a notation's rule written outside the archive and expanded in an
+     archive module is refused there: a named notation's operator, numeral,
+     literal and unary minus rules, selected by `use` or applied qualified
+     or as an operator section, and a model's attached notation. A theory's
+     fields, its parents' and an initial model's operations are elaborated
+     in the theory's own module, which refuses them there. Syntax the
+     archive writes stays the archive's wherever it is expanded, as its
+     declarations do.
+   - **The library's labels had the same flaw**, fixed the same way: a file
+     elsewhere aliased into the library's place took bare labels. The
+     library also requires its file of the module's own name, since a bare
+     label is a name: a library file checked under another name, through a
+     link, would give a second assumption the same label.
+   - **A program checked again** reuses a module only from the same text
+     and the same provenance, library and archive: text its root no longer
+     holds is checked again (`CubicalProgram.check`).
    - **An edited archive module is not the archive's**, in the workspace or
      as a file outside the root: the archive is frozen until it retires,
      with no in-place remedies (I0.5), so an edit is a module of the user's
@@ -626,7 +652,7 @@ transition land together.
    - **Replays keep it.** `ReplayInputs` records each module's archive
      provenance with its library provenance, so the workspace console's
      replay of an archive module checks it with its builtins; the console's
-     own entries are never the archive's (`forkScope`). The workbench asks
+     own entries are modules of their own, never the archive's. The workbench asks
      which transferred sources are the archive's text
      (`archiveProvenance`), as it asks for the library's; without that, a
      transfer of an archive declaration does not replay completely and is
@@ -641,7 +667,15 @@ transition land together.
      and uses the archive's `Mere`; a library module, read unedited from a
      reader's library root, is refused; from the command line, a file of
      the user's and a copy of `classical.cubist` outside the archive are
-     refused, and a link into the archive is not; with the browser's
+     refused, and a link into the archive, renamed or not, is not; a file
+     aliased into the archive's place is refused, and the archive's own
+     file aliased under another name is not; each notation mechanism above
+     is refused where an archive module expands a rule written outside the
+     archive, and accepted for one the archive writes, and a theory's
+     fields and an initial model's operations are refused where the theory
+     is written; a program checked again refuses the builtins, and gives a
+     library axiom its qualified label, once the root no longer holds the
+     same text; with the browser's
      reader, the unedited archive module checks, and an edited one, a
      module the page places in the archive and a listed name with other
      text are refused; so are REPL entries, over an archive module or not,

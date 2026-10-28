@@ -98,11 +98,110 @@ test("a file of the user's may not, nor a copy of an archive module outside the 
   const copy = check("classical.cubist");
   assert.notEqual(copy.status, 0);
   assert.match(copy.stdout + copy.stderr, /error E491 at line \d+:\d+ \(double_negation\): LEM is the archive's legacy builtin/);
-  // A link resolves to the archive's own file, as an import of it does.
+  // A link resolves to the archive's own file, as an import of it does,
+  // under its own name or another (#332's review, finding 1: a renamed link
+  // was refused, its name's archive file looked for).
   const linked = join(directory, "linked");
   await symlink(join(root, "archive/first-library"), linked);
   const link = check(join(linked, "classical.cubist"));
   assert.equal(link.status, 0, link.stdout + link.stderr);
+  await symlink(join(root, "archive/first-library/classical.cubist"), join(directory, "renamed.cubist"));
+  const renamed = check("renamed.cubist");
+  assert.equal(renamed.status, 0, renamed.stdout + renamed.stderr);
+  assert.match(renamed.stdout, /double_negation assumes LEM\[Truncate\], Truncate, TruncateElim/);
+});
+
+// A file aliased into the archive's place, as the fingerprint tool's
+// --examples maps documentation examples, is not the archive's: its file is
+// (#332's review, finding 1).
+test("a file aliased into the archive's place is not the archive's", async t => {
+  const fixture = join(root, "cubist-tests/truncation_legacy_confined.cubist");
+  const reader = sourceReader({ files: new Map([["archive/external_example", fixture]]) });
+  reader.place("fingerprint", "archive");
+  const program = new CubicalProgram(module, reader, { collectReferences: false });
+  t.after(() => program.dispose());
+  await program.checkModules(["external_example"], "fingerprint");
+  for (const name of ["truncated", "introduced", "proposition", "eliminated", "excluded", "choice_at_zero", "named"])
+    assert.equal(program.symbols[`external_example__${name}`].code, "E491", name);
+  // The archive's own file under an alias of another name is.
+  const own = sourceReader({ files: new Map([["archive/borrowed", join(root, "archive/first-library/classical.cubist")]]) });
+  own.place("fingerprint", "archive");
+  const archive = new CubicalProgram(module, own, { collectReferences: false });
+  t.after(() => archive.dispose());
+  await archive.checkModules(["borrowed"], "fingerprint");
+  assert.equal(archive.symbols.borrowed__double_negation.verified, true, archive.symbols.borrowed__double_negation.reason);
+});
+
+// Text is the archive's where it was written: syntax a module outside the
+// archive writes and an archive module expands is not, and is refused where
+// it is expanded (#332's review, finding 2). Each mechanism that expands
+// syntax written in one module while another is checked: a named
+// notation's operator, numeral and unary minus rules, selected by use or
+// applied qualified, and a model's attached notation. A theory's fields, its
+// parents' and an initial model's operations are elaborated where the theory
+// is written, which refuses them there.
+test("a builtin in syntax written outside the archive is refused where an archive module expands it", async t => {
+  const T = "Truncate(U0, Unit)";
+  const named = rules => `import unat;\ndef plus(x, y : UNat) : UNat := add(x, y);\nnotation lib { ${rules} numeral(n : UNat) := n; }\n`;
+  const cases = [
+    ["an operator rule selected by use", named(`x + y := (fun (T : U0) => plus(x, y))(${T});`), "use lib;\ndef z : UNat := 1 + 2;"],
+    ["an operator rule applied qualified", named(`x + y := (fun (T : U0) => plus(x, y))(${T});`), "def z : UNat := lib.(1 + 2);"],
+    ["a numeral rule", `import unat;\nnotation lib { numeral(n : UNat) := (fun (T : U0) => n)(${T}); }\n`, "use lib;\ndef z : UNat := 3;"],
+    ["a unary minus rule", `import unat;\nnotation lib { -x := (fun (T : U0) => x)(${T}); numeral(n : UNat) := n; }\n`, "use lib;\ndef z : UNat := -3;"],
+    ["a model's attached notation", `import unat;\ntheory Mag(U < UU0) { M : U; op(x, y : M) : M notation x * y; }\n`
+      + `def m : Mag(U0) := Mag.make(M := UNat, op := fun (x, y : UNat) => x);\nnotation m { numeral(n : UNat) := (fun (T : U0) => n)(${T}); }\n`,
+      "def z : UNat := m.(3);"],
+    ["a theory's parent", `theory P(U < UU0) { M : U; w : ${T} -> M; }\n`, "theory C(U < UU0) extends P {}"],
+    ["an initial model", `import hlevels;\ntheory P(U < UU0) { M : set U; op(x : M, w : ${T}) : M; }\n`, "initial N : P(U0);"],
+  ];
+  const check = async (author, authorPlace, user) => {
+    const files = { [`${authorPlace}/author`]: author, "archive/user": `import author;\nimport unat;\nimport hlevels;\n${user}\n` };
+    const reader = moduleReader((place, name) => files[`${place}/${name}`]
+      ?? (place === "library" ? readFile(join(root, "library", `${name}.cubist`), "utf8").catch(() => null) : null));
+    const program = new CubicalProgram(module, reader, { collectReferences: false });
+    try {
+      const result = await program.check("import user;\n", "main");
+      return Object.fromEntries(result.imports.filter(output => ["author", "user"].includes(output.sourceModule))
+        .map(output => [`${output.sourceModule}.${output.name}`, output.verified ? labels({ ...result, outputs: result.imports }, output.name) : output.code]));
+    } finally { program.dispose(); }
+  };
+  for (const [label, author, user] of cases) {
+    const outside = await check(author, "library", user), inside = await check(author, "archive", user);
+    const users = verdict => Object.entries(verdict).filter(([name]) => name.startsWith("user.") && name !== "user.N");
+    if (label.startsWith("a theory") || label.startsWith("an initial")) {
+      // Refused where it is written, and so unavailable to the archive.
+      const theory = Object.entries(outside).find(([name]) => name === "author.P");
+      assert.deepEqual(theory, ["author.P", "E491"], label);
+      assert.ok(Object.entries(outside).filter(([name]) => name.startsWith("user.")).every(([, verdict]) => verdict === "E340"), `${label}: ${JSON.stringify(outside)}`);
+      assert.deepEqual(inside["author.P"], ["Truncate"], label);
+    } else {
+      assert.deepEqual(users(outside), [["user.z", "E491"]], label);
+      assert.deepEqual(users(inside), [["user.z", ["Truncate"]]], label);
+    }
+  }
+});
+
+// A program checked again reuses a module only from the same text and the
+// same provenance: text that is no longer what its root holds is checked
+// again, and loses the builtins, or its axioms' bare labels (#332's review,
+// finding 3).
+test("a module checked again is checked afresh when its provenance changes, though its text does not", async t => {
+  const assumed = "def P := axiom Unit;\ndef used := P;\n", files = new Map([["archive/legacy", legacy], ["library/assumed", assumed]]);
+  const reader = moduleReader((place, name) => files.get(`${place}/${name}`) ?? null);
+  const program = new CubicalProgram(module, reader, { collectReferences: false });
+  t.after(() => program.dispose());
+  // Each check gives the module's original text, whatever its root holds.
+  const check = async (name, place) => {
+    reader.place(name, place);
+    return (await program.check(name === "legacy" ? legacy : assumed, name)).outputs.at(-1);
+  };
+  assert.equal((await check("legacy", "archive")).verified, true);
+  files.set("archive/legacy", `${legacy}// Edited in the archive.\n`);
+  assert.equal((await check("legacy", "archive")).code, "E491");
+  const label = output => output.axioms.map(id => program.checker.assumptionLabels.get(id));
+  assert.deepEqual(label(await check("assumed", "library")), ["P"]);
+  files.set("library/assumed", `${assumed}// Edited in the library.\n`);
+  assert.deepEqual(label(await check("assumed", "library")), ["assumed::P"]);
 });
 
 // The browser's reader (web/cubical-worker.mjs): a page places the module it

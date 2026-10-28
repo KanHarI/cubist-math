@@ -31,8 +31,16 @@ const real = path => {
 // The place of the file at `path`: archive, library or local. It is decided by
 // where the file really is, so a link to an archive module elsewhere is still
 // an archive module, and a link into the archive from elsewhere is too.
-export const placeOfFile = (path, root = projectRoot) =>
-  placeOfPath(relative(real(root), real(path)).split(sep).join("/"));
+const realPath = (path, root) => relative(real(root), real(path)).split(sep).join("/");
+export const placeOfFile = (path, root = projectRoot) => placeOfPath(realPath(path, root));
+
+// The file a module is read from, as moduleReader's provenance takes it
+// (web/module-resolution.mjs): its text, the root it really lives in and its
+// path there, by its real path, whatever place or name it is read under.
+const fileAt = (path, root, content) => {
+  const place = placeOfFile(path, root);
+  return { text: content, root: place, file: place === "local" ? null : realPath(path, root) };
+};
 
 // A readSource for CubicalProgram. With `path`, it checks that file: the file
 // is placed where it really lives, so an archive file is checked
@@ -51,13 +59,17 @@ export const moduleOfFile = path => basename(path, ".cubist").replace(/[^A-Za-z0
 
 export function sourceReader({ path = null, root = projectRoot, files = new Map() } = {}) {
   const local = path === null ? null : dirname(real(path));
-  const readSource = moduleReader((place, name) => {
+  // Each answer names the file it read, so that an alias or a link is
+  // authenticated by the file it reaches, not by the place it stands in.
+  const atFile = async file => { const content = await text(file); return content === null ? null : fileAt(file, root, content); };
+  const readSource = moduleReader(async (place, name) => {
     const file = files.get(`${place}/${name}`);
-    if (file !== undefined) return readFile(file, "utf8");
-    return place === "local" ? (local === null ? null : text(join(local, `${name}.cubist`)))
-      : text(join(root, moduleRoots[place], `${name}.cubist`));
+    if (file !== undefined) return fileAt(file, root, await readFile(file, "utf8"));
+    const at = place === "local" ? (local === null ? null : join(local, `${name}.cubist`)) : join(root, moduleRoots[place], `${name}.cubist`);
+    return at === null ? null : atFile(at);
   });
-  if (path !== null) readSource.place(moduleOfFile(path), placeOfFile(path, root));
+  // The checked file comes from itself, whatever its name.
+  if (path !== null) readSource.place(moduleOfFile(path), placeOfFile(path, root), () => atFile(path));
   return readSource;
 }
 

@@ -99,6 +99,10 @@ export class CubicalProgram {
     this.failedImports = new Map();
     // Whether each module checked is the library's, imports included.
     this.libraryModules = new Map();
+    // Whether each module checked is the archive's own text: syntax written
+    // in one may use the archive's legacy builtins (builtins.mjs,
+    // writtenInArchive).
+    this.archiveSources = new Map();
   }
   dispose() { this.scopeReady=false; this.kernel.dispose(); }
   // Each assumption, as the pages and the inspector show it. An axiom's is
@@ -346,8 +350,12 @@ export class CubicalProgram {
     // Rechecking an edited module invalidates every dependent artifact and
     // native handle. The discovered source graph, rather than aliases or a
     // cached successful module, determines whether the session is reusable.
+    // A module's provenance is part of what it was checked from: the same
+    // text from another file, or no longer what its root holds, names its
+    // axioms otherwise or may no longer use the archive's legacy builtins.
     const invalidated=(collectScopes&&this.modules.size>0)||[...prepared].some(([name,entry])=>{
-      if(this.modules.has(name))return entry.error||entry.text!==this.sources[name];
+      if(this.modules.has(name))return entry.error||entry.text!==this.sources[name]
+        ||entry.library!==this.libraryModules.get(name)||entry.archive!==this.archiveSources.get(name);
       // A failed read must be retried through its importers. An interrupted
       // load may also have committed declarations before the active group.
       return !reuseModules&&(this.failedImports.has(name)||this.sources[name]!==undefined);
@@ -386,6 +394,7 @@ export class CubicalProgram {
         if (entry.error) throw entry.error;
         ({ text, ast, library, archive } = entry);
         this.libraryModules.set(name, library);
+        this.archiveSources.set(name, archive);
       }
       catch (error) {
         if (name === main) throw error;
@@ -416,7 +425,7 @@ export class CubicalProgram {
       let current = null;
       // A module of a revision before L2.10j, as the migration verifier reads
       // one, keeps its name-based operators and numerals (translate.mjs).
-      const translator = new Translator({ normalize: false, checker,definitionModule:name,libraryModule:library,archiveModule:archive,testMode:!!this.options.testMode,simpRegistry,moduleName:name,sources:this.sources,collectGeneration:this.collectGeneration,
+      const translator = new Translator({ normalize: false, checker,definitionModule:name,libraryModule:library,archiveSources:this.archiveSources,testMode:!!this.options.testMode,simpRegistry,moduleName:name,sources:this.sources,collectGeneration:this.collectGeneration,
         scopePoints:scopeRecorder,compilationBindings:this.compilationBindings,
         onDirectiveStart:collectScopes?directive=>{
           this.onDirectiveStart?.(name,directive);
