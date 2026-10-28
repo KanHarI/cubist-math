@@ -147,45 +147,49 @@ export function createReplConsole(root, { run, reset, greeting = [], label = "RE
     load: text => execute(text, { echo: false }) };
 }
 
-// A REPL's entries, kept by its page so that a new worker can run them
-// again. A kernel failure stops the worker (a fatal reply, WorkerRequests),
-// and its page starts another, whose number `generation()` gives: before
-// the next entry, or at once when the entry that failed was this REPL's, the
-// entries answered before are run again on it, unshown and in order, so that
-// its session, and the names repl_N of its entries, are what they were. The
-// entry that failed is not run again. An entry that answered without an
-// error before and does not now is lost, and the note says so
-// (restartNote); so is the whole session when running them again fails.
-export function replaying(run, generation) {
-  let answered = [], at = generation();
-  async function replay() {
-    at = generation();
-    const lost = [];
+// A REPL's session, kept by its page as the record its worker returns with
+// each entry (ReplSession.record): what extended the session, statement by
+// statement, each with the entry repl_N it was checked as. A kernel failure
+// stops the worker (a fatal reply, WorkerRequests), and a new one starts,
+// whose number `generation()` gives. On it the record is restored
+// (repl-restore), before the next entry or at once by `restore`: each
+// recorded statement is checked again as the entry it was, and nothing
+// else, so what was refused stays refused, and a query is not run again.
+// What no longer checks is named, statement by statement, and when the
+// record cannot be restored the session is gone; the note says which
+// (restartNote). The entry that failed is not run again. With
+// `restoreAfterFault`, a REPL with a worker of its own restores at once on a
+// new one after its entry failed so; a page that rebuilds what it holds
+// after a failure restores the session itself.
+export function recordedSession(request, { fresh = false, generation = () => 0, restoreAfterFault = true } = {}) {
+  let record = null, at = generation();
+  async function restore(send = request) {
+    const kept = record;
+    record = null;
+    if (!kept) { at = generation(); return []; }
     try {
-      for (const entry of answered) {
-        const results = await run(entry.input);
-        if (!entry.failed && results.some(result => result.kind === "error")) lost.push(entry.input);
-      }
+      const restored = await send("repl-restore", { fresh, record: kept });
+      record = restored.record;
+      return [{ kind: "info", text: restartNote({ replayed: true, session: restored }) }];
     } catch (error) {
-      answered = []; at = generation();
       return [{ kind: "error", text: withCode(error.message) }, { kind: "info", text: restartNote({ replayed: true }) }];
-    }
-    at = generation();
-    return [{ kind: "info", text: restartNote({ replayed: true, session: { lost } }) }];
+    } finally { at = generation(); }
   }
   return {
-    reset() { answered = []; at = generation(); },
+    reset() { record = null; at = generation(); },
+    restore,
     async run(input) {
-      const replayed = generation() === at || !answered.length ? [] : await replay();
-      let results;
-      try { results = await run(input); }
-      catch (error) {
-        if (!error.fatal) throw error;
-        return [...replayed, { kind: "error", text: withCode(error.message) }, ...answered.length ? await replay() : []];
+      const restored = generation() === at ? [] : await restore();
+      try {
+        const answer = await request("repl", { input, fresh, record: true });
+        record = answer.record;
+        at = generation();
+        return [...restored, ...answer.results];
+      } catch (error) {
+        if (!error.fatal && !restored.length) throw error;
+        const failed = [...restored, { kind: "error", text: withCode(error.message) }];
+        return error.fatal && restoreAfterFault ? [...failed, ...await restore()] : failed;
       }
-      answered.push({ input, failed: results.some(result => result.kind === "error") });
-      at = generation();
-      return [...replayed, ...results];
     },
   };
 }
@@ -202,9 +206,9 @@ export function standaloneRepl() {
     }
     return worker.request(command, args);
   };
-  const entries = replaying(input => request("repl", { input, fresh: true }), () => workers);
+  const session = recordedSession(request, { fresh: true, generation: () => workers });
   return {
-    run: entries.run,
-    reset: () => { entries.reset(); return request("repl-reset", { fresh: true }); },
+    run: session.run,
+    reset: () => { session.reset(); return request("repl-reset", { fresh: true }); },
   };
 }

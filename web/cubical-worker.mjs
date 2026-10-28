@@ -24,18 +24,36 @@ self.postMessage({ ready: true, backend: "cubical" });
 // A REPL session runs over the checked proof, or over its own program when
 // the page has no proof (the REPL page and the reference pages).
 let session = null, sessionProgram = null, programMain = null;
-async function repl({ input, fresh }) {
+// A new session, over its own program or the checked proof.
+function newSession(fresh) {
   if (fresh) {
-    if (!sessionProgram) {
-      sessionProgram = new CubicalProgram(module, readSource(), { collectReferences: false });
-      session = new ReplSession(sessionProgram, { modules: importable });
-    }
-  } else if (!program) throw new Error("Check a proof first.");
-  else if (!session) session = new ReplSession(program, { base: programMain, modules: importable });
+    sessionProgram ??= new CubicalProgram(module, readSource(), { collectReferences: false });
+    return new ReplSession(sessionProgram, { modules: importable });
+  }
+  if (!program) throw new Error("Check a proof first.");
+  return new ReplSession(program, { base: programMain, modules: importable });
+}
+// An entry's results, and with `record`, the session's record after it
+// (ReplSession.record), which the page keeps to restore the session on a new
+// worker (repl-restore).
+async function repl({ input, fresh, record }) {
+  if (fresh) { if (!sessionProgram) session = newSession(true); }
+  else if (!program) throw new Error("Check a proof first.");
+  else if (!session) session = newSession(false);
   // A rechecked proof keeps the session: what extended it is replayed. A
   // replay its instance fails throws, so no part of it is installed.
   else if (session.program !== program) session = await session.rebase(program, programMain);
-  return session.run(input);
+  const results = await session.run(input);
+  return record ? { results, record: session.record() } : results;
+}
+// A session restored from a page's record, installed once restored: what no
+// longer checks is listed (lost). A REPL without a proof restores on a new
+// program of its own.
+async function restoreRepl({ fresh, record }) {
+  if (fresh) resetRepl();
+  const restored = await newSession(fresh).restore(record);
+  session = restored;
+  return { lost: restored.lost, record: restored.record() };
 }
 function resetRepl() {
   sessionProgram?.dispose();
@@ -83,6 +101,7 @@ async function run({ data: { id, command, args } }, epoch) {
     } finally { scratch.dispose(); }
   }
   if (command === "repl" || command === "repl-reset") return command === "repl" ? repl(args) : resetRepl();
+  if (command === "repl-restore") return restoreRepl(args);
   if (command === "context-run") return contextual(args.session).run(args.input);
   if (!program) throw new Error("Check a proof first.");
   if (command === "contexts") {

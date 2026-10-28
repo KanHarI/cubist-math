@@ -193,6 +193,7 @@ export const diagnostics = [
   ["E255", "… is declared below its use: a declaration uses only the declarations above it."],
   ["E256", "…::… and …::… would be one identity, …: rename one of them."],
   ["E257", "The transfer did not replay completely: …"],
+  ["E258", "The kernel failed again in the checking worker that replaced a failed one, so no other starts on its own: check the source to start one."],
   // Terms
   ["E301", "Expected cubical syntax."],
   ["E302", "Expected a dimension binder."],

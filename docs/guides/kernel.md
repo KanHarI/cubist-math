@@ -1092,14 +1092,23 @@ the entry it was, and says what was restored and what not (`restartNote` in
 instead: the worker answers the request with the failure, marked fatal, and
 stops, and `WorkerRequests` (`web/worker-requests.mjs`) fails every other
 request it held and tells the page. The page starts a new worker and builds
-again, by its usual paths, what it held: the proof page checks the current
-source again, as after a compiler update, and reads its result, inspector,
-contexts and generated declarations from that check; a REPL runs its
-entries again on the new worker before the next one (`replaying` in
-`web/repl-console.mjs`), each as the entry it was, and names those it could
-not; the reference examples check each example on a new worker. A check
-that failed so is not checked again, and a new worker that cannot load is
-reported as at startup. The workbench's worker reports the failure as fatal
+again, by its usual paths, what it held. The proof page checks the current
+source again, as after a compiler update, or the latest example its
+reference page sent meanwhile, restores its console's session, and reads its
+result, inspector, contexts and generated declarations from that check;
+every other request waits until that is done, so that none runs out its
+deadline behind it. A REPL keeps the record its worker returns with each
+entry (`ReplSession.record`): the statements that extended its session, each
+with the entry `repl_N` it was checked as. On a new worker the record is
+restored (`recordedSession` in `web/repl-console.mjs`): each recorded
+statement is checked again as that entry, and nothing else, so what was
+refused stays refused, and each statement that no longer checks is named.
+The reference examples check each example on a new worker. A check that
+failed so is not checked again, and a new worker that cannot load is
+reported as at startup. A page replaces a worker so once for each thing the
+reader does: should the new worker fail too before the reader does anything
+else, the proof page starts no other and says so (`E258`), and the reader's
+next check starts one. The workbench's worker reports the failure as fatal
 and closes, as for a trap. A worker installs a check's program only once its
 reply is made, and clones each reply before sending it, so that a part read
 lazily, as a check's steps, reads the kernel where a failure is caught.

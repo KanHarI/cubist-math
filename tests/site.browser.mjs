@@ -193,8 +193,8 @@ await browserTest(async ({ browser, base }) => {
   // A kernel instance that fails, as when the engine's own stack runs out
   // inside it, is never entered again: its worker answers the request with
   // the failure, marked fatal, and stops, failing every request it held.
-  // The page starts a new worker and builds again what it holds: a REPL runs
-  // its entries again, the proof page checks its source again.
+  // The page starts a new worker and builds again what it holds: a REPL
+  // restores its session, the proof page checks its source again.
   const injected = await browser.newContext();
   // The runtime's snapshot arms its worker's kernel to fail, if its plan says.
   await injected.route("**/cubical-runtime.mjs*", async route => {
@@ -206,22 +206,27 @@ await browserTest(async ({ browser, base }) => {
   // Each worker loads the kernel anew, and fails as the next plan says, with
   // the engine's RangeError out of an export: at the first export a runtime
   // value form's snapshot calls ("snapshot"), at the first folded normal
-  // form ("normal"), or only on demand: a message the worker does not know
-  // arms the next kernel call, the next `_cb_free` (with a trap), or the next
-  // call made while a check's steps are read; with "entry", a REPL entry
-  // /fail-next-kernel-call arms the next kernel call too. "unavailable" fails
-  // the kernel's load.
+  // form ("normal"), in the first inspection ("inspection"), or only on
+  // demand: a message the worker does not know arms the next kernel call,
+  // the next `_cb_free` (with a trap), or the next call made while a check's
+  // steps are read, and a REPL entry /fail-next-kernel-call arms the next
+  // kernel call. "unavailable" fails the kernel's load. Each load is
+  // announced (`kernelAsked`), and held up while `kernelHeld` is pending.
   const plans = [];
+  let kernelHeld = null, kernelAsked = () => {};
   await injected.route("**/dist/cubical.mjs*", async route => {
     const plan = plans.shift() ?? "on demand";
+    kernelAsked();
+    if (kernelHeld) await kernelHeld;
     if (plan === "unavailable") return route.abort();
     const response = await route.fetch(), body = await response.text();
     assert.match(body, /export default Module;\s*$/);
     await route.fulfill({ response, body: body.replace(/export default Module;\s*$/, `const plan = ${JSON.stringify(plan)};
-let armed = false, freeing = false, inSteps = false, snapshots = 0, normals = 0;
+let armed = false, freeing = false, inSteps = false, snapshots = 0, normals = 0, inspections = 0;
 globalThis.armKernelFault = () => { if (plan === "snapshot" && !snapshots++) armed = true; };
 self.addEventListener("message", ({ data }) => {
-  if (data?.command === "fail-next-kernel-call" || plan === "entry" && data?.command === "repl" && data.args?.input === "/fail-next-kernel-call") armed = true;
+  if (data?.command === "fail-next-kernel-call" || data?.command === "repl" && data.args?.input === "/fail-next-kernel-call"
+    || plan === "inspection" && data?.command === "inspect" && !inspections++) armed = true;
   if (data?.command === "fail-next-free") freeing = true;
   if (data?.command === "fail-in-steps") inSteps = true;
 });
@@ -265,9 +270,10 @@ export default async options => {
     return target.locator(".repl-log").last().locator(".repl-result").allTextContents();
   };
   // The REPL page: its first worker fails in a value form's snapshot, its
-  // second in a folded normal form. Each time the entries answered before run
-  // again on a new worker; the query typeof tt is entry repl_3, so repl_5,
-  // which names repl_4, still finds it.
+  // second in a folded normal form. Each time the session is restored on a
+  // new worker, each statement that extended it as the entry it was: the
+  // query typeof tt was entry repl_3, so repl_5, which names repl_4, still
+  // finds it.
   plans.push("snapshot", "normal");
   const faulty = await injected.newPage();
   await faulty.goto(new URL("repl.html", base).href);
@@ -282,7 +288,7 @@ export default async options => {
     "E227: Unable to load the checking worker. Build with make wasm.",
     "The kernel was restarted. The session's entries could not be checked again, and what they defined is gone."]);
   await stranded.close();
-  console.log("PASS REPL page: a failed kernel stops its worker; a new one runs the entries again, under their names");
+  console.log("PASS REPL page: a failed kernel stops its worker; a new one restores the session, under its entries' names");
   // Workers driven by their messages: every request a failure ends is
   // answered, fatal, and nothing is left waiting.
   await faulty.evaluate(() => {
@@ -331,27 +337,36 @@ export default async options => {
   await faulty.close();
   console.log("PASS workers: every request a kernel failure ends is answered, fatal, and the worker stops");
   // The proof page: its worker's kernel fails in an inspection, with another
-  // inspection queued behind it, after the module it imports has changed.
-  // Both are answered; a new worker checks the source again, held up reading
-  // that import past the thirty seconds an inspection has (the page's clock
-  // runs them at once), and the page reads everything again from the check:
-  // the assumption the import now states, its contexts, its console's entries.
-  plans.push("entry");
+  // inspection queued behind it, after the module it imports has changed and
+  // its source has been edited. Both are answered; a new worker checks the
+  // edited source again, held up reading that import past the thirty seconds
+  // an inspection has (the page's clock runs them at once), while an
+  // inspection asked meanwhile waits for it; and the page reads everything
+  // again from the check: the assumption the import now states, its
+  // contexts, and its console's session, restored statement by statement.
   const workspace = await injected.newPage();
-  const shown = selector => workspace.evaluate(selector => document.querySelector(selector)?.textContent ?? "", selector);
-  const until = async (selector, test) => {
-    for (let tries = 0; !test(await shown(selector)); tries++) {
-      assert.ok(tries < 1200, `${selector}: ${await shown(selector)}`);
+  const shown = (selector, page = workspace) => page.evaluate(selector => document.querySelector(selector)?.textContent ?? "", selector);
+  const until = async (selector, test, page = workspace) => {
+    for (let tries = 0; !test(await shown(selector, page)); tries++) {
+      assert.ok(tries < 1200, `${selector}: ${await shown(selector, page)}`);
       await new Promise(resolve => setTimeout(resolve, 100));
     }
   };
-  const helped = "import lists;\ndef x : Unit := h;\ndef y(n : Unit) : Unit := n;\n";
+  const helped = "import lists;\ndef x : Unit := h;\ndef y(n : Unit) : Unit := n;\ndef base : Unit := tt;\n";
   await workspace.goto(new URL(`proof.html?example=1#source=${Buffer.from(helped).toString("base64url")}`, base).href);
   await until("#status", text => text.endsWith("checked · no axioms"));
   await workspace.locator("#collect-contexts").check();
   await until("#context-panel [role=status]", text => text.startsWith("Open a context"));
-  assert.deepEqual((await entries(workspace, ["let saved := tt;", "/fail-next-kernel-call"])).slice(-2),
-    ["saved : Unit", "E237: Unknown command /fail-next-kernel-call. /help lists the commands."]);
+  // A statement the session refuses, and an entry of two statements, the
+  // first of which extends the session.
+  const unknown = "E237: Unknown command /fail-next-kernel-call. /help lists the commands.";
+  assert.deepEqual((await entries(workspace, ["let kept := tt;", "let surprise := added;", "let saved := base; typeof absent;",
+    "/fail-next-kernel-call"])).slice(-5),
+    ["kept : Unit", "E343: Untranslated name: added", "saved : Unit", "E343: Untranslated name: absent", unknown]);
+  // The source, edited and not checked: base is gone, and added is there.
+  await workspace.locator("#edit-mode").click();
+  await workspace.locator("#editor").fill(helped.replace("def base", "def added"));
+  await workspace.locator("#read-mode").click();
   lists = "def h := axiom Unit;\n";
   await workspace.clock.install();
   let release;
@@ -363,6 +378,7 @@ export default async options => {
   await occurrence.click();
   await Promise.race([asked, new Promise((_, reject) =>
     setTimeout(() => reject(new Error("No new worker read the import.")), 120000))]);
+  await workspace.locator('#read-source [data-name="y"]').first().click();
   await new Promise(resolve => setTimeout(resolve, 1000));
   await workspace.clock.runFor(31000);
   release();
@@ -374,10 +390,51 @@ export default async options => {
   await workspace.locator("#open-context-repl").waitFor();
   await workspace.locator("#open-context-repl").click();
   await until("#context-panel [role=status]", text => text.includes("Results apply only to this selected instance"));
-  assert.deepEqual((await entries(workspace, ["typeof saved;"])).slice(-2), [restarted[1], "Unit"]);
-  await workspace.close();
-  await injected.close();
+  // What extended the session is checked again, as it was, and nothing
+  // else: saved, over a base that is gone, is lost, and named; surprise,
+  // refused before, is refused still, though added is there now.
+  assert.deepEqual((await entries(workspace, ["typeof surprise;", "typeof saved;", "typeof kept;"])).slice(-4), [
+    "The kernel was restarted. These entries could not be checked again, and what they defined is gone: let saved := base;",
+    "E343: Untranslated name: surprise", "E343: Untranslated name: saved", "Unit"]);
   console.log("PASS proof page: a failed kernel stops its worker; a new one checks the source again, and the page reads it all again");
+  // A worker that replaced a failed one and fails too before the reader
+  // does anything, here in the inspection the page asks of it once it has
+  // checked the source again and restored the console's session: the page
+  // starts no other, and says so. The reader's check starts one, which is
+  // replaced once more when it fails.
+  plans.push("inspection", "inspection");
+  assert.deepEqual((await entries(workspace, ["/fail-next-kernel-call", "typeof kept;"])).slice(-2), [unknown, fault]);
+  await until("#source-notice", text => text === "The kernel failed again in the checking worker that replaced a failed one, so no other starts on its own: check the source to start one.");
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  assert.deepEqual(plans, ["inspection"]);
+  await workspace.locator("#check").click();
+  await until("#source-notice", text => text.startsWith("The kernel's WebAssembly instance failed, so a new checking worker checks"));
+  assert.deepEqual((await entries(workspace, ["typeof kept;"])).slice(-3), [restarted[1], restarted[1], "Unit"]);
+  assert.deepEqual(plans, []);
+  await workspace.close();
+  console.log("PASS proof page: a worker that replaced a failed one and fails too is not replaced until the reader checks again");
+  // An embedded proof page, a reference page's inspector: its kernel fails
+  // in an example's inspection, and the example the reference page sends
+  // while the new worker loads is the one the new worker checks.
+  plans.push("inspection");
+  const framed = await injected.newPage();
+  await framed.goto(new URL("proof.html?example=1&embed=1", base).href);
+  await until("#status", text => text === "Ready to check", framed);
+  let load;
+  kernelHeld = new Promise(resolve => { load = resolve; });
+  const loading = new Promise(resolve => { kernelAsked = resolve; });
+  const send = source => framed.evaluate(source => postMessage({ type: "cubist-inspect", source }, location.origin), source);
+  await send("def first : Unit := tt;\n");
+  await Promise.race([loading, new Promise((_, reject) =>
+    setTimeout(() => reject(new Error("No new worker loaded the kernel.")), 120000))]);
+  await send("def second : Unit := tt;\n");
+  load();
+  kernelHeld = null; kernelAsked = () => {};
+  await until("#inspect-name", text => text === "second", framed);
+  assert.equal(await framed.evaluate(() => document.querySelector("#editor").value), "def second : Unit := tt;\n");
+  await framed.close();
+  await injected.close();
+  console.log("PASS embedded proof page: an example sent while a new worker loads is the one it checks");
   // Slash commands: /modules lists what import can load; /clear and /restart
   // act on the console.
   await enter("/modules lists");

@@ -12,7 +12,7 @@ import { boundedSyntaxJson, syntaxDisplayLimitMessage } from "./cubical-json.mjs
 import { numeralAt, tokenStyle, scan } from "./source-tokens.mjs";
 import { archiveModules, cubistTestModules, libraryModules } from "./cubist/modules.mjs";
 import { enableTokenTips } from "./token-tips.mjs";
-import { createReplConsole, replaying } from "./repl-console.mjs";
+import { createReplConsole, recordedSession } from "./repl-console.mjs";
 import { createContextualConsole } from "./contextual-console.mjs";
 import { withCode } from "./diagnostics.mjs";
 import { showExplorer } from "./proof-explorer.mjs";
@@ -246,7 +246,7 @@ function compilerOptimizations() {
   };
 }
 function refreshStatus() {
-  $("check").disabled = !ready || worker?.pendingCount > 0;
+  $("check").disabled = !ready && !halted || worker?.pendingCount > 0;
   $("collect-contexts").disabled = !ready || worker?.pendingCount > 0;
   $("open-context-repl").disabled = !ready || worker?.pendingCount > 0 || dirty() || !checkedKernelView?.contextEntry;
   for (const id of ["share-syntax", "reuse-checks", "compact-paths"])
@@ -265,12 +265,16 @@ function refreshStatus() {
         ? "Ready to check"
         : "Loading kernel…";
 }
-// While a new worker replaces one that a kernel failure stopped, a request
-// waits for it, and for its check of the current source (restartAfterFault).
-let restarting = null;
-function request(command, args = {}) {
-  if (!ready && restarting) return restarting.then(() => request(command, args));
-  if (!ready) return Promise.reject(new Error("The checking worker is unavailable. Reload the page to restart it."));
+// While a new worker replaces one that a kernel failure stopped, and the
+// page builds again on it what it held (rebuild), a request waits until that
+// is done, unless it is the rebuild's own (`internal`): so no request's
+// deadline runs while the rebuild's check or restore is ahead of it. When
+// the page stops replacing workers (halted), a request fails at once.
+// `replaced` bounds the replacements (restartAfterFault).
+let rebuilding = null, halted = null, replaced = false;
+function request(command, args = {}, { internal = false } = {}) {
+  if (rebuilding && !internal) return rebuilding.then(() => request(command, args));
+  if (!ready) return Promise.reject(halted ?? new Error("The checking worker is unavailable. Reload the page to restart it."));
   const currentWorker = worker;
   const watchdog = proofRequestWatchdog(command, () => {
     currentWorker.terminate(new Error("The checking worker stopped making progress. Reload the page to restart the kernel."));
@@ -289,32 +293,47 @@ function request(command, args = {}) {
 
 let focusOffset = query.has("offset") && Number.isSafeInteger(Number(query.get("offset"))) ? Number(query.get("offset")) : null, queuedExample = null;
 // Check an example sent by the embedding reference page, then inspect the
-// name the reader clicked.
-async function runExample({ source, offset }) {
-  if (!ready) { queuedExample = { source, offset }; return; }
+// name the reader clicked. One that arrives while a worker starts, or while
+// the page rebuilds after a kernel failure, waits, the latest only, for the
+// worker's first check or the rebuild (rebuild) to take it.
+function showExample({ source, offset }) {
   queuedExample = null;
   $("editor").value = source;
   focusOffset = Number.isInteger(offset) ? offset : null;
+}
+async function runExample(example) {
+  if (!ready && !halted || rebuilding) { queuedExample = example; return; }
+  showExample(example);
   await check();
 }
 if (embedded) addEventListener("message", ({ data, origin }) => {
   if (origin !== location.origin || data?.type !== "cubist-inspect" || typeof data.source !== "string") return;
-  runExample(data);
+  // The reader asked for it on the embedding page (restartAfterFault).
+  replaced = false;
+  runExample({ source: data.source, offset: data.offset });
 });
-async function check({keepInspection=false}={}) {
+// What a check of the editor's source sends. Where the source came from
+// decides where its imports are found (module-resolution.mjs): an archive
+// proof imports only from the archive.
+function checkArgs() {
+  return { source: $("editor").value, module: proofId, place, optimizations: compilerOptimizations(), collectScopes: $("collect-contexts").checked };
+}
+// Check the editor's source and read its result. A rebuild after a kernel
+// failure sends its check itself (`sent`: its arguments and the reply),
+// and this reads it. After the page stopped replacing workers, a check
+// starts a new one: the reader's retry (restartAfterFault).
+async function check({keepInspection=false,sent=null}={}) {
   showChecking(true);
-  if (await refreshCompiler()) return;
+  if (halted && !sent && !await retry()) return;
+  if (!sent && await refreshCompiler()) return;
   const contextVersion=contextual?.invalidate("Checking the source. Select a new context when checking finishes.");
   $("diagnostic").hidden = true;
-  const source = $("editor").value;
+  const args = sent?.args ?? checkArgs(), { source, collectScopes } = args;
   // Nothing checked yet: show the source being checked rather than nothing.
   // After a check, Read keeps the last checked version until this one ends.
   if (!last) renderPreview(source);
-  const collectScopes=$("collect-contexts").checked;
   try {
-    // Where the source came from decides where its imports are found
-    // (module-resolution.mjs): an archive proof imports only from the archive.
-    const result = await request("check", { source, module: proofId, place, optimizations: compilerOptimizations(),collectScopes });
+    const result = await (sent?.reply ?? request("check", args));
     last = result;
     contextual?.checked(result,contextVersion,collectScopes);
     generationSerial++;
@@ -1096,7 +1115,7 @@ $("editor").oninput = () => {
 $("editor").onkeydown = (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
     e.preventDefault();
-    if (ready && !worker?.pendingCount) check();
+    if ((ready || halted) && !worker?.pendingCount) check();
   }
 };
 function rememberInspection() {
@@ -1133,7 +1152,7 @@ $("file").onchange = async () => {
     if (!file) return;
     if (file.size > 1000000) throw new Error("Source exceeds 1 MB.");
     $("editor").value = await file.text();
-    if (ready) await check();
+    if (ready || halted) await check();
   } catch (e) {
     diagnostic(e);
   } finally {
@@ -1172,7 +1191,7 @@ async function serverVersion() {
   }
 }
 async function refreshCompiler() {
-  if (worker?.pendingCount || !ready) return false;
+  if (worker?.pendingCount || !ready || rebuilding) return false;
   const version = await serverVersion();
   if (!version || version === workerVersion) return false;
   ready = false;
@@ -1187,13 +1206,13 @@ async function refreshCompiler() {
   await startWorker(version);
   return true;
 }
-// The workers started, counted: the console runs its entries again on a new
-// one (replaying in repl-console.mjs).
+// The workers started, counted: the console restores its session on a new
+// one (recordedSession in repl-console.mjs).
 let workers = 0;
-// A worker and, once it is ready, the page's first check, or with `recheck`
-// set, as after a kernel failure, a check of the current source or none.
-// `started` settles when that is done.
-async function startWorker(version = undefined, { recheck = null } = {}) {
+// A worker and, once it is ready, the page's first check, or what `onReady`
+// does instead, as rebuild after a kernel failure. `started` settles when
+// that is done.
+async function startWorker(version = undefined, { onReady = null } = {}) {
   workerVersion = version ?? (await serverVersion());
   const url = new URL("./cubical-worker.mjs", import.meta.url);
   if (workerVersion) url.searchParams.set("version", workerVersion);
@@ -1208,7 +1227,7 @@ async function startWorker(version = undefined, { recheck = null } = {}) {
   const started = worker.ready.then(async () => {
     ready = true;
     refreshStatus();
-    if (recheck !== null) { if (recheck) await check(); }
+    if (onReady) await onReady();
     // Embedded, the page checks what the embedding page sends.
     else if (embedded) {
       parent.postMessage({ type: "cubist-ready" }, location.origin);
@@ -1219,23 +1238,65 @@ async function startWorker(version = undefined, { recheck = null } = {}) {
 }
 // A kernel failure stops the worker (a fatal reply, WorkerRequests), which
 // failed every request it held. A new worker starts, as after a compiler
-// update, and checks the current source again, from which the page reads
-// everything again: the result, the inspector, contexts and generated
-// declarations. A check that failed so is not checked again; the new worker
-// waits for the next.
+// update, and the page builds on it again what it held (rebuild). A check
+// that failed so is not checked again; the new worker waits for the next.
+// The page replaces a worker so once until the reader does something, a key
+// or a pointer pressed, or an example sent from the embedding page: should
+// the new worker fail too before that, in its rebuild or in what the page
+// reads from it after, the page stops (halted) and says so, and the reader's
+// next check starts a worker (retry).
+for (const type of ["keydown", "pointerdown"]) addEventListener(type, () => { replaced = false; }, true);
 function restartAfterFault(error) {
   contextual?.invalidate("The kernel failed. Select a context again once the source is checked.");
   diagnostic(error);
-  const recheck = error.command !== "check";
   $("source-notice").hidden = false;
+  if (replaced) {
+    halted = new Error("The kernel failed again in the checking worker that replaced a failed one, so no other starts on its own: check the source to start one.");
+    $("source-notice").textContent = halted.message;
+    refreshStatus();
+    return;
+  }
+  replaced = true;
+  const recheck = error.command !== "check";
   $("source-notice").textContent = recheck
     ? "The kernel's WebAssembly instance failed, so a new checking worker checks your current source again; edits are preserved."
     : "The kernel's WebAssembly instance failed while checking, so a new checking worker waits for the next check.";
-  // A failure of the new worker's check starts another, which this one's
-  // end must not forget.
-  const current = startWorker(workerVersion, { recheck }).then(({ started }) => started)
-    .finally(() => { if (restarting === current) restarting = null; refreshStatus(); });
-  restarting = current;
+  // A failure of the new worker's rebuild may start another, which this
+  // one's end must not forget. An example sent meanwhile is checked once the
+  // rebuild is done.
+  const current = startWorker(workerVersion, { onReady: () => rebuild(recheck) }).then(({ started }) => started)
+    .catch(diagnostic).finally(() => {
+      if (rebuilding !== current) return;
+      rebuilding = null;
+      refreshStatus();
+      if (ready && queuedExample) runExample(queuedExample);
+    });
+  rebuilding = current;
+}
+// What the page held, built again on a new worker: the source checked again,
+// or the latest example the embedding page sent while the worker started,
+// and the console's session restored on it. The check's result is read as
+// any check's (check), and what reading it asks of the worker, as the
+// inspector's view and the contexts, waits for the rebuild like any other
+// request, so the rebuild's own requests are the check and the restore.
+async function rebuild(recheck) {
+  const internal = (command, args) => request(command, args, { internal: true });
+  if (queuedExample) showExample(queuedExample);
+  else if (!recheck) return;
+  const args = checkArgs(), reply = internal("check", args);
+  check({ sent: { args, reply } });
+  try { await reply; } catch { return; }
+  for (const note of await consoleSession.restore(internal)) replConsole?.show(note);
+}
+// The reader's check after the page stopped replacing workers: a new worker,
+// for that check. False when it does not start.
+async function retry() {
+  halted = null;
+  $("source-notice").hidden = true;
+  refreshStatus();
+  const { started } = await startWorker(undefined, { onReady: () => {} });
+  await started;
+  return ready;
 }
 addEventListener("focus", () => {
   refreshCompiler().catch(diagnostic);
@@ -1246,12 +1307,17 @@ addEventListener("pageshow", (event) => {
 enableTokenTips();
 $("context-option").hidden=embedded;
 contextual=createContextualConsole($("context-panel"),{request});
-// The console runs over the last checked version of this file.
-// Its entries are run again on a worker that replaced one (replaying).
-const consoleEntries = replaying(input => request("repl", { input }), () => workers);
-if (!embedded) createReplConsole($("repl"), {
+// The console runs over the last checked version of this file. Its session
+// is restored on a worker that replaced one: by the rebuild, or, when the
+// rebuild checked nothing, before its next entry (recordedSession), which
+// waits for any rebuild to finish first.
+const consoleSession = recordedSession(request, { generation: () => workers, restoreAfterFault: false });
+const replConsole = embedded ? null : createReplConsole($("repl"), {
   label: "Console input: a Cubist term or declaration",
-  run: consoleEntries.run,
-  reset: () => { consoleEntries.reset(); return request("repl-reset", {}); },
+  run: async input => {
+    while (rebuilding) await rebuilding;
+    return consoleSession.run(input);
+  },
+  reset: () => { consoleSession.reset(); return request("repl-reset", {}); },
 });
 await startWorker();

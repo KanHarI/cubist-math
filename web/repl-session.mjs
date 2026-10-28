@@ -103,7 +103,7 @@ export function replTranscript(text) {
 }
 
 // What replacing a failed kernel instance restored, for its owner to say
-// (cli/repl.mjs; replaying in web/repl-console.mjs): the source it had
+// (cli/repl.mjs; recordedSession in web/repl-console.mjs): the source it had
 // checked, named by `source` as a sentence starts, and the result of
 // checking it again, `rechecked`, complete or with what failed, or null when
 // it could not be checked; and the session's entries replayed, or those of
@@ -134,32 +134,44 @@ export class ReplSession {
     // What the entries read in: the base file's selections, then each use's.
     this.uses = base ? program.selectionsAfter?.(base) ?? [] : [];
     // Statements that extended the session, each with the number of the
-    // entry it was checked as, replayed by rebase.
+    // entry it was checked as, which record keeps and restore checks again.
     this.accepted = [];
-    // Those that rebase could not replay: their names are gone.
+    // Those that restore could not check again: their names are gone.
     this.lost = [];
   }
 
-  // The same session over another program, such as a rechecked proof or a
-  // new kernel instance: what extended it is replayed, each statement as the
-  // entry it was, repl_N, so that a later entry naming repl_N::x still finds
-  // x though the queries between them are not run again. What no longer
-  // checks is dropped, and listed in `lost`. A failed kernel instance
-  // (KernelFault) is no refusal: the replay stops and throws it, so that no
-  // part of the session is installed, and this one, whole, is replayed on a
-  // new instance.
-  async rebase(program, base = this.base) {
-    const session = new ReplSession(program, { base, modules: this.modules });
-    for (const { text, entry } of this.accepted) {
-      const before = session.accepted.length;
-      session.count = entry - 1;
-      await session.statement(text);
-      const fault = moduleFault(program.kernel?.module);
+  // What extended the session, statement by statement, each with the entry
+  // it was checked as, and the number of entries: plain data, which a page
+  // keeps so that a new worker can restore the session (restore).
+  record() {
+    return { accepted: this.accepted.map(({ text, entry }) => ({ text, entry })), count: this.count };
+  }
+
+  // Restore a record on this session, a new one: each statement that extended
+  // the recorded session is checked again as the entry it was, repl_N, so that
+  // a later entry naming repl_N::x still finds x, though the queries and the
+  // refused statements between them are not run again and change nothing.
+  // What no longer checks is dropped, and listed in `lost`. A failed kernel
+  // instance (KernelFault) is no refusal: the restore stops and throws it.
+  async restore({ accepted, count }) {
+    for (const { text, entry } of accepted) {
+      const before = this.accepted.length;
+      this.count = entry - 1;
+      await this.statement(text);
+      const fault = moduleFault(this.program.kernel?.module);
       if (fault) throw fault;
-      if (session.accepted.length === before) session.lost.push(text);
+      if (this.accepted.length === before) this.lost.push(text);
     }
-    session.count = this.count;
-    return session;
+    this.count = count;
+    return this;
+  }
+
+  // The same session over another program, such as a rechecked proof or a
+  // new kernel instance (restore). It throws a failed instance's KernelFault,
+  // so that its owner installs no part of it, and replays this one whole on a
+  // new instance.
+  rebase(program, base = this.base) {
+    return new ReplSession(program, { base, modules: this.modules }).restore(this.record());
   }
 
   // Run every statement of the input; a last statement may omit its `;`. A
