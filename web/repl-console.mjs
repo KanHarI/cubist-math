@@ -160,30 +160,37 @@ export function createReplConsole(root, { run, reset, greeting = [], label = "RE
 // (restartNote). The entry that failed is not run again. With
 // `restoreAfterFault`, a REPL with a worker of its own restores at once on a
 // new one after its entry failed so; a page that rebuilds what it holds
-// after a failure restores the session itself.
-export function recordedSession(request, { fresh = false, generation = () => 0, restoreAfterFault = true } = {}) {
-  let record = null, at = generation();
+// after a failure restores the session itself. A session over a proof is
+// restored only once the new worker has checked it (`restorable`): until
+// then an entry is refused, and the record kept. A reset forgets the
+// session, and what a restore or an entry begun before it answers is not
+// kept (`epoch`).
+export function recordedSession(request, { fresh = false, generation = () => 0, restoreAfterFault = true, restorable = () => true } = {}) {
+  let record = null, at = generation(), epoch = 0;
   async function restore(send = request) {
-    const kept = record;
+    const kept = record, begun = epoch;
     record = null;
     if (!kept) { at = generation(); return []; }
     try {
       const restored = await send("repl-restore", { fresh, record: kept });
+      if (begun !== epoch) return [];
       record = restored.record;
       return [{ kind: "info", text: restartNote({ replayed: true, session: restored }) }];
     } catch (error) {
+      if (begun !== epoch) return [];
       return [{ kind: "error", text: withCode(error.message) }, { kind: "info", text: restartNote({ replayed: true }) }];
-    } finally { at = generation(); }
+    } finally { if (begun === epoch) at = generation(); }
   }
   return {
-    reset() { record = null; at = generation(); },
+    reset() { record = null; at = generation(); epoch++; },
     restore,
     async run(input) {
-      const restored = generation() === at ? [] : await restore();
+      const begun = epoch, due = generation() !== at;
+      if (due && record && !restorable()) throw new Error("Check a proof first.");
+      const restored = due ? await restore() : [];
       try {
         const answer = await request("repl", { input, fresh, record: true });
-        record = answer.record;
-        at = generation();
+        if (begun === epoch) { record = answer.record; at = generation(); }
         return [...restored, ...answer.results];
       } catch (error) {
         if (!error.fatal && !restored.length) throw error;

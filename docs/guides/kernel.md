@@ -1103,6 +1103,9 @@ with the entry `repl_N` it was checked as. On a new worker the record is
 restored (`recordedSession` in `web/repl-console.mjs`): each recorded
 statement is checked again as that entry, and nothing else, so what was
 refused stays refused, and each statement that no longer checks is named.
+A session over a proof is restored once the new worker has checked the
+proof; until then an entry is refused and the record kept, and a Restart
+meanwhile forgets it for good.
 The reference examples check each example on a new worker. A check that
 failed so is not checked again, and a new worker that cannot load is
 reported as at startup. A page replaces a worker so once for each thing the

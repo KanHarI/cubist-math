@@ -196,16 +196,24 @@ await browserTest(async ({ browser, base }) => {
   // The page starts a new worker and builds again what it holds: a REPL
   // restores its session, the proof page checks its source again.
   const injected = await browser.newContext();
-  // The runtime's snapshot arms its worker's kernel to fail, if its plan says.
+  // Where the failures are injected, checked before any page loads one: a
+  // point that is gone fails here, named, rather than in a page waiting on
+  // the module.
+  const runtimeHook = "function judged(kernel, judgement, budget) {", glueEnd = /export default Module;\s*$/;
+  const served = async path => (await fetch(new URL(path, base))).text();
+  assert.ok((await served("cubical-runtime.mjs")).includes(runtimeHook),
+    `The fault harness arms the kernel where the runtime reads it, at ${runtimeHook}, which cubical-runtime.mjs no longer has.`);
+  assert.match(await served("dist/cubical.mjs"), glueEnd,
+    "The fault harness wraps the kernel's exports where dist/cubical.mjs ends, at export default Module;, which it no longer has.");
+  // The runtime arms its worker's kernel to fail, if its plan says, when a
+  // query starts reading the kernel (judged; its reads are lazy since #324).
   await injected.route("**/cubical-runtime.mjs*", async route => {
     const response = await route.fetch(), body = await response.text();
-    const edited = body.replace("function snapshot(kernel, judgement, budget) {", "$& globalThis.armKernelFault?.();");
-    assert.notEqual(edited, body);
-    await route.fulfill({ response, body: edited });
+    await route.fulfill({ response, body: body.replace(runtimeHook, "$& globalThis.armKernelFault?.();") });
   });
   // Each worker loads the kernel anew, and fails as the next plan says, with
   // the engine's RangeError out of an export: at the first export a runtime
-  // value form's snapshot calls ("snapshot"), at the first folded normal
+  // value form's query calls ("runtime"), at the first folded normal
   // form ("normal"), in the first inspection ("inspection"), or only on
   // demand: a message the worker does not know arms the next kernel call,
   // the next `_cb_free` (with a trap), or the next call made while a check's
@@ -220,10 +228,9 @@ await browserTest(async ({ browser, base }) => {
     if (kernelHeld) await kernelHeld;
     if (plan === "unavailable") return route.abort();
     const response = await route.fetch(), body = await response.text();
-    assert.match(body, /export default Module;\s*$/);
-    await route.fulfill({ response, body: body.replace(/export default Module;\s*$/, `const plan = ${JSON.stringify(plan)};
-let armed = false, freeing = false, inSteps = false, snapshots = 0, normals = 0, inspections = 0;
-globalThis.armKernelFault = () => { if (plan === "snapshot" && !snapshots++) armed = true; };
+    await route.fulfill({ response, body: body.replace(glueEnd, `const plan = ${JSON.stringify(plan)};
+let armed = false, freeing = false, inSteps = false, queries = 0, normals = 0, inspections = 0;
+globalThis.armKernelFault = () => { if (plan === "runtime" && !queries++) armed = true; };
 self.addEventListener("message", ({ data }) => {
   if (data?.command === "fail-next-kernel-call" || data?.command === "repl" && data.args?.input === "/fail-next-kernel-call"
     || plan === "inspection" && data?.command === "inspect" && !inspections++) armed = true;
@@ -269,19 +276,19 @@ export default async options => {
     }
     return target.locator(".repl-log").last().locator(".repl-result").allTextContents();
   };
-  // The REPL page: its first worker fails in a value form's snapshot, its
+  // The REPL page: its first worker fails in a value form's runtime query, its
   // second in a folded normal form. Each time the session is restored on a
   // new worker, each statement that extended it as the entry it was: the
   // query typeof tt was entry repl_3, so repl_5, which names repl_4, still
   // finds it.
-  plans.push("snapshot", "normal");
+  plans.push("runtime", "normal");
   const faulty = await injected.newPage();
   await faulty.goto(new URL("repl.html", base).href);
   assert.deepEqual((await entries(faulty, ["import unat;", "use unat;", "typeof tt;", "let x := 7;", "let saved := repl_4::x;",
     "evaluate x + 1;", "evaluate !!x;", "evaluate x + 1;", "typeof x;", "typeof saved;"])).slice(-7),
     [...restarted, ...restarted, "8", "UNat", "UNat"]);
   // A new worker that cannot load answers too, and the console is free.
-  plans.push("snapshot", "unavailable");
+  plans.push("runtime", "unavailable");
   const stranded = await injected.newPage();
   await stranded.goto(new URL("repl.html", base).href);
   assert.deepEqual((await entries(stranded, ["import unat;", "use unat;", "evaluate 1 + 1;"])).slice(-3), [fault,
@@ -411,8 +418,19 @@ export default async options => {
   await until("#source-notice", text => text.startsWith("The kernel's WebAssembly instance failed, so a new checking worker checks"));
   assert.deepEqual((await entries(workspace, ["typeof kept;"])).slice(-3), [restarted[1], restarted[1], "Unit"]);
   assert.deepEqual(plans, []);
-  await workspace.close();
   console.log("PASS proof page: a worker that replaced a failed one and fails too is not replaced until the reader checks again");
+  // A kernel that fails in a check: the new worker waits for the next check,
+  // and so does the console's session, which an entry before that check
+  // does not use up.
+  assert.deepEqual((await entries(workspace, ["/fail-next-kernel-call"])).slice(-1), [unknown]);
+  await workspace.locator("#check").click();
+  await until("#source-notice", text => text.startsWith("The kernel's WebAssembly instance failed while checking"));
+  assert.deepEqual((await entries(workspace, ["typeof kept;"])).slice(-2), [unknown, "Check a proof first."]);
+  await workspace.locator("#check").click();
+  await workspace.waitForFunction(() => document.querySelector("#diagnostic").hidden);
+  assert.deepEqual((await entries(workspace, ["typeof kept;"])).slice(-2), [restarted[1], "Unit"]);
+  await workspace.close();
+  console.log("PASS proof page: after a kernel fails in a check, the console's session waits for the next one");
   // An embedded proof page, a reference page's inspector: its kernel fails
   // in an example's inspection, and the example the reference page sends
   // while the new worker loads is the one the new worker checks.

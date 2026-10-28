@@ -270,8 +270,10 @@ function refreshStatus() {
 // is done, unless it is the rebuild's own (`internal`): so no request's
 // deadline runs while the rebuild's check or restore is ahead of it. When
 // the page stops replacing workers (halted), a request fails at once.
-// `replaced` bounds the replacements (restartAfterFault).
-let rebuilding = null, halted = null, replaced = false;
+// `replaced` bounds the replacements (restartAfterFault). `checkedBy` is the
+// worker that holds a checked proof, and `checking` settles with the check
+// last sent, for the console (recordedSession).
+let rebuilding = null, halted = null, replaced = false, checkedBy = null, checking = Promise.resolve();
 function request(command, args = {}, { internal = false } = {}) {
   if (rebuilding && !internal) return rebuilding.then(() => request(command, args));
   if (!ready) return Promise.reject(halted ?? new Error("The checking worker is unavailable. Reload the page to restart it."));
@@ -287,6 +289,7 @@ function request(command, args = {}, { internal = false } = {}) {
     watchdog.progress(progress);
     checkingProgress(progress);
   });
+  if (command === "check") checking = result.then(() => { checkedBy = currentWorker; }, () => {});
   refreshStatus();
   return result.finally(() => { watchdog.stop(); refreshStatus(); });
 }
@@ -1309,13 +1312,16 @@ $("context-option").hidden=embedded;
 contextual=createContextualConsole($("context-panel"),{request});
 // The console runs over the last checked version of this file. Its session
 // is restored on a worker that replaced one: by the rebuild, or, when the
-// rebuild checked nothing, before its next entry (recordedSession), which
-// waits for any rebuild to finish first.
-const consoleSession = recordedSession(request, { generation: () => workers, restoreAfterFault: false });
+// rebuild checked nothing, before its next entry once the new worker has
+// checked the source (recordedSession). An entry waits for any rebuild, and
+// for the check last sent, to finish first.
+const consoleSession = recordedSession(request, { generation: () => workers, restoreAfterFault: false,
+  restorable: () => checkedBy === worker });
 const replConsole = embedded ? null : createReplConsole($("repl"), {
   label: "Console input: a Cubist term or declaration",
   run: async input => {
     while (rebuilding) await rebuilding;
+    await checking;
     return consoleSession.run(input);
   },
   reset: () => { consoleSession.reset(); return request("repl-reset", {}); },

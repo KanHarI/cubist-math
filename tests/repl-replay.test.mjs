@@ -9,9 +9,10 @@ import { recordedSession } from "../web/repl-console.mjs";
 // of its session and answered with the session's record, a record restored
 // on a new worker, and a kernel failure, marked fatal, that ends the worker.
 // The next request goes to a new worker, with an empty session. An entry
-// "bad…" is refused, and extends nothing.
+// "bad…" is refused, and extends nothing. A worker over a proof answers
+// nothing until it has checked it (`proven`), and a restore can be held up.
 function host() {
-  let worker = 1, session = { accepted: [], count: 0 }, failing = null;
+  let worker = 1, session = { accepted: [], count: 0 }, failing = null, holding = null;
   const losing = new Set(), restores = [];
   const fatal = () => {
     failing = null; worker++; session = { accepted: [], count: 0 };
@@ -20,10 +21,14 @@ function host() {
   return {
     generation: () => worker,
     restores,
+    proven: true,
     fail(input) { failing = input; },
     lose(text) { losing.add(text); },
     replace() { worker++; session = { accepted: [], count: 0 }; },
+    hold() { let release; holding = new Promise(resolve => { release = resolve; }); return release; },
     async request(command, args) {
+      if (!this.proven) throw new Error("Check a proof first.");
+      if (command === "repl-restore" && holding) { await holding; holding = null; }
       if (command === "repl") {
         if (args.input === failing) throw fatal();
         const entry = ++session.count;
@@ -98,4 +103,33 @@ test("a page that rebuilds restores the session itself; a reset forgets it; erro
   assert.deepEqual(await session.run("d"), [{ kind: "defined", text: "d : repl_1" }]);
   const refusing = recordedSession(async () => { throw new Error("unavailable"); });
   await assert.rejects(refusing.run("a"), /unavailable/);
+});
+
+test("a reset while a restore is under way forgets the session: what the restore answers is not kept", async () => {
+  const worker = host(), session = recordedSession((...call) => worker.request(...call),
+    { generation: worker.generation, restoreAfterFault: false });
+  await session.run("secret");
+  worker.replace();
+  const release = worker.hold(), restoring = session.restore();
+  session.reset();
+  release();
+  assert.deepEqual(await restoring, []);
+  // On a later worker nothing comes back: the next entry is the first.
+  worker.replace();
+  assert.deepEqual(await session.run("a"), [{ kind: "defined", text: "a : repl_1" }]);
+  assert.equal(worker.restores.length, 1);
+});
+
+test("a session over a proof is restored once the new worker has checked it; an entry before is refused, and the record kept", async () => {
+  const worker = host(), session = recordedSession((...call) => worker.request(...call),
+    { generation: worker.generation, restoreAfterFault: false, restorable: () => worker.proven });
+  await session.run("kept");
+  worker.fail("check");
+  assert.deepEqual(await session.run("check"), [failed]);
+  worker.proven = false;
+  await assert.rejects(session.run("typeof kept"), /Check a proof first/);
+  assert.deepEqual(worker.restores, []);
+  worker.proven = true;
+  assert.deepEqual(await session.run("b"), [restarted, { kind: "defined", text: "b : repl_2" }]);
+  assert.deepEqual(worker.restores, [{ accepted: [{ text: "kept", entry: 1 }], count: 1 }]);
 });
