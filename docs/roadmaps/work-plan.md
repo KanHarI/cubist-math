@@ -1019,8 +1019,12 @@ Each step lands in focused PRs under the review rule above.
         shares by syntax and the runtime computes twice, is EVAL4 work.
    4. **Typed readback** (EVAL5): read runtime values back into kernel terms
       by their types, with the written readback correspondence and the
-      applicable EVAL8 review. `!!`, `!!!`, exact expected values and a
-      fallback in mid-computation can then go through the runtime.
+      applicable EVAL8 review. Decided on 2026-10-28
+      ([typed readback](runtime/typed-readback.md)): readback serves displays
+      and a fallback per node in mid-computation; no verdict consumes a
+      readback, so patterns, exact expected values, `!!!`, `!` and `witness`
+      stay on the kernel's queries. W1 (readback and its oracle tests) and
+      W2 (the fallback per node) are next.
    5. **The archive's number theory in the library**
       ([NT1–NT5](archive-retirement.md#number-theory-in-the-library)):
       1. NT1: the unary order lemmas move to `unat`. **Done** on 2026-10-28.

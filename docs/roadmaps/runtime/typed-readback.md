@@ -1,6 +1,7 @@
 # Typed readback: runtime values as kernel terms (EVAL5)
 
-Status: proposed on 2026-10-28 for the user's decision, written on
+Status: decided on 2026-10-28: the user accepted every recommendation of
+[section 11](#11-decisions) (D1–D6). Written on
 [#324](https://github.com/KanHarI/cubist-math/pull/324)'s branch at
 `6f5604e9`. This is step 2.4 of the work plan's
 [first actions](../work-plan.md#first-actions): typed readback, with the
@@ -9,7 +10,8 @@ the applicable part of EVAL8's review. It also answers the condition of the
 decision of 2026-10-26 that constructor patterns stay on the kernel's queries
 "until typed readback and the applicable EVAL8 review"
 ([REPL integration](runtime-evaluation-roadmap.md#repl-integration)).
-Nothing here is implemented, and nothing here changes the kernel.
+Nothing here is implemented yet, and nothing here changes the kernel. W1
+and W2 are next ([8](#8-work-items)).
 
 ## Summary
 
@@ -552,7 +554,7 @@ Each is one PR, reviewed under the roadmap's rule.
 
 ## 11. Decisions
 
-Recommended, for the user to take or change:
+Decided by the user on 2026-10-28, each as recommended:
 
 1. **D1. Who decides verdicts.** Option A: no verdict consumes a readback,
    and readback serves displays and the kernel's queries. Option D is
@@ -587,11 +589,14 @@ Recommended, for the user to take or change:
    `!!!`, exact expected values and a fallback in mid-computation can then
    go through the runtime". Only displays and the fallback can, unless a
    verdict is allowed to rest on the runtime (D1, D5).
-2. **Exact expected values on binary rationals are very costly today:**
+2. **Exact expected values on binary rationals were very costly:**
    48.0 s, 27.7M instructions and 4.7 GiB to refuse `2/3 + 1/6 expecting
    5/6`. Typing the 993-handle folded normal form alone takes 12.8M
    instructions. This is a driver cost, independent of the runtime,
    [1.4](#14-what-a-re-check-costs-today).
+   [#331](https://github.com/KanHarI/cubist-math/pull/331) found the cause, a
+   derivation memo keyed by the whole scope, and brings the refusal to
+   120,258 instructions and 2.4 s; until it merges, 1.4's figures hold.
 3. **The work plan's runtime-track paragraph is stale since #324.** It
    still says that the runtime's "signatures must be untruncated, without
    path constructors, so quotient values such as `BInt`'s and `BQ`'s fall
