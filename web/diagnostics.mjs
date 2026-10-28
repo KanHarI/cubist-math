@@ -522,6 +522,7 @@ export const diagnostics = [
   ["E663", "A path is applied at an interval point; found a face formula."],
   ["E664", "A transport's face is a face formula; found an interval point."],
   ["E665", "A partial element's face is a face formula; found an interval point."],
+  ["E666", "This cubical kernel module has no handle generations. Rebuild it with `make wasm`."],
   // Arguments and their inference
   ["E701", "… has no implicit parameters: give its arguments in parentheses, as …(…)."],
   ["E702", "… has … implicit parameter…, …; the double braces give …."],
