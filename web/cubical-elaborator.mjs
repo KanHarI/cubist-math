@@ -309,8 +309,10 @@ export class NativeCubicalElaborator {
   // free variables their names, as displayTerm takes them.
   // They are one display: a name any of them writes for a variable, a
   // binder or a dimension is read so in each (sourceTexts).
-  displayTexts(terms, dimensions, { width = 160, limit = 4000, notation = this.notation ?? {}, names = new Map() } = {}) {
-    return this.printedTogether(forSource(terms, this.displayNaming(dimensions, 256, names)), width, limit, notation).texts;
+  // `reduce` bounds the display's beta reductions, and `locals` are names
+  // the display writes beside the texts, as a message's prose binds them.
+  displayTexts(terms, dimensions, { width = 160, limit = 4000, notation = this.notation ?? {}, names = new Map(), reduce = 256, locals = [] } = {}) {
+    return this.printedTogether(forSource(terms, this.displayNaming(dimensions, reduce, names)), width, limit, notation, locals).texts;
   }
   // A term whose names are already settled, as source text within a width.
   printed(term, width = 160, limit = 4000, notation = this.notation ?? {}) {

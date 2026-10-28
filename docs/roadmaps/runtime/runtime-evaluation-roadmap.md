@@ -875,7 +875,12 @@ recording each name as the printer writes it, and where a model qualifier
 it wrote is a name the texts also write for something else, prints them
 again with that name known, until none is. So a binder it leaves out, as an
 equality's coordinate, takes no name, and one inside a literal it prints
-as its parse does. Operators and a model's bare operators
+as its parse does. A message that shows several terms, or whose prose binds
+a name, as hlevel's "for every m : Unit", is composed as one display
+(`message` in `web/translator/translate.mjs`): its terms and its prose's
+names are printed together. `tests/cubist-tests-inlined.mjs` numbers each
+display while it checks the Cubist test modules and refuses a message
+printed from two. Operators and a model's bare operators
 keep the name-only check
 ([pr-318-todo](../../reports/pr-318-todo.md)).
 `tests/numeral-readback.test.mjs` combines each way of shadowing a reader's
