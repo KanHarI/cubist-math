@@ -65,7 +65,8 @@ export const fixture = new URL("tests/fixtures/evaluation-baseline.json", root);
 // Version 9 executes the point constructors of higher and truncated sorts
 // in the runtime (docs/reports/runtime-repl-evaluation.md): no type decides
 // a fallback before the runtime is asked, so a value form demands no weak
-// head of the kernel.
+// head of the kernel, and the runtime copies from the kernel only the
+// syntax and definitions its walk reaches.
 export const version = 9;
 
 const euclid = "import euclid; use unat;", circle = "import circle; use unat;";
