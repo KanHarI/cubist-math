@@ -382,7 +382,7 @@ export const archiveModules = [
 // which a module imports to use them.
 export const libraryModules = ["nat", "unat", "bnat", "bnat_equality", "bnat_notation", "bnat_unary", "bnat_arithmetic", "bnat_order", "semirings", "unat_models", "bnat_semiring", "bnat_models", "bnat_transport", "bnat_peano", "bnat_recursion", "classical_axioms", "universe_automorphisms", "hlevels",
   "h1_truncation", "h1_classical", "contractible_maps", "univalence", "universe_smallness", "propositions",
-  "finite_sets", "binary", "powersets", "continuum_hypothesis",
+  "finite_sets", "binary", "powersets", "continuum_hypothesis", "continuum_axioms",
   "lists", "lexemes", "quotients", "algebra", "ordered_algebra", "differences", "integers", "binary_integers", "fractions", "rationals", "binary_rationals", "squares"];
 
 // The Cubist sources the test suite checks (cubist-tests/), each a module the
@@ -442,5 +442,5 @@ export const cubistTestModules = [
   "inspection_square_boundary", "assembly_fixture", "assembly_generic_assumptions", "glue_printed",
   "admission_two", "reduction_demo", "f4_extension_loops", "f4_extension_loops_false", "fingerprint_fixture",
   "documentation_helper", "documentation_use", "declared_match_operator_call", "declarations_definitions",
-  "declarations_axioms", "continuum_axioms"
+  "declarations_axioms", "continuum_assumptions"
 ];

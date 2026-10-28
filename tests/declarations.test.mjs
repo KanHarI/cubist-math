@@ -193,20 +193,20 @@ test("two modules' declarations that would share one identity: the later is refu
   assert.match(program.gaps.find(gap => gap.directive)?.reason ?? "", /depends on non-computing assumptions: a::b__c/);
 });
 
-// The continuum hypotheses will be assumed so (h1-truncation-migration.md,
-// "Continuum hypotheses"); cubist-tests/continuum_axioms.cubist assumes them
-// in a module of its own, which states every refusal in its comments.
-test("a module assumes the continuum hypotheses, and every result that uses one lists it", async t => {
-  const { program, result } = await checkTestModule(t, "continuum_axioms");
-  const used = name => labelsOf(result, result.outputs.find(output => output.name === name));
-  assert.deepEqual(used("CH"), ["continuum_axioms::CH"]);
-  assert.deepEqual(used("ch_from_gch"), ["continuum_axioms::GCH"]);
-  for (const name of ["both", "at_zero"]) assert.deepEqual(used(name), ["continuum_axioms::CH", "continuum_axioms::GCH"], name);
+// The library's continuum_axioms assumes the continuum hypotheses
+// (h1-truncation-migration.md, "Continuum hypotheses");
+// cubist-tests/continuum_assumptions.cubist uses them, and states every
+// output and refusal in its comments, and
+// tests/fixtures/contracts/continuum_axiom_contracts.cubist the axioms that
+// each result lists.
+test("the library assumes each continuum hypothesis once, for every universe, under its bare name", async t => {
+  const { program } = await checkTestModule(t, "continuum_assumptions");
   // One entry generic over U < UU0, whose body is the statement at U.
-  const type = program.checker.assumptions.get(program.checker.axioms.get("continuum_axioms__CH"));
-  assert.deepEqual([type.tag, type.body.tag], ["LPi", "Pi"]);
-  assert.match(result.outputs.find(output => output.name === "computed").reason,
-    /^This computable declaration depends on non-computing assumptions: continuum_axioms::CH\./);
+  for (const name of ["CH", "DecidableCH", "GCH", "DecidableGCH"]) {
+    const assumption = program.checker.axioms.get(`continuum_axioms__${name}`);
+    const type = program.checker.assumptions.get(assumption);
+    assert.deepEqual([type.tag, type.body.tag, program.checker.assumptionLabels.get(assumption)], ["LPi", "Pi", name], name);
+  }
 });
 
 // An axiom's assumption never takes a binder's name: an earlier binder's
