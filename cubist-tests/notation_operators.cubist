@@ -3,10 +3,10 @@
 // read in another notation, as x ^ unat.(n); and derived operations, which
 // a theory defines over its fields and models do not give again. Each
 // operator means only what the selected notation binds.
+import integers;
 import unat;
 import hlevels;
 import algebra;
-import integers;
 
 theory Ring(U < UU0) {
   R : set U;
@@ -143,7 +143,7 @@ def difference(A : Ring(U0), x : A.R) : A.R := x A.(-) x;
 
 // The library's rings: negation and subtraction on the integers, whose
 // numerals the integers' module reads (L2.10c).
-def three : integers.(5 - 2) = int(unat.(5), unat.(2)) {
+def three : integers.(5 - 2) = int(nat.(5), nat.(2)) {
   rfl;
 }
 

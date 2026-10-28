@@ -31,10 +31,11 @@ test("the complete canonical .cubist corpus checks with the sole native kernel",
   // trichotomy added 5 and removed hlevels' zero test; the binary
   // notation's parser added binary_naturals' 4 and the library's lexemes (9)
   // and lists (7), which it imports; hlevels' prop_over_unique (B8 of
-  // the rational normalization debugging plan) added 1; and unat's order
-  // lemmas and equality decision (NT1 of the archive retirement) added 8
-  // and removed hlevels' decision and primes' 9 copies.
+  // the rational normalization debugging plan) added 1; lexemes'
+  // power_of_ten, which only the removed unary rationals used (NUM2), 1 less;
+  // and unat's order lemmas and equality decision (NT1 of the archive
+  // retirement) added 8 and removed hlevels' decision and primes' 9 copies.
   assert.deepEqual(report.importErrors, []);
-  assert.equal(report.declarations.length, 3856, "The corpus must not silently lose modules.");
+  assert.equal(report.declarations.length, 3855, "The corpus must not silently lose modules.");
   t.diagnostic(JSON.stringify(report.counts));
 });

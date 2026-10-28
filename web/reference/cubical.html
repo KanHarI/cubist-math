@@ -763,11 +763,11 @@ computable def same_parity : SameParity(1, 3) := quotient_effective(
 );
 
 evaluate same_parity expecting refl(1);</code></pre>
-            <p>The library builds number systems this way. <code>integers</code> takes the quotient of pairs of naturals, <code>(a, b)</code> standing for <code>a - b</code>, by having the same difference, <code>a + d = c + b</code>: <code>int(a, b)</code> is that integer, and <code>int_add</code>, <code>int_mul</code> and <code>int_neg</code> descend from pairs. Effectiveness makes its equality decidable (<code>int_decide</code>), since pairs have the same difference or not. <code>rationals</code> takes the quotient of fractions, as the integers' field of fractions. Both are <a href="theories.html#library-algebra">models of the algebraic theories</a>, and their arithmetic computes:</p>
+            <p>The library builds number systems this way. <code>integers</code> takes the quotient of pairs of binary naturals, <code>(a, b)</code> standing for <code>a - b</code>, by having the same difference, <code>a + d = c + b</code>: <code>int(a, b)</code> is that integer, and <code>int_add</code>, <code>int_mul</code> and <code>int_neg</code> descend from pairs. Effectiveness makes its equality decidable (<code>int_decide</code>), since pairs have the same difference or not. <code>rationals</code> takes the quotient of fractions, as the integers' field of fractions. Both are <a href="theories.html#library-algebra">models of the algebraic theories</a>, and their arithmetic computes:</p>
             <pre><code data-check="accept">import integers;
-use unat;
+use nat;
 
-def equal_or_not(x, y : Z) : UNat := match int_decide(x, y) return UNat {
+def equal_or_not(x, y : Z) : Nat := match int_decide(x, y) return Nat {
   left same =&gt; 1;
   right different =&gt; 0;
 };

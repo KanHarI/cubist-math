@@ -80,9 +80,9 @@ export function elaboration(program, module) {
     try {
       const view = program.inspect(info.binding), checker = program.checker, dimensions = new Map(view.dimensions ?? []);
       const notation = info.notation;
-      return { ...result, steps,
-        type: checker.displayText(view.type, dimensions, { width: 600, notation }), term: checker.displayText(view.expression, dimensions, { width: 600, notation }),
-        derivation: derivation(program, view) };
+      // The type and the term are one display, as the view shows them.
+      const [type, term] = checker.displayTexts([view.type, view.expression], dimensions, { width: 600, notation });
+      return { ...result, steps, type, term, derivation: derivation(program, view) };
     } catch (error) {
       return { ...result, steps, reason: error.message };
     }

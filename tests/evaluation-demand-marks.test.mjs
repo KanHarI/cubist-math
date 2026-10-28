@@ -454,9 +454,7 @@ print(evaluate(hundreds(250)));`, { module, options: { runtimeEvaluation } });
     assert.ok(spent.at(-1) <= 4100, `the walk asked ${spent.at(-1)} queries`);
     assert.match(result.prints[0].text, /^cons\(100, cons\(100, /);
   }
-  // The runtime's walk asks the type's weak head first, which decides
-  // whether the runtime is asked at all.
-  assert.equal(spent[0], spent[1] + 1);
+  assert.equal(spent[0], spent[1]);
 });
 
 test("the value form shows no part deeper than the kernel's terms, however deep the value", async t => {
@@ -710,8 +708,8 @@ for (const setup of Object.keys(corpus.setups)) {
         const by = computed.get(runtime);
         if (by.by === "runtime") valueForms.runtime++;
         else valueForms.unsupported[by.unsupported] = (valueForms.unsupported[by.unsupported] ?? 0) + 1;
-        // A fallback decided from the type takes no snapshot.
-        if (by.by === "kernel" && !by.runtime) valueForms.early++;
+        // No type decides a fallback: the runtime met the demand itself.
+        if (by.by === "kernel") assert.ok(by.runtime, `${item.id}: the fallback follows a runtime query`);
         continue;
       }
       assert.equal(typeof value, "string", `${item.id} ${mark}: ${JSON.stringify(value)}`);
@@ -757,21 +755,23 @@ for (const setup of Object.keys(corpus.setups)) {
 }
 // What computed the value forms above, the runtime or, for the demand it
 // reports unsupported, the kernel's head queries. The four assumptions are
-// refused before anything is computed. Of the fallbacks at a higher or
-// truncated sort, 18 are values of such a sort, decided from their types
-// before any snapshot, and 16 contain one.
-const valueForms = { runtime: 0, unsupported: {}, early: 0 };
-test("the runtime computes the value forms of the constructs on ordinary data", () => {
-  assert.equal(valueForms.runtime, 135);
+// refused before anything is computed. The runtime executes the point
+// constructors of higher and truncated sorts too, and their eliminators'
+// point clauses: of the 34 constructs it refused at such a sort before, it
+// computes 21, such as a circle's base, a quotient's class and a match on
+// them, and meets a path constructor in 8, a path applied in 2 and a
+// transport's composition in 3.
+const valueForms = { runtime: 0, unsupported: {} };
+test("the runtime computes the value forms of the constructs on data, ordinary and higher", () => {
+  assert.equal(valueForms.runtime, 156);
   assert.deepEqual(valueForms.unsupported, {
-    "Higher and truncated data execution is not implemented.": 34,
-    "Runtime execution of Comp is not implemented.": 17,
-    "Runtime execution of PApp is not implemented.": 2,
+    "Runtime execution of PApp is not implemented.": 4,
     "Runtime η of a path abstraction is not implemented.": 3,
+    "Runtime execution of Comp is not implemented.": 20,
+    "Execution of a path constructor is not implemented.": 8,
     "Runtime execution of Glue is not implemented.": 1,
     "Runtime execution of Unglue is not implemented.": 1,
   });
-  assert.equal(valueForms.early, 18);
 });
 
 // The acceptance report (docs/roadmaps/historical/evaluation-demand-marks/

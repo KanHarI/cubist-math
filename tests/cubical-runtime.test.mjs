@@ -6,6 +6,7 @@ import createCubical from "../web/dist/cubical.mjs";
 import { CubicalKernel } from "../web/cubical-kernel.mjs";
 import { InstructionGraph } from "../web/cubical-instructions.mjs";
 import { InstructionDriver } from "../web/cubical-instruction-driver.mjs";
+import { CubicalDeclarationTransaction } from "../web/cubical-transaction.mjs";
 import { RuntimeQuery, RuntimeError } from "../web/cubical-runtime.mjs";
 import { checkProgram } from "./check-program.mjs";
 import { budget } from "./timing.mjs";
@@ -107,7 +108,7 @@ test("two fields share a demanded argument and unsupported siblings remain suspe
   const { query } = await setup(t, `
 def shared : Unit and Unit := (fun (x : Unit) => typed(Unit and Unit, (x, x)))((fun (y : Unit) => y)(tt));
 inductive Circle { base; loop : base = base; }
-def suspended : Unit and Circle := (tt, base);
+def suspended : Unit and Circle := (tt, loop @ 0);
 def abstraction : Unit and (tt = tt) := (tt, refl(tt));
 `);
   const shared = query("shared"), pair = await shared.observe();
@@ -280,15 +281,194 @@ test("definition sharing does not depend on syntax interning", async t => {
   assert.equal(query.stats.beta, beta);
 });
 
-test("snapshots survive kernel disposal and handles remain local to their query", async t => {
-  const { query, kernel } = await setup(t, "def value : Unit and Unit := (tt, tt);");
+// A query reads the kernel when its walk first demands a node, a definition
+// or a signature: what it never demands is never copied.
+test("a query copies only what its walk demands", async t => {
+  const { query, kernel } = await setup(t, `
+import unat; use unat;
+def unused_ : UNat := 2 * 255;
+def helper(x : Unit) : Unit := x;
+def value : Unit and UNat := (helper(tt), unused_);
+`);
+  const runtime = query("value");
+  assert.deepEqual([runtime.stats.snapshotNodes, runtime.stats.snapshotDefinitions], [0, 0]);
+  const pair = await runtime.observe();
+  // The root's definition: its reference, the application of an identity
+  // that ascribes its type, without the type, and the pair, without its
+  // components or their definitions.
+  assert.equal(runtime.stats.snapshotDefinitions, 1);
+  assert.equal(runtime.stats.snapshotNodes, 5);
+  assert.deepEqual(await runtime.observe(pair.first), { kind: "Point" });
+  assert.equal(runtime.stats.snapshotDefinitions, 2, "helper, and still not the unused component");
+  // Demanded, the second component's definitions are copied: unused_, the
+  // multiplication and what it reaches.
+  const natural = kernel.signatures.get("unat__UNat").index;
+  assert.equal(await unary(runtime, natural, pair.second), 510);
+  assert.ok(runtime.stats.snapshotDefinitions > 2);
+  assert.equal(runtime.retainedObjects().snapshotNodes, runtime.stats.snapshotNodes);
+});
+
+// A query reads the kernel only while nothing can have moved the handles
+// it holds: a later declaration's commit or rollback, a transaction's end
+// or the session's disposal expires its unread syntax, and what it copied
+// and computed before stays observable.
+test("unread syntax expires with the kernel's handles, and what was read survives", async t => {
+  const { program, query, kernel, graph } = await setup(t, "def value : Unit and Unit := (tt, (fun (u : Unit) => u)(tt));");
+  // Made before later declarations, accepted or refused, a query expires at
+  // the first one's end, though no handle it holds moved: no reader tells.
+  const outside = query("value"), fields = await outside.observe();
+  assert.deepEqual(await outside.observe(fields.first), { kind: "Point" });
+  const later = await program.check("def other : Unit := tt;\ndef refused : Unit := Unit;", "later");
+  assert.deepEqual(later.outputs.filter(output => output.name !== "value").map(output => [output.name, output.verified]),
+    [["other", true], ["refused", false]]);
+  assert.deepEqual(await outside.observe(fields.first), { kind: "Point" });
+  await assert.rejects(outside.observe(fields.second), fails("expired"));
+  // Made inside a declaration's transaction, a query expires when it is
+  // committed or rolled back, which move or drop the handles made since.
+  for (const accept of [false, true]) {
+    const transaction = new CubicalDeclarationTransaction(kernel, program.checker), unit = graph.unit(), point = graph.point();
+    const applied = graph.apply(graph.lambda(graph.extend(unit, "y"), point), point);
+    const inner = new RuntimeQuery(kernel, graph.pair(graph.sigma(graph.extend(unit, "x"), unit), point, applied));
+    t.after(() => inner.dispose());
+    const pair = await inner.observe();
+    assert.deepEqual(await inner.observe(pair.first), { kind: "Point" });
+    transaction.finish(accept);
+    assert.equal((await inner.observe(inner.root)).kind, "Pair", "computed before, still observable");
+    assert.deepEqual(await inner.observe(pair.first), { kind: "Point" });
+    await assert.rejects(inner.observe(pair.second), fails("expired"));
+  }
+  // Disposal expires every query; handles stay local to their query.
   const first = query("value"), second = query("value"), root = first.root;
-  kernel.dispose();
   const pair = await first.observe(root);
-  assert.deepEqual(await first.observe(pair.second), { kind: "Point" });
+  assert.deepEqual(await first.observe(pair.first), { kind: "Point" });
+  kernel.dispose();
+  assert.equal((await first.observe(root)).kind, "Pair");
+  assert.deepEqual(await first.observe(pair.first), { kind: "Point" });
+  await assert.rejects(first.observe(pair.second), fails("expired"));
   await assert.rejects(second.observe(root), fails("input"));
   first.dispose();
   await assert.rejects(first.observe(root), fails("disposed"));
+});
+
+// However a checkpoint is opened and ended, through a declaration's
+// transaction, the module's exports as kernel tests call them, an export
+// captured before any kernel was made or a copy of the module, its rollback
+// or commit expires every query made before it: the bridge's handle
+// generation moves on (cb_generation), and a rolled-back handle is reused
+// by the next node made, which a query must never read as its own.
+test("a checkpoint ended through any alias of the module's exports expires every query made before", async t => {
+  const module = await createCubical();
+  // Aliases taken before any kernel is made for the module, and a copy.
+  const rollback = module._cb_rollback, commit = module._cb_commit_checkpoint, facade = { ...module };
+  const kernel = new CubicalKernel(module), g = new InstructionGraph(kernel), m = kernel.module;
+  t.after(() => kernel.dispose());
+  const queried = judgement => { const query = new RuntimeQuery(kernel, judgement); t.after(() => query.dispose()); return query; };
+  // A point made inside a checkpoint and rolled back, its handle recycled
+  // for the next node made, the type Void at first: through the module's
+  // export, the captured alias and the copy alike.
+  g.unit();
+  const fresh = [() => g.judgement(g.void()).term, () => kernel.term("Var", kernel.symbol("recycled_1")),
+    () => kernel.term("Var", kernel.symbol("recycled_2"))];
+  for (const [i, roll] of [token => m._cb_rollback(token), rollback, token => facade._cb_rollback(token)].entries()) {
+    m._cb_checkpoint(kernel.handle);
+    const point = g.point(), recycled = queried(point), handle = g.judgement(point).term;
+    roll(kernel.handle);
+    assert.equal(fresh[i](), handle, "the rolled-back handle is reused");
+    assert.throws(() => recycled.observeNow(), fails("expired"));
+  }
+  // A commit compacts: through the module, the captured alias and the copy.
+  for (const close of [token => m._cb_commit_checkpoint(token), commit, token => facade._cb_commit_checkpoint(token)]) {
+    m._cb_checkpoint(kernel.handle);
+    const committed = queried(g.point());
+    assert.equal(close(kernel.handle), 1);
+    assert.throws(() => committed.observeNow(), fails("expired"));
+  }
+  // A kernel made over the copy reads the same generation.
+  const copied = new CubicalKernel(facade), h = new InstructionGraph(copied);
+  t.after(() => copied.dispose());
+  const before = new RuntimeQuery(copied, h.point());
+  t.after(() => before.dispose());
+  copied.module._cb_checkpoint(copied.handle);
+  rollback(copied.handle);
+  assert.throws(() => before.observeNow(), fails("expired"));
+  // Nested checkpoints: the second replaces the first's base; its rollback
+  // expires a query made in either.
+  m._cb_checkpoint(kernel.handle);
+  const outer = queried(g.point());
+  m._cb_checkpoint(kernel.handle);
+  const inner = queried(g.point());
+  m._cb_rollback(kernel.handle);
+  for (const query of [outer, inner]) assert.throws(() => query.observeNow(), fails("expired"));
+  // Opening a checkpoint, and forgetting the nodes read, move no handle: a
+  // query made before either still reads.
+  const kept = queried(g.point());
+  m._cb_checkpoint(kernel.handle);
+  kernel.forgetNodes();
+  assert.deepEqual(kept.observeNow(), { kind: "Point" });
+});
+
+// A session whose handle generations are spent (cb_generation, after
+// UINT32_MAX - 1 rollbacks and commits, kernel/tests/test_bridge.c) reads
+// generation 0 for good, in which no handle is held: a query made before
+// and one made after both expire, never reading a handle as its own, and a
+// value form shows the runtime's failure, E490, not a value. The bridge's
+// generation is replaced here by a module copy that reports it spent.
+test("a session with spent handle generations holds no handles, before or after", async t => {
+  const module = await createCubical();
+  let spent = false;
+  const facade = { ...module, _cb_generation: token => spent ? 0 : module._cb_generation(token) };
+  const kernel = new CubicalKernel(facade), g = new InstructionGraph(kernel);
+  t.after(() => kernel.dispose());
+  const unit = g.unit(), point = g.point();
+  const before = new RuntimeQuery(kernel, g.pair(g.sigma(g.extend(unit, "x"), unit), point,
+    g.apply(g.lambda(g.extend(unit, "y"), point), point)));
+  t.after(() => before.dispose());
+  const pair = before.observeNow();
+  assert.deepEqual(before.observeNow(pair.first), { kind: "Point" });
+  const token = kernel.handleToken();
+  assert.ok(token > 0 && kernel.handlesHeld(token));
+  spent = true;
+  assert.equal(kernel.handleToken(), 0);
+  assert.equal(kernel.handlesHeld(token), false);
+  assert.equal(kernel.handlesHeld(0), false, "generation 0 holds nothing");
+  assert.deepEqual(before.observeNow(pair.first), { kind: "Point" }, "computed before, still observable");
+  assert.throws(() => before.observeNow(pair.second), fails("expired"));
+  const after = new RuntimeQuery(kernel, g.point());
+  t.after(() => after.dispose());
+  assert.throws(() => after.observeNow(), fails("expired"));
+  // In a program on such a session, a value form reports the runtime's
+  // failure and is not computed again by the kernel's queries.
+  const { result } = await checkProgram(t, "print(evaluate(tt));", { module: { ...module, _cb_generation: () => 0 } });
+  assert.deepEqual(result.prints, []);
+  assert.deepEqual(result.gaps.filter(gap => gap.directive).map(gap => [gap.code, gap.reason.replace(/ at \d+:\d+$/, "")]),
+    [["E490", "The runtime failed to evaluate the value form: The kernel has changed since the runtime query was made: what it has not read can no longer be read."]]);
+});
+
+// A lazy read is work and cells of the observation that demands it: a
+// limit can stop the query in the middle of copying, as it stops a force.
+// After a cell stop what was computed stays observable; an exhausted work
+// budget ends the query's observations, as before.
+test("lazy reads count against the query's work and cells", async t => {
+  const { query } = await setup(t, `
+def helper(x : Unit) : Unit := x;
+def value : Unit and Unit := (helper(tt), tt);
+`);
+  const calibration = query("value");
+  await calibration.observe();
+  const before = calibration.stats;
+  await calibration.observe((await calibration.observe()).first);
+  const after = calibration.stats;
+  assert.ok(after.snapshotNodes > before.snapshotNodes && after.snapshotDefinitions > before.snapshotDefinitions);
+  for (const [option, counter, kind] of [["maxCells", "allocatedCells", "resource"], ["maxSteps", "steps", "budget"]]) {
+    // Enough for the pair, and for the force of its first component up to
+    // the read of its syntax.
+    const runtime = query("value", { [option]: before[counter] + 2 }), pair = await runtime.observe();
+    assert.deepEqual(runtime.stats, before);
+    await assert.rejects(runtime.observe(pair.first), error => fails(kind)(error)
+      && error.limit === before[counter] + 2 && error.stats.snapshotNodes === before.snapshotNodes);
+    if (kind === "resource") assert.equal((await runtime.observe()).kind, "Pair");
+    else await assert.rejects(runtime.observe(), fails("budget"));
+  }
 });
 
 test("disposal rejects completed forces before the default-slice observation publishes", async t => {
@@ -362,19 +542,65 @@ test("observation deadlines exclude idle time and expiry leaves the query usable
   assert.deepEqual(await runtime.observe(), { kind: "Point" });
 });
 
-test("unsupported signatures and positions are refused only when demanded", async t => {
+// A path constructor, the squash among them, and a point constructor with a
+// position whose cube is a path type are refused when demanded, not because
+// their signature occurs; the point constructors beside them compute.
+test("path constructors and cubical positions are refused only when demanded", async t => {
   const { query } = await setup(t, `
+import h1_truncation;
 inductive Cube { cbase; pack(p : cbase = cbase); }
 inductive Circle { base; loop : base = base; }
 def unused_cube : Unit := (fun (c : Cube) => tt)(pack(refl(cbase)));
 def cube_leaf : Cube := cbase;
 def cube_path : Cube := pack(refl(cbase));
 def circle_value : Circle := base;
+def circle_loop : base = base := loop;
+def circle_endpoint : Circle := loop @ 1;
+def unused_loop : Unit := (fun (p : base = base) => tt)(loop);
+def squashed := Trunc.squash(typed(Trunc(U0, Unit), point(tt)), typed(Trunc(U0, Unit), point(tt)));
 `);
+  const refused = message => error => fails("unsupported")(error) && error.message === message;
   assert.deepEqual(await query("unused_cube").observe(), { kind: "Point" });
   assert.equal((await query("cube_leaf").observe()).kind, "Con");
-  await assert.rejects(query("cube_path").observe(), fails("unsupported"));
-  await assert.rejects(query("circle_value").observe(), fails("unsupported"));
+  await assert.rejects(query("cube_path").observe(), refused("Execution of a constructor with cubical recursive positions is not implemented."));
+  assert.deepEqual((({ kind, index, args, arity }) => ({ kind, index, args, arity }))(await query("circle_value").observe()),
+    { kind: "Con", index: 0, args: [], arity: 0 });
+  await assert.rejects(query("circle_loop").observe(), refused("Execution of a path constructor is not implemented."));
+  await assert.rejects(query("squashed").observe(), refused("Execution of a path constructor is not implemented."));
+  await assert.rejects(query("circle_endpoint").observe(), refused("Runtime execution of PApp is not implemented."));
+  assert.deepEqual(await query("unused_loop").observe(), { kind: "Point" });
+});
+
+// The eliminator of a higher or truncated sort, applied to a point
+// constructor, selects the clause the kernel's iota selects; its other
+// clauses, for paths and the squash, are never demanded.
+test("point constructors of higher and truncated sorts compute, with their eliminators' point clauses", async t => {
+  const { query, kernel, normal } = await setup(t, `
+import quotients; import h1_truncation; use unat;
+inductive Circle { base; loop : base = base; }
+def R(m, n : UNat) : U0 := Unit;
+def doubled(q : Quotient(U0, UNat, R)) : Quotient(U0, UNat, R) := match q {
+  class(a) => class(a + a);
+} obligations by (fun (a, b : UNat, r : R(a, b)) => class_path(U0, UNat, R, a + a, b + b, tt));
+def to_nat(c : Circle) : UNat := match c { base => 3; loop @ i => 3; };
+def doubled_class : Quotient(U0, UNat, R) := doubled(class(2));
+def circle_nat : UNat := to_nat(base);
+def mapped : Trunc(U0, UNat) := mere_map(U0, U0, UNat, UNat, fun (n : UNat) => n + 1, point(4));
+`);
+  const natural = kernel.signatures.get("unat__UNat").index;
+  // The constructor's index and its one argument, by the runtime and in the
+  // kernel's normal form.
+  for (const [name, signature, value] of [["doubled_class", "quotients__Quotient", 4], ["mapped", "h1_truncation__Trunc", 5]]) {
+    const runtime = query(name), observed = await runtime.observe();
+    assert.deepEqual([observed.kind, observed.signature, observed.index, observed.arity],
+      ["Con", kernel.signatures.get(signature).index, 0, 1], name);
+    assert.equal(await unary(runtime, natural, observed.args[0]), value, name);
+    const native = kernel.node(normal(name)), constructor = kernel.node(native.children[0]);
+    assert.deepEqual([native.kind, constructor.kind, constructor.payload], ["App", "Con", 0], name);
+    assert.equal(nativeUnary(kernel, natural, native.children[1]), value, name);
+  }
+  assert.equal(await unary(query("circle_nat"), natural), 3);
+  assert.equal(nativeUnary(kernel, natural, normal("circle_nat")), 3);
 });
 
 test("the MessageChannel scheduler yields and releases its ports", () => {

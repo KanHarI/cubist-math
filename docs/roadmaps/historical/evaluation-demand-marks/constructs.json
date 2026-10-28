@@ -23,7 +23,7 @@
   "s20": "import quotients;\nuse unat;\ndef R(m, n : UNat) : U0 := Unit;\ndef c_ : Quotient(U0, UNat, R) := class(1);",
   "s21": "import unat;\nuse unat;\ninductive Gpd(A : U0) : trunc(1) {\n  gpoint(a : A);\n}",
   "s22": "import algebra;\nuse unat;",
-  "s23": "import integers;\nuse unat;",
+  "s23": "import integers;\nuse nat;",
   "s24": "import unat;\nimport hlevels;\nuse unat;\ntheory Magma_(U < UU0) {\n  M : set U;\n  mul(x, y : M) : M notation x * y;\n}\ntheory Pointed_(U < UU0, G : Magma_(U)) {\n  X : set U;\n  point_ : X;\n  shift(x : X) : X;\n}\ndef nat_magma : Magma_(U0) := Magma_.make(M := UNat, M_is_set := unat_is_set, mul := add);\ndef counting_p : Pointed_(U0, nat_magma) := Pointed_.make(nat_magma, X := UNat, X_is_set := unat_is_set, point_ := 0, shift := succ);",
   "s25": "import unat;\nimport hlevels;\nuse unat;\ntheory Unary_(U < UU0) {\n  M : set U;\n  op(x : M) : M;\n  law self(x : M) : op(x) = op(x);\n}\ntheory Twice_(U < UU0) extends Unary_ {\n  step(x : M) : M;\n  def op(x : M) : M := step(step(x));\n  def self(x : M) : op(x) = op(x) := refl(op(x));\n}\ndef twice_nat : Twice_(U0) := Twice_.make(M := UNat, M_is_set := unat_is_set, step := succ);",
   "s26": "import unat;\nimport hlevels;\nuse unat;\ntheory Rig(U < UU0) {\n  R : set U;\n  add(x, y : R) : R notation x + y;\n  zero : R;\n  one : R;\n  def of_nat(n : UNat) : R := match n {\n    zero => zero;\n    succ(k) => one + of_nat(k);\n  }\n  notation numeral;\n}\ndef counting : Rig(U0) := Rig.make(R := UNat, R_is_set := unat_is_set, add := add, zero := 0, one := 1);",

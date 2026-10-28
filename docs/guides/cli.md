@@ -143,10 +143,10 @@ printed alone. `evaluate`, or a term alone, prints the value form of a closed
 term that uses no assumption: its data, computed as far as it is shown, and a
 marker such as `<fun>` where a function, a path or a type stops it. The
 runtime evaluator (`web/cubical-runtime.mjs`) computes the value form of
-ordinary data, building no kernel term; a value form that needs a path
-applied, a composition, Glue or a higher constructor is computed again by the
-kernel's weak-head queries, and a value whose type is a quotient or another
-higher or truncated type goes to them at once. Neither certifies the value: the kernel checks
+data, building no kernel term: the point constructors of quotients and other
+higher or truncated types too, as binary integers' and rationals'. A value
+form that needs a path applied, a path constructor, a composition or Glue is
+computed again by the kernel's weak-head queries. Neither certifies the value: the kernel checks
 the term's type and that it uses no assumption. The runtime stops at 100M
 steps, 20M allocated cells and 30 seconds a part (E487 to E489).
 `evaluate !TERM;` prints its weak head, its arguments as they are, and
