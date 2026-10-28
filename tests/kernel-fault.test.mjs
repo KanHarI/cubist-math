@@ -101,27 +101,34 @@ test("a failure in a runtime value form's kernel reads ends the entry, and a reb
   assert.equal(rebased.faulted, false);
 });
 
-// The engine's stack is made smaller than the kernel's recursion guard
-// assumes (--stack-size), so nested eliminators overflow it inside the
-// instance: a genuine engine error, in a REPL entry over a checked file.
+// A lamp toggled through 440 definitions: normalizing the last, n440, the
+// kernel recurses through them all, within its guard's 448 steps
+// (CC_RECURSION_LIMIT), and on the engine's default stack n440 checks. The
+// command line is run on a smaller stack (--stack-size), which the recursion
+// overflows inside the instance: a genuine engine error. Measured on arm64,
+// the command line runs from 100 KiB and the recursion overflows up to
+// 450 KiB; 160 leaves room either way for another platform's frames. Only the
+// kernel recurses, so the driver's own stack stays shallow.
+const toggled = `inductive Lamp { dark; lit; }
+def toggle(f : Lamp) : Lamp := match f { dark => lit; lit => dark; };
+def n0 : Lamp := dark;
+${Array.from({ length: 440 }, (_, k) => `def n${k + 1} : Lamp := toggle(n${k});\n`).join("")}`;
+const smallStack = "--stack-size=160";
+
+// A REPL entry over a checked file overflows.
 test("the command line replaces a failed instance and checks the source and the session again", async t => {
   const directory = await mkdtemp(join(tmpdir(), "cubist-fault-"));
   t.after(() => rm(directory, { recursive: true, force: true }));
-  await writeFile(join(directory, "lamps.cubist"), `import unat;
-use unat;
-inductive Lamp { dark; lit; }
-def toggle(f : Lamp) : Lamp := match f { dark => lit; lit => dark; };
-def parity(n : UNat) : Lamp := match n { zero => dark; succ(m) => toggle(parity(m)); };
-`);
+  await writeFile(join(directory, "lamps.cubist"), toggled);
   const cli = fileURLToPath(new URL("../cli/repl.mjs", import.meta.url));
   // A query before a declaration is not replayed, yet a later entry names
   // the declaration's entry, repl_2: the replay keeps that name.
   const input = ["check lamps.cubist", "typeof tt;", "def Pointed := axiom Unit;", "let saved := repl_2::Pointed;",
     "let bright := toggle(dark);",
     // The overflow ends the entry: the statement after it is not checked.
-    "def deep : parity(2 * 200 + 100) = dark := refl(dark); def unchecked : bright = lit := refl(lit);",
+    "def deep : n440 = dark := refl(dark); def unchecked : bright = lit := refl(lit);",
     "typeof saved;", "def again : bright = lit := refl(lit);", "evaluate toggle(bright);", "quit"].join("\n") + "\n";
-  const run = spawnSync(process.execPath, ["--stack-size=350", cli], { cwd: directory, input, encoding: "utf8", timeout: 120000 });
+  const run = spawnSync(process.execPath, [smallStack, cli], { cwd: directory, input, encoding: "utf8", timeout: 120000 });
   assert.equal(run.status, 0, run.stderr);
   assert.match(run.stderr, /^E668: The kernel's WebAssembly instance failed \(Maximum call stack size exceeded\), and is not used again: nothing computed after the failure is kept\.$/m);
   assert.match(run.stderr, /^The kernel was restarted\. The last source checked was checked again\. The session's entries were checked again\.$/m);
@@ -164,15 +171,9 @@ test("the command line says when the source checked again no longer checks compl
   const directory = await mkdtemp(join(tmpdir(), "cubist-fault-"));
   t.after(() => rm(directory, { recursive: true, force: true }));
   await writeFile(join(directory, "shade.cubist"), "def shade : Unit := tt;\n");
-  await writeFile(join(directory, "lamps.cubist"), `import unat;
-import shade;
-use unat;
-inductive Lamp { dark; lit; }
-def toggle(f : Lamp) : Lamp := match f { dark => lit; lit => dark; };
-def parity(n : UNat) : Lamp := match n { zero => dark; succ(m) => toggle(parity(m)); };
-`);
+  await writeFile(join(directory, "lamps.cubist"), `import shade;\n${toggled}`);
   const cli = fileURLToPath(new URL("../cli/repl.mjs", import.meta.url));
-  const child = spawn(process.execPath, ["--stack-size=350", cli], { cwd: directory });
+  const child = spawn(process.execPath, [smallStack, cli], { cwd: directory });
   let stdout = "", stderr = "";
   child.stdout.on("data", data => { stdout += data; });
   child.stderr.on("data", data => { stderr += data; });
@@ -183,7 +184,7 @@ def parity(n : UNat) : Lamp := match n { zero => dark; succ(m) => toggle(parity(
     await new Promise(resolve => setTimeout(resolve, 20));
   }
   await rm(join(directory, "shade.cubist"));
-  child.stdin.end("def deep : parity(2 * 200 + 100) = dark := refl(dark);\nquit\n");
+  child.stdin.end("def deep : n440 = dark := refl(dark);\nquit\n");
   assert.equal(await exited, 0, stderr);
   assert.match(stderr, /^E668: /m);
   assert.match(stderr, /^The kernel was restarted\. The last source checked was checked again, and did not check completely: .*shade/m);
@@ -261,17 +262,11 @@ test("a rebase stops at a failed instance, and the session it came from replays 
 test("a check whose instance fails leaves the command line's last source in place", async t => {
   const directory = await mkdtemp(join(tmpdir(), "cubist-fault-"));
   t.after(() => rm(directory, { recursive: true, force: true }));
-  const lamps = `import unat;
-use unat;
-inductive Lamp { dark; lit; }
-def toggle(f : Lamp) : Lamp := match f { dark => lit; lit => dark; };
-def parity(n : UNat) : Lamp := match n { zero => dark; succ(m) => toggle(parity(m)); };
-`;
-  await writeFile(join(directory, "lamps.cubist"), `${lamps}def bright : Lamp := toggle(dark);\n`);
-  await writeFile(join(directory, "deeper.cubist"), `${lamps}def dim : Lamp := dark;\ndef deep : parity(2 * 200 + 100) = dark := refl(dark);\n`);
+  await writeFile(join(directory, "lamps.cubist"), `${toggled}def bright : Lamp := toggle(dark);\n`);
+  await writeFile(join(directory, "deeper.cubist"), `${toggled}def dim : Lamp := dark;\ndef deep : n440 = dark := refl(dark);\n`);
   const cli = fileURLToPath(new URL("../cli/repl.mjs", import.meta.url));
   const input = ["check lamps.cubist", "check deeper.cubist", "typeof bright;", "typeof dim;", "quit"].join("\n") + "\n";
-  const run = spawnSync(process.execPath, ["--stack-size=350", cli], { cwd: directory, input, encoding: "utf8", timeout: 120000 });
+  const run = spawnSync(process.execPath, [smallStack, cli], { cwd: directory, input, encoding: "utf8", timeout: 120000 });
   assert.equal(run.status, 0, run.stderr);
   assert.match(run.stderr, /^E668: /m);
   assert.match(run.stderr, /^The kernel was restarted\. The last source checked was checked again\.$/m);
