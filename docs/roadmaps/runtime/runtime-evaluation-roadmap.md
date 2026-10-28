@@ -1192,7 +1192,12 @@ computes: a folded normal form, in which closed data computes in full and a
 definition whose head is no data stays as written, so a stuck proof is
 named, not unfolded. `!!!` names the full normal form, which stage 4 below
 measures. `rationals.(2/3) expecting !!_` falls from 70,301,825 ticks and
-1,116,794 nodes to 43,932 ticks and 936.
+1,116,794 nodes to 43,932 ticks and 936. An exact expected value compares
+two such normal forms by conversion, which derives each, and until the
+[derivation sharing](../../reports/driver-derivation-sharing.md) change the
+driver derived them once per path, as trees: `evaluate rationals.(2/3)
+expecting rationals.(2/3);` issued 27.6M instructions in 43 s and 4.5 GB,
+and now issues 118,000 in 1.2 s.
 
 Provide typed readback for demanded data and a separately specified way to
 inspect suspended fields. Keep function bodies as closures until application
