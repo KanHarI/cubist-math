@@ -8,8 +8,10 @@ archive's retirement, as [Removing the legacy assumptions](#removing-the-legacy-
 plans. On 2026-10-26 its [steps](#steps) 1–4 were scheduled alongside the
 runtime phase, starting with `axiom` definitions. Step 1 is implemented
 (2026-10-26): excluded middle and choice are the library's axioms, and the
-legacy builtins are labelled `LEM[Truncate]` and `Choice[Truncate]`. Steps 2–4
-are not implemented yet, and step 5 waits for the archive's deletion. The
+legacy builtins are labelled `LEM[Truncate]` and `Choice[Truncate]`. Step 2
+is implemented (2026-10-28): no fixture outside the archive invokes the
+legacy builtins itself. Steps 3 and 4 are not implemented yet, and step 5 waits
+for the archive's deletion. The
 [ledger](h1-truncation-ledger.json) pins 12 checked public changes against
 `f4d1961`, rebased from `cc6b50f` on 2026-10-05, and records 5 more of two
 comparisons that step 1 retired, with the revision at which they last
@@ -489,6 +491,51 @@ transition land together.
    that construct legacy baselines run them as archive sources, or retire
    before confinement. Cost baselines invalidated by either transition are
    regenerated or marked historical in that transition.
+
+   **Done on 2026-10-28.** No fixture outside the archive invokes a legacy
+   builtin itself. Each is restated, keeping what it tests, or, where a
+   legacy builtin is its subject, reaches it through an archive source:
+   - `universe_generic_builtins` imports `classical_axioms`. `D4`'s
+     `LEM(UU0, …)` is refused as any generic definition's universe argument
+     is (E518), where the builtin's own check gave E407, and `D4_small`'s
+     `LEM(U1, …)` is accepted. `universe_generic`'s D6 case uses the
+     library's `LEM` at `U0` and `U1`, one assumption.
+   - `inductive_assumptions`' E507 cases put a path between two uses of
+     `LEM` or `Choice` where they put `Truncate`: in a parameter, a generic
+     parameter, a constructor's argument and a constructor's type.
+   - `program_assumptions` relies on `LEM` and `Choice` for its explicit and
+     minimal lists; its replay of the export asks which sources are the
+     library's, as the workbench does, so their labels survive the replay.
+     `assembly_generic_assumptions` lists the library's `Choice`, one kernel
+     entry at two levels, and prints `Trunc(U1, U0) : U1`, where the
+     archive's `Truncate` resized into `U0`. `inspection_axiom_labels`
+     inspects the library's `LEM`, and the legacy `‖A‖` notation hook is
+     checked on the archive's own `truncation.Mere`.
+   - The computability fixtures, `computability` and
+     `computability_evaluation`, and the command line's and the REPL's E324
+     probes import `h1_classical` in place of the archive's `classical`; they
+     depend on `LEM`, by `double_negation (h1_classical) → LEM`.
+   - Cases that used a legacy builtin as a convenient assumption use the
+     library's axioms, or an axiom of their own where a test's reader has no
+     library: the contract expectations of type dependencies and of an
+     imported or benchmarked `expect_axioms([])`, the nonempty and empty
+     contracts' assumptions in a type and in evidence, delta reduction over
+     an assumption, and the demand-marks ordering test. The demand-marks
+     corpus restates B95–B97 so, and records B98's weak head as its probe
+     finds it, a lambda, as for the others.
+   - Where a legacy builtin is the subject, an archive source invokes it:
+     the declarations tests of a builtin without a definition site and of
+     the assumption mark import the archive's `truncation`, and the label
+     check of `tests/test-contracts.test.mjs` its `classical`, as
+     `truncation_rebuilt_classical` does. The ledger tests that construct
+     legacy baselines read them from the archive (`legacyBaseline` in
+     `tests/proof-migration.test.mjs`), as step 1's replacement test does;
+     their pins and assumption lists are unchanged, and none retires.
+   - Expectations over archive modules keep the legacy labels: the six
+     `*_invalid_*` goldens and the mathematical tests.
+   - No cost baseline changes: none measures a migrated fixture, and step 1
+     marked the capture-bindings baselines' labels historical. The saved
+     benchmark reports (`web/benchmark-results*.json`) are dated snapshots.
 3. **Remaining reference and guides.** Complete the documentation migration
    after the signature, label and checked-example updates of step 1. The
    assumptions chapter sends truncation to the cubical chapter's declaration

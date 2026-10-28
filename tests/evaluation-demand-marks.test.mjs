@@ -161,8 +161,9 @@ evaluate far
 
 test("an exact expected value or a printed normal form is computed before the assumptions are checked, and a pattern or a value form after", async t => {
   const { result } = await checkProgram(t, `import unat;
+import classical_axioms;
 use unat;
-def mixed := TruncateIntro(U0, UNat, 2 * 256);
+def mixed := LEM(U0, UNat, fun (no : UNat -> Void) => no(2 * 256));
 evaluate mixed expecting mixed;
 evaluate mixed expecting !_;
 print(evaluate(!!mixed));

@@ -43,10 +43,10 @@ test("CLI reports assumptions and evaluates closed terms", async t => {
   const directory = await mkdtemp(join(tmpdir(), "cubist-cli-"));
   t.after(() => rm(directory, { recursive: true, force: true }));
   await writeFile(join(directory, "sample.cubist"), `import primes;
-import classical; use unat;
+import h1_classical; use unat;
 def double(n : UNat) := n + n;
-def recover(P : U0, prop_ : Proposition(P), nn : (P -> Void) -> Void) : P {
-  exact double_negation(P, prop_, nn);
+def recover(P : U0, prop_ : IsProp(U0, P), nn : (P -> Void) -> Void) : P {
+  exact double_negation(U0, P, prop_, nn);
 }
 evaluate double(2) expecting 4;
 `);
@@ -55,12 +55,12 @@ evaluate double(2) expecting 4;
   assert.equal(shell.status, 0, shell.stderr);
   assert.match(shell.stdout, /evaluate at line 7: 4\n/);
   assert.match(shell.stdout, /Type: .*\nAssumptions: none\n/);
-  assert.match(shell.stdout, /Assumptions: LEM\[Truncate\], Truncate, TruncateElim\n/);
+  assert.match(shell.stdout, /Assumptions: LEM\n/);
   assert.match(shell.stdout, /\n6\n/);
-  assert.match(shell.stderr, /The evaluated term depends on non-computing assumptions: LEM\[Truncate\].*Path to LEM\[Truncate\]: recover \(sample\) → double_negation \(classical\) → LEM\[Truncate\]\./);
+  assert.match(shell.stderr, /The evaluated term depends on non-computing assumptions: LEM\. Path to LEM: recover \(sample\) → double_negation \(h1_classical\) → LEM\./);
   assert.match(shell.stderr, /missing_name/);
   // check reports each result that relies on an assumption, with all of them.
-  assert.match(shell.stdout, /kernel steps\nrecover assumes LEM\[Truncate\], Truncate, TruncateElim\nevaluate at line 7/);
+  assert.match(shell.stdout, /kernel steps\nrecover assumes LEM\nevaluate at line 7/);
 });
 // A user's axiom, a library axiom and one reached through an import are
 // reported with every result that relies on them; a result that relies on
