@@ -11,9 +11,13 @@ import { safeTrace, traceSources, traceSnapshot, traceCounters, traceCost } from
 
 // A transfer's sources are text, which no reader placed: `fromLibrary` says
 // which of them is the library's (module-resolution.mjs, libraryProvenance),
-// so that a library axiom keeps its bare name; without it none is.
+// so that a library axiom keeps its bare name, and `fromArchive` which is the
+// archive's (archiveProvenance), so that an archive module replays with its
+// legacy builtins; without them none is.
 export class WorkbenchSession {
-  constructor(module, { fromLibrary = null } = {}) { this.module = module; this.states = []; this.fromLibrary = fromLibrary; }
+  constructor(module, { fromLibrary = null, fromArchive = null } = {}) {
+    this.module = module; this.states = []; this.fromLibrary = fromLibrary; this.fromArchive = fromArchive;
+  }
   dispose() { this.program?.dispose(); }
   state(id) {
     const state = this.states[id];
@@ -47,6 +51,7 @@ export class WorkbenchSession {
       return payload.sources[name];
     };
     if (this.fromLibrary) read.fromLibrary = this.fromLibrary;
+    if (this.fromArchive) read.fromArchive = this.fromArchive;
     this.program = new CubicalProgram(this.module, read);
     // A transfer replays its sources: one that does not check completely
     // is no transfer of what was checked, and is refused.

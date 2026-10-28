@@ -151,7 +151,13 @@ export class CubicalProgram {
       // qualified labels, and is never lost for it.
       let own = false;
       try { own = await this.readSource.fromLibrary?.(name, text) ?? false; } catch { own = false; }
-      const entry = { text, ast, library: false };
+      // Whether it is the archive's, as the archive holds it: only then may
+      // it use the archive's legacy builtins (builtins.mjs,
+      // legacyConfinement). That is the module's own text, whatever it
+      // imports, since the builtins are refused where they are written.
+      let archive = false;
+      try { archive = await this.readSource.fromArchive?.(name, text) ?? false; } catch { archive = false; }
+      const entry = { text, ast, library: false, archive };
       prepared.set(name, entry);
       if(!this.modules.has(name))discovery.total += ast.declarations.length;
       onProgress({ completed: this.completed, total: null, current: name,
@@ -373,12 +379,12 @@ export class CubicalProgram {
       if (visiting.has(name)) throw new Error(`Cyclic source import: ${name}`);
       if (this.modules.has(name)) return this.modules.get(name);
       visiting.add(name);
-      let ast, library;
+      let ast, library, archive;
       try {
         const entry = prepared.get(name);
         if (!entry) throw new Error(`Source was not discovered: ${name}`);
         if (entry.error) throw entry.error;
-        ({ text, ast, library } = entry);
+        ({ text, ast, library, archive } = entry);
         this.libraryModules.set(name, library);
       }
       catch (error) {
@@ -410,7 +416,7 @@ export class CubicalProgram {
       let current = null;
       // A module of a revision before L2.10j, as the migration verifier reads
       // one, keeps its name-based operators and numerals (translate.mjs).
-      const translator = new Translator({ normalize: false, checker,definitionModule:name,libraryModule:library,testMode:!!this.options.testMode,simpRegistry,moduleName:name,sources:this.sources,collectGeneration:this.collectGeneration,
+      const translator = new Translator({ normalize: false, checker,definitionModule:name,libraryModule:library,archiveModule:archive,testMode:!!this.options.testMode,simpRegistry,moduleName:name,sources:this.sources,collectGeneration:this.collectGeneration,
         scopePoints:scopeRecorder,compilationBindings:this.compilationBindings,
         onDirectiveStart:collectScopes?directive=>{
           this.onDirectiveStart?.(name,directive);

@@ -90,10 +90,20 @@ function ua({t,builtin,n,scope,tr,inferred}) {
   return fn;
 }
 
-// The archive's legacy assumptions over Truncate. LEM and Choice reach this
-// only where nothing binds them: the library's classical_axioms declares
-// both, over Trunc, and an import of it shadows these.
+// The archive's legacy builtins: its truncation, Truncate, with
+// TruncateIntro, TruncateProp and TruncateElim, and its excluded middle and
+// choice over it, LEM and Choice where nothing binds them (the library's
+// classical_axioms declares both, over Trunc, and an import of it shadows
+// these). Only an archive module may use them: one read unedited from
+// archive/first-library/ (module-resolution.mjs, fromArchive). Anywhere
+// else, a library module, a test, a user's file, the workspace, a REPL or
+// console entry, each is refused, called or named, with what replaces it
+// (K2.5 step 4, docs/roadmaps/hott/h1-truncation-migration.md). They leave
+// with the archive.
+export const legacyBuiltins=new Set(["Truncate","TruncateIntro","TruncateProp","TruncateElim","LEM","Choice"]);
+export const legacyConfinement=builtin=>Error(`${builtin} is the archive's legacy builtin, accepted only in archive modules: elsewhere use the library's Trunc, from h1_truncation, and its axioms LEM and Choice, from classical_axioms.`);
 function Truncate({t,builtin,n,scope,tr,inferred}) {
+  if(!t.archiveModule)throw scope.unit.locate(legacyConfinement(builtin),n.fn);
   if(!n.args.length)throw Error(`${builtin} needs a universe argument.`);
   const universe=tr(n.args[0],null);
   if(universe.tag!=="U"||!t.checker.assume)throw Error("Logical assumptions require a universe and an explicit native context.");

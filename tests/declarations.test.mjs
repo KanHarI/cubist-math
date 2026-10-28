@@ -301,6 +301,7 @@ test("assumption names live where no declaration, constructor, binder or generat
     + "def lem : ExcludedMiddle(U0) := LEM(U0);\ndef legacy := truncation::Mere(Unit);\ndef qualified := a::b__c;\n";
   const reader = async (name, importer) => await modules(name) ?? fallback(name, importer);
   reader.fromLibrary = fallback.fromLibrary;
+  reader.fromArchive = fallback.fromArchive;
   const { program, result, get } = await checkProgram(t, source, { name: "m", module: await createCubical(), reader });
   assert.equal(result.complete, true, JSON.stringify(program.gaps));
   // The review's case: inspect A1_ shows the definition, and A1 the axiom.

@@ -383,6 +383,7 @@ export const diagnostics = [
   ["E488", "The runtime's evaluation of the value form exhausted its allocation budget of … cells."],
   ["E489", "The runtime's evaluation of the value form exceeded its time limit."],
   ["E490", "The runtime failed to evaluate the value form: …"],
+  ["E491", "… is the archive's legacy builtin, accepted only in archive modules: elsewhere use the library's Trunc, from h1_truncation, and its axioms LEM and Choice, from classical_axioms."],
   // Inductive types and matching
   ["E501", "trunc(n) is supported up to n = …."],
   ["E502", "A sort is type, set, prop or trunc(n) for an integer n ≥ -1."],

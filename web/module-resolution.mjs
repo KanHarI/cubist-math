@@ -26,6 +26,12 @@
 // archive-first, and checking anything else is library-first: a library
 // module shadows the archive module of that name.
 //
+// A root also vouches for its modules' text (fromLibrary, fromArchive): a
+// module read from library/ unedited names its axioms by their bare names,
+// and only a module read from the archive unedited may use the archive's
+// legacy builtins over Truncate. A module's name, or a place given to it for
+// its imports, vouches for nothing.
+//
 // A check holds one module per name. When two modules of one check would
 // resolve the same name to different files, for example a library module and
 // an archive module that both import a name the library shadows, the check
@@ -96,12 +102,22 @@ export function moduleReader(read) {
     given.add(name);
   };
   readSource.placeOf = name => placed.get(name);
-  // Whether `text` is the module `name` exactly as library/ holds it: read
-  // from there, or given as that same text, as the command line gives a
-  // library file it checks. An edited source, or one placed elsewhere, is
-  // not. Only a library module names its axioms by their bare names, as
-  // LEM and Choice (web/cubical-assumptions.mjs).
-  readSource.fromLibrary = async (name, text) => placed.get(name) === "library" && await probe("library", name) === text;
+  // Whether `text` is the module `name` exactly as a root holds it: placed
+  // there by this reader and read from there, or given as that same text,
+  // as the command line gives a file of the root it checks. An edited
+  // source, one placed elsewhere, and one placed in a root for its imports
+  // alone, which the root does not hold, are not.
+  const fromRoot = root => async (name, text) => placed.get(name) === root && await probe(root, name) === text;
+  // Only a library module names its axioms by their bare names, as LEM and
+  // Choice (web/cubical-assumptions.mjs).
+  readSource.fromLibrary = fromRoot("library");
+  // Only an archive module may use the archive's legacy builtins, Truncate,
+  // its three companions and the builtin LEM and Choice over it
+  // (web/translator/builtins.mjs, legacyConfinement). The archive is frozen
+  // until it retires, so an archive module edited, in the workspace or
+  // elsewhere, is a module of the user's that spells an archive module's
+  // name, and may not.
+  readSource.fromArchive = fromRoot("archive");
   readSource.beginCheck = () => probes.clear();
   // Called after a module's imports are loaded: a refusal message when one of
   // them is not the module this importer would have loaded under that name.
@@ -126,15 +142,18 @@ export function moduleReader(read) {
 }
 
 // Whether a source given as text, as a transfer gives one, is the module
-// `name` exactly as library/ holds it, read through `fetchText` as
+// `name` exactly as a root holds it, read through `fetchText` as
 // listedReader reads it: the provenance of a module no reader placed. Only
-// such a module names its axioms by their bare names (fromLibrary).
-// A text that cannot be compared, as when library/ is unreachable, is not
-// the library's.
-export const libraryProvenance = (listing, fetchText) => async (name, text) => {
-  if (!listing.library?.includes(name)) return false;
-  try { return await fetchText(`${moduleRoots.library}${name}.cubist`) === text; } catch { return false; }
+// a library module names its axioms by their bare names (fromLibrary), and
+// only an archive module may use the archive's legacy builtins
+// (fromArchive). A text that cannot be compared, as when the root is
+// unreachable, is not the root's.
+const rootProvenance = root => (listing, fetchText) => async (name, text) => {
+  if (!listing[root]?.includes(name)) return false;
+  try { return await fetchText(`${moduleRoots[root]}${name}.cubist`) === text; } catch { return false; }
 };
+export const libraryProvenance = rootProvenance("library");
+export const archiveProvenance = rootProvenance("archive");
 
 // Modules known by name, as the browser knows them: `listing` names the
 // modules of each root, and fetchText(path) reads one by its path from the

@@ -111,6 +111,13 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
   // An original module read from library/ is the library's (its axioms'
   // labels); an edited shadow never is.
   readSource.fromLibrary = async (name, text) => !shadowModule(name) && (await readOriginal.fromLibrary?.(name, text) ?? false);
+  // An original module read from the archive is the archive's, and may use
+  // its legacy builtins; so is an edited one read from the archive's own
+  // files (readEdited.placeOf), an edit of the archive in place, since the
+  // verifier compares such edits with their baseline. An edited module
+  // from anywhere else is not.
+  readSource.fromArchive = async (name, text) => shadowModule(name) ? readEdited.placeOf?.(shadowModule(name)) === "archive"
+    : (await readOriginal.fromArchive?.(name, text) ?? false);
   readSource.checkImports = (importer, imports) => readOriginal.checkImports?.(importer, imports.filter(name => !shadowModule(name)));
   // An original module of a revision before L2.10j is read as it was then.
   readSource.nameBased = name => !shadowModule(name) && (readOriginal.nameBased?.(name) ?? false);

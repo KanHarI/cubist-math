@@ -22,7 +22,7 @@ import {freeDimensions} from "./dimension-slots.mjs";
 import {equalityRule,simplificationRule,findRewrite,SearchLimit} from "./proof-rewrite.mjs";
 import {SearchFuel,SearchFuelExhausted,SEARCH_FUEL,recordSearch,emptySearchRecord} from "./fuel.mjs";
 import {copySimpRegistry,orderedDefaultRules,orderedHLevelRules,resolveSimpSet,uniqueSimpRules} from "./simp-registry.mjs";
-import {builtinTerm} from "./builtins.mjs";
+import {builtinTerm,legacyBuiltins,legacyConfinement} from "./builtins.mjs";
 import {axiomAssumption} from "../cubical-assumptions.mjs";
 import {transportToDependentPath} from "./path-over.mjs";
 import {tacticProof,PREMISE_ATTEMPT_LIMIT,dependentNote} from "./tactics.mjs";
@@ -92,7 +92,7 @@ const directiveKinds=new Set(["use","notation","evaluate","print","simp_rule","s
 // The lambdas over a declaration's parameters, a group of names with one
 // type one binder group, around `body`.
 export class Translator {
-  constructor({checker,definitionModule=null,libraryModule=false,testMode=false,normalize=true,onReference=null,onDeclaration=null,onDeclarationStart=null,onQueued=null,onPublicationStart=null,onPublicationEnd=null,
+  constructor({checker,definitionModule=null,libraryModule=false,archiveModule=false,testMode=false,normalize=true,onReference=null,onDeclaration=null,onDeclarationStart=null,onQueued=null,onPublicationStart=null,onPublicationEnd=null,
     onStep=null,simpRegistry,moduleName="source",freezeSuggestions=true,searchFuel=SEARCH_FUEL,declarationFuel,
     inspectSignature=null,nameBased=false,scopePoints=null,compilationBindings=null,onDirectiveStart=null,onDirective=null,sources=null,collectGeneration=false}={}) {
     // Definition ownership is separate from source provenance. Raw translator
@@ -100,6 +100,10 @@ export class Translator {
     this.definitionModule=definitionModule;
     // Whether the module is the library's own, read from library/.
     this.libraryModule=libraryModule;
+    // Whether the module is the archive's own, read unedited from
+    // archive/first-library/: only then may it use the archive's legacy
+    // builtins (builtins.mjs, legacyConfinement).
+    this.archiveModule=archiveModule;
     this.testMode=testMode;
     this.sources=sources;
     this.collectGeneration=collectGeneration;
@@ -164,9 +168,12 @@ export class Translator {
   // A subordinate elaborator in an existing scope shares that compilation's
   // identity registry as well as its checker. Fresh observation/fuel state
   // must not create a second meaning for IDs in the checker's model records.
+  // What a fork elaborates is a console entry, never the archive's text,
+  // whatever module's scope it runs in: it may not use the archive's legacy
+  // builtins.
   forkScope(scope,{normalize=this.normalize,searchFuel=this.searchFuel,declarationFuel=this.declarationFuel}={}) {
     if(scope.checker!==this.checker)throw new TypeError("A scope fork must belong to this translator's checker.");
-    return new Translator({checker:this.checker,definitionModule:this.definitionModule,libraryModule:this.libraryModule,compilationBindings:this.compilationBindings,sources:scope.unit.sources,
+    return new Translator({checker:this.checker,definitionModule:this.definitionModule,libraryModule:this.libraryModule,archiveModule:false,compilationBindings:this.compilationBindings,sources:scope.unit.sources,
       moduleName:this.moduleName,simpRegistry:scope.unit.simpRegistry,nameBased:this.nameBased,
       normalize,searchFuel,declarationFuel});
   }
@@ -1528,6 +1535,9 @@ export class Translator {
         // a member its available prefix lacks is refused as any name's is.
         if(n.moduleQualifier&&!availablePrefix(n.name,env))throw unknownQualifiedName(n.name,env,{current:this.moduleName,declaredHere:this.declaredHere,
           imports:this.importedHere,adapter:this.identityAdapter});
+        // Outside the archive, a legacy builtin's name says what replaces
+        // it, called or not.
+        if(!n.moduleQualifier&&legacyBuiltins.has(n.name)&&!this.archiveModule)throw scope.unit.locate(legacyConfinement(n.name),n);
         throw Error(`Untranslated name: ${n.spelling??n.name}`);
       }
       case "number": {
