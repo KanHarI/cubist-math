@@ -292,6 +292,14 @@ computable def subtype_has_level(
     U, n, A, B, hA, fun (a : A) => prop_has_level(U, n, B(a), hB(a))
   );
 
+// Elements of a subtype with equal first components are equal: their
+// second components lie in propositions along the path.
+computable def subtype_injective(
+  U < UU0, A : U, B : A -> U, hB : forall a : A. IsProp(U, B(a)), u, v : exists a : A. B(a),
+  p : u.1 = v.1
+) :
+  u = v := path i => (p @ i, prop_over(U, A, B, hB, u.1, v.1, p, u.2, v.2) @ i);
+
 // Being contractible is a proposition: given one contraction, A is a
 // proposition, so its centers and their contractions are.
 computable def is_contr_is_prop(U < UU0, A : U) : IsProp(U, IsContr(U, A)) {
