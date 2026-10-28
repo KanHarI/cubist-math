@@ -55,7 +55,11 @@ await browserTest(async ({ browser, base }) => {
       await f4Card.click({ position: { x: 8, y: 8 } });
     else await page.locator(`.proof-card[href*="proof=${proof}&"]`).click();
     await idle();
-    assert.equal(await page.locator("#proof-picker").inputValue(), proof);
+    // The proof picker lists the archive; a library module is titled as one.
+    if (libraryModules.includes(proof)) {
+      assert.equal(await page.locator("#proof-picker").inputValue(), "");
+      assert.equal(await page.locator("#proof-title").textContent(), `Library: ${proof}`);
+    } else assert.equal(await page.locator("#proof-picker").inputValue(), proof);
     assert.equal(await page.locator("#inspect-name").textContent(), new URL(page.url()).searchParams.get("name"));
     assert.equal(await page.locator("#example").count(), 0);
     assert.equal(await page.getByRole("button", { name: "Euclid example" }).count(), 0);

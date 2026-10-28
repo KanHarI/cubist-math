@@ -98,7 +98,7 @@ also separate future targets.
 
 | Existing material to audit | Potential reuse | What it does not yet supply |
 | --- | --- | --- |
-| [Prime arithmetic](../../../archive/first-library/primes.cubist) and [finite counting](../../tactical/finite_counting.md) | Prime predicates, finite sums, finite collections | A complete analytic prime-counting interface; audit unique factorization rather than assuming Euclid's theorem supplies it |
+| [Prime arithmetic](../../../library/prime_numbers.cubist) and [finite counting](../../tactical/finite_counting.md) | Prime predicates, finite sums, finite collections | A complete analytic prime-counting interface; audit unique factorization rather than assuming Euclid's theorem supplies it |
 | [Real-number roadmap](reals-roadmap.md) | Ordered-field and completeness interfaces | A completed concrete real model with all required certificates |
 | [Limits](../../tactical/analysis_limits.md), [field asymptotics](../../../archive/first-library/field_asymptotics.cubist) | Convergence, eventual closeness, limit uniqueness | General relative big-O/little-o calculus, exp/log, or real powers |
 | [Complex-analysis checkpoint](../../tactical/complex_analysis_handoff.md) | Complex algebra, curves, finite contour sums, affine integral results | Holomorphic/meromorphic function theory, general contour integration, residues, or quantitative contour-shift estimates |

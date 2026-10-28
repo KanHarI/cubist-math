@@ -128,11 +128,13 @@ test("a definition's body is derived on request, as its lookup's premise", async
   assert.ok(listing.rows.length > folded.rows.length);
 });
 
+// The library's Euclid over binary Nat (library/euclid.cubist), with NUM1's
+// recursion and its transports, and unat's laws beneath the binary ones.
 test("every definition behind Euclid's theorem derives in instruction mode", async t => {
-  const readArchive = sourceReader();
-  const program = new CubicalProgram(await createCubical(), readArchive);
+  const readSource = sourceReader();
+  const program = new CubicalProgram(await createCubical(), readSource);
   t.after(() => program.dispose());
-  await program.check(await readArchive("euclid"), "euclid");
+  await program.check(await readSource("euclid"), "euclid");
   const kernel = program.kernel, failures = [];
   for (const [name, reference] of kernel.definitions) {
     const { value, type } = kernel.definition(reference);

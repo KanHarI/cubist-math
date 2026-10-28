@@ -372,15 +372,14 @@ export const archiveModules = [
   "group_univalence",
   "circle_group_identity",
   "cubical_paths",
-  // Entry points, which no module imports.
+  // An entry point, which no module imports.
   "basics",
-  "euclid",
 ];
 
 // Modules of the rebuilt library, served from library/. A name here shadows an
 // archive module of the same name. The first, nat, is the natural numbers,
 // which a module imports to use them.
-export const libraryModules = ["nat", "unat", "bnat", "bnat_equality", "bnat_notation", "bnat_unary", "bnat_arithmetic", "bnat_order", "semirings", "unat_models", "bnat_semiring", "bnat_models", "bnat_transport", "bnat_peano", "bnat_recursion", "bnat_order_laws", "bnat_division", "divisibility", "prime_numbers", "binary_euclid", "classical_axioms", "universe_automorphisms", "hlevels",
+export const libraryModules = ["nat", "unat", "bnat", "bnat_equality", "bnat_notation", "bnat_unary", "bnat_arithmetic", "bnat_order", "semirings", "unat_models", "bnat_semiring", "bnat_models", "bnat_transport", "bnat_peano", "bnat_recursion", "bnat_order_laws", "bnat_division", "divisibility", "prime_numbers", "euclid", "classical_axioms", "universe_automorphisms", "hlevels",
   "h1_truncation", "h1_classical", "contractible_maps", "univalence", "universe_smallness", "propositions",
   "finite_sets", "binary", "powersets", "continuum_hypothesis", "continuum_axioms", "lists", "lexemes", "quotients", "algebra", "ring_numerals", "ordered_algebra", "differences", "binary_integers", "integers", "fractions", "binary_rationals", "rationals", "squares"];
 

@@ -267,28 +267,24 @@ evaluate typed(Glue(Unit, face_when(0, Unit, id_contr_equiv(U0, Unit))), glue(tt
 });
 
 test("an ignored component whose weak head fails does not fail the pattern", async t => {
-  // The prime of euclid(4) has two successor heads, and its third is too deep
-  // to compute (K344): any query of the ignored part, however indirect,
-  // fails the evaluation.
+  // The prime of euclid(7) is the least divisor of 7! + 1 = 71 * 71, and the
+  // search's 70 candidates make its weak head too deep to compute (K344):
+  // any query of the ignored part fails the evaluation.
   const { result } = await checkProgram(t, `import euclid;
-use unat;
-def pred(n : UNat) : UNat := match n {
-  zero => zero;
-  succ(k) => k;
-};
-def value : UNat and UNat := (1, pred(pred(euclid(4).1)));
+use nat;
+def value : Nat and Nat := (1, euclid(7).1);
 evaluate value expecting (1, _);
 evaluate value expecting (!_, _);
 evaluate value expecting (_, !_);
 `, { module });
-  assert.deepEqual(result.evaluations.map(evaluation => evaluation.value), ["(1, <unevaluated>)", "(succ(<unevaluated>), <unevaluated>)"]);
+  assert.deepEqual(result.evaluations.map(evaluation => evaluation.value), ["(1, <unevaluated>)", "(b_positive(<unevaluated>), <unevaluated>)"]);
   assert.deepEqual(result.gaps.map(gap => gap.code), ["K344"]);
 });
 
 test("an unobserved part is asked nothing: no query reaches a pair's ignored component", async t => {
   for (const pattern of ["(7, _)", "(!_, _)", "!(7, _)"]) {
     const { program, evaluations, asked } = recordedProgram(t);
-    const result = await program.check(`import euclid;\nuse unat;\ndef value := euclid(3);\nevaluate value expecting ${pattern};`, "main");
+    const result = await program.check(`import euclid;\nuse nat;\ndef value := euclid(3);\nevaluate value expecting ${pattern};`, "main");
     assert.deepEqual(result.gaps.map(gap => gap.reason), [], pattern);
     const [evaluation] = evaluations.filter(item => item.name === "main__value");
     // The evaluated term's weak head is the pair; its second component is
@@ -375,16 +371,16 @@ test("a field the printer does not reach is not computed, though the kernel hold
 use unat;
 inductive Tree : U0 {
   leaf;
-  node(l : Tree, datum : UNat, r : Tree);
+  node(l : Tree, datum : Nat, r : Tree);
 }
 def grow(n : UNat) : Tree := match n {
   zero => leaf;
-  succ(k) => node(grow(k), 0, grow(k));
+  succ(k) => node(grow(k), nat.(0), grow(k));
 };
-def far : (Tree and Tree) and UNat := ((grow(10), grow(9)), euclid(4).1);
-print(evaluate(node(grow(12), euclid(4).1, leaf)));
+def far : (Tree and Tree) and Nat := ((grow(10), grow(9)), euclid(nat.(7)).1);
+print(evaluate(node(grow(12), euclid(nat.(7)).1, leaf)));
 print(evaluate(far));`, { module, options: { runtimeEvaluation: false } });
-  // euclid(4)'s prime has a weak head too deep for the kernel to build
+  // euclid(7)'s prime has a weak head too deep for the kernel to build
   // (K344), and neither print reaches it.
   assert.deepEqual(result.gaps.map(gap => gap.reason), []);
   assert.equal(result.prints.length, 2);
@@ -501,7 +497,7 @@ test("the REPL reads the marks after evaluate and before a term alone", async ()
 
 test("an unobserved part is not computed: the queries a pattern asks cost what it observes", async t => {
   const ticks = async source => {
-    const { program, result } = await checkProgram(t, `import euclid;\nuse unat;\ndef value := euclid(3);\n${source}`, { module });
+    const { program, result } = await checkProgram(t, `import euclid;\nuse nat;\ndef value := euclid(3);\n${source}`, { module });
     assert.deepEqual(result.gaps.map(gap => gap.reason), [], source);
     return Number(program.kernel.work().querySteps);
   };

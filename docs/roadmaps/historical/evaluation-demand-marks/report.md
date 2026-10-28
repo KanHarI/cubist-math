@@ -65,6 +65,12 @@ the same way on both sides.
 The rational cases run in the debugging plan's main-only reproduction,
 [`probe-sources.mjs`](probe-sources.mjs)'s `rational`. The Euclid cases import
 `euclid`. The literal and theory cases import `rationals` and `integers`.
+(Update of 2026-10-28: the archive's unary Euclid these cases measured was
+deleted in EVAL7's part two, and `import euclid` names the library's Euclid
+over binary `Nat` since
+([report](../../../reports/binary-euclid.md#part-two)). The Euclid cases
+reproduce in a checkout from before the deletion, such as main `27c0cc38`:
+`report.mjs --root=` that checkout, or `probe.mjs` run there.)
 
 ### Against the acceptance list
 

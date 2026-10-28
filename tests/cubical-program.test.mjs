@@ -38,7 +38,7 @@ test("the browser program checks Euclid from source and exports a replayable nat
   assert.equal(result.complete, true);
   assert.equal(result.backend, "cubical");
   assert.ok(result.instructionCount > 0);
-  assert.ok(result.links.some(x => x.name === "prime_divisor_exists"));
+  assert.ok(result.links.some(x => x.name === "least_divisor"));
   assert.equal(program.inspect("euclid__euclid").type.name, "euclid__InfinitelyManyPrimes");
   const local = result.links.find(x => x.role === "local" && program.inspect(x.binding).context.length);
   assert.ok(local);

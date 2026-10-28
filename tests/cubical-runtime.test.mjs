@@ -624,25 +624,50 @@ test("the MessageChannel scheduler yields and releases its ports", () => {
   assert.deepEqual(JSON.parse(output), { kind: "Point" });
 });
 
-test("the fixed Euclid source exposes its prime without native substitution chains", async t => {
+// Deep unary recursion: a factorial observed digit by digit, and a parity
+// whose every level forces the one below, 10,000 deep, past where a
+// recursion on the host's stack overflows it.
+test("deep unary recursion computes without native substitution chains, and stops at its step budget", async t => {
   const { query, kernel } = await setup(t, `
-import euclid; use unat;
-def four := euclid(4);
-def five := euclid(5);
-def six := euclid(6);
+import unat; use unat;
+inductive Lamp { dark; lit; }
+def toggle(f : Lamp) : Lamp := match f { dark => lit; lit => dark; };
+def parity(n : UNat) : Lamp := induction n return Lamp { zero => dark; succ(k) with below => toggle(below); };
+def factorial(n : UNat) : UNat := match n { zero => 1; succ(k) => succ(k) * factorial(k); };
+def six := factorial(6);
+def deep := parity(100 * 100);
 `);
   const natural = kernel.signatures.get("unat__UNat").index;
-  for (const [name, expected] of [["four", 5], ["five", 11]]) {
+  const before = kernel.arena().nodes, runtime = query("six", { milliseconds: budget(30000) });
+  assert.equal(await unary(runtime, natural), 720);
+  assert.equal(kernel.arena().nodes, before, "runtime allocated native substitution syntax");
+  const retained = runtime.retainedObjects();
+  assert.ok(retained.runtimeObjects > 0);
+  assert.ok(retained.snapshotNodes < 5000);
+  const bounded = query("deep", { maxSteps: 1000000 });
+  await assert.rejects(bounded.observe(), fails("budget"));
+  assert.ok(bounded.stats.maxFrames > 3500, "workload did not reach the old host stack failure");
+  assert.equal(kernel.arena().nodes, before);
+});
+
+// The library's Euclid computes by NUM1's strong recursion, which
+// transports along offset paths: its prime is demand the runtime refuses at
+// a composition, having built no kernel syntax.
+test("the library Euclid's prime stops the runtime at a composition, allocating no native syntax", async t => {
+  const { query, kernel } = await setup(t, `
+import euclid; use nat;
+def four := euclid(4);
+def five := euclid(5);
+`);
+  for (const name of ["four", "five"]) {
     const before = kernel.arena().nodes, runtime = query(name, { milliseconds: budget(30000) }), pair = await runtime.observe();
     assert.equal(pair.kind, "Pair");
-    assert.equal(await unary(runtime, natural, pair.first), expected);
+    await assert.rejects(runtime.observe(pair.first), error => fails("unsupported")(error)
+      && error.message === "Runtime execution of Comp is not implemented.");
     assert.equal(kernel.arena().nodes, before, "runtime allocated native substitution syntax");
     const retained = runtime.retainedObjects();
     assert.ok(retained.runtimeObjects > 0);
     assert.ok(retained.snapshotNodes < 5000);
     runtime.dispose();
   }
-  const bounded = query("six", { maxSteps: 2000000 }), pair = await bounded.observe();
-  await assert.rejects(unary(bounded, natural, pair.first), fails("budget"));
-  assert.ok(bounded.stats.maxFrames > 3500, "workload did not reach the old host stack failure");
 });

@@ -392,7 +392,6 @@ export const proofCatalog = [
   { id: "fundamental_groups", topic: "homotopy", title: "Fundamental groups · set-valued loop spaces" },
   { id: "suspension_types", topic: "homotopy", title: "Suspension · definitions from the declared pushout" },
   { id: "suspension", topic: "homotopy", title: "Suspension & the circle · foundations" },
-  { id: "euclid", topic: "arithmetic", title: "Euclid · mathematical proof" },
   { id: "basics", topic: "basic-logic", title: "Functions, pairs & induction · examples" },
   { id: "primes", topic: "arithmetic", title: "Primes · mathematical foundations" },
 ];
