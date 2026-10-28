@@ -246,9 +246,15 @@ may need an explicit lift, such as `fun (a : A) => typed(U1, Unit)`.
 
 The archive's modules use an older truncation, `Truncate`, `TruncateIntro`,
 `TruncateProp` and `TruncateElim`, four assumptions that resize every
-truncation into `U0`, with excluded middle and choice over it listed as
-`LEM[Truncate]` and `Choice[Truncate]`. They remain only for the archive,
-until it retires ([K2.5](../roadmaps/hott/h1-truncation-migration.md#removing-the-legacy-assumptions)).
+truncation into `U0`, with excluded middle and choice over it, `LEM(U, …)`
+and `Choice(U, …)` where nothing binds those names, listed as
+`LEM[Truncate]` and `Choice[Truncate]`. Only an archive module, read
+unedited from `archive/first-library/`, may use them, until the archive
+retires ([K2.5](../roadmaps/hott/h1-truncation-migration.md#removing-the-legacy-assumptions)).
+Anywhere else, in a library module, a test, a file of your own, an edited
+archive module, the workspace or the REPL, each is refused, called or
+named, with an error that names `Trunc` and the axioms of
+`classical_axioms` (E491).
 The [real-number foundation notes](../roadmaps/mathematics/reals-roadmap.md)
 discuss what working without resizing implies for the reals.
 

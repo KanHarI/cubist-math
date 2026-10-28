@@ -85,7 +85,9 @@ decisions of R3 recorded before the deletion.
 
 **Scheduled early, on 2026-10-26.** Two parts no longer wait for the runtime
 phase to end: R2 (K2.5's steps 1–4) runs alongside it, and so does the
-archive's number theory, below.
+archive's number theory, below. R2 is done (2026-10-28): the legacy
+builtins are accepted only in an archive module, read unedited from the
+archive's root, and refused anywhere else.
 
 ## Number theory in the library
 
@@ -127,7 +129,8 @@ They stay in the archive until decided.
   archive's 47 resizing-dependent declarations are rebuilt or recorded by R3,
   not migrated in place.
 - I1.1, module resolution: the archive root is the last fallback and the only
-  one that goes.
+  one that goes. It also vouches for the only modules that may use the
+  legacy builtins (`fromArchive`, K2.5 step 4), which go with it.
 - The [instruction coverage report](work-plan.md#the-instruction-kernel-and-this-plan):
   archive coverage is replaced by library and fixture coverage as evidence.
 - The [mathematics roadmaps](README.md#mathematics) and the tactical

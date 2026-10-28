@@ -36,7 +36,8 @@ expected refusal. Name each assumption by its label: its bare name for a
 library axiom (as read from `library/` with every module it imports), as
 `LEM` or `Choice`,
 `module::Name` for another module's axiom, and
-`Truncate` or `LEM[Truncate]` for the archive's legacy builtins. An axiom's
+`Truncate` or `LEM[Truncate]` for the archive's legacy builtins, which a test
+relies on only through an archive module's declarations. An axiom's
 label names its defining module and declaration, independently of source
 aliases.
 

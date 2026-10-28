@@ -12,7 +12,9 @@ legacy builtins are labelled `LEM[Truncate]` and `Choice[Truncate]`. Steps 2
 and 3 are implemented (2026-10-28): no fixture outside the archive invokes the
 legacy builtins itself, and the reference and guides teach `Trunc` and the
 library's axioms, keeping the legacy builtins to notes on the archive. Step 4
-is not implemented yet, and step 5 waits for the archive's deletion. The
+is implemented (2026-10-28): the legacy builtins are accepted only in an
+archive module, read unedited from the archive, and refused anywhere else.
+Step 5 waits for the archive's deletion. The
 [ledger](h1-truncation-ledger.json) pins 12 checked public changes against
 `f4d1961`, rebased from `cc6b50f` on 2026-10-05, and records 5 more of two
 comparisons that step 1 retired, with the revision at which they last
@@ -65,7 +67,8 @@ Step 1 retired that form: `library/classical_axioms.cubist` states
 listed as `LEM` and `Choice`. They keep their non-computing status. Where
 nothing binds `LEM` or `Choice`, the old `LEM(U, ...)` and `Choice(U, ...)`
 keep their archived signatures, listed as `LEM[Truncate]` and
-`Choice[Truncate]`, and can coexist with the axioms in the same session. A
+`Choice[Truncate]`, in an archive module only since step 4, and can coexist
+with the axioms in the same session. A
 ledger records a replacement of a legacy builtin by the axiom of its name
 explicitly.
 
@@ -149,6 +152,8 @@ comparisons pass; no mathematical source was changed.
 and its retired comparisons, coexistence of the library's `LEM` with the
 archive's `LEM[Truncate]`, and the CLI's refusal of another baseline, of a
 retired comparison and of a module without a baseline.
+`tests/truncation-confinement.test.mjs` checks step 4's confinement in each
+place a source can come from.
 Compared modules require a baseline at the requested Git revision in
 `library/` or `archive/first-library/`; an untracked new module cannot supply
 its own baseline. `tests/proof-migration.test.mjs` checks listed/unlisted G4 changes,
@@ -581,6 +586,91 @@ transition land together.
    same step, recording their last passing revision. The alternative to a
    translator check, a source test over the roots, is weaker: it reports
    after the fact and says nothing to a REPL entry.
+
+   **Done on 2026-10-28.** The translator refuses each legacy builtin
+   outside an archive module, where it is written: a call of `Truncate`,
+   `TruncateIntro`, `TruncateProp` or `TruncateElim`, or of `LEM` or
+   `Choice` where nothing binds them (the handler in
+   `web/translator/builtins.mjs`), and such a name unbound and not called
+   (`Translator.term`'s name case), which was E343's unknown name before.
+   The refusal is E491 (`legacyConfinement`): "LEM is the archive's legacy
+   builtin, accepted only in archive modules: elsewhere use the library's
+   Trunc, from h1_truncation, and its axioms LEM and Choice, from
+   classical_axioms." A REPL or console entry meets it as a file does.
+   - **Provenance.** An archive module is one the module reader placed in
+     the archive's root whose text is what that root holds under its name
+     (`fromArchive` in `web/module-resolution.mjs`, beside `fromLibrary`),
+     as `CubicalProgram.discover` asks and the translator's
+     `archiveModule` records. A module's name vouches for nothing, and nor
+     does a place given to a source for its imports alone, as the audit's,
+     the fingerprint's and the benchmark's synthetic modules have one. A
+     file is placed by its real path, so a link into the archive is the
+     archive's and a copy outside it is not. Unlike the library's labels,
+     provenance is not transitive: the builtins are refused where they are
+     written, so a module of the user's may import the archive and use its
+     declarations over them.
+   - **An edited archive module is not the archive's**, in the workspace or
+     as a file outside the root: the archive is frozen until it retires,
+     with no in-place remedies (I0.5), so an edit is a module of the user's
+     that spells an archive module's name. A rule by name or by place
+     would let any workspace module named as an archive module, which the
+     page places in the archive, use the builtins, adding consumers that
+     step 5 must remove; and it is #317's rule for the library's labels. The
+     archive's files as the repository holds them are the archive's text,
+     edited or not, as library/'s are the library's: an edit there is
+     reviewed and audited. So the migration verifier counts an edited
+     module read from the archive's own files as the archive's
+     (`readEdited.placeOf` in `tools/proof-migration.mjs`), as it compares
+     edits of the archive in place, and its baselines read from the archive
+     at their revision.
+   - **Replays keep it.** `ReplayInputs` records each module's archive
+     provenance with its library provenance, so the workspace console's
+     replay of an archive module checks it with its builtins; the console's
+     own entries are never the archive's (`forkScope`). The workbench asks
+     which transferred sources are the archive's text
+     (`archiveProvenance`), as it asks for the library's; without that, a
+     transfer of an archive declaration does not replay completely and is
+     refused.
+   - The labels `LEM[Truncate]` and `Choice[Truncate]` stay, so
+     `truncation_rebuilt_classical`'s `both` lists `LEM` and
+     `LEM[Truncate]`. `universe_generic_builtins` invokes no legacy builtin.
+   - `tests/truncation-confinement.test.mjs` covers each place: the
+     archive's three call sites and `classical` from the command line, by
+     path and by name, keep the builtins; the test fixture
+     `truncation_legacy_confined` refuses each of the six, called or named,
+     and uses the archive's `Mere`; a library module, read unedited from a
+     reader's library root, is refused; from the command line, a file of
+     the user's and a copy of `classical.cubist` outside the archive are
+     refused, and a link into the archive is not; with the browser's
+     reader, the unedited archive module checks, and an edited one, a
+     module the page places in the archive and a listed name with other
+     text are refused; so are REPL entries, over an archive module or not,
+     and a console entry in an archive module's scope; a workbench
+     transfer of an archive declaration loads only with the archive's
+     provenance and its text; and the migration verifier keeps the
+     builtins for an archive baseline and an edit in place, not for an
+     edit elsewhere.
+   - **Reference and guides.** The assumptions chapter's note confines the
+     legacy builtins to the archive's modules as the archive holds them,
+     and shows E491 by `LEM(U0, A, nn)` without `classical_axioms`, in place
+     of step 3's E406 and E407 examples, which the confinement now answers
+     first. E406 and E407, which only the legacy builtins raise, in archive
+     modules, joined E404 in the code list without a shown example; the
+     errors chapter explains E491. `docs/guides/cubist.md`,
+     `docs/guides/keywords.md` and `docs/guides/regression-contracts.md`
+     state the confinement.
+   - `Truncate`, `TruncateIntro`, `TruncateProp` and `TruncateElim` stay
+     reserved, so that a source using them meets E491 rather than an
+     unknown name (Decisions, reserved names).
+   - **The `‖A‖` notation hook stays as it is.** It renders the legacy
+     `Truncate` assumption, which only an archive module can now introduce,
+     but an archive declaration's type is shown wherever it is used, in an
+     importer's types and the inspector, so the hook keys on the assumption,
+     not on the module; it leaves with the builtins in step 5.
+   - **No ledger comparison retires.** The field-logic and Cauchy
+     comparisons read their baselines from the archive at `f4d1961`, which
+     keep the builtins, and their edited sources use none; both pass with
+     their pins unchanged (2026-10-28).
 5. **Removal, with the archive** ([I0.5](../archive-retirement.md), R5).
    `web/cubical-assumptions.mjs` goes entirely: the four truncation types, the
    legacy `LEM`/`Choice` signatures, their builtins, the notation hook and the
@@ -631,7 +721,7 @@ transition land together.
   remains unsupported.
   That step also permits ordinary declarations of `LEM` and `Choice`, with
   imported bindings resolved before the legacy builtin fallback. Step 4
-  restricts that fallback to archive modules.
+  restricted that fallback to archive modules (2026-10-28).
   `Truncate`, `TruncateIntro`, `TruncateProp` and `TruncateElim` stay
   reserved through step 4, so that a historical source fails with the
   retirement error rather than an unknown name, and are freed in step 5.
