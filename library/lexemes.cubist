@@ -72,12 +72,6 @@ computable def leading_digits(s : Lexeme, value, count : UNat) :
     };
   };
 
-// 10^k.
-computable def power_of_ten(k : UNat) : UNat := match k {
-    zero => 1;
-    succ(j) => mul(10, power_of_ten(j));
-  };
-
 // A natural number written in decimal digits, 1_000 included.
 computable def natural_literal(s : Lexeme) : Parsed(U0, UNat) {
   let read : (UNat and UNat) and Lexeme := leading_digits(s, 0, 0);

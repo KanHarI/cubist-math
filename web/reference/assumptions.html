@@ -318,11 +318,11 @@ evaluate three expecting _;  // Error: evaluate e expecting _; would compute not
             <p>A weak head is the kernel's <a href="kernel-computation.html#whnf">weak-head normal form</a>, which contracts a function by η: the weak head of <code>fun (n : UNat) =&gt; succ(n)</code> is the constructor <code>succ</code>, and that of <code>fun (n : UNat) =&gt; n + n</code> is the function itself. <code>!</code> therefore says nothing about a proof that is a function, such as a certificate that a number is nonzero: its weak head is that function. <code>!!</code> computes the certificate's body as far as its own definitions are not stuck, and names those that are; only <code>!!!</code> unfolds them all.</p>
             <pre><code data-check="repl">&gt; import rationals;
 Imported rationals.
-&gt; use unat;
-Selected unat.
-&gt; evaluate !!rationals.(2/3);
-class((class((2, 0)), class((3, 0)), int_succ_nonzero(2)))</code></pre>
-            <p>The literal's data, two integers, is computed, and its certificate that the denominator is not zero is named. Under <code>!!!</code> that certificate unfolds, through <code>quotient_effective</code>, into a normal form of more than a million nodes.</p>
+&gt; use nat;
+Selected nat.
+&gt; evaluate !!rat(int(2, 0), 2);
+class((class((2, 0)), class((3, 0)), rat_succ_nonzero(2)))</code></pre>
+            <p>The rational's data, two integers, is computed, and its certificate that the denominator is not zero is named. Under <code>!!!</code> that certificate unfolds into a normal form of more than 90,000 nodes.</p>
             <p>Each computation a pattern asks for runs under the evaluation's step budget and time limit, and one that runs out, or builds syntax deeper than the kernel allows, fails the evaluation as it would anywhere, at the part of the pattern that asked for it. A part no pattern observes asks nothing, so it cannot fail. A mark that asks for nothing more is a <a href="errors.html#warnings">warning</a>: a mark under <code>!!</code> or <code>!!!</code> that asks for no more than it, and, where a hole keeps the expected value a pattern without the mark, <code>!</code> before a pair, an injection, a constructor or an expression, which compute at least their part's weak head, and <code>!!</code> before an expression, which is compared by its normal form. A <code>!!!</code> inside a <code>!!</code> part asks for what that part's normal form does not hold, and is refused. A mark that alone makes the expected value a pattern is not reported: without it, the value would be compared whole instead.</p>
             <pre><code data-check="accept">import unat;
 use unat;

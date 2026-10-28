@@ -4,12 +4,12 @@
 // was written, in its notation; and a numeral rule's application prints
 // as the numeral where its notation is selected. What a print shows reads
 // back, where it is shown, as the term it shows.
+import integers;
+import rationals;
 import unat;
 import lists;
 import lexemes;
 import algebra;
-import integers;
-import rationals;
 use unat;
 
 notation times {
@@ -115,14 +115,33 @@ print(typeof(refl(pick(unat.(2), unat.(3)))));
 // Output: 2 = 2
 print(typeof(refl(pick(unat.(2), unat.(2)))));
 
-use integers;
+// A numeral rule with a fixed argument, as tallied(n, 0), prints back as
+// the numeral where its notation is selected.
+use unat;
 
-// Where the integers are selected, their numeral rule prints back as the
-// numeral.
-def five : integers.R := 5;
+def tallied(a, b : UNat) : UNat := a + b;
+
+notation tally {
+  numeral(n : UNat) := tallied(n, 0);
+}
+
+use tally;
+
+def five : UNat := 5;
 
 // Output: 5 = 5
-print(typeof(refl(typed(integers.R, 5))));
+print(typeof(refl(typed(UNat, 5))));
 
 // The printed text reads back as the term, where it was printed.
 def again : 5 = 5 := refl(five);
+
+use integers;
+
+// The integers' literal rule prints back as written, a wide one too.
+def wide : Z := 340282366920938463463374607431768211455;
+
+// Output: 340282366920938463463374607431768211455 = 340282366920938463463374607431768211455
+print(typeof(refl(typed(Z, 340282366920938463463374607431768211455))));
+
+def wide_again :
+  340282366920938463463374607431768211455 = 340282366920938463463374607431768211455 := refl(wide);

@@ -10,6 +10,11 @@ export {notationAlternative} from "../cubist/theory-notation.mjs";
 // resolving those names in the destination.
 export const notationPrintingRecipe=recipe=>Object.fromEntries(Object.entries(recipe)
   .map(([side,syntax])=>[side,syntax?.tree.spelling??null]));
+// The identity of the named notation each view captured, which reads an
+// operand's numerals as the printer prints them bare; null for a view that
+// selects a model.
+export const notationPrintingViews=recipe=>Object.fromEntries(Object.entries(recipe)
+  .map(([side,syntax])=>[side,syntax?.tree.resolution?.tag==="notation"?syntax.tree.resolution.id:null]));
 
 // A checked model determines its interface through the head of its type.
 export function recordOf(t,scope,value) {

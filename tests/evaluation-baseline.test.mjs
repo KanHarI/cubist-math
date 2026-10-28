@@ -86,10 +86,9 @@ test("REPL evaluation and print show the value form, normalizing nothing", async
   for (const run of [repl, print]) {
     assert.equal(run.phases.normalize, undefined);
     assert.equal(run.phases.compare, undefined);
-    // The runtime observes it, asking the kernel for one weak head, the
-    // type's, which decides whether to ask the runtime.
+    // The runtime observes it, asking the kernel for no weak head.
     assert.ok(run.phases.runtime.calls > 0 && run.runtime.steps > 0);
-    assert.equal(run.phases.demand.calls, 1);
+    assert.equal(run.phases.demand, undefined);
     assert.ok(run.entry.querySteps < normal.entry.querySteps, "the value form costs less than the normal form");
   }
 });
@@ -130,7 +129,7 @@ test("the depth failures are reproduced, with the work done before them", async 
     ["euclid-5-prime", "11"]]) {
     const run = await cold(id);
     assert.equal(run.outcome.text, value, id);
-    assert.equal(run.phases.demand.calls, 1, `${id}: the type's weak head`);
+    assert.equal(run.phases.demand, undefined, id);
     assert.equal(run.phases.normalize, undefined, id);
     assert.equal(run.phases.runtime.nodes, 0, `${id}: the runtime builds no kernel syntax`);
   }

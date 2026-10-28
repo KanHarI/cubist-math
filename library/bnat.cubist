@@ -174,3 +174,11 @@ computable def bpositive_succ_pred(p : BPositive) :
     );
     bp_odd(q) => refl(b_positive(bp_odd(q)));
   };
+
+// Plain numerals read straight into bits, with no imports, so a binary value
+// prints compactly and reads back as the same bits wherever this module is
+// imported. bnat_notation adds the decimal and 0b literal reader and the
+// arithmetic operators.
+notation bnat_numerals {
+  numeral(n : BNat) := n;
+}

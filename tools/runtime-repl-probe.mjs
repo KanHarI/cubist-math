@@ -7,7 +7,8 @@
 // Before the runtime query is disposed of, its retained runtime objects are
 // counted and the heap is measured after a collection (each sample's
 // process runs with --expose-gc), so that retained memory is the query's
-// live graph, not its garbage.
+// live graph, not its garbage. That collection and count happen inside the
+// entry, and their time is taken out of the entry's.
 //   node tools/runtime-repl-probe.mjs                 every workload, both paths
 //   node tools/runtime-repl-probe.mjs NAME[,NAME] [runtime|kernel]
 import { execFileSync } from "node:child_process";
@@ -69,6 +70,16 @@ export const workloads = {
   "binary-factorial-40": ["import nat; use nat;", "evaluate factorial(40);"],
   "binary-product": ["import nat; use nat;", "evaluate 12345678901234567890 * 98765432109876543210;"],
   "binary-rational": ["import binary_rationals; use binary_rationals;", "evaluate 2/3 + 1/6;"],
+  // Binary integers and rationals are set quotients: their point
+  // constructors execute in the runtime, and a path constructor falls back.
+  "binary-rational-wide-inverse": ["import binary_rationals; use binary_rationals;",
+    "evaluate bq_inv(-340282366920938463463374607431768211455/18446744073709551615);"],
+  "binary-rational-distinct": ["import binary_rationals; use binary_rationals;", "evaluate bq_decide(1/2, 2/3);"],
+  "binary-rational-equal": ["import binary_rationals; use binary_rationals;", "evaluate bq_decide(1/2 + 1/3, 5/6);"],
+  "binary-integer-wide-product": ["import binary_integers; use binary_integers;",
+    "evaluate 340282366920938463463374607431768211455 * 340282366920938463463374607431768211455;"],
+  "binary-integer-distinct": ["import binary_integers; use binary_integers;",
+    "evaluate bint_decide(340282366920938463463374607431768211455, -1);"],
 };
 
 assertFreshBuild();
@@ -94,17 +105,19 @@ if (!child) {
       if (failed) throw new Error(failed.text);
       globalThis.gc?.();
       const before = { work: program.kernel.work(), arena: program.kernel.arena().nodes, heap: process.memoryUsage().heapUsed };
-      let captured = null, retained = null;
+      let captured = null, retained = null, measuring = 0;
       const dispose = RuntimeQuery.prototype.dispose;
       RuntimeQuery.prototype.dispose = function () {
+        const measured = performance.now();
         globalThis.gc?.();
         retained = { heapMiB: +((process.memoryUsage().heapUsed - before.heap) / 1048576).toFixed(1) };
         try { Object.assign(retained, this.retainedObjects()); } catch (error) { retained.walk = error.kind; }
+        measuring += performance.now() - measured;
         return dispose.call(this);
       };
       const check = program.checkEntry.bind(program);
       program.checkEntry = async (...args) => (captured = await check(...args));
-      const started = performance.now(), [answer] = await session.run(entry), elapsed = performance.now() - started;
+      const started = performance.now(), [answer] = await session.run(entry), elapsed = performance.now() - started - measuring;
       const after = program.kernel.work();
       globalThis.gc?.();
       console.log(JSON.stringify({ workload: name, path, entry, result: answer.text.slice(0, 120), kind: answer.kind,

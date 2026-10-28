@@ -952,10 +952,15 @@ Each step lands in focused PRs under the review rule above.
       `!!!`, a literal of main's rationals falls from 72.0M ticks and
       1,116,794 nodes to 11.5M and 265,250, still over the plan's 10M
       target.
-   2. **NUM2's default `Z`/`Q`:** the public carriers become the binary
-      `BInt` and `BQ`, with generic ring numeral interpretation, numerical
-      casts and rendering, gated on folded normal forms. The unary integers
-      and rationals stay as compatibility clients.
+   2. **NUM2's default `Z`/`Q`,** done on 2026-10-26: public `Z` and `Q`
+      alias the binary `BInt` and `BQ`, and their API's contracts check
+      under folded normal forms. A ring reads numerals by doubling over
+      `BNat`, with checked agreement to its unary numerals
+      (`ring_numerals`); the casts `int_of_nat`, `rat_of_int` and
+      `rat_of_nat` keep binary magnitudes, and computed values print
+      decimal magnitudes from their bits. The unary integers and rationals
+      were removed by the user's decision; `UNat` remains for structural
+      recursion.
    3. **#289's runtime in the REPLs** (EVAL3/EVAL4 integration). The CLI,
       browser and contextual REPLs compute the value form and constructor
       patterns through the runtime query, with one specified fallback to
@@ -979,9 +984,27 @@ Each step lands in focused PRs under the review rule above.
         check, synchronously, as the kernel's queries do, bounded by 100M
         steps, 20M allocated cells and a time limit, the declaration's or 30
         seconds a part; a responsive snapshot matters only for asynchronous
-        use. A value whose type is a quotient or another higher or truncated
-        sort, as a binary rational's, falls back before the runtime's
-        snapshot, from its type's weak head.
+        use. A value whose type was a quotient or another higher or
+        truncated sort, as a binary rational's, fell back before the
+        runtime's snapshot, from its type's weak head, until the next slice.
+      - **Point constructors of higher sorts, done on 2026-10-28**
+        ([report](../reports/runtime-repl-evaluation.md#higher-sorts-point-constructors)):
+        the runtime executes the point constructors of quotients and other
+        higher and truncated sorts and their eliminators' clauses for them,
+        so `BInt` and `BQ` arithmetic, inverses and decisions compute their
+        value forms in the runtime, each the kernel's. Path constructors,
+        the squash among them, paths applied and compositions stay
+        unsupported and fall back as before; a decision that finds two
+        values equal holds the quotient's path constructor, and falls back.
+        No type decides the fallback any more. Over the demand marks'
+        constructs the runtime computes 156 value forms, and 40 of the
+        binary contracts' 41 evaluated terms. A query copies from the
+        kernel only what its walk reaches, when it first demands it
+        (EVAL4's item, done in #324): `2/3 + 1/6` copies 1,256 nodes where
+        the eager copy took 32,015, and its runtime steps fell from 146,459
+        to 28,170, below the kernel walk's 32,755 ticks; the wide inverse
+        and a decision of distinct wide integers still take more steps
+        than the kernel's walk takes ticks.
       - **Decided on 2026-10-26:** constructor patterns stay on the kernel's
         queries until typed readback (4) and the applicable EVAL8 review: a
         pattern's verdict is a check, which the runtime's observations may

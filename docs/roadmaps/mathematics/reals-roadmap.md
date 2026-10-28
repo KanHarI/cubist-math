@@ -10,7 +10,7 @@ construction requires H3; the algebraic ordered interfaces do not.
 Status: unchanged in scope at main `7230825e` on 2026-10-26. NUM2's binary
 carriers now exist in the library: `BInt` in `binary_integers` and `BQ` in
 `binary_rationals`, released on folded normal forms.
-They are not yet the default `Z`/`Q`, and no order work has started on them.
+Since 2026-10-26 they are the default `Z`/`Q`; no order work has started on them.
 Previously: unchanged at main `e729c2d5` on 2026-10-17: paused during language
 development, but for R1's integers and
 rationals, built on 2026-10-05; corrected on 2026-09-28 after
@@ -61,8 +61,8 @@ definitions are not claimed to fail to check; the obligation is the bridge.
 
 | Carrier | Construction | Needs | Computation |
 | --- | --- | --- | --- |
-| Integers | **Built** on 2026-10-05 from unary `Nat and Nat` in `library/integers.cubist`. NUM2 owns the new default `Z`, the same-difference quotient of `BNat and BNat`, with ring/domain laws. R1 adds order; a later `inductive Int { pos(n : BNat); negsucc(n : BNat); }` presents this new `Z` | NUM1/NUM2 and effective quotients; L2.7 for the later presentation interface | Binary operations on the new quotient; decidable equality. A class of pairs need not be a signed constructor normal form |
-| Rationals | **Built** on 2026-10-05 in `library/rationals.cubist`; the generic field-of-fractions construction now lives in `library/fractions.cubist`. NUM2 reuses it at the new `Z` to supply the new default `Q`. R1 adds order and a later lowest-terms presentation using binary-backed `Z` and positive `BNat` denominators | NUM2 for the field; L2.7, binary gcd, normalization correctness and uniqueness for the canonical presentation | Binary fraction operations and decidable equality; quotient semantics alone do not give reduced output |
+| Integers | **Built** on 2026-10-05 from unary `Nat and Nat`; removed on 2026-10-26. NUM2 owns the default `Z`, since 2026-10-26 the same-difference quotient of `BNat and BNat`, with ring/domain laws. R1 adds order; a later `inductive Int { pos(n : BNat); negsucc(n : BNat); }` presents this new `Z` | NUM1/NUM2 and effective quotients; L2.7 for the later presentation interface | Binary operations on the new quotient; decidable equality. A class of pairs need not be a signed constructor normal form |
+| Rationals | **Built** on 2026-10-05 over the unary integers; removed on 2026-10-26. The generic field-of-fractions construction lives in `library/fractions.cubist`. NUM2 reuses it at the new `Z` to supply the default `Q`, since 2026-10-26. R1 adds order and a later lowest-terms presentation using binary-backed `Z` and positive `BNat` denominators | NUM2 for the field; L2.7, binary gcd, normalization correctness and uniqueness for the canonical presentation | Binary fraction operations and decidable equality; quotient semantics alone do not give reduced output |
 | Reals (primary) | `Real = initial CauchyStructure`: the book's Cauchy completion, a higher inductive-inductive type with its closeness relation, at precision `PosRat` | Kernel H3 (K5.1, K5.2, L5.1); L2.6 initial models and folds; the rational prerequisites | Closed reals normalize to the constructors `rat`/`lim` or to the stage's formal Kan forms; a closed rational approximation comes from a proved approximation theorem, read out through L2.9b |
 | Reals (fallback) | Dedekind reals: located two-sided cuts of the rationals, in `next(U0)` | Kernel H1 (`Trunc`) and the cut and field mathematics; with canonical rationals, no generic quotient is needed for cuts | Approximations through locatedness, given a proved approximation result, a closed computable input and L2.9b's checked readout; native truncation alone supplies none of these |
 
@@ -125,12 +125,13 @@ definitions are not claimed to fail to check; the obligation is the bridge.
    or prerequisites for the quotient field's order; its constructors alone
    do not supply canonical representatives.
 
-   **Historical completion:** the 2026-10-05 unary-backed carriers have
+   **Historical completion:** the 2026-10-05 unary-backed carriers had
    arithmetic, setness, decidable equality and field laws, but no order.
-   Since 2026-10-06 their rational literals, such as `rationals.(1/2)`
-   and `rationals.(0.5)`, use L2.10c's notation.
-   They remain compatibility clients. NUM2 and R1's new targets are
-   planned, not implemented; neither requires comparison maps to the old
+   From 2026-10-06 their rational literals, such as `rationals.(1/2)`
+   and `rationals.(0.5)`, used L2.10c's notation, which the binary
+   rationals' literals use now. They were removed on 2026-10-26, when NUM2's
+   binary carriers became the default. R1's new targets are planned, not
+   implemented; neither they nor NUM2 require comparison maps to the old
    carriers.
 2. **R2. The interface** (B4). The theories `OrderedField` and
    `CompleteOrderedField`, with limits, uniqueness and the algebra of limits

@@ -2,15 +2,16 @@
 // 1_000, is read by the selected notation's literal rule from its
 // characters; a plain numeral by its numeral rule, or its literal rule; and
 // a notation with neither reads none. A model's module may add rules to its
-// notation, as the rationals' and the integers' do, and a theory's derived
-// operation marked notation numeral reads numerals in its models.
+// notation, as the rationals' and the integers' literal rules and the box
+// model's numeral rule below do, and a theory's derived operation marked
+// notation numeral reads numerals in its models.
+import integers;
+import rationals;
 import unat;
 import lists;
 import lexemes;
 import hlevels;
 import algebra;
-import integers;
-import rationals;
 use unat;
 
 computable def equal_or_not(x, y : Q) : UNat := match rat_decide(x, y) return UNat {
@@ -34,8 +35,8 @@ print(evaluate(equal_or_not(rationals.(1_2/4), rationals.(3))));
 // Error: E905: rationals's literal rule refuses 1/0 at its character 3.
 def undefined : Q := rationals.(1/0);
 
-// The integers' module gives them numerals: integers.(2) is int(2, 0).
-def two : integers.(2) = int(2, 0) {
+// The integers' literal rule reads the binary magnitude into the cast.
+def two : integers.(2) = int_of_nat(nat.(2)) {
   rfl;
 }
 
@@ -96,7 +97,8 @@ print(evaluate(count.(257)));
 print(evaluate(count.(0b101)));
 
 // A literal's and a numeral's names are where their rules are declared: a
-// local UNat changes neither the rationals' parse nor the integers' numeral.
+// local UNat changes neither the rationals' parse nor the integers', nor,
+// below, the box model's numeral.
 def half_under(UNat : U0) : Q := rationals.(1/2);
 
 def two_under(UNat : U0) : Z := integers.(2);
@@ -116,6 +118,8 @@ notation box {
 
 // Output: 3
 print(evaluate(box.(2)));
+
+def box_under(UNat : U0) : box.M := box.(2);
 
 // Error: E907: box's notation reads no numeral 2: write nat.(2) for a natural number, or select a
 //   notation that reads it.

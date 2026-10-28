@@ -110,7 +110,9 @@ function localBindings(translator,scope,lexical,adapter,table) {
       for(const [label,resolution] of activation?.members??[])candidates.push({label,resolution,binding});
     }
   }
-  const rows=[],terms=[];
+  // Every row's type and value, with the labels the rows write, are one
+  // display.
+  const rows=[],terms=[],message=translator.messageIn(scope);
   for(const {label,resolution,binding} of candidates) {
     const resolved=scope.slotOutcomes.resolve(resolution),identity=JSON.stringify([label,resolved]);
     if(seen.has(identity))continue;
@@ -127,12 +129,15 @@ function localBindings(translator,scope,lexical,adapter,table) {
     } else if(value?.tag==="Dimension")entry.type="Interval";
     else {
       const term=translator.term(node,scope),type=scope.infer(term).type;
-      entry.type=translator.shownIn(type,scope);
-      entry.value=translator.shownIn(term,scope);
+      message.bind(label);
+      entry.type=message.show(type);
+      entry.value=message.show(term);
       terms.push(term,type);
     }
     rows.push(entry);
   }
+  const texts=message.texts(rows.flatMap(row=>[row.type,row.value]));
+  rows.forEach((row,index)=>{row.type=texts[2*index];if(row.value!==undefined)row.value=texts[2*index+1];});
   const group=visible=>rows.filter(row=>row.visible===visible).map(row=>
     `${row.label} : ${row.type??row.reason}${row.value&&row.value!==row.label?` := ${row.value}`:""}`
     +` (${row.origin.module}:${row.origin.start}-${row.origin.end})`);
@@ -314,21 +319,23 @@ export class ContextualSession {
             if(parsed.kind==="help")result={kind:"help",text:help,assumes:null};
             else if(parsed.kind==="locals")result=localBindings(translator,current,lexical,entryAdapter,table);
             else if(parsed.kind==="goal") {
-              const goal=live.goal?translator.shownIn(live.goal,current):null;
-              const expected=live.expected?translator.shownIn(live.expected,current):null;
+              const message=translator.messageIn(current);
+              const [goal,expected]=message.texts([live.goal?message.show(live.goal):null,live.expected?message.show(live.expected):null]);
               result={kind:"goal",goal,expected,text:goal?`Goal: ${goal}`:expected?`Expected type: ${expected}\nNo active proof goal.`:"No active proof goal or expected type.",
                 assumes:reliedOn(current,null,live.goal??live.expected)};
             } else if(parsed.kind==="prove") {
               if(!live.goal)throw new TypeError("This expression context has no active proof goal.");
               const proof=current.check(translator.block(tree,new Goal(live.goal,current)),live.goal);
-              result={kind:"proof",text:`Checked against ${translator.shownIn(live.goal,current)}. Source unchanged.`,
-                proof:translator.shownIn(proof,current),goal:translator.shownIn(live.goal,current),
+              const message=translator.messageIn(current);
+              const [goal,shownProof]=message.texts([message.show(live.goal),message.show(proof)]);
+              result={kind:"proof",text:`Checked against ${goal}. Source unchanged.`,proof:shownProof,goal,
                 assumes:reliedOn(current,null,proof,live.goal)};
             } else if(parsed.kind==="let") {
               current=translator.bindLet(tree[0],current);
               const id=tree[0].target.bindingId,record=table.get(id),value=current.env.get(entryAdapter.key(id));
               const type=current.infer(value).type;
-              result={kind:"defined",text:`${record.label} : ${translator.shownIn(type,current)}`,
+              const message=translator.messageIn(current);
+              result={kind:"defined",text:message.text(`${message.bind(record.label)} : ${message.show(type)}`),
                 assumes:reliedOn(current,record.label,value,type)};
               extension=freeze({source,binding:record,resolved:JSON.stringify(syntax)});
               lexical=lexical.bind(record.label,bindingResolution(id));
