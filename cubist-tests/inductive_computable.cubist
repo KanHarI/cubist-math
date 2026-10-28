@@ -12,6 +12,6 @@ inductive N {
 
 computable def marked : N := succ(zero);
 
-// Error: E330: This computable declaration depends on non-computing assumptions: LEM, Truncate.
-//   Path to LEM: LEM.
+// Error: E330: This computable declaration depends on non-computing assumptions: LEM. Path to LEM:
+//   LEM.
 computable def both : N and ExcludedMiddle(U0) := (zero, LEM(U0));

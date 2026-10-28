@@ -1,22 +1,27 @@
-// The statements of the two classical assumptions, as types. The checker
-// provides LEM and Choice as constants with no computation rule; these
-// definitions name their types, so that a result can take excluded middle or
-// choice as a hypothesis, or state an equivalence with it.
+// The two classical assumptions: excluded middle and the axiom of choice,
+// stated over the library's truncation Trunc. Each statement is a type
+// family, so that a result can take excluded middle or choice as a
+// hypothesis, or state an equivalence with it; `axiom` then assumes it.
+// An assumption has no computation rule: a result that uses one is listed
+// with it and cannot be computable.
+import h1_truncation;
 
 // Excluded middle: a type that is not empty is merely inhabited. For a
-// proposition P, Truncate(U, P) is P, so this says that every proposition
+// proposition P, Trunc(U, P) is P, so this says that every proposition
 // holds or fails.
-def ExcludedMiddle(U < UU0) := forall A : U. ((A -> Void) -> Void) -> Truncate(U, A);
+def ExcludedMiddle(U < UU0) := forall A : U. ((A -> Void) -> Void) -> Trunc(U, A);
 
 // The axiom of choice, for a set A and a family B of sets over it: if every
-// B(x) is merely inhabited, then there is merely a function selecting an
+// B(a) is merely inhabited, then there is merely a function selecting an
 // element of each.
 def AxiomOfChoice(U < UU0) :=
-  forall A : U. forall B : A -> U. (forall x, y : A. forall p, q : x = y. p = q)
-  -> (forall a : A. forall x, y : B(a). forall p, q : x = y. p = q)
-  -> (forall a : A. Truncate(U, B(a))) -> Truncate(U, forall a : A. B(a));
+  forall A : U. forall B : A -> U. IsSet(U, A) -> (forall a : A. IsSet(U, B(a)))
+  -> (forall a : A. Trunc(U, B(a))) -> Trunc(U, forall a : A. B(a));
 
-// The constants have exactly these types.
-def excluded_middle_assumed(U < UU0) : ExcludedMiddle(U) := LEM(U);
+// Excluded middle, assumed: LEM(U, A, nn) : Trunc(U, A) for a type A : U
+// that cannot be refuted, nn : (A -> Void) -> Void.
+def LEM := axiom ExcludedMiddle;
 
-def axiom_of_choice_assumed(U < UU0) : AxiomOfChoice(U) := Choice(U);
+// The axiom of choice, assumed: Choice(U, A, B, set_a, sets_b, inhabited)
+// merely gives a function selecting an element of each B(a).
+def Choice := axiom AxiomOfChoice;

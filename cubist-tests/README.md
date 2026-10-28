@@ -227,7 +227,7 @@ workbench's Kernel graph.
 | [`truncation_cauchy_same`](truncation_cauchy_same.cubist) | G5: the rebuilt `CauchySame` and `EventualClose` in U0, computable. |
 | [`truncation_resize`](truncation_resize.cubist) | G6: resizing a proposition with LEM alone, and a `StrictlyAbove` witness refused set evidence. |
 | [`truncation_strict_successor`](truncation_strict_successor.cubist) | G7: `no_maximal_strict_successor`, double negation at U1, LEM retained. |
-| [`truncation_rebuilt_classical`](truncation_rebuilt_classical.cubist) | Rebuilt classical assumptions beside the legacy signatures, and a false truncation former refused. |
+| [`truncation_rebuilt_classical`](truncation_rebuilt_classical.cubist) | The library's excluded middle, an axiom over `Trunc`, beside the archive's legacy builtin over `Truncate`: a program that uses both lists both, and the retired truncation former is refused. |
 | [`printer_lint`](printer_lint.cubist) | The printer's values and types of matches, inductions, binders and declared types, which `tests/printer-lint.test.mjs` lints: eliminators print as the match or induction that builds them. |
 | [`translation_failed_proofs`](translation_failed_proofs.cubist) | A failed proof becomes no axiom: a use of it fails, and the rest checks. |
 | [`translation_path_induction`](translation_path_induction.cubist) | Weak J from composition and singleton contraction. |
@@ -252,3 +252,5 @@ workbench's Kernel graph.
 | [`documentation_use`](documentation_use.cubist) | Documentation from local and imported source: the comment directly above a declaration. |
 | [`declared_match_operator_call`](declared_match_operator_call.cubist) | A recursion whose other arguments vary, with `+` given to it by a notation of the module's own; a function named `add` gives `+` no meaning. |
 | [`declarations_definitions`](declarations_definitions.cubist) | Constructions and proofs checked with their bodies exposed, and a false claim refused. |
+| [`declarations_axioms`](declarations_axioms.cubist) | `def Name := axiom F;`: one assumption of F's body closed over its parameters, shared by every use, listed by its label, and refused by `computable`, `evaluate` and a declared type. |
+| [`continuum_axioms`](continuum_axioms.cubist) | The continuum hypotheses of `continuum_hypothesis` as user-supplied axioms, `def CH := axiom ContinuumHypothesis;`: every result that uses one lists it. |

@@ -14,7 +14,8 @@ import {syntaxGraphBudget} from "./translator/syntax-graph.mjs";
 import {ElaborationStop} from "./translator/control.mjs";
 import {RECURSIVE} from "./translator/match.mjs";
 import {notationContextKey} from "./translator/notation-context.mjs";
-import {T} from "./translator/core.mjs";
+import {T,freeNames} from "./translator/core.mjs";
+import {assumptionNote} from "./axiom-labels.mjs";
 import {Goal} from "./translator/proof-goals.mjs";
 import {Scope} from "./translator/elaboration.mjs";
 import {replStatements} from "./repl-session.mjs";
@@ -26,6 +27,19 @@ const freeze=value=>{
   return value;
 };
 const failure=(kind,error,extra={})=>({kind,text:error.message??String(error),failure:error.kind??"other",...extra});
+// The line that reports what a result relies on: every assumption its terms
+// use, and every one the types of the local values and hypotheses they
+// mention use (web/axiom-labels.mjs), or null for none. Every result of the
+// console states it, as `assumes`, null where nothing is relied on: run
+// refuses a result that does not.
+function reliedOn(scope,subject,...terms) {
+  terms=terms.filter(Boolean);
+  const context=scope.context,pending=[...terms],types=[],seen=new Set();
+  while(pending.length)for(const name of freeNames(pending.pop()))if(!seen.has(name)&&context.has(name)) {
+    seen.add(name);types.push(context.get(name));pending.push(context.get(name));
+  }
+  return assumptionNote([...scope.checker.requiredAssumptions(...terms,...types).keys()],scope.checker.assumptionLabels,subject);
+}
 const unavailable=text=>({kind:"unavailable",text,failure:"context"});
 const measure=kernel=>({time:performance.now(),work:kernel.work()});
 const spent=(kernel,start)=>({elapsedMs:performance.now()-start.time,work:Object.fromEntries(
@@ -96,7 +110,7 @@ function localBindings(translator,scope,lexical,adapter,table) {
       for(const [label,resolution] of activation?.members??[])candidates.push({label,resolution,binding});
     }
   }
-  const rows=[];
+  const rows=[],terms=[];
   for(const {label,resolution,binding} of candidates) {
     const resolved=scope.slotOutcomes.resolve(resolution),identity=JSON.stringify([label,resolved]);
     if(seen.has(identity))continue;
@@ -112,9 +126,10 @@ function localBindings(translator,scope,lexical,adapter,table) {
       entry.deferred=true;entry.reason="Lazy notation operand; checked when used.";
     } else if(value?.tag==="Dimension")entry.type="Interval";
     else {
-      const term=translator.term(node,scope);
-      entry.type=translator.shownIn(scope.infer(term).type,scope);
+      const term=translator.term(node,scope),type=scope.infer(term).type;
+      entry.type=translator.shownIn(type,scope);
       entry.value=translator.shownIn(term,scope);
+      terms.push(term,type);
     }
     rows.push(entry);
   }
@@ -123,7 +138,7 @@ function localBindings(translator,scope,lexical,adapter,table) {
     +` (${row.origin.module}:${row.origin.start}-${row.origin.end})`);
   const visible=group(true),shadowed=group(false);
   return {kind:"locals",bindings:rows,text:["Visible locals:",...(visible.length?visible:["(none)"]),
-    "Shadowed locals:",...(shadowed.length?shadowed:["(none)"])].join("\n")};
+    "Shadowed locals:",...(shadowed.length?shadowed:["(none)"])].join("\n"),assumes:reliedOn(scope,null,...terms)};
 }
 
 function copiedScope(scope,unit,names=null) {
@@ -229,7 +244,15 @@ export class ContextualSession {
       const {statements,rest}=replStatements(input);
       if(rest)statements.push(rest);
       const results=[];
-      for(const entry of statements)results.push(await this.#request(entry));
+      // Each result, then the assumptions it relies on, if any. A result
+      // that does not say what it relies on is a branch that forgot to.
+      for(const entry of statements) {
+        const reply=await this.#request(entry),{assumes,...answer}=reply;
+        if(!["error","unavailable"].includes(answer.kind)&&!Object.hasOwn(reply,"assumes"))
+          throw new TypeError(`The console's ${answer.kind} result does not state the assumptions it relies on.`);
+        results.push(freeze(answer));
+        if(assumes)results.push(freeze({kind:"info",text:assumes}));
+      }
       return results;
     });
     this.#queue=work.catch(()=>{});
@@ -288,31 +311,37 @@ export class ContextualSession {
           let current,result,extension=null;
           try {
             current=copiedScope(scope,unit,used);
-            if(parsed.kind==="help")result={kind:"help",text:help};
+            if(parsed.kind==="help")result={kind:"help",text:help,assumes:null};
             else if(parsed.kind==="locals")result=localBindings(translator,current,lexical,entryAdapter,table);
             else if(parsed.kind==="goal") {
               const goal=live.goal?translator.shownIn(live.goal,current):null;
               const expected=live.expected?translator.shownIn(live.expected,current):null;
-              result={kind:"goal",goal,expected,text:goal?`Goal: ${goal}`:expected?`Expected type: ${expected}\nNo active proof goal.`:"No active proof goal or expected type."};
+              result={kind:"goal",goal,expected,text:goal?`Goal: ${goal}`:expected?`Expected type: ${expected}\nNo active proof goal.`:"No active proof goal or expected type.",
+                assumes:reliedOn(current,null,live.goal??live.expected)};
             } else if(parsed.kind==="prove") {
               if(!live.goal)throw new TypeError("This expression context has no active proof goal.");
               const proof=current.check(translator.block(tree,new Goal(live.goal,current)),live.goal);
               result={kind:"proof",text:`Checked against ${translator.shownIn(live.goal,current)}. Source unchanged.`,
-                proof:translator.shownIn(proof,current),goal:translator.shownIn(live.goal,current)};
+                proof:translator.shownIn(proof,current),goal:translator.shownIn(live.goal,current),
+                assumes:reliedOn(current,null,proof,live.goal)};
             } else if(parsed.kind==="let") {
               current=translator.bindLet(tree[0],current);
               const id=tree[0].target.bindingId,record=table.get(id),value=current.env.get(entryAdapter.key(id));
               const type=current.infer(value).type;
-              result={kind:"defined",text:`${record.label} : ${translator.shownIn(type,current)}`};
+              result={kind:"defined",text:`${record.label} : ${translator.shownIn(type,current)}`,
+                assumes:reliedOn(current,record.label,value,type)};
               extension=freeze({source,binding:record,resolved:JSON.stringify(syntax)});
               lexical=lexical.bind(record.label,bindingResolution(id));
               scope=current;
-            } else if(parsed.kind==="inspect")result={kind:"inspection",text:translator.printed({show:"inspect",value:tree},current)};
-            else if(parsed.kind==="witness")result={kind:"value",text:translator.printed({show:"witness",value:tree},current)};
-            else {
+            } else if(parsed.kind==="inspect"||parsed.kind==="witness") {
+              const {text}=translator.printed({show:parsed.kind,value:tree},current);
+              const checked=current.infer(translator.term(tree,current));
+              result={kind:parsed.kind==="inspect"?"inspection":"value",text,assumes:reliedOn(current,null,checked.term,checked.type)};
+            } else {
               const term=translator.term(tree,current),checked=current.infer(term);
               const value=current.nf(parsed.kind==="typeof"?checked.type:checked.term);
-              result={kind:parsed.kind==="typeof"?"type":"value",text:translator.shownIn(value,current)};
+              result={kind:parsed.kind==="typeof"?"type":"value",text:translator.shownIn(value,current),
+                assumes:reliedOn(current,null,checked.term,checked.type)};
             }
             return {result:{...result,conditional:true,scope:this.#point.id,fuel:translator.fuelRecord(unit)},extension};
           } finally {unit.fuel.close();}

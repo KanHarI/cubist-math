@@ -18,6 +18,17 @@ existing bindings of that name were renamed to `lift_`. The retired `over`
 statement and standalone transport prefix are not part of the current language;
 `over` is now an ordinary name.
 
+`axiom` is reserved since K2.5 step 1 (2026-10-26): it starts an axiom
+expression, the whole value of `def Name := axiom F;`
+([axioms](../../web/reference/first-proof.html#axiom-definitions)). `LEM` and
+`Choice` became ordinary names then: the library's `classical_axioms` declares
+them, and only where nothing binds them do they fall back to the archive's
+builtins over `Truncate`. No revision before gave `axiom` a meaning, so the
+historical source reader reads a source of that time with every `axiom` as
+the name it was, renamed with its declaration wherever its binding came
+from, and a later source with the form (`historicalKeywords` in
+`web/cubist/legacy-syntax.mjs`).
+
 The deriving vocabulary from #187 and #198 is reserved now: `deriving`,
 `isomorphisms`, `morphisms`, `free`, `initial`, `limits`, `preadditive`,
 `additive`, `preabelian` and `abelian`, together with the inductive
@@ -46,4 +57,6 @@ The migration renames declarations and references together. In particular,
 the archive module `paths` is now `paths_`, its `inverse` function is
 `inverse_`, and the test module `glue` is `glue_`. The historical source
 reader follows lexical scopes and known matched types when translating old
-bindings, while retaining sum injections and generated constructors.
+bindings, while retaining sum injections and generated constructors. A
+qualified reference, `module::name`, always names a declaration, and follows
+its renaming.

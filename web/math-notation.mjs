@@ -50,7 +50,7 @@ export function renderMathNotation(container, tree, { resolve = () => null, insp
       symbol.setAttribute("tabindex", "0");
       symbol.setAttribute("aria-label", `Inspect ${node.name}`);
       symbol.setAttribute("title", node.axiomParameter !== undefined
-        ? `Axiom ${node.axiomParameter}: ${node.binding}. Inspect its checked type and source`
+        ? `Axiom ${node.axiomParameter}: ${node.name}. Inspect its checked type and source`
         : node.contextBinding
         ? `Inspect context assumption ${node.name} and view its source`
         : `Inspect ${node.name} and view its source`);
