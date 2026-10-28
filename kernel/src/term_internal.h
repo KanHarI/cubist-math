@@ -285,8 +285,10 @@ bool ck_tick(cc_kernel *);
  * natively and in WebAssembly, whatever a cycle's frames cost. The steps
  * bound what the kernel cannot measure: under WebAssembly the engine keeps
  * frames on its own, smaller stack, as V8's of about 0.5 MiB in a Chromium
- * worker, and the cycles measured take 0.6 to 0.9 KiB of it a step. */
-#define CC_RECURSION_LIMIT 512
+ * worker, and the cycles measured take 0.6 to 0.9 KiB of it a step: it ran
+ * out at 622 and 708 steps. The limit holds on every platform (decided
+ * 2026-10-28, docs/roadmaps/kernel/kernel-instructions.md). */
+#define CC_RECURSION_LIMIT 448
 #define CC_STACK_BUDGET ((uintptr_t)4 << 20)
 bool ck_enter(cc_kernel *, const char *message);
 void ck_leave(cc_kernel *);

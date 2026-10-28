@@ -67,11 +67,11 @@ test("nested prerequisite heads retain a controlled WASM recursion failure", asy
 
 // A declared type's eliminator nested in itself takes about 3.6 KiB of the
 // WASM stack a level, and about 0.85 KiB of the engine's own stack: a
-// Chromium worker's runs out at about 620 levels, Node's at about 1,100. On a
+// Chromium worker's runs out at 622 levels, Node's at about 1,100. On a
 // 2 MiB WASM stack placed after the static data, 600 levels ran past its end
 // without a trap and overwrote the session table. The recursion guard
-// (ck_enter) stops at 512 steps, before either, as often as asked, and the
-// session goes on.
+// (ck_enter) stops at 448 steps, before either, as often as asked, and the
+// session goes on; parity(400) takes 402 of them.
 test("nested declared eliminators reach the recursion guard within the WASM stack", async t => {
   const { verdicts } = await checkProgram(t, `import unat;
 use unat;
