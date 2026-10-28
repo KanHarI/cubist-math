@@ -35,8 +35,9 @@ test("the complete canonical .cubist corpus checks with the sole native kernel",
   // power_of_ten, which only the removed unary rationals used (NUM2), 1 less;
   // and unat's order lemmas and equality decision (NT1 of the archive
   // retirement) added 8 and removed hlevels' decision and primes' 9 copies;
-  // and the library's Euclid (NT2) removed the entry point euclid's 2.
+  // and the library's Euclid (NT2) removed the entry point euclid's 2 and
+  // primes' 10 of divisibility and primality.
   assert.deepEqual(report.importErrors, []);
-  assert.equal(report.declarations.length, 3853, "The corpus must not silently lose modules.");
+  assert.equal(report.declarations.length, 3843, "The corpus must not silently lose modules.");
   t.diagnostic(JSON.stringify(report.counts));
 });
