@@ -408,7 +408,7 @@ scope, as in the work plan.
 | EVAL4 | Explicit evaluation stack and bounded runtime. #289's machine loop and a synchronous observation for the checker; a responsive snapshot for asynchronous use, memory calibration, closed-environment pruning and sharing of repeated calls remain | EVAL3 design; implement alongside it | M |
 | EVAL5 | Lazy observation and typed readback. The observation contract is implemented: demand marks (#304–#306) and folded normal forms (#309, #310); typed readback remains | EVAL3, EVAL4 | L |
 | EVAL6 | Packed BNat runtime values and checked specialization | NUM0–NUM2, EVAL3, EVAL4; new profile | L |
-| EVAL7 | Efficient checked divisibility and search over BNat | NUM1, EVAL0; independent of the new evaluator | M |
+| EVAL7 | Efficient checked divisibility and search over BNat. Part one, the library modules, implemented; part two, moving the archive's Euclid consumers and deleting its divisibility and primality, remains | NUM1, EVAL0; independent of the new evaluator | M |
 | EVAL8 | Cubical integration, semantic review and release | Packages selected for release | L |
 
 ### EVAL0: measure the work separately
@@ -1292,6 +1292,25 @@ construction with an unrelated prime generator to improve its benchmark.
 agreement on the small Euclid witnesses `2, 2, 3, 7, 5, 11` for inputs
 `0` through `5`, and separate before/after source-algorithm measurements.
 This is a computation pilot, not a resumption of the paused library backlog.
+
+**Part one implemented** on 2026-10-28
+([report](../../reports/binary-euclid.md)): the library modules
+`bnat_order_laws`, `bnat_division`, `divisibility`, `prime_numbers` and
+`binary_euclid`, beside the archive's `primes` and `euclid`, whose names
+they leave to them until part two. Division with remainder takes one
+long-division digit a bit, high bits first, with its certificate
+`q * d + r = n` and `r < d`; the divisibility decision divides once. The
+least divisor search rises from 2 under NUM1's strong recursion on the
+candidate's distance to the number, ends at the first divisor or past the
+square root, with that bound's proof, and finds the archive's least divisor.
+Euclid's witnesses for 0 through 5 are `2, 2, 3, 7, 5, 11`, checked as
+exact values and folded normal forms of at most 387 characters; no module
+uses an assumption. The kernel's queries compute `euclid(5).1` in 157,971
+ticks, where the archive's stop with K344 after 887,726, and `euclid(10).1`
+in 512,364; `euclid(7)`, with 70 candidates, stops with K344, as strong
+recursion alone does at that depth. The runtime falls back from every
+library value form at the compositions of NUM1's recursion. Part two is
+the migration above, steps 1 and 2.
 
 ### EVAL8: integrate with the trusted computation rules
 
