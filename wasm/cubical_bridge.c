@@ -14,7 +14,7 @@ typedef struct {
     cc_error_kind error_kind;
     uint8_t position[1024]; /* the highlighted position of the next step or replacement */
     size_t depth;
-    uint32_t generation; /* cb_generation: never 0 for a live session */
+    uint32_t generation; /* cb_generation: 0 once spent */
 } browser_session;
 
 static browser_session sessions[8];
@@ -89,10 +89,14 @@ void cb_optimizations(uint32_t token, unsigned flags) {
  * them all. A reader that holds handles across calls, as a runtime query
  * does, compares it with the generation it read them in, and no alias of
  * an export or copy of the module can bypass it. Nothing else here or in
- * the kernel shrinks or relocates a store (kernel/src/checkpoint.c). An
- * unknown or freed session's generation is 0, which a live one never is. */
+ * the kernel shrinks or relocates a store (kernel/src/checkpoint.c). It
+ * starts at 1 and never repeats a value: where it would wrap, after
+ * UINT32_MAX - 1 moves, it is spent and stays 0 for good, as an unknown or
+ * freed session's is, and 0 is never a generation a reader may hold
+ * handles in (handlesHeld in web/cubical-kernel.mjs). A spent session's
+ * readers all fail closed. */
 static void handles_moved(browser_session *s) {
-    if (!++s->generation) s->generation = 1;
+    s->generation = s->generation && s->generation < UINT32_MAX ? s->generation + 1 : 0;
 }
 uint32_t cb_generation(uint32_t token) {
     browser_session *s = lookup(token);

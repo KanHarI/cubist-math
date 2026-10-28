@@ -314,10 +314,14 @@ export class CubicalKernel {
   // handlesHeld(token) says whether they still name what they named. The
   // token is the session's handle generation, kept by the bridge
   // (cb_generation in wasm/cubical_bridge.c), which every rollback and
-  // commit moves on, however it is called, and which a freed session does
-  // not have.
+  // commit moves on, however it is called, and never repeats: it is 0 for
+  // a freed session and for one whose generations are spent, and no handle
+  // is held in generation 0, so such a session's readers fail closed.
   handleToken() { this.assertOpen(); return this.module._cb_generation(this.handle) >>> 0; }
-  handlesHeld(token) { return Boolean(this.handle) && (this.module._cb_generation(this.handle) >>> 0) === token; }
+  handlesHeld(token) {
+    const generation = this.handle ? this.module._cb_generation(this.handle) >>> 0 : 0;
+    return generation !== 0 && generation === token;
+  }
   // Syntactic equality only: no reduction and no typing judgement.
   alphaEqual(left, right) {
     this.assertOpen();

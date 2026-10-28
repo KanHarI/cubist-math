@@ -407,6 +407,43 @@ test("a checkpoint ended through any alias of the module's exports expires every
   assert.deepEqual(kept.observeNow(), { kind: "Point" });
 });
 
+// A session whose handle generations are spent (cb_generation, after
+// UINT32_MAX - 1 rollbacks and commits, kernel/tests/test_bridge.c) reads
+// generation 0 for good, in which no handle is held: a query made before
+// and one made after both expire, never reading a handle as its own, and a
+// value form shows the runtime's failure, E490, not a value. The bridge's
+// generation is replaced here by a module copy that reports it spent.
+test("a session with spent handle generations holds no handles, before or after", async t => {
+  const module = await createCubical();
+  let spent = false;
+  const facade = { ...module, _cb_generation: token => spent ? 0 : module._cb_generation(token) };
+  const kernel = new CubicalKernel(facade), g = new InstructionGraph(kernel);
+  t.after(() => kernel.dispose());
+  const unit = g.unit(), point = g.point();
+  const before = new RuntimeQuery(kernel, g.pair(g.sigma(g.extend(unit, "x"), unit), point,
+    g.apply(g.lambda(g.extend(unit, "y"), point), point)));
+  t.after(() => before.dispose());
+  const pair = before.observeNow();
+  assert.deepEqual(before.observeNow(pair.first), { kind: "Point" });
+  const token = kernel.handleToken();
+  assert.ok(token > 0 && kernel.handlesHeld(token));
+  spent = true;
+  assert.equal(kernel.handleToken(), 0);
+  assert.equal(kernel.handlesHeld(token), false);
+  assert.equal(kernel.handlesHeld(0), false, "generation 0 holds nothing");
+  assert.deepEqual(before.observeNow(pair.first), { kind: "Point" }, "computed before, still observable");
+  assert.throws(() => before.observeNow(pair.second), fails("expired"));
+  const after = new RuntimeQuery(kernel, g.point());
+  t.after(() => after.dispose());
+  assert.throws(() => after.observeNow(), fails("expired"));
+  // In a program on such a session, a value form reports the runtime's
+  // failure and is not computed again by the kernel's queries.
+  const { result } = await checkProgram(t, "print(evaluate(tt));", { module: { ...module, _cb_generation: () => 0 } });
+  assert.deepEqual(result.prints, []);
+  assert.deepEqual(result.gaps.filter(gap => gap.directive).map(gap => [gap.code, gap.reason.replace(/ at \d+:\d+$/, "")]),
+    [["E490", "The runtime failed to evaluate the value form: The kernel has changed since the runtime query was made: what it has not read can no longer be read."]]);
+});
+
 // A lazy read is work and cells of the observation that demands it: a
 // limit can stop the query in the middle of copying, as it stops a force.
 // After a cell stop what was computed stays observable; an exhausted work

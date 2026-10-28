@@ -297,7 +297,10 @@ reaches. Since #324 the query copies only what the walk reaches:
   session (`wasm/cubical_bridge.c`): `cb_rollback` and
   `cb_commit_checkpoint` move it on (`handles_moved`), whether or not they
   had anything to move, nothing else does, and `cb_generation` reads it,
-  0 for a freed or unknown session, which a live one never has. A query
+  0 for a freed or unknown session. It never repeats a value: where it
+  would wrap, after `UINT32_MAX` − 1 moves, it is spent and stays 0, and
+  no handle is held in generation 0, so every query on a spent session
+  expires and its value forms report E490 instead of a value. A query
   records the generation it was made in (`CubicalKernel.handleToken`) and
   reads only while the session's is the same (`handlesHeld`), so no caller
   can move a handle unseen: a declaration's transaction, a kernel test
@@ -314,7 +317,8 @@ reaches. Since #324 the query copies only what the walk reaches:
   the module's exports in JavaScript missed an export captured before the
   wrapping and a copy of the module. In both, a rolled-back handle,
   recycled, was read as the query's own; keeping the generation in the
-  bridge closes every such path.
+  bridge closes every such path. The third found that the generation
+  repeated after `UINT32_MAX` moves, which spending it closes.
 - **Budgets.** Each read is work, and each copied node cells, of the
   observation that demands it, counted as the eager copy's were in the
   query's construction: the work, cell and time limits, cancellation and
@@ -330,9 +334,13 @@ reaches. Since #324 the query copies only what the walk reaches:
   not, expires every query made before, each rolled-back handle shown
   recycled, while opening a checkpoint or forgetting the nodes read
   expires none; a cell or work limit stops a query in the middle of a
-  read. `tests/cubical-wasm.test.mjs` checks the bridge's generation: it
-  moves on at each rollback and commit and at nothing else, and a freed
-  session has none. In `tests/runtime-evaluation.test.mjs`,
+  read; a session whose generations are spent expires every query, made
+  before or after, and a value form on it reports E490.
+  `tests/cubical-wasm.test.mjs` checks the bridge's generation: it moves on
+  at each rollback and commit and at nothing else, and a freed session has
+  none. `kernel/tests/test_bridge.c` compiles the bridge natively and
+  drives a session's generation to where it would wrap: it is spent, 0 for
+  good. In `tests/runtime-evaluation.test.mjs`,
   the unused argument's definitions are never copied, and `2/3 + 1/6`
   copies under a tenth of the closure's 32,015 nodes. The differential
   coverage is unchanged and passes.
