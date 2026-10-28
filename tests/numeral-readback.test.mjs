@@ -308,16 +308,24 @@ test("a printing scope's lookups read the environment without walking it", async
   });
 });
 
-// A model's name is no qualifier where the printed text binds it, by any
-// binder the printer writes: a dimension's too (#318's fifth review). Every
-// form the printer handles, or the core has, is classified here: one that
-// binds a name builds a term binding `name` over `inner`, printed where the
-// binder scopes; one that binds nothing is null; one the printer leaves to
-// kernel notation, which writes no qualifier, is "kernel". A new form fails
-// until it is classified.
-test("a model's name is no qualifier under any binder of the printed text", async () => {
+// A model's name is no qualifier where the display writes it for a
+// variable, a binder or a dimension: the names the printer writes, as it
+// writes them (printedNames in web/cubical-source-text.mjs). Every form the
+// printer handles, or the core has, is classified here: one that can print
+// a binder builds a term binding `name` over `inner`, printed where the
+// binder scopes, and, where the printer can leave the binder out, a term
+// whose binder it does not print; one that binds nothing is null; one the
+// printer leaves to kernel notation, which writes no qualifier, is
+// "kernel". A new form fails until it is classified. For every term, the
+// names collected are the variable, binder and dimension names its text
+// shows.
+const identifiers = (text, labels) => new Set([...text.replace(/[A-Za-z_][A-Za-z0-9_]*\.\(/g, "(")
+  .matchAll(/[A-Za-z_][A-Za-z0-9_]*/g)].map(match => match[0]).filter(name => !labels.has(name)));
+const keywords = ["forall", "exists", "fun", "path", "match", "induction", "return", "as", "with", "compose", "in", "from", "on",
+  "and", "or", "zero", "succ", "left", "right", "refl", "PathP", "Interval", "Unit", "U0", "UU0", "tt", "b_positive", "bp_odd", "bp_one"];
+test("the names a display writes are the printed variables, binders and dimensions, and take a model's qualifier", async () => {
   const { readFileSync } = await import("node:fs");
-  const { sourceText } = await import("../web/cubical-source-text.mjs");
+  const { sourceText, printedNames } = await import("../web/cubical-source-text.mjs");
   const { termChildren } = await import("../web/translator/term-shape.mjs");
   const v = name => ({ tag: "Var", name }), app = (fn, ...args) => args.reduce((f, arg) => ({ tag: "App", fn: f, arg }), fn);
   const at = (path, dim) => ({ tag: "PApp", path, arg: [[`${dim}:1`]] });
@@ -325,29 +333,40 @@ test("a model's name is no qualifier under any binder of the printed text", asyn
   const con = (type, index, name) => ({ tag: "Con", index, name, sort: { tag: "Sort", signature: `bnat__${type}` } });
   const three = app(con("BNat", 1, "b_positive"), app(con("BPositive", 2, "bp_odd"), con("BPositive", 0, "bp_one")));
   const motive = lam("z", { tag: "Unit" });
+  const loop = body => ({ tag: "PLam", dim: "j", family: null, body: app(v("h"), at(v("q"), "j"), body) });
+  // [binding forms, forms whose binder the printer leaves out]
   const forms = {
     U: null, LBound: null, Unit: null, Void: null, Point: null, Marker: null, Var: null, DefRef: null, Sum: null,
     App: null, LApp: null, Pair: null, PApp: null, Inl: null, Inr: null, Abort: null, Fst: null, Snd: null,
     Sort: null, Con: null, Glue: null, GlueTerm: null, Unglue: null,
     UnitRec: "kernel", HComp: "kernel", Trans: "kernel",
-    Pi: [(name, inner) => ({ tag: "Pi", name, domain: { tag: "Unit" }, body: app(v("P"), v(name), inner) })],
-    Sigma: [(name, inner) => ({ tag: "Sigma", name, domain: { tag: "Unit" }, body: app(v("P"), v(name), inner) })],
-    Lam: [(name, inner) => lam(name, app(v("h"), v(name), inner)), (name, inner) => lam(name, app(v("h"), v(name), inner), null)],
-    LPi: [(name, inner) => ({ tag: "LPi", name, body: app(v("P"), inner) })],
-    LLam: [(name, inner) => ({ tag: "LLam", name, body: app(v("h"), inner) })],
-    NatInduction: [(name, inner) => ({ tag: "NatInduction", value: v("n"), motive: lam("k", { tag: "Unit" }, null), zero: { tag: "Point" },
+    Pi: [[(name, inner) => ({ tag: "Pi", name, domain: { tag: "Unit" }, body: app(v("P"), v(name), inner) })],
+      [(name, inner) => ({ tag: "Pi", name, domain: { tag: "Unit" }, body: app(v("P"), inner) })]],
+    Sigma: [[(name, inner) => ({ tag: "Sigma", name, domain: { tag: "Unit" }, body: app(v("P"), v(name), inner) })],
+      [(name, inner) => ({ tag: "Sigma", name, domain: { tag: "Unit" }, body: app(v("P"), inner) })]],
+    Lam: [[(name, inner) => lam(name, app(v("h"), v(name), inner)), (name, inner) => lam(name, app(v("h"), v(name), inner), null)], []],
+    LPi: [[(name, inner) => ({ tag: "LPi", name, body: app(v("P"), inner) })], []],
+    LLam: [[(name, inner) => ({ tag: "LLam", name, body: app(v("h"), inner) })], []],
+    NatInduction: [[(name, inner) => ({ tag: "NatInduction", value: v("n"), motive: lam("k", { tag: "Unit" }, null), zero: { tag: "Point" },
       step: lam("k", lam(name, app(v("h"), v(name), inner), null), null) })],
-    SumRec: [(name, inner) => ({ tag: "SumRec", value: v("s"), motive, left: lam(name, app(v("h"), v(name), inner)), right: lam("b", v("b")) })],
+    [(name, inner) => ({ tag: "NatInduction", value: v("n"), motive: lam(name, { tag: "Unit" }, null), zero: { tag: "Point" },
+      step: lam(name, lam("ih", app(v("h"), v("ih"), inner), null), null) })]],
+    SumRec: [[(name, inner) => ({ tag: "SumRec", value: v("s"), motive, left: lam(name, app(v("h"), v(name), inner)), right: lam("b", v("b")) })],
+      [(name, inner) => ({ tag: "SumRec", value: v("s"), motive: lam(name, { tag: "Unit" }), left: lam("a", app(v("h"), v("a"), inner)), right: lam("b", v("b")) })]],
     // A declared type's eliminator, applied, prints as a match whose clauses
-    // bind a constructor's data and a path constructor's dimensions.
-    Elim: [(name, inner) => app({ tag: "Elim", signature: "shape", motive, clauses: [lam(name, app(v("h"), v(name), inner)),
-      { tag: "PLam", dim: "j", family: null, body: at(v("q"), "j") }] }, v("s")),
+    // bind a constructor's data and a path constructor's dimensions; its
+    // motive's binder shows only where the return type uses it.
+    Elim: [[(name, inner) => app({ tag: "Elim", signature: "shape", motive, clauses: [lam(name, app(v("h"), v(name), inner)), loop(v("y"))] }, v("s")),
       (name, inner) => app({ tag: "Elim", signature: "shape", motive, clauses: [lam("x", v("x")),
         { tag: "PLam", dim: name, family: null, body: app(v("h"), at(v("q"), name), inner) }] }, v("s"))],
-    Path: [(name, inner) => ({ tag: "Path", dim: name, family: app(v("F"), at(v("q"), name), inner), left: v("a"), right: v("b") })],
-    PLam: [(name, inner) => ({ tag: "PLam", dim: name, family: null, body: app(v("h"), at(v("p"), name), inner) })],
-    Comp: [(name, inner) => ({ tag: "Comp", dim: name, family: v("A"), base: v("a"),
-      system: [{ face: [["j:1"]], term: app(v("h"), at(v("p"), name), inner) }] })],
+      [(name, inner) => app({ tag: "Elim", signature: "shape", motive: lam(name, { tag: "Unit" }), clauses: [lam("x", app(v("h"), v("x"), inner)), loop(v("y"))] }, v("s"))]],
+    // An equality's coordinate and a constant path's are not printed.
+    Path: [[(name, inner) => ({ tag: "Path", dim: name, family: app(v("F"), at(v("q"), name), inner), left: v("a"), right: v("b") })],
+      [(name, inner) => ({ tag: "Path", dim: name, family: v("A"), left: inner, right: inner })]],
+    PLam: [[(name, inner) => ({ tag: "PLam", dim: name, family: null, body: app(v("h"), at(v("p"), name), inner) })],
+      [(name, inner) => ({ tag: "PLam", dim: name, family: null, body: app(v("h"), inner) })]],
+    Comp: [[(name, inner) => ({ tag: "Comp", dim: name, family: v("A"), base: v("a"),
+      system: [{ face: [["j:1"]], term: app(v("h"), at(v("p"), name), inner) }] })], []],
   };
   const printer = readFileSync(new URL("../web/cubical-source-text.mjs", import.meta.url), "utf8");
   const cases = new Set([...printer.matchAll(/case "([A-Za-z]+)":/g)].map(match => match[1]));
@@ -364,12 +383,19 @@ test("a model's name is no qualifier under any binder of the printed text", asyn
   };
   const context = { reads: name => name === "m" ? "m-id" : null, opens: name => name === "m" };
   const inners = { attached: three, theory: app({ tag: "DefRef", name: "main__Counted__of_nat" }, { tag: "DefRef", name: "main__m" }, three) };
-  for (const [tag, builders] of Object.entries(forms)) if (Array.isArray(builders))
-    for (const [k, build] of builders.entries()) for (const [reading, inner] of Object.entries(inners)) {
-      const free = sourceText(build("k", inner), symbols, 4000, context), bound = sourceText(build("m", inner), symbols, 4000, context);
-      assert.ok(free.includes("m.(3)"), `${tag} ${k} ${reading}: ${free}`);
-      assert.ok(!bound.includes("m.(3)") && bound.includes("b_positive(bp_odd(bp_one))"), `${tag} ${k} ${reading}: ${bound}`);
-    }
+  const labels = new Set([...keywords, "c", "loop", "Counted__of_nat"]);
+  for (const [tag, builders] of Object.entries(forms)) if (Array.isArray(builders)) {
+    const [binding, omitting] = builders;
+    for (const [kind, list] of [["binding", binding], ["omitting", omitting]]) for (const [k, build] of list.entries())
+      for (const [reading, inner] of Object.entries(inners)) for (const name of ["m", "k"]) {
+        const term = build(name, inner), text = sourceText(term, symbols, 4000, context), names = printedNames(term, symbols, 4000, context);
+        const where = `${tag} ${kind} ${k} ${reading} ${name}: ${text}`;
+        if (reading === "attached") assert.deepEqual([...names.keys()].sort(), [...identifiers(text, labels)].sort(), where);
+        const qualified = text.includes("m.(3)");
+        assert.equal(qualified, name !== "m" || kind === "omitting", where);
+        assert.equal(names.has("m"), name === "m" && kind === "binding", where);
+      }
+  }
 });
 
 // The review's case: a path's dimension i, under which m's rule's
@@ -404,4 +430,103 @@ def f : ${type} := fun (h : Unit -> BNat -> Unit, x : Unit, p : x = x) => path i
         assert.deepEqual(again.outputs.filter(output => output.name === "again").map(output => [output.verified, output.reason ?? null]), [[true, null]]));
     });
   }
+});
+
+// Displays of several texts, as one: a proof step's locals, goal and term,
+// a mismatch's two types, a declared type's inspected signature. Each
+// reads the names the whole display writes, and these are exactly the
+// variable, binder and dimension names its texts and its locals show
+// (#318's sixth review: a local the naming renamed to the model's name,
+// m1, and an equality's coordinate, which no text shows).
+const unitHeader = `import unat;
+import bnat;
+theory Counted(U < UU0) {
+  M : U;
+  inj(n : BNat) : M;
+  def of_nat(n : BNat) : M := inj(n) notation numeral;
+}
+def m1 : Counted(U0) := Counted.make(M := BNat, inj := fun (n : BNat) => n);
+notation m1 {
+  numeral(n : BNat) := n;
+}
+notation bnat_numerals {
+  numeral(n : BNat) := b_zero;
+}
+`;
+// The texts each display prints through the checker, with the names it
+// gives them, grouped by display.
+const displayed = program => {
+  const { checker } = program, printed = checker.printed, units = new Map();
+  checker.printed = function (term, width, limit, notation) {
+    const text = printed.call(this, term, width, limit, notation);
+    if (notation?.shown) units.set(notation.shown, [...units.get(notation.shown) ?? [], text]);
+    return text;
+  };
+  return units;
+};
+test("a proof step's locals, goal and term are one display, and its goal reads back under its locals", async () => {
+  const three = "b_positive(bp_odd(bp_one))";
+  const source = `${unitHeader}def g(m : Unit, p : m = m) : forall m : Unit. ${three} = ${three} {\n  intro m;\n  rfl;\n}\n`;
+  await withChecked(source, async (program, result) => {
+    assert.deepEqual(result.gaps, [], JSON.stringify(result.gaps));
+    const units = displayed(program);
+    const steps = program.steps("main", "g"), last = steps.at(-1);
+    assert.deepEqual(last.locals.map(local => local.name), ["m", "p", "m1"]);
+    assert.equal(last.goal, `${three} = ${three}`);
+    for (const step of steps) {
+      const texts = [...step.locals.map(local => local.type), step.goal, step.built];
+      const [unit] = [...units].find(([, shown]) => shown.length === texts.length && shown.every((text, k) => text === texts[k])) ?? [];
+      assert.ok(unit, JSON.stringify(step));
+      const names = unit();
+      const shown = new Set([...step.locals.map(local => local.name), ...texts.flatMap(text => [...identifiers(text, new Set(keywords))])]);
+      // The proof's rest shows as the hole ?, which is no name.
+      assert.deepEqual([...names.keys()].filter(name => name !== "?").sort(), [...shown].sort(), JSON.stringify(step));
+    }
+    const locals = last.locals.map(local => `${local.name} : ${local.type}`).join(", ");
+    await withChecked(`${source}def again(${locals}) : ${last.goal} := ${last.built};\n`, (_, again) =>
+      assert.deepEqual(again.outputs.filter(output => output.name === "again").map(output => [output.verified, output.reason ?? null]), [[true, null]]));
+  });
+});
+
+test("a mismatch's types and an inspected signature are one display each", async () => {
+  const three = "b_positive(bp_odd(bp_one))";
+  for (const [body, labels] of [
+    [`def bad(m : Unit, f : forall k : Unit. k = k -> m = m) : forall m : Unit. Unit := fun (m : Unit) => typed(m = m -> ${three} = ${three}, f(m));\n`, []],
+    [`inductive Box(m1 : Unit) : U0 { box(p : m1 = m1, q : ${three} = ${three}); }\nprint(inspect(Box));\n`, ["Box", "box"]],
+  ]) {
+    const program = new CubicalProgram(module, reader, {});
+    try {
+      const units = displayed(program);
+      await program.check(unitHeader + body, "main");
+      assert.ok(units.size, body);
+      // The displays of this program's own declarations: the imported
+      // modules' are checked in it too.
+      const own = [...units].filter(([, texts]) => texts.some(text => text.includes("bp_odd(bp_one)") || text.includes("m1.(")));
+      assert.ok(own.length, body);
+      for (const [unit, texts] of own)
+        assert.deepEqual([...unit().keys()].sort(), [...new Set(texts.flatMap(text => [...identifiers(text, new Set([...keywords, ...labels]))]))].sort(),
+          JSON.stringify(texts));
+    } finally { program.dispose(); }
+  }
+});
+
+// An equality's coordinate is not printed, so it does not take the name of
+// a literal's reader: the literal prints as written and reads back.
+test("an equality's unprinted coordinate leaves a literal's qualifier in place", async () => {
+  const source = `import bnat_notation;
+import lexemes;
+${unitHeader}def wrap(s : Lexeme) : Parsed(U0, BNat) := bnat_literal(s);
+def i : Counted(U0) := Counted.make(M := BNat, inj := fun (n : BNat) => n);
+notation i {
+  literal(s : Lexeme) := wrap(s);
+}
+print(typeof(refl(i.(18446744073709551617))));
+`;
+  await withChecked(source, async (_, result) => {
+    assert.deepEqual(result.gaps, [], JSON.stringify(result.gaps));
+    const text = result.prints[0].text;
+    assert.equal(text, "i.(18446744073709551617) = i.(18446744073709551617)");
+    await withChecked(`${source}def again : ${text} := refl(i.(18446744073709551617));\n`, (_, again) =>
+      assert.deepEqual(again.outputs.filter(output => output.name === "again").map(output => [output.verified, output.reason ?? null]), [[true, null]]));
+  });
 });
