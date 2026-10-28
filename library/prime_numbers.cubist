@@ -1,0 +1,151 @@
+// Prime numbers over public binary Nat, and the least divisor above one of
+// a number above one, by trial division: candidates rise from 2, the first
+// divisor ends the search, and past the square root the number is its own
+// least divisor.
+import divisibility;
+use nat;
+
+// A prime is above one, with no divisor strictly between one and itself.
+computable def Prime(p : Nat) :
+  U0 := (1 < p) and (forall d : Nat. 1 < d -> d < p -> Divides(d, p) -> Void);
+
+// No divisor of m strictly between one and d.
+computable def NoDivisorBelow(m, d : Nat) :
+  U0 := forall e : Nat. 1 < e -> e < d -> Divides(e, m) -> Void;
+
+// p is the least divisor of m above one.
+computable def IsLeastDivisor(m, p : Nat) :
+  U0 := (1 < p) and (Divides(p, m) and NoDivisorBelow(m, p));
+
+// The least divisor of m above one, with its certificate.
+computable def LeastDivisor(m : Nat) : U0 := exists p : Nat. IsLeastDivisor(m, p);
+
+// A least divisor is prime: a divisor of it divides m.
+computable def least_divisor_prime(m, p : Nat, least : IsLeastDivisor(m, p)) : Prime(p) := (
+  least.1,
+  fun (d : Nat, above : 1 < d, below : d < p, divides : Divides(d, p)) => least.2.2(
+    d, above, below, divides_transitive(d, p, m, divides, least.2.1)
+  )
+);
+
+computable def no_divisor_below_two(m : Nat) :
+  NoDivisorBelow(m, 2) := fun (e : Nat, above : 1 < e, below : e < 2, divides : Divides(e, m)) => bnat_lt_le_absurd(
+    e, 2, below, bnat_le_succ_of_lt(1, e, above)
+  );
+
+computable def no_divisor_below_succ(
+  m, d : Nat, none : NoDivisorBelow(m, d), not_divides : Divides(d, m) -> Void
+) :
+  NoDivisorBelow(m, succ(d)) := fun (
+    e : Nat, above : 1 < e, below : e < succ(d), divides : Divides(e, m)
+  ) => match bnat_lt_succ_cases(e, d, below) return Void {
+    left smaller => none(e, above, smaller, divides);
+    right same => not_divides(comp(fun (i : Interval) => Divides(same @ i, m), divides));
+  };
+
+// The square-root bound. The cofactor c of a divisor e < m of m is above
+// one and divides m too, so with no divisor of m below d it is at least d.
+computable def cofactor_at_least(
+  m, d, e, c : Nat, above : 1 < m, below : e < m, none : NoDivisorBelow(m, d), product : c * e = m
+) :
+  d <= c := match c {
+    b_zero => absurd(comp(fun (i : Interval) => 1 < (product @ ~i), above));
+    b_positive(bp_one) => absurd(
+      bnat_lt_irrefl(
+        m, comp(fun (i : Interval) => trans(sym(nat_one_mul(e)), product) @ i < m, below)
+      )
+    );
+    b_positive(bp_even(x)) => bnat_le_of_not_lt(
+      c, d, fun (smaller : c < d) => none(c, tt, smaller, (e, trans(nat_mul_comm(e, c), product)))
+    );
+    b_positive(bp_odd(x)) => bnat_le_of_not_lt(
+      c, d, fun (smaller : c < d) => none(c, tt, smaller, (e, trans(nat_mul_comm(e, c), product)))
+    );
+  };
+
+// With no divisor of m below d and m < d * d, m has no divisor strictly
+// between one and itself: a divisor and its cofactor would both be at
+// least d, and their product m at least d * d.
+computable def no_divisor_past_square(
+  m, d : Nat, above : 1 < m, none : NoDivisorBelow(m, d), past : m < d * d
+) :
+  NoDivisorBelow(m, m) := fun (e : Nat, e_above : 1 < e, below : e < m, divides : Divides(e, m)) => bnat_lt_le_absurd(
+    m, d * d, past,
+    comp(
+      fun (i : Interval) => d * d <= (divides.2 @ i),
+      bnat_le_mul(
+        d, divides.1, d, e, cofactor_at_least(m, d, e, divides.1, above, below, none, divides.2),
+        bnat_le_of_not_lt(e, d, fun (smaller : e < d) => none(e, e_above, smaller, divides))
+      )
+    )
+  );
+
+// One candidate d: past the square root m is its own least divisor, a
+// candidate that divides m is the least divisor, and otherwise the search
+// goes on.
+computable def divisor_candidate(
+  m, d : Nat, above : 1 < m, d_above : 1 < d, none : NoDivisorBelow(m, d),
+  onward : (Divides(d, m) -> Void) -> LeastDivisor(m)
+) :
+  LeastDivisor(m) := match bnat_lt_decide(m, d * d) return LeastDivisor(m) {
+    left beyond => (m, above, divides_refl(m), no_divisor_past_square(m, d, above, none, beyond));
+    right within => match divides_decide(d, m) return LeastDivisor(m) {
+      left divides => (d, d_above, divides, none);
+      right not_divides => onward(not_divides);
+    };
+  };
+
+computable def nat_succ_add_shift(a, b : Nat) : succ(a) + b = a + succ(b) {
+  calc {
+    succ(a) + b = b + succ(a) by nat_add_comm(succ(a), b);
+    _ = succ(b + a) by sym(bnat_succ_add(b, a));
+    _ = succ(a + b) by cong(succ, nat_add_comm(b, a));
+    _ = a + succ(b) by bnat_succ_add(a, b);
+  }
+}
+
+// The search at distance k from m: a candidate d with d + k = m, above
+// one, with no divisor of m below it.
+computable def DivisorSearch(m, k : Nat) :
+  U0 := forall d : Nat. d + k = m -> 1 < d -> NoDivisorBelow(m, d) -> LeastDivisor(m);
+
+// A candidate that does not divide m passes the search to the next one, one
+// closer to m: the call's distance is strictly smaller. At distance zero the
+// candidate is m, which divides m.
+computable def divisor_search_step(m : Nat, above : 1 < m, k : Nat) :
+  NatBelow(U0, DivisorSearch(m), k) -> DivisorSearch(m, k) := match k {
+    b_zero => fun (
+      below : NatBelow(U0, DivisorSearch(m), b_zero), d : Nat, distance : d + b_zero = m,
+      d_above : 1 < d, none : NoDivisorBelow(m, d)
+    ) => divisor_candidate(
+      m, d, above, d_above, none,
+      fun (not_divides : Divides(d, m) -> Void) => absurd(
+        not_divides((1, trans(nat_one_mul(d), trans(sym(nat_add_zero(d)), distance))))
+      )
+    );
+    b_positive(p) => fun (
+      below : NatBelow(U0, DivisorSearch(m), b_positive(p)), d : Nat,
+      distance : d + b_positive(p) = m, d_above : 1 < d, none : NoDivisorBelow(m, d)
+    ) => divisor_candidate(
+      m, d, above, d_above, none,
+      fun (not_divides : Divides(d, m) -> Void) => below(
+        bpositive_pred(p), bpositive_pred_lt(p), succ(d),
+        trans(
+          nat_succ_add_shift(d, bpositive_pred(p)),
+          trans(cong(add(d), bpositive_succ_pred(p)), distance)
+        ), bnat_lt_succ_right(1, d, d_above), no_divisor_below_succ(m, d, none, not_divides)
+      )
+    );
+  };
+
+// The least divisor of m above one, from the candidate 2 at distance m - 2.
+computable def least_divisor(m : Nat, above : 1 < m) : LeastDivisor(m) := nat_strong_recursion(
+  U0, DivisorSearch(m), divisor_search_step(m, above), bnat_sub(m, 2), 2,
+  bnat_add_sub(m, 2, bnat_le_succ_of_lt(1, m, above)), tt, no_divisor_below_two(m)
+);
+
+// Every number above one has a prime divisor: its least divisor above one.
+computable def prime_divisor(m : Nat, above : 1 < m) : exists p : Nat. Prime(p) and Divides(p, m) {
+  obtain (p, least) := least_divisor(m, above);
+  exact (p, least_divisor_prime(m, p, least), least.2.1);
+}

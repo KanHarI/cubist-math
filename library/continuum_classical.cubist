@@ -1,0 +1,170 @@
+// Classical consequences of the continuum hypotheses, as conditional
+// theorems with no assumption: the decidable continuum hypothesis gives
+// excluded middle at the same universe, without propositional resizing.
+// For a proposition P, the subsets of a set A that are singletons, together
+// with all other subsets once P holds, lie between A and its powerset.
+// Equinumerous with A, they refute P, and with the powerset, they prove it,
+// each time by Cantor's diagonal argument (powersets' cantor_diagonal).
+import classical_axioms;
+import continuum_hypothesis;
+
+// A subset that is a singleton, or any subset once P holds.
+def SingletonOr(U < UU0, A : U, setA : IsSet(U, A), P : U, S : PowerSet(U, A)) :
+  next(U) := Trunc(next(U), P or IsSingleton(U, A, setA, S));
+
+def SingletonsOrAll(U < UU0, A : U, setA : IsSet(U, A), P : U) :
+  next(U) := exists S : PowerSet(U, A). SingletonOr(U, A, setA, P, S);
+
+computable def singleton_or_is_prop(U < UU0, A : U, setA : IsSet(U, A), P : U, S : PowerSet(U, A)) :
+  IsProp(next(U), SingletonOr(U, A, setA, P, S)) := mere_is_prop(
+    next(U), P or IsSingleton(U, A, setA, S)
+  );
+
+computable def singletons_or_all_is_set(U < UU0, A : U, setA : IsSet(U, A), P : U) :
+  IsSet(next(U), SingletonsOrAll(U, A, setA, P)) {
+  hlevel;
+}
+
+// Two of its elements are equal when their subsets are.
+computable def singletons_or_all_injective(
+  U < UU0, A : U, setA : IsSet(U, A), P : U, x, y : SingletonsOrAll(U, A, setA, P), p : x.1 = y.1
+) :
+  x = y := subtype_injective(
+    next(U), PowerSet(U, A), SingletonOr(U, A, setA, P), singleton_or_is_prop(U, A, setA, P), x, y,
+    p
+  );
+
+computable def singleton_element(U < UU0, A : U, setA : IsSet(U, A), P : U, a : A) :
+  SingletonsOrAll(U, A, setA, P) := (
+    singleton(U, A, setA, a),
+    merely(
+      next(U), P or IsSingleton(U, A, setA, singleton(U, A, setA, a)),
+      right((a, refl(singleton(U, A, setA, a))))
+    )
+  );
+
+computable def singleton_element_injective(
+  U < UU0, A : U, setA : IsSet(U, A), P : U, a, b : A,
+  q : singleton_element(U, A, setA, P, a) = singleton_element(U, A, setA, P, b)
+) :
+  a = b := singleton_injective(U, A, setA, a, b, path i => (q @ i).1);
+
+// They lie between A, by the singletons, and its powerset, as a subtype.
+computable def singletons_or_all_above(U < UU0, A : U, setA : IsSet(U, A), P : U) :
+  CardinalLE(next(U), A, SingletonsOrAll(U, A, setA, P)) := injection_cardinal_le(
+    next(U), A, SingletonsOrAll(U, A, setA, P), singleton_element(U, A, setA, P),
+    singleton_element_injective(U, A, setA, P)
+  );
+
+computable def singletons_or_all_below(U < UU0, A : U, setA : IsSet(U, A), P : U) :
+  CardinalLE(next(U), SingletonsOrAll(U, A, setA, P), PowerSet(U, A)) := injection_cardinal_le(
+    next(U), SingletonsOrAll(U, A, setA, P), PowerSet(U, A),
+    fun (x : SingletonsOrAll(U, A, setA, P)) => x.1, singletons_or_all_injective(U, A, setA, P)
+  );
+
+// Equivalent to A, they refute P: once P holds every subset is one of them,
+// so the inverse of the equivalence, followed by the first projection,
+// reaches every subset, the diagonal too.
+computable def equivalent_to_set_refutes(
+  U < UU0, A : U, setA : IsSet(U, A), P : U,
+  e : ContrEquiv(next(U), SingletonsOrAll(U, A, setA, P), A), p : P
+) :
+  Void {
+  let X := SingletonsOrAll(U, A, setA, P);
+  let f := fun (a : A) => equiv_inverse(next(U), X, A, e, a).1;
+  let diagonal : X := (
+    diagonal_subset(U, A, f),
+    merely(next(U), P or IsSingleton(U, A, setA, diagonal_subset(U, A, f)), left(p))
+  );
+  exact cantor_diagonal(
+    U, A, f, e.1(diagonal), path i => (equiv_inverse_retraction(next(U), X, A, e, diagonal) @ i).1
+  );
+}
+
+// Equivalent to the powerset, they prove P: the element that the
+// equivalence sends to the diagonal of the singletons' images is no
+// singleton, so P holds.
+computable def equivalent_to_powerset_proves(
+  U < UU0, A : U, setA : IsSet(U, A), P : U, prop_ : IsProp(U, P),
+  e : ContrEquiv(next(U), SingletonsOrAll(U, A, setA, P), PowerSet(U, A))
+) :
+  P {
+  let X := SingletonsOrAll(U, A, setA, P);
+  let f := fun (a : A) => e.1(singleton_element(U, A, setA, P, a));
+  let diagonal := diagonal_subset(U, A, f);
+  let x := equiv_inverse(next(U), X, PowerSet(U, A), e, diagonal);
+  let no_singleton := fun (s : IsSingleton(U, A, setA, x.1)) => cantor_diagonal(
+    U, A, f, s.1,
+    trans(
+      cong(
+        e.1,
+        singletons_or_all_injective(
+          U, A, setA, P, singleton_element(U, A, setA, P, s.1), x, sym(s.2)
+        )
+      ), equiv_inverse_section(next(U), X, PowerSet(U, A), e, diagonal)
+    )
+  );
+  exact mere_eliminate(
+    next(U), U, P or IsSingleton(U, A, setA, x.1), P, prop_,
+    fun (side : P or IsSingleton(U, A, setA, x.1)) => match side return P {
+      left p => p;
+      right s => absurd(no_singleton(s));
+    }, x.2
+  );
+}
+
+// A cardinality dichotomy between a set and its powerset decides every
+// proposition of the universe of the powerset's propositions.
+computable def dichotomy_decides(
+  U < UU0, A : U, setA : IsSet(U, A), dichotomy : CardinalityDichotomy(next(U), A, PowerSet(U, A)),
+  P : U, prop_ : IsProp(U, P)
+) :
+  Decidable(U, P) {
+  let X := SingletonsOrAll(U, A, setA, P);
+  let Endpoint := Equinumerous(next(U), X, A) or Equinumerous(next(U), X, PowerSet(U, A));
+  exact mere_eliminate(
+    next(U), U, Endpoint, Decidable(U, P), decision_is_prop(U, P, prop_),
+    fun (endpoint : Endpoint) => match endpoint return Decidable(U, P) {
+      left small => right(
+        mere_eliminate(
+          next(U), U, ContrEquiv(next(U), X, A), P -> Void, not_is_prop(U, P),
+          equivalent_to_set_refutes(U, A, setA, P), small
+        )
+      );
+      right large => left(
+        mere_eliminate(
+          next(U), U, ContrEquiv(next(U), X, PowerSet(U, A)), P, prop_,
+          equivalent_to_powerset_proves(U, A, setA, P, prop_), large
+        )
+      );
+    },
+    dichotomy(
+      X, singletons_or_all_is_set(U, A, setA, P), singletons_or_all_above(U, A, setA, P),
+      singletons_or_all_below(U, A, setA, P)
+    )
+  );
+}
+
+// Deciding every proposition of U is excluded middle at U: a type that
+// cannot be refuted is merely inhabited, since its truncation is decided.
+computable def excluded_middle_from_decisions(
+  U < UU0, decide : forall P : U. IsProp(U, P) -> Decidable(U, P)
+) :
+  ExcludedMiddle(U) {
+  intro A, nn;
+  exact match decide(Trunc(U, A), mere_is_prop(U, A)) return Trunc(U, A) {
+    left t => t;
+    right none => absurd(nn(fun (a : A) => none(merely(U, A, a))));
+  };
+}
+
+// The decidable continuum hypothesis at U, whose powerset of Nat takes its
+// propositions from U, gives excluded middle for the types of U. So does
+// the decidable generalized continuum hypothesis at U, through it.
+computable def decidable_ch_excluded_middle(U < UU0, ch : DecidableContinuumHypothesis(U)) :
+  ExcludedMiddle(U) := excluded_middle_from_decisions(U, dichotomy_decides(U, Nat, nat_is_set, ch));
+
+computable def decidable_gch_excluded_middle(
+  U < UU0, gch : DecidableGeneralizedContinuumHypothesis(U)
+) :
+  ExcludedMiddle(U) := decidable_ch_excluded_middle(U, decidable_gch_implies_decidable_ch(U, gch));

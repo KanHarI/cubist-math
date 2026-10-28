@@ -295,7 +295,7 @@ def Choice := axiom AxiomOfChoice;
   for now, by direction of 2026-10-20; changing it is later work and no part
   of this plan.
 
-### Continuum hypotheses: checked statements, planned assumptions
+### Continuum hypotheses: checked statements, optional assumptions
 
 Added on 2026-10-21, with no assumptions:
 
@@ -319,8 +319,10 @@ Added on 2026-10-21, with no assumptions:
   records the constructive binary-sequence formulation, with
   `Cantor := DecidablePowerSet(U0, Nat)`.
 
-With axiom expressions, implemented in step 1, optional assumptions can reuse
-these type families in the same way:
+Admitted on 2026-10-28, by the decision of 2026-10-26 below that
+user-supplied axioms are allowed and the continuum hypothesis is to be
+introduced so, `library/continuum_axioms.cubist` assumes four of these type
+families with axiom expressions, implemented in step 1:
 
 ```text
 def CH := axiom ContinuumHypothesis;
@@ -329,18 +331,82 @@ def GCH := axiom GeneralizedContinuumHypothesis;
 def DecidableGCH := axiom DecidableGeneralizedContinuumHypothesis;
 ```
 
-These lines are currently comments in the library, not admitted assumptions.
-`cubist-tests/continuum_axioms.cubist` checks that a module importing
-`continuum_hypothesis` can assume `CH` and `GCH` so, with the families over
-`U < UU0` whose bodies live in `next(next(U))`, and that every result that
-uses one lists it; there they are labelled `continuum_axioms::CH` and
-`continuum_axioms::GCH`. Admitted in the library, they would be labelled
-`CH` and `GCH`, by the label rule below.
-The targets `DecidableCH -> LEM` and `DecidableGCH -> Choice` are follow-up
-proofs. [Kirst and Rech's HoTT mechanization](https://hott-uf.github.io/2021/HoTTUF_2021_paper_4.pdf)
+Each family is over `U < UU0` with its body in `next(next(U))`, and each
+axiom is one assumption of that body for every `U`. They live in a module of
+their own, not in `continuum_hypothesis`, so that a module that imports the
+statements and the conditional proofs has none of the assumptions in scope;
+importing `continuum_axioms` is the visible step that admits them. Merely
+importing never makes a result rely on an axiom: each result lists exactly
+the axioms it uses. Excluded middle and choice, the standard classical
+principles, are stated beside their assumptions in `classical_axioms`; the
+continuum hypotheses are kept apart from their statements because a module
+may as well assume CH's negation, or leave CH open, with the same statements
+and conditional proofs.
+By the label rule below they are labelled `CH`, `DecidableCH`, `GCH` and
+`DecidableGCH`, which `tests/library.test.mjs` keeps distinct from every
+other library axiom. `tests/fixtures/contracts/continuum_axiom_contracts.cubist`
+states the axioms each result lists, `DecidableGCH` alone for both
+`DecidableGCH -> GCH -> CH` and `DecidableGCH -> DecidableCH -> CH` applied
+to it and none for the conditional proof that takes it as a parameter, and
+the refusals by `computable` (E330) and `evaluate` (E324);
+`cubist-tests/continuum_assumptions.cubist` shows their types and the
+refusals' messages. #317's `cubist-tests/continuum_axioms.cubist` assumed
+`CH` and `GCH` in the test module itself, labelled `continuum_axioms::CH` and
+`continuum_axioms::GCH`; it became that module, which imports the library's,
+since a test module may not share a library module's name.
+No axiom assumes `CantorContinuumHypothesis`.
+The target `DecidableCH -> LEM` is checked since 2026-10-28, with no
+resizing ([below](#excluded-middle-from-the-decidable-continuum-hypothesis)).
+`DecidableGCH -> Choice` remains a follow-up proof.
+[Kirst and Rech's HoTT mechanization](https://hott-uf.github.io/2021/HoTTUF_2021_paper_4.pdf)
 uses propositional resizing; adapting it must account explicitly for that
-requirement at these universe levels. No implication to LEM or choice is
-claimed as checked here.
+requirement at these universe levels. No implication to choice is claimed
+as checked here.
+
+#### Excluded middle from the decidable continuum hypothesis
+
+Added on 2026-10-28, with no assumptions, `continuum_classical.cubist`
+proves, for every `U < UU0`,
+
+```text
+computable def decidable_ch_excluded_middle(U < UU0, ch : DecidableContinuumHypothesis(U)) :
+  ExcludedMiddle(U)
+```
+
+and `decidable_gch_excluded_middle` from
+`DecidableGeneralizedContinuumHypothesis(U)` through it. The universes line
+up without resizing. For a proposition `P : U`, the subsets of `Nat` that
+are singletons or for which `P` holds,
+`SingletonsOrAll(U, Nat, nat_is_set, P)`, are pairs of an
+`S : PowerSet(U, Nat)` and `Trunc(next(U), P or IsSingleton(U, Nat, nat_is_set, S))`,
+in `next(U)`, where `DecidableContinuumHypothesis(U)` quantifies its
+intermediate sets; and the powerset's subsets take their propositions from
+`U`, the universe that `ExcludedMiddle(U)` is about.
+
+The proof holds for any set `A` and its powerset (`dichotomy_decides`):
+
+- `A` injects into the type by singletons, which determine their elements
+  (`powersets`' `singleton_injective`), and the type injects into
+  `PowerSet(U, A)` by the first projection, since its condition is a
+  proposition (`hlevels`' `subtype_injective`); it is a set.
+- The dichotomy merely gives an equivalence to `A` or to the powerset. The
+  decision of `P` is a proposition, so the truncations are eliminated.
+- Equivalent to `A`, the type refutes `P`: with `P` every subset belongs to
+  it, so the inverse of the equivalence, followed by the first projection,
+  reaches the diagonal subset of that very map, against Cantor's diagonal
+  argument (`powersets`' `cantor_diagonal`).
+- Equivalent to the powerset by `e`, the type proves `P`: the element that
+  `e` sends to the diagonal subset of `a ↦ e({a})` is no singleton `{k}`,
+  since `e({k})` would then be that diagonal, so its condition gives `P`.
+
+Deciding `Trunc(U, A)` for each `A : U` then gives excluded middle at `U`
+(`excluded_middle_from_decisions`). The module imports `classical_axioms`
+only for the statement `ExcludedMiddle`; its results list no assumption,
+and all are computable.
+`tests/fixtures/contracts/continuum_classical_contracts.cubist` keeps the
+conditional theorems axiom-free and computable, with `continuum_axioms` in
+scope, and applied to `continuum_axioms`' `DecidableCH` the theorem lists
+exactly `DecidableCH` (and `DecidableGCH` alone for the generalized one).
 
 ### Steps
 
@@ -730,13 +796,15 @@ transition land together.
   result that wants a classical hypothesis still takes it as a parameter, as
   `h1_classical`'s statements allow. `classical_axioms` supplies the standard
   LEM and choice assumptions; optional CH/GCH assumptions require explicit
-  declarations and reviewed expectation lists. The newly added continuum
-  modules currently admit none. The library tests continue checking each
-  module's exact assumption list.
+  declarations and reviewed expectation lists. Since 2026-10-28
+  `continuum_axioms` admits `CH`, `DecidableCH`, `GCH` and `DecidableGCH`
+  so ([above](#continuum-hypotheses-checked-statements-optional-assumptions)),
+  and `continuum_hypothesis` still admits none. The library tests continue
+  checking each module's exact assumption list.
 - **Labels.** **Decided on 2026-10-26** (the user): every library axiom is
-  labelled by its bare name, `LEM` and `Choice` and later `CH`, `GCH` and
-  the like, wherever its module and every module it imports are read
-  unedited from `library/`; user and
+  labelled by its bare name, `LEM` and `Choice`, and since 2026-10-28 `CH`,
+  `GCH` and their dichotomy forms, wherever its module and every module it
+  imports are read unedited from `library/`; user and
   other non-library axioms display their module-qualified names,
   `module::Name`. This replaced a table of `classical_axioms`'s two names.
   The library's axiom names are distinct, which `tests/library.test.mjs`

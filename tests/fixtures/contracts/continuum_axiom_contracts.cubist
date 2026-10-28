@@ -1,0 +1,54 @@
+// The library's continuum hypotheses as optional assumptions: every result lists exactly the
+// axioms it relies on, by their bare labels, and none that relies on one computes.
+// Authority: docs/roadmaps/hott/h1-truncation-migration.md#continuum-hypotheses-checked-statements-optional-assumptions
+import continuum_axioms;
+
+// A conditional proof takes its hypothesis as a parameter, and relies on no axiom, although
+// importing continuum_axioms brings all four into scope.
+# test(continuum.conditional)
+# expect_axioms([])
+computable def ch_under(U < UU0, gch : DecidableGeneralizedContinuumHypothesis(U)) :
+  ContinuumHypothesis(U) := gch_implies_ch(U, decidable_gch_implies_gch(U, gch));
+
+// DecidableGCH -> GCH -> CH, applied to DecidableGCH.
+# test(continuum.from_decidable_gch)
+# expect_axioms([DecidableGCH])
+def ch_from_decidable_gch(U < UU0) : ContinuumHypothesis(U) := ch_under(U, DecidableGCH(U));
+
+// DecidableGCH -> DecidableCH -> CH, applied to DecidableGCH: still DecidableGCH alone.
+# test(continuum.through_decidable_ch)
+# expect_axioms([DecidableGCH])
+def ch_through_decidable_ch(U < UU0) : ContinuumHypothesis(U) := decidable_ch_implies_ch(
+  U, decidable_gch_implies_decidable_ch(U, DecidableGCH(U))
+);
+
+# test(continuum.from_decidable_ch)
+# expect_axioms([DecidableCH])
+def ch_from_decidable_ch(U < UU0) :
+  ContinuumHypothesis(U) := decidable_ch_implies_ch(U, DecidableCH(U));
+
+# test(continuum.from_gch)
+# expect_axioms([GCH])
+def ch_from_gch(U < UU0) : ContinuumHypothesis(U) := gch_implies_ch(U, GCH(U));
+
+# test(continuum.assumed)
+# expect_axioms([CH])
+def ch_at_zero : ContinuumHypothesis(U0) := CH(U0);
+
+// A pair lists the axioms of both components.
+# test(continuum.both)
+# expect_axioms([CH, GCH])
+def ch_twice(U < UU0) :
+  ContinuumHypothesis(U) and ContinuumHypothesis(U) := (CH(U), ch_from_gch(U));
+
+# test(continuum.computable_refused)
+# expect_error(E330)
+// Error: E330: This computable declaration depends on non-computing assumptions: DecidableGCH.
+//   Path to DecidableGCH: ch_from_decidable_gch → DecidableGCH.
+computable def ch_computed : ContinuumHypothesis(U0) := ch_from_decidable_gch(U0);
+
+# test(continuum.evaluate_refused)
+# expect_error(E324)
+// Error: E324: The evaluated term depends on non-computing assumptions: DecidableGCH. Path to
+//   DecidableGCH: ch_from_decidable_gch → DecidableGCH.
+evaluate nonempty ContinuumHypothesis(U0) by ch_from_decidable_gch(U0);
