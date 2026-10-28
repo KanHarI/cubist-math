@@ -358,4 +358,4 @@ naming another. All 359 definitions behind Euclid now derive, and
 related case, a face naming a bound dimension on one side and a free one of
 the same index on the other, still compares equal, on main too; it and a
 browser test's stale locator are recorded in the
-[follow-up](eval7-part-two-todo.md).
+[follow-up](pr-334-todo.md).

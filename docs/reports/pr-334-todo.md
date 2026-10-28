@@ -1,4 +1,4 @@
-# EVAL7 part two: follow-up
+# PR #334: EVAL7 part two follow-up
 
 Found while moving the archive's Euclid consumers to the library's
 ([report](binary-euclid.md#part-two)). Both reproduce on main `27c0cc38`,
