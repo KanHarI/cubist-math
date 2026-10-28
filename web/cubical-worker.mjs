@@ -46,10 +46,16 @@ function resetRepl() {
 const contexts = new Map();
 let contextSerial = 0, contextEpoch = 0;
 const contextDescription = ({state,lexical,...point}) => point;
-function invalidateContexts() {
-  contextEpoch++;
+// The contexts open on the current program, closed.
+function closeContexts() {
   for (const context of contexts.values()) context.dispose();
   contexts.clear();
+}
+// An edit or a submitted check: the contexts close, and a check already
+// running when it came no longer opens its scopes (contextEpoch).
+function invalidateContexts() {
+  contextEpoch++;
+  closeContexts();
   if (program) program.scopeReady = false;
 }
 function contextual(id) {
@@ -70,28 +76,31 @@ async function checkProof(args, onProgress = () => {}) {
 // cubical-kernel.mjs): what was built on it is dropped, and built again on a
 // new instance. The proof is checked again, unless its own check failed, and
 // a REPL session replays the entries that extended it, each as the entry it
-// was (ReplSession.rebase). Contextual scopes stay as they were: revoked ones
-// stay revoked, and a revocation during the rebuild holds, as during a
-// check. If the new instance fails too, nothing is built on it. Returns
-// what was restored, to say (restartNote).
+// was (ReplSession.rebase). The contexts open on the old program close.
+// Contextual scopes stay as they were: revoked ones stay revoked, and a
+// revocation during the rebuild holds, as during a check; the rebuild is no
+// edit, so it revokes nothing itself, not even a check queued behind it. If
+// the new instance fails too, nothing is built on it. Returns what was
+// restored, and what not, to say (restartNote).
 async function recover() {
   const scopes = program?.scopeReady === true;
-  invalidateContexts();
-  const epoch = contextEpoch, source = checked ? "the proof" : null;
+  closeContexts();
+  const epoch = contextEpoch, source = checked ? "The proof" : null;
   const replayed = session, fresh = session !== null && session.program === sessionProgram;
   program = sessionProgram = session = null;
   module = await createCubical();
+  let rechecked = null;
   try {
-    if (checked) program = (await checkProof(checked)).next;
+    if (checked) ({ next: program, result: rechecked } = await checkProof(checked));
     if (replayed && fresh) session = await replayed.rebase(sessionProgram = freshProgram());
     else if (replayed && program) session = await replayed.rebase(program, programMain);
   } catch { /* a failure here is the new instance's, read below */ }
   if (moduleFault(module)) {
-    program = sessionProgram = session = checked = null;
+    program = sessionProgram = session = checked = rechecked = null;
     module = await createCubical();
   }
   if (program) program.scopeReady &&= scopes && epoch === contextEpoch;
-  return restartNote({ source, rechecked: program !== null, replayed: replayed !== null, session });
+  return restartNote({ source, rechecked, replayed: replayed !== null, session });
 }
 async function run({ data: { id, command, args } }, epoch) {
   if (command === "check") {
@@ -136,19 +145,27 @@ async function run({ data: { id, command, args } }, epoch) {
 // Checking and queries observe submission order. Capability revocation is
 // immediate and does not touch a live kernel handle.
 let queue = Promise.resolve();
+// A reply is cloned here, as postMessage would clone it: a part read lazily,
+// as a check's steps, reads the kernel when it is cloned, and is read inside
+// this boundary, where a failure is caught and the instance replaced, never
+// by postMessage after it.
 async function handle(event, epoch) {
   const { id, command } = event.data, instance = module;
   let reply;
-  try { reply = { id, result: await run(event, epoch) }; }
-  catch (error) { reply = { id, error: { message: error.message, offset: error.offset, diagnostic:error.diagnostic } }; }
+  try { reply = { id, result: structuredClone(await run(event, epoch)) }; }
+  catch (error) {
+    try { reply = { id, error: structuredClone({ message: error.message, offset: error.offset, diagnostic: error.diagnostic }) }; }
+    catch { reply = { id, error: { message: String(error?.message ?? error) } }; }
+  }
   const fault = moduleFault(instance);
   if (fault) {
     if (command === "check") checked = null;
     const note = await recover();
     // A REPL entry's results end at the statement that failed, which says
-    // so; any other command's result is dropped for the failure.
+    // so; any other command's result is dropped for the failure. Either way
+    // the reply says what the replacement restored.
     if (command === "repl" && reply.result) reply.result = [...reply.result, { kind: "info", text: note }];
-    else reply = { id, error: { message: fault.message } };
+    else reply = { id, error: { message: `${fault.message} ${note}` } };
   }
   self.postMessage(reply);
 }

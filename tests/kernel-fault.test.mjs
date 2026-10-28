@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalKernel, KernelFault, moduleFault } from "../web/cubical-kernel.mjs";
@@ -123,7 +123,7 @@ def parity(n : UNat) : Lamp := match n { zero => dark; succ(m) => toggle(parity(
   const run = spawnSync(process.execPath, ["--stack-size=350", cli], { cwd: directory, input, encoding: "utf8", timeout: 120000 });
   assert.equal(run.status, 0, run.stderr);
   assert.match(run.stderr, /^E668: The kernel's WebAssembly instance failed \(Maximum call stack size exceeded\), and is not used again: nothing computed after the failure is kept\.$/m);
-  assert.match(run.stderr, /^The kernel was restarted: the last source checked was checked again; the session's entries were checked again\.$/m);
+  assert.match(run.stderr, /^The kernel was restarted\. The last source checked was checked again\. The session's entries were checked again\.$/m);
   assert.doesNotMatch(run.stdout + run.stderr, /deep :|unchecked|E343/);
   assert.match(run.stdout, /^saved : Unit\nsaved assumes repl_2::Pointed\nbright : Lamp\nUnit\nassumes repl_2::Pointed\nagain : bright = lit\ndark$/m);
 });
@@ -146,12 +146,47 @@ test("a rebased session keeps its entries' names and lists those it could not re
   assert.equal(rebased.count, 6);
   assert.deepEqual(await rebased.run("typeof saved; typeof m; typeof k;"),
     [{ kind: "type", text: "Unit" }, { kind: "type", text: "Unit" }, { kind: "error", text: "E343: Untranslated name: k" }]);
-  assert.equal(restartNote({ source: "the proof", rechecked: true, replayed: true, session: rebased }),
-    "The kernel was restarted: the proof was checked again; these entries could not be checked again, and what they defined is gone: import helper; let k := h;");
+  assert.equal(restartNote({ source: "The proof", rechecked: { complete: true, gaps: [] }, replayed: true, session: rebased }),
+    "The kernel was restarted. The proof was checked again. These entries could not be checked again, and what they defined is gone: import helper; let k := h;");
   assert.equal(restartNote({ replayed: true, session: await session.rebase(new CubicalProgram(await createCubical(), sourceReader({ files }))) }),
-    "The kernel was restarted: the session's entries were checked again.");
-  assert.equal(restartNote({ source: "the proof", replayed: true }),
-    "The kernel was restarted: the proof could not be checked again: check it again to continue; the session's entries could not be checked again, and what they defined is gone.");
+    "The kernel was restarted. The session's entries were checked again.");
+  assert.equal(restartNote({ source: "The proof", replayed: true }),
+    "The kernel was restarted. The proof could not be checked again: check it again to continue. The session's entries could not be checked again, and what they defined is gone.");
+  assert.equal(restartNote({ source: "The proof", rechecked: { complete: false, gaps: [{ name: "x", reason: "Untranslated name: y" }] } }),
+    "The kernel was restarted. The proof was checked again, and did not check completely: x: E343: Untranslated name: y.");
+});
+
+// The source checked again on the new instance need not check as it did:
+// here a module it imports is deleted before the failure. The note says
+// what failed, not that the source was checked again.
+test("the command line says when the source checked again no longer checks completely", async t => {
+  const directory = await mkdtemp(join(tmpdir(), "cubist-fault-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  await writeFile(join(directory, "shade.cubist"), "def shade : Unit := tt;\n");
+  await writeFile(join(directory, "lamps.cubist"), `import unat;
+import shade;
+use unat;
+inductive Lamp { dark; lit; }
+def toggle(f : Lamp) : Lamp := match f { dark => lit; lit => dark; };
+def parity(n : UNat) : Lamp := match n { zero => dark; succ(m) => toggle(parity(m)); };
+`);
+  const cli = fileURLToPath(new URL("../cli/repl.mjs", import.meta.url));
+  const child = spawn(process.execPath, ["--stack-size=350", cli], { cwd: directory });
+  let stdout = "", stderr = "";
+  child.stdout.on("data", data => { stdout += data; });
+  child.stderr.on("data", data => { stderr += data; });
+  const exited = new Promise(resolve => child.on("exit", resolve));
+  child.stdin.write("check lamps.cubist\n");
+  while (!/^Checked /m.test(stdout)) {
+    assert.equal(child.exitCode, null, stderr);
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
+  await rm(join(directory, "shade.cubist"));
+  child.stdin.end("def deep : parity(2 * 200 + 100) = dark := refl(dark);\nquit\n");
+  assert.equal(await exited, 0, stderr);
+  assert.match(stderr, /^E668: /m);
+  assert.match(stderr, /^The kernel was restarted\. The last source checked was checked again, and did not check completely: .*shade/m);
+  assert.doesNotMatch(stderr, /The last source checked was checked again\./);
 });
 
 // An argument the engine cannot convert, as a BigInt for a 32-bit integer,

@@ -100,23 +100,24 @@ async function replSession() {
 // it. What was restored, and what was not, is said (restartNote).
 async function recover() {
   const replayed = session, fresh = session !== null && session.program === sessionProgram;
-  const source = checked ? "the last source checked" : null;
+  const source = checked ? "The last source checked" : null;
   program = sessionProgram = session = view = binding = null;
   module = await createCubical();
+  let rechecked = null;
   try {
     if (checked) {
       const next = new CubicalProgram(module, checkedReader(checked), { optimizations });
-      await next.check(checked.source, checked.main);
+      rechecked = await next.check(checked.source, checked.main);
       program = next;
     }
     if (replayed && fresh) session = await replayed.rebase(sessionProgram = new CubicalProgram(module, sourceReader(), { optimizations }));
     else if (replayed && program) session = await replayed.rebase(program, checkedModule);
   } catch { /* a failure here is the new instance's, read below */ }
   if (moduleFault(module)) {
-    program = sessionProgram = session = checked = checkedModule = null;
+    program = sessionProgram = session = checked = checkedModule = rechecked = null;
     module = await createCubical();
   }
-  console.error(restartNote({ source, rechecked: Boolean(program), replayed: replayed !== null, session }));
+  console.error(restartNote({ source, rechecked: program ? rechecked : null, replayed: replayed !== null, session }));
 }
 const commands = new Set(["help", "--help", "-h", "quit", "exit", "check", "inspect", "assembly", "beta", "delta", "export"]);
 async function execute(line) {

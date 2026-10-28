@@ -104,17 +104,24 @@ export function replTranscript(text) {
 
 // What replacing a failed kernel instance restored, for its owner to say
 // (web/cubical-worker.mjs, cli/repl.mjs): the source it had checked, named
-// by `source`, checked again or not, and the session's entries replayed, or
-// those of them that could not be (ReplSession.rebase's `lost`), whose names
-// are gone. It never says more was restored than was.
-export function restartNote({ source = null, rechecked = false, replayed = false, session = null }) {
-  const parts = [];
-  if (source) parts.push(rechecked ? `${source} was checked again` : `${source} could not be checked again: check it again to continue`);
-  if (replayed) parts.push(!session ? "the session's entries could not be checked again, and what they defined is gone"
-    : session.lost.length ? `these entries could not be checked again, and what they defined is gone: ${session.lost.join(" ")}`
-    : "the session's entries were checked again");
-  const note = parts.length ? `The kernel was restarted: ${parts.join("; ")}` : "The kernel was restarted";
-  return /[.;]$/.test(note) ? note : `${note}.`;
+// by `source` as a sentence starts, and the result of checking it again,
+// `rechecked`, complete
+// or with what failed, or null when it could not be checked; and the
+// session's entries replayed, or those of them that could not be
+// (ReplSession.rebase's `lost`), whose names are gone. It never says more
+// was restored than was.
+export function restartNote({ source = null, rechecked = null, replayed = false, session = null }) {
+  const sentences = ["The kernel was restarted."], gaps = rechecked?.gaps ?? [];
+  const sentence = text => sentences.push(/[.;]$/.test(text) ? text : `${text}.`);
+  const failed = gaps.slice(0, 3).map(gap => `${gap.name ? `${gap.name}: ` : ""}${withCode(gap.reason, gap.code ?? undefined)}`).join(" ")
+    + (gaps.length > 3 ? ` And ${gaps.length - 3} more.` : "");
+  if (source) sentence(!rechecked ? `${source} could not be checked again: check it again to continue`
+    : rechecked.complete ? `${source} was checked again`
+    : `${source} was checked again, and did not check completely: ${failed || "check it again to see why"}`);
+  if (replayed) sentence(!session ? "The session's entries could not be checked again, and what they defined is gone"
+    : session.lost.length ? `These entries could not be checked again, and what they defined is gone: ${session.lost.join(" ")}`
+    : "The session's entries were checked again");
+  return sentences.join(" ");
 }
 
 export class ReplSession {
