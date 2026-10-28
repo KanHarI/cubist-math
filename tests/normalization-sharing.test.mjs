@@ -77,15 +77,15 @@ test("a graph shared beneath different binders is derived once per node", async 
 });
 
 // The case that found it: an exact expected value compares two folded
-// normal forms by conversion, which derives each. A binary rational's is
-// under a thousand nodes as a graph and millions as a tree; on main before
-// the fix the comparison below issued 27.6M instructions, and with it about
-// 120,000. The bound stops a derivation by paths early.
-test("an exact expected value on a binary rational derives its folded normal form by its graph", async t => {
+// normal forms by conversion, which derives each. A rational's, binary
+// backed, is under a thousand nodes as a graph and millions as a tree;
+// before the fix the comparison below issued 25.5M instructions, and with
+// it about 120,000. The bound stops a derivation by paths early.
+test("an exact expected value on a rational derives its folded normal form by its graph", async t => {
   const program = new CubicalProgram(await createCubical(), sourceReader(), { collectReferences: false });
   t.after(() => program.dispose());
   const session = new ReplSession(program), { kernel, checker } = program;
-  const prepared = await session.run("import binary_rationals; use binary_rationals; def half := typed(BQ, 1/2);");
+  const prepared = await session.run("import rationals; use rationals; def half := typed(Q, 1/2);");
   assert.deepEqual(prepared.filter(answer => answer.kind === "error"), []);
   const name = [...checker.definitionViews.keys()].find(name => name.endsWith("half"));
   const normal = kernel.normalizeFolded(checker.evaluated(checker.definitionViews.get(name).term).expression);

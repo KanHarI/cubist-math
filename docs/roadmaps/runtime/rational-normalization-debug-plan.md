@@ -674,9 +674,10 @@ against the full normal forms of section 1:
 `class((class((unat.(2), unat.(0))), class((unat.(3), unat.(0))), int_succ_nonzero(unat.(2))))`.
 The roadmap's stage 4, which forces every surviving proof and annotation,
 becomes `!!!`'s contract. An exact expected value derives that normal form
-in the instruction kernel; it took 27.6M instructions, as the driver
-derived its graph once per path, and takes 118,000 since the
+in the instruction kernel; on c00d960a it took 27.6M instructions, as the
+driver derived its graph once per path, and 118,000 with the
 [derivation sharing](../../reports/driver-derivation-sharing.md) change.
+The binary `rationals.(2/3)` of #319 takes 25.5M and 119,002.
 
 **D2. Rules for empty-system compositions on declared sorts (B7).** A
 computation rule, not a regularity rule for `Path`, but still a change to

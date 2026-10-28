@@ -3,7 +3,7 @@
 // is a checkout whose web/dist is built.
 //   node probe.mjs ROOT SETUP ENTRY   one REPL entry after a setup, as
 //     node docs/reports/driver-derivation-sharing/probe.mjs . \
-//       "import binary_rationals; use binary_rationals;" "evaluate 1/2 expecting 1/2;"
+//       "import rationals; use rationals;" "evaluate 1/2 expecting 1/2;"
 //   node probe.mjs ROOT --file PATH   a file checked as a program, in test
 //     mode, with a digest of its outcomes
 //   node probe.mjs ROOT --audit       the archive, as tools/audit-cubical.mjs --all

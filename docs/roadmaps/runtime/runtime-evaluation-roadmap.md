@@ -1349,9 +1349,10 @@ measures. `rationals.(2/3) expecting !!_` falls from 70,301,825 ticks and
 1,116,794 nodes to 43,932 ticks and 936. An exact expected value compares
 two such normal forms by conversion, which derives each, and until the
 [derivation sharing](../../reports/driver-derivation-sharing.md) change the
-driver derived them once per path, as trees: `evaluate rationals.(2/3)
-expecting rationals.(2/3);` issued 27.6M instructions in 43 s and 4.5 GB,
-and now issues 118,000 in 1.2 s.
+driver derived them once per path, as trees: over the public rationals,
+binary since #319, `evaluate rationals.(2/3) expecting rationals.(2/3);`
+issued 25.5M instructions in 40 s and 4,458 MiB, and now issues 119,002 in
+1.4 s.
 
 Provide typed readback for demanded data and a separately specified way to
 inspect suspended fields. Keep function bodies as closures until application

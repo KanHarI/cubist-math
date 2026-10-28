@@ -6,7 +6,7 @@
 //   node docs/reports/driver-derivation-sharing/census.mjs ROOT SETUP TERM
 // as
 //   node docs/reports/driver-derivation-sharing/census.mjs . \
-//     "import binary_rationals; use binary_rationals;" "typed(BQ, 1/2)"
+//     "import rationals; use rationals;" "typed(Q, 1/2)"
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 const [root, setup, term] = process.argv.slice(2);
