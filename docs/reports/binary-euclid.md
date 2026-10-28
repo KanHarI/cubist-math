@@ -360,9 +360,21 @@ dimension's renaming before comparing the face, so the face compared by raw
 indices (`web/cubical-syntax.mjs`'s `freeDimensionMask` left a system link's
 face out when it read the link alone). The fix counts a link's face; the
 same pruning had also let a face naming one binder compare equal to a face
-naming another. All 359 definitions behind Euclid now derive, and
-`tests/instruction-driver.test.mjs` checks both cases on raw syntax. A
-related case, a face naming a bound dimension on one side and a free one of
-the same index on the other, still compares equal, on main too; it and a
-browser test's stale locator are recorded in the
-[follow-up](pr-334-todo.md).
+naming another. All 359 definitions behind Euclid now derive.
+
+Counting the face made two neighbouring faults reachable, which the review
+of #334 found, and which this change also fixes. A face was renamed into
+the left side's indices, so a dimension bound on one side met a free one of
+the same index: `PLam(2, Comp(3, 2 = 0))` against
+`PLam(1, Comp(3, 1 = 0 ∧ 2 = 0))` compared equal. And a composition's
+faces were compared under its own binder, which scopes its tubes' bodies
+only, so a binder that shadowed an outer one captured the face's name. A
+face now reads each dimension as names are read, bound by the depth of its
+binding on its side or free by its index, and the term that holds a system
+compares its faces, under its own dimensions: a composition, a transport
+and a Glue type or term. `tests/instruction-driver.test.mjs` checks the
+cases on raw syntax, and compares the driver with the kernel's own alpha
+equality on 400 generated terms whose path abstractions, transports and
+compositions bind dimensions beside free ones of the same few indices, half
+of them equal; without these fixes the two disagree on 26. A browser
+test's stale locator is recorded in the [follow-up](pr-334-todo.md).
