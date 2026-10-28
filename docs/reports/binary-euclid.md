@@ -281,13 +281,20 @@ declarations, 12 fewer, and `node tools/audit-cubical.mjs --all` checks
 ### Re-recorded
 
 - **The evaluation baseline, version 10** (`tests/fixtures/evaluation-baseline.json`,
-  five samples, three warm runs, at `27c0cc38` with this change): its Euclid,
+  five samples, three warm runs, at this branch's merge with main `216b7a6f`): its Euclid,
   factorial and divisibility workloads are the library's, with
   `divides_decide` for the decision, and `euclid-7-prime` and its `!!!` twin
   record the library's depth failure. The unary arithmetic workloads import
-  `unat` alone, and their entries' outcomes and counters are version 9's;
-  the cubical ones are unchanged in outcome and instructions, with 2.5–3.0%
-  more query ticks from the driver fix below. The scratch closure
+  `unat` alone: their entries' outcomes, instructions and runtime steps
+  are version 9's, their ticks within 14 and their arena one node larger. The cubical ones keep their
+  outcomes and instructions; their query ticks moved by under 2%, the net of
+  the driver fix below (+2.5% for the winding numbers, measured alone) and of
+  main's `hlevels` gaining `subtype_injective` (#333). Recorded first at
+  `27c0cc38` with this change, the record was taken again after the merge:
+  #333's lemma moved every library entry's ticks by 0.2–2.3% and its
+  instruction steps by a few, outcomes and runtime steps unchanged. With
+  #322's recursion guards in the kernel, restoring `hlevels.cubist` alone
+  restores the first record's counters of `factorial-4` and `winding-2`. The scratch closure
   experiment, which reads unary numbers only and which the runtime
   replaced, is retired with its series. The unary series keeps its
   revisions: version 9, at main `27c0cc38`, is its last record.
@@ -308,36 +315,36 @@ include its binary literals' elaboration, under 1,200 ticks a literal; the
 
 | Workload | Archive, version 9 | Library, version 10 |
 | --- | --- | --- |
-| `evaluate euclid(3);` | `(7, (5, <path>, <fun>), tt)`; runtime, 227,045 steps; 90.0 ms | `(7, (tt, <fun>), tt)`; fallback after 3,690 steps; 27,349 ticks; 8.8 ms |
-| `evaluate !!!euclid(3);` | normal form, 1,000 characters shown; 204,903 ticks; 199 ms | normal form, 1,000 characters shown; 404,774 ticks; 126 ms |
-| `evaluate euclid(4);` | `(5, (3, <path>, <fun>), tt)`; runtime, 1,291,262 steps; 245 ms | `(5, (tt, <fun>), tt)`; fallback after 3,935 steps; 61,816 ticks; 10.9 ms |
-| `evaluate !!!euclid(4);` | K344; 518,252 ticks; 216 ms | normal form, 1,000 characters shown; 885,048 ticks; 142 ms |
-| `evaluate euclid(4) expecting (5, _);` | K344; 507,667 ticks; 196 ms | `(5, <unevaluated>)`; 57,786 ticks; 11.0 ms |
-| `evaluate euclid(4) expecting !!!(5, _);` | K344; 518,252 ticks; 227 ms | normal form, 1,000 characters shown; 886,275 ticks; 161 ms |
-| `evaluate euclid(3).1;` | `7`; runtime, 75,921 steps, 1 tick; 52.7 ms | `7`; fallback after 3,693 steps; 24,057 ticks; 8.9 ms |
-| `evaluate euclid(3).1 expecting 7;` | `7`; 131,988 ticks; 58.2 ms | `7`; 25,580 ticks; 15.1 ms |
-| `evaluate euclid(4).1;` | `5`; runtime, 430,638 steps, 1 tick; 105 ms | `5`; fallback after 3,938 steps; 56,880 ticks; 12.4 ms |
-| `evaluate !!!euclid(4).1;` | K344; 507,653 ticks; 161 ms | `5`; 56,896 ticks; 9.4 ms |
-| `evaluate euclid(5).1;` | `11`; runtime, 26,058,119 steps, 1 tick; 2287 ms | `11`; fallback after 4,177 steps; 157,870 ticks; 16.9 ms |
-| `evaluate !!!euclid(5).1;` | K344; 686,783 ticks; 293 ms | `11`; 157,888 ticks; 13.5 ms |
-| `evaluate euclid(7).1;` | — | K344; fallback after 4,655 steps; 655,868 ticks; 41.3 ms |
-| `evaluate !!!euclid(7).1;` | — | K344; 655,868 ticks; 40.1 ms |
-| `evaluate factorial(4);` | `24`; runtime, 3,773 steps; 15.1 ms | `24`; fallback after 3,350 steps; 13,700 ticks; 8.0 ms |
-| `print(evaluate(factorial(5)));` | `120`; runtime, 10,922 steps; 19.4 ms | `120`; fallback after 3,589 steps; 17,171 ticks; 8.5 ms |
-| `evaluate divides_decide(3, 6);` | `left((2, <path>))`; runtime, 4,803 steps; 14.0 ms | `left((2, <path>))`; runtime, 11,340 steps, 1,774 ticks; 9.5 ms |
-| `evaluate divides_decide(4, 6);` | `right(<fun>)`; runtime, 11,203 steps; 18.3 ms | `right(<fun>)`; runtime, 9,523 steps, 1,774 ticks; 8.5 ms |
-| `evaluate divides_decide(5, 121);` | `right(<fun>)`; runtime, 2,890,660 steps; 216 ms | `right(<fun>)`; runtime, 15,622 steps, 2,541 ticks; 10.9 ms |
-| `evaluate !!!divides_decide(5, 121);` | K344; 753,697 ticks; 288 ms | normal form, 1,000 characters shown; 1,359,565 ticks; 141 ms |
+| `evaluate euclid(3);` | `(7, (5, <path>, <fun>), tt)`; runtime, 227,045 steps; 90.0 ms | `(7, (tt, <fun>), tt)`; fallback after 3,690 steps; 26,777 ticks; 9.0 ms |
+| `evaluate !!!euclid(3);` | normal form, 1,000 characters shown; 204,903 ticks; 199 ms | normal form, 1,000 characters shown; 402,932 ticks; 125 ms |
+| `evaluate euclid(4);` | `(5, (3, <path>, <fun>), tt)`; runtime, 1,291,262 steps; 245 ms | `(5, (tt, <fun>), tt)`; fallback after 3,935 steps; 60,854 ticks; 12.6 ms |
+| `evaluate !!!euclid(4);` | K344; 518,252 ticks; 216 ms | normal form, 1,000 characters shown; 882,773 ticks; 141 ms |
+| `evaluate euclid(4) expecting (5, _);` | K344; 507,667 ticks; 196 ms | `(5, <unevaluated>)`; 57,138 ticks; 10.1 ms |
+| `evaluate euclid(4) expecting !!!(5, _);` | K344; 518,252 ticks; 227 ms | normal form, 1,000 characters shown; 884,004 ticks; 146 ms |
+| `evaluate euclid(3).1;` | `7`; runtime, 75,921 steps, 1 tick; 52.7 ms | `7`; fallback after 3,693 steps; 23,664 ticks; 8.0 ms |
+| `evaluate euclid(3).1 expecting 7;` | `7`; 131,988 ticks; 58.2 ms | `7`; 25,089 ticks; 9.0 ms |
+| `evaluate euclid(4).1;` | `5`; runtime, 430,638 steps, 1 tick; 105 ms | `5`; fallback after 3,938 steps; 56,373 ticks; 10.0 ms |
+| `evaluate !!!euclid(4).1;` | K344; 507,653 ticks; 161 ms | `5`; 56,389 ticks; 8.6 ms |
+| `evaluate euclid(5).1;` | `11`; runtime, 26,058,119 steps, 1 tick; 2287 ms | `11`; fallback after 4,177 steps; 159,499 ticks; 18.9 ms |
+| `evaluate !!!euclid(5).1;` | K344; 686,783 ticks; 293 ms | `11`; 159,517 ticks; 14.2 ms |
+| `evaluate euclid(7).1;` | — | K344; fallback after 4,655 steps; 654,611 ticks; 43.8 ms |
+| `evaluate !!!euclid(7).1;` | — | K344; 654,611 ticks; 41.0 ms |
+| `evaluate factorial(4);` | `24`; runtime, 3,773 steps; 15.1 ms | `24`; fallback after 3,350 steps; 13,649 ticks; 7.7 ms |
+| `print(evaluate(factorial(5)));` | `120`; runtime, 10,922 steps; 19.4 ms | `120`; fallback after 3,589 steps; 16,989 ticks; 7.5 ms |
+| `evaluate divides_decide(3, 6);` | `left((2, <path>))`; runtime, 4,803 steps; 14.0 ms | `left((2, <path>))`; runtime, 11,340 steps, 1,751 ticks; 9.1 ms |
+| `evaluate divides_decide(4, 6);` | `right(<fun>)`; runtime, 11,203 steps; 18.3 ms | `right(<fun>)`; runtime, 9,523 steps, 1,751 ticks; 9.6 ms |
+| `evaluate divides_decide(5, 121);` | `right(<fun>)`; runtime, 2,890,660 steps; 216 ms | `right(<fun>)`; runtime, 15,622 steps, 2,482 ticks; 11.3 ms |
+| `evaluate !!!divides_decide(5, 121);` | K344; 753,697 ticks; 288 ms | normal form, 1,000 characters shown; 1,354,892 ticks; 148 ms |
 
 The archive's value forms were the runtime's, with no query; the library's
 fall back at a composition after 3,350–4,655 runtime steps, and the
-kernel's queries compute them in 13,700–157,870 ticks. (Part one's probe
+kernel's queries compute them in 13,649–159,499 ticks. (Part one's probe
 measured about 65,000 steps and a 16,140-node snapshot on the runtime from
 before #324's lazy copy, SHA-256 prefix `12e703bc`; on today's, `f7c269bb`,
 `node tools/runtime-repl-probe.mjs euclid-5-prime runtime` falls back after
 4,177 steps, having copied 385 nodes.) Every full normal form the archive
-could not reach past `euclid(3)` computes: `!!!euclid(4)` in 885,048 ticks,
-`!!!euclid(5).1` in 157,888. The divisibility decisions run in the runtime
+could not reach past `euclid(3)` computes: `!!!euclid(4)` in 882,773 ticks,
+`!!!euclid(5).1` in 159,517. The divisibility decisions run in the runtime
 either way; the library's decides 5 against 121 in 15,622 steps where the
 archive's quotient search took 2,890,660.
 
