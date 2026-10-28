@@ -2560,7 +2560,7 @@
   },
   {
    "path": "library/unat.cubist",
-   "summary": "Structural unary `UNat` with `zero`/`succ`, unary notation, arithmetic, order and their laws, predecessor, successor injectivity, cancellation and trichotomy."
+   "summary": "Structural unary `UNat` with `zero`/`succ`, unary notation, arithmetic, order and their laws, predecessor, successor injectivity, decidable equality (`unat_decide`), cancellation and trichotomy. The order is reflexive, transitive and total, only 0 is at most 0, a bound at a successor splits, and sums bound their summands."
   },
   {
    "path": "library/univalence.cubist",
