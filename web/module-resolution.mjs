@@ -96,6 +96,12 @@ export function moduleReader(read) {
     given.add(name);
   };
   readSource.placeOf = name => placed.get(name);
+  // Whether `text` is the module `name` exactly as library/ holds it: read
+  // from there, or given as that same text, as the command line gives a
+  // library file it checks. An edited source, or one placed elsewhere, is
+  // not. Only a library module names its axioms by their bare names, as
+  // LEM and Choice (web/cubical-assumptions.mjs).
+  readSource.fromLibrary = async (name, text) => placed.get(name) === "library" && await probe("library", name) === text;
   readSource.beginCheck = () => probes.clear();
   // Called after a module's imports are loaded: a refusal message when one of
   // them is not the module this importer would have loaded under that name.
@@ -118,6 +124,17 @@ export function moduleReader(read) {
   };
   return readSource;
 }
+
+// Whether a source given as text, as a transfer gives one, is the module
+// `name` exactly as library/ holds it, read through `fetchText` as
+// listedReader reads it: the provenance of a module no reader placed. Only
+// such a module names its axioms by their bare names (fromLibrary).
+// A text that cannot be compared, as when library/ is unreachable, is not
+// the library's.
+export const libraryProvenance = (listing, fetchText) => async (name, text) => {
+  if (!listing.library?.includes(name)) return false;
+  try { return await fetchText(`${moduleRoots.library}${name}.cubist`) === text; } catch { return false; }
+};
 
 // Modules known by name, as the browser knows them: `listing` names the
 // modules of each root, and fetchText(path) reads one by its path from the

@@ -12,6 +12,14 @@ import {bindingResolution,failedResolution} from "../cubist/bindings.mjs";
 import {declaredNames} from "./declarations.mjs";
 
 export const qualifiedName = name => /^([A-Za-z_][A-Za-z_0-9]*)::(.+)$/.exec(name);
+// A declaration's identity joins its module's name and its own with __, so
+// two modules' spellings can meet in one, as a::b__c and a__b::c do in
+// a__b__c. The later declaration is refused, whatever either declares.
+// The refusal is a duplicate's: the earlier declaration keeps the identity
+// and every record of it (CubicalProgram.recordModule).
+export const identityCollision = (module, local, holder, key) =>
+  Object.assign(Error(`${module}::${local} and ${holder}::${key.slice(holder.length + 2)} would be one identity, ${key}: rename one of them.`),
+    { duplicate: true });
 export const ownedBy = (record, module, local) => record?.role === "declaration"
   && record.origin?.module === module && record.label === local;
 

@@ -1213,8 +1213,8 @@
    "id": "B98-assumption-in-library-type",
    "group": "term",
    "setup": "s51",
-   "term": "ExcludedMiddle(U0)",
-   "whnf": "Lam",
+   "term": "LEM(U0) = LEM(U0)",
+   "whnf": "Path",
    "refused": "E324"
   },
   {
