@@ -51,7 +51,9 @@ function recordedProgram(t) {
   };
   checker.evaluated = function (term, ...rest) {
     const result = evaluated.call(this, term, ...rest);
-    if (term.tag === "DefRef") evaluations.push({ name: term.name, handle: result.expression, normalized: false, heads: [] });
+    // `asked`, the first query of the evaluation's own: a handle is a number,
+    // which an earlier declaration's rolled-back work may have used too.
+    if (term.tag === "DefRef") evaluations.push({ name: term.name, handle: result.expression, normalized: false, heads: [], asked: asked.length });
     return result;
   };
   kernel.head = function (handle) {
@@ -290,7 +292,7 @@ test("an unobserved part is asked nothing: no query reaches a pair's ignored com
     const [evaluation] = evaluations.filter(item => item.name === "main__value");
     // The evaluated term's weak head is the pair; its second component is
     // never asked for, and the whole term is never normalized.
-    const first = asked.findIndex(item => item.query === "head" && item.handle === evaluation.handle);
+    const first = asked.findIndex((item, index) => index >= evaluation.asked && item.query === "head" && item.handle === evaluation.handle);
     const pair = program.kernel.node(asked[first].result);
     assert.equal(pair.kind, "Pair", pattern);
     const ignored = pair.children[2];

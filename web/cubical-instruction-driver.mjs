@@ -84,12 +84,18 @@ const withLive = (scope, dimension) => new Map(scope).set(LIVE, liveIn(scope) | 
 const FACE = "faces";
 const facesIn = scope => scope.get(FACE) ?? [];
 const withFace = (scope, clause) => new Map(scope).set(FACE, [...facesIn(scope), clause]);
+// Under this key, in a scope a derivation narrowed (InstructionDriver.narrow),
+// the dimensions the types of the variables it left out mention: a binder's
+// renaming still reads them (typesMention).
+const MENTIONED = "mentioned";
 // Scopes of several judgements together: their entries, every live
-// dimension, and every face, each once.
+// dimension, every face, each once, and what their types mention.
 const joinScopes = (...scopes) => {
   const faces = [...new Map(scopes.flatMap(facesIn).map(clause => [String(clause), clause])).values()];
+  const mentioned = scopes.reduce((mask, scope) => mask | (scope.get(MENTIONED) ?? 0n), 0n);
   return new Map([...scopes.flatMap(scope => [...scope]),
-    [LIVE, scopes.reduce((mask, scope) => mask | liveIn(scope), 0n)], ...faces.length ? [[FACE, faces]] : []]);
+    [LIVE, scopes.reduce((mask, scope) => mask | liveIn(scope), 0n)], ...faces.length ? [[FACE, faces]] : [],
+    ...mentioned ? [[MENTIONED, mentioned]] : []]);
 };
 // The children of a dimension binder that it binds.
 const underBinder = { Path: [0], PLam: [0, 1], Comp: [0, 1], HComp: [1], Trans: [0] };
@@ -190,9 +196,13 @@ export class InstructionDriver {
     this.statements = new Map();
     this.scopes = new Map();
     this.scopeKeys = new WeakMap();
-    this.mentions = new Map();
+    this.mentions = new WeakMap();
     this.pins = new Map();
     this.derived = new Map();
+    // The scopes derivations read (narrow), by content, and the dimensions
+    // each context entry's type mentions.
+    this.narrowed = new Map();
+    this.entryDims = new Map();
     this.stable = new Set();
     // Glue terms the glue move need not try again: no Glue eta redex, even
     // with its side conditions normalized, or one whose side conditions take
@@ -286,15 +296,31 @@ export class InstructionDriver {
     return this.scopes.get(key);
   }
   // Whether the type of a variable in scope mentions a dimension.
-  typesMention(scope, dimension) {
-    const key = `${this.scopeKey(scope)}|${dimension}`;
-    if (!this.mentions.has(key))
-      this.mentions.set(key, [...scope].some(([symbol, entry]) => symbol !== LIVE && symbol !== FACE && this.graph.entry(entry).source &&
-        this.statement(this.graph.entry(entry).source).context.some(other => {
-          const info = this.graph.entry(other);
-          return info.dimension && info.symbol === dimension;
-        })));
-    return this.mentions.get(key);
+  typesMention(scope, dimension) { return !!(this.mentionedIn(scope) >> BigInt(dimension) & 1n); }
+  // The dimensions the types of the variables in scope mention, those a
+  // narrowed scope left out included, as a mask.
+  mentionedIn(scope) {
+    let mask = this.mentions.get(scope);
+    if (mask === undefined) {
+      mask = scope.get(MENTIONED) ?? 0n;
+      for (const [symbol, entry] of scope) if (typeof symbol === "number") mask |= this.entryDimensions(entry);
+      this.mentions.set(scope, mask);
+    }
+    return mask;
+  }
+  // The dimensions a context entry's type mentions: those in its context.
+  entryDimensions(entry) {
+    let mask = this.entryDims.get(entry);
+    if (mask === undefined) {
+      mask = 0n;
+      const source = this.graph.entry(entry).source;
+      for (const other of source ? this.statement(source).context : []) {
+        const info = this.graph.entry(other);
+        if (info.dimension) mask |= 1n << BigInt(info.symbol);
+      }
+      this.entryDims.set(entry, mask);
+    }
+    return mask;
   }
   scopeKey(scope) {
     if (!this.scopeKeys.has(scope)) this.scopeKeys.set(scope, [...scope].map(([symbol, entry]) => `${symbol}:${entry}`).sort().join(","));
@@ -358,12 +384,46 @@ export class InstructionDriver {
     }
   }
 
-  // A term derived once per scope: the kernel shares repeated instructions,
-  // and this skips walking the term again.
+  // A term derived once per scope it reads: the kernel shares repeated
+  // instructions, and this skips walking the term again. A derivation reads
+  // only the part of its scope that narrow keeps, so a subterm met under
+  // many binders, as the closed parts of a shared normal form are, is
+  // derived once, not once for each path to it.
   derive(handle, scope) {
-    const key = `${this.scopeKey(scope)}|${handle}`;
-    if (!this.derived.has(key)) this.derived.set(key, this.deriveNode(handle, scope));
+    const narrowed = this.narrow(handle, scope), key = `${this.scopeKey(narrowed)}|${handle}`;
+    if (!this.derived.has(key)) this.derived.set(key, this.deriveNode(handle, narrowed));
     return this.derived.get(key);
+  }
+  // The part of a scope a term's derivation reads, and nothing else: the
+  // entries of its free variables, each derived from its own entry; every
+  // live dimension, as a binder inside whose dimension is live is renamed
+  // apart from it; the faces, which restrict a variable whose type mentions
+  // them; and the dimensions the types of the variables in scope mention
+  // (MENTIONED), as a path binder's renaming asks of them (typesMention).
+  // A variable bound inside the term is bound by the term's own binders, at
+  // the entry its name and type give it, whatever else is in scope. So the
+  // derivation in the narrowed scope is the one the whole scope would give,
+  // and as each judgement's context is the union of its premises', it
+  // combines with any around it. Faces are rare (onFace's retry), and kept
+  // whole. A narrowed scope is made once per content: a memo key, as any
+  // scope is (scopeKey).
+  narrow(handle, scope) {
+    const live = liveIn(scope), mentioned = this.mentionedIn(scope), symbols = this.freeTermSymbols(handle);
+    let entries = "";
+    for (const symbol of symbols) {
+      const entry = scope.get(symbol);
+      if (entry !== undefined) entries += `,${symbol}:${entry}`;
+    }
+    const faces = facesIn(scope).length ? facesIn(scope) : null;
+    const key = `${live}|${mentioned}|${faces ? String(faces) : ""}|${entries}`;
+    let narrowed = this.narrowed.get(key);
+    if (!narrowed) {
+      narrowed = new Map([[LIVE, live], [MENTIONED, mentioned]]);
+      for (const symbol of symbols) if (scope.has(symbol)) narrowed.set(symbol, scope.get(symbol));
+      if (faces) narrowed.set(FACE, faces);
+      this.narrowed.set(key, narrowed);
+    }
+    return narrowed;
   }
 
   deriveNode(handle, scope) {

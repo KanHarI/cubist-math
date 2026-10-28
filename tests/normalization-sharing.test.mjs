@@ -7,6 +7,8 @@ import { InstructionDriver } from "../web/cubical-instruction-driver.mjs";
 import { readFile } from "node:fs/promises";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
+import { InstructionGraph } from "../web/cubical-instructions.mjs";
+import { ReplSession } from "../web/repl-session.mjs";
 
 async function setup(t) {
   const kernel = new CubicalKernel(await createCubical());
@@ -36,6 +38,80 @@ test("normal forms shared beneath different unused binders compare by graph size
   };
   assert.ok(driver.alpha(a, b));
   assert.ok(reads < 2000, `comparison used ${reads} node reads`);
+});
+
+// The derivation's twin of the test above (docs/reports/driver-derivation-sharing.md):
+// a graph met under many binders, as a folded normal form's closed parts
+// are, is derived once per node and scope it reads, not once per path to
+// it. Two paths to the preceding type per level, under different binders,
+// and its domain a third: 3^40 paths, a few nodes a level. Each case counts
+// the instructions it issues, and stops at a bound a path-by-path
+// derivation passes within the first levels.
+test("a graph shared beneath different binders is derived once per node", async t => {
+  const { kernel, driver, term } = await setup(t), graph = driver.graph;
+  const levels = 40, unit = term("Unit"), symbol = name => kernel.symbol(name), v = name => term("Var", symbol(name));
+  const issue = graph.issue.bind(graph);
+  let issued = 0;
+  graph.issue = (...operands) => {
+    assert.ok(++issued < 50 * levels, "a shared graph was derived once per path to it");
+    return issue(...operands);
+  };
+  const doubled = (type, tag) => {
+    for (let i = 0; i < levels; i++)
+      type = term("Sum", 0, term("Pi", symbol(`${tag}a${i}`), type, type), term("Pi", symbol(`${tag}b${i}`), type, type));
+    return type;
+  };
+  // Closed: each level is derived once, in the scope with nothing in it.
+  const closed = graph.judgement(driver.infer(doubled(unit, "c")));
+  assert.equal(closed.kind, "typing");
+  assert.deepEqual(closed.context, []);
+  const closedIssued = issued;
+  // Open: each level mentions x, in a path type, so its scope keeps x's
+  // entry, and nothing of the binders it does not mention.
+  issued = 0;
+  const open = doubled(term("Path", 0, unit, v("x"), v("x")), "o");
+  const judgement = graph.judgement(driver.infer(open, [[symbol("x"), unit]]));
+  assert.equal(graph.entry(judgement.context[0]).name, "x");
+  assert.ok(driver.alpha(judgement.term, open));
+  assert.ok(closedIssued < 10 * levels && issued < 10 * levels, `issued ${closedIssued} and ${issued} instructions`);
+});
+
+// The case that found it: an exact expected value compares two folded
+// normal forms by conversion, which derives each. A binary rational's is
+// under a thousand nodes as a graph and millions as a tree; on main before
+// the fix the comparison below issued 27.6M instructions, and with it about
+// 120,000. The bound stops a derivation by paths early.
+test("an exact expected value on a binary rational derives its folded normal form by its graph", async t => {
+  const program = new CubicalProgram(await createCubical(), sourceReader(), { collectReferences: false });
+  t.after(() => program.dispose());
+  const session = new ReplSession(program), { kernel, checker } = program;
+  const prepared = await session.run("import binary_rationals; use binary_rationals; def half := typed(BQ, 1/2);");
+  assert.deepEqual(prepared.filter(answer => answer.kind === "error"), []);
+  const name = [...checker.definitionViews.keys()].find(name => name.endsWith("half"));
+  const normal = kernel.normalizeFolded(checker.evaluated(checker.definitionViews.get(name).term).expression);
+  const nodes = new Set(), trees = new Map(), stack = [normal];
+  while (stack.length) {
+    const handle = stack.pop();
+    if (handle && !nodes.has(handle)) { nodes.add(handle); stack.push(...kernel.node(handle).children); }
+  }
+  const tree = handle => {
+    if (!handle) return 0;
+    if (!trees.has(handle)) trees.set(handle, 1 + kernel.node(handle).children.reduce((sum, child) => sum + tree(child), 0));
+    return trees.get(handle);
+  };
+  assert.ok(nodes.size < 2000 && tree(normal) > 1000000, `${nodes.size} nodes, ${tree(normal)} as a tree`);
+  const bound = 1000000, issue = InstructionGraph.prototype.issue;
+  let issued = 0;
+  InstructionGraph.prototype.issue = function (...operands) {
+    if (++issued > bound) throw new Error("the folded normal form was derived by its paths");
+    return issue.apply(this, operands);
+  };
+  let answers;
+  try { answers = await session.run("evaluate 1/2 expecting 1/2;"); }
+  finally { InstructionGraph.prototype.issue = issue; }
+  assert.ok(issued <= bound, `issued ${issued} instructions`);
+  assert.deepEqual(answers.map(answer => answer.kind), ["value"]);
+  assert.match(answers[0].text, /^class\(\(class\(\(bnat\.\(1\), bnat\.\(0\)\)\), class\(\(bnat\.\(2\), bnat\.\(0\)\)\), /);
 });
 
 test("pruned term scopes preserve free names, shadowing and binder domains", async t => {
