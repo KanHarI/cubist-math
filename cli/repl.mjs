@@ -9,7 +9,7 @@ import { moduleFault } from "../web/cubical-kernel.mjs";
 import { cubicalText } from "../web/cubical-notation.mjs";
 import { kernelAssembly, assemblyText } from "../web/cubical-assembly.mjs";
 import { reduceView } from "../web/cubical-reduction.mjs";
-import { ReplSession, replStatements } from "../web/repl-session.mjs";
+import { ReplSession, replStatements, restartNote } from "../web/repl-session.mjs";
 import { assumptionLines, assumptionNote } from "../web/axiom-labels.mjs";
 import { moduleListing } from "../web/module-listing.mjs";
 import { diagnosticLine, withCode } from "../web/diagnostics.mjs";
@@ -95,16 +95,19 @@ async function replSession() {
 // An instance that failed is never entered again (guardModule in
 // web/cubical-kernel.mjs): what was built on it is dropped, and built again
 // on a new instance. The last source checked is checked again, and the
-// session replays the entries that extended it (ReplSession.rebase). If the
-// new instance fails too, nothing is built on it.
+// session replays the entries that extended it, each as the entry it was
+// (ReplSession.rebase). If the new instance fails too, nothing is built on
+// it. What was restored, and what was not, is said (restartNote).
 async function recover() {
   const replayed = session, fresh = session !== null && session.program === sessionProgram;
+  const source = checked ? "the last source checked" : null;
   program = sessionProgram = session = view = binding = null;
   module = await createCubical();
   try {
     if (checked) {
-      program = new CubicalProgram(module, checkedReader(checked), { optimizations });
-      await program.check(checked.source, checked.main);
+      const next = new CubicalProgram(module, checkedReader(checked), { optimizations });
+      await next.check(checked.source, checked.main);
+      program = next;
     }
     if (replayed && fresh) session = await replayed.rebase(sessionProgram = new CubicalProgram(module, sourceReader(), { optimizations }));
     else if (replayed && program) session = await replayed.rebase(program, checkedModule);
@@ -113,9 +116,7 @@ async function recover() {
     program = sessionProgram = session = checked = checkedModule = null;
     module = await createCubical();
   }
-  console.error(program && session ? "The kernel was restarted: the last source checked, and the session's entries, were checked again."
-    : program ? "The kernel was restarted, and the last source checked was checked again."
-    : session ? "The kernel was restarted, and the session's entries were checked again." : "The kernel was restarted.");
+  console.error(restartNote({ source, rechecked: Boolean(program), replayed: replayed !== null, session }));
 }
 const commands = new Set(["help", "--help", "-h", "quit", "exit", "check", "inspect", "assembly", "beta", "delta", "export"]);
 async function execute(line) {

@@ -53,16 +53,32 @@ export class KernelFault extends Error {
     this.kind = "fault";
   }
 }
-// Each guarded instance's state: whether it failed, and with what.
+// Each guarded instance's state, { failed, cause }: whether it failed, and
+// with what. One object per instance, shared by everything that holds it.
 const instances = new WeakMap();
+// The state of a module's instance, for a reader that outlives a call, as a
+// runtime query does: it reads `failed` before going on.
+export const faultToken = module => instances.get(guardModule(module));
 // A KernelFault for the failure that ended a module instance, or null.
 export const moduleFault = module => {
   const state = instances.get(module);
   return state?.failed ? new KernelFault(state.cause) : null;
 };
+// Whether a value reaches the instance as an argument without throwing. The
+// bridge's exports take 32-bit integers and doubles (wasm/cubical_bridge.c),
+// and converting any primitive but a BigInt or a Symbol to one cannot throw;
+// an object's conversion runs its own code. So an exception out of a call
+// whose arguments all pass came from the instance, or from the engine
+// refusing to enter it for want of stack, and either ends the instance.
+const enters = value => {
+  const type = typeof value;
+  return type !== "bigint" && type !== "symbol" && type !== "function" && (type !== "object" || value === null);
+};
 // Wrap each export of a module instance, once, so that an exception poisons
-// the instance before it reaches any caller. Every caller calls an export
-// through the module object, as CubicalKernel and the instruction graph do.
+// the instance before it reaches any caller. An argument that could not be
+// converted is refused before the call, and poisons nothing. Every caller
+// calls an export through the module object, as CubicalKernel and the
+// instruction graph do.
 export function guardModule(module) {
   if (instances.has(module)) return module;
   const state = { failed: false, cause: null };
@@ -72,6 +88,7 @@ export function guardModule(module) {
     if (!name.startsWith("_cb_") || typeof call !== "function") continue;
     module[name] = (...args) => {
       if (state.failed) throw new KernelFault(state.cause);
+      if (!args.every(enters)) throw new TypeError(`The kernel export ${name} takes numbers.`);
       try { return call(...args); }
       catch (error) {
         Object.assign(state, { failed: true, cause: error });

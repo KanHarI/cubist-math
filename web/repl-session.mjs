@@ -102,6 +102,21 @@ export function replTranscript(text) {
   return entries;
 }
 
+// What replacing a failed kernel instance restored, for its owner to say
+// (web/cubical-worker.mjs, cli/repl.mjs): the source it had checked, named
+// by `source`, checked again or not, and the session's entries replayed, or
+// those of them that could not be (ReplSession.rebase's `lost`), whose names
+// are gone. It never says more was restored than was.
+export function restartNote({ source = null, rechecked = false, replayed = false, session = null }) {
+  const parts = [];
+  if (source) parts.push(rechecked ? `${source} was checked again` : `${source} could not be checked again: check it again to continue`);
+  if (replayed) parts.push(!session ? "the session's entries could not be checked again, and what they defined is gone"
+    : session.lost.length ? `these entries could not be checked again, and what they defined is gone: ${session.lost.join(" ")}`
+    : "the session's entries were checked again");
+  const note = parts.length ? `The kernel was restarted: ${parts.join("; ")}` : "The kernel was restarted";
+  return /[.;]$/.test(note) ? note : `${note}.`;
+}
+
 export class ReplSession {
   // `modules` lists what import can load: { library, archive } module names.
   constructor(program, { base = null, modules = null } = {}) {
@@ -112,15 +127,27 @@ export class ReplSession {
     this.count = 0;
     // What the entries read in: the base file's selections, then each use's.
     this.uses = base ? program.selectionsAfter?.(base) ?? [] : [];
-    // Statements that extended the session, replayed by rebase.
+    // Statements that extended the session, each with the number of the
+    // entry it was checked as, replayed by rebase.
     this.accepted = [];
+    // Those that rebase could not replay: their names are gone.
+    this.lost = [];
   }
 
-  // The same session over another program, such as a rechecked proof: what
-  // extended it is replayed, and what no longer checks is dropped.
+  // The same session over another program, such as a rechecked proof or a
+  // new kernel instance: what extended it is replayed, each statement as the
+  // entry it was, repl_N, so that a later entry naming repl_N::x still finds
+  // x though the queries between them are not run again. What no longer
+  // checks is dropped, and listed in `lost`.
   async rebase(program, base = this.base) {
     const session = new ReplSession(program, { base, modules: this.modules });
-    for (const statement of this.accepted) await session.statement(statement);
+    for (const { text, entry } of this.accepted) {
+      const before = session.accepted.length;
+      session.count = entry - 1;
+      await session.statement(text);
+      if (session.accepted.length === before) session.lost.push(text);
+    }
+    session.count = this.count;
     return session;
   }
 
@@ -205,7 +232,7 @@ export class ReplSession {
 
   advance(result, text) {
     this.previous = result.name;
-    this.accepted.push(text);
+    this.accepted.push({ text, entry: Number(result.name.slice("repl_".length)) });
   }
 
   async declare(body, text) {

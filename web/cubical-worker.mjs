@@ -2,7 +2,7 @@ import createCubical from "./dist/cubical.mjs";
 import { moduleListing } from "./module-listing.mjs";
 import { listedReader } from "./module-resolution.mjs";
 import { CubicalProgram } from "./cubical-program.mjs";
-import { ReplSession } from "./repl-session.mjs";
+import { ReplSession, restartNote } from "./repl-session.mjs";
 import { ContextualSession } from "./contextual-session.mjs";
 import { elaboration } from "./cubical-elaboration.mjs";
 import { generatedCubist } from "./generated-cubist.mjs";
@@ -69,10 +69,15 @@ async function checkProof(args, onProgress = () => {}) {
 // An instance that failed is never entered again (guardModule in
 // cubical-kernel.mjs): what was built on it is dropped, and built again on a
 // new instance. The proof is checked again, unless its own check failed, and
-// a REPL session replays the entries that extended it (ReplSession.rebase).
-// If the new instance fails too, nothing is built on it.
+// a REPL session replays the entries that extended it, each as the entry it
+// was (ReplSession.rebase). Contextual scopes stay as they were: revoked ones
+// stay revoked, and a revocation during the rebuild holds, as during a
+// check. If the new instance fails too, nothing is built on it. Returns
+// what was restored, to say (restartNote).
 async function recover() {
+  const scopes = program?.scopeReady === true;
   invalidateContexts();
+  const epoch = contextEpoch, source = checked ? "the proof" : null;
   const replayed = session, fresh = session !== null && session.program === sessionProgram;
   program = sessionProgram = session = null;
   module = await createCubical();
@@ -85,6 +90,8 @@ async function recover() {
     program = sessionProgram = session = checked = null;
     module = await createCubical();
   }
+  if (program) program.scopeReady &&= scopes && epoch === contextEpoch;
+  return restartNote({ source, rechecked: program !== null, replayed: replayed !== null, session });
 }
 async function run({ data: { id, command, args } }, epoch) {
   if (command === "check") {
@@ -137,13 +144,10 @@ async function handle(event, epoch) {
   const fault = moduleFault(instance);
   if (fault) {
     if (command === "check") checked = null;
-    await recover();
+    const note = await recover();
     // A REPL entry's results end at the statement that failed, which says
     // so; any other command's result is dropped for the failure.
-    if (command === "repl" && reply.result)
-      reply.result = [...reply.result, { kind: "info", text: session
-        ? "The kernel was restarted, and the session's entries were checked again."
-        : "The kernel was restarted; check the proof again to continue." }];
+    if (command === "repl" && reply.result) reply.result = [...reply.result, { kind: "info", text: note }];
     else reply = { id, error: { message: fault.message } };
   }
   self.postMessage(reply);

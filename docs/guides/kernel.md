@@ -1067,10 +1067,17 @@ engine's own stack ran out (a `RangeError`), or the instance trapped (a
 them to their end, so the instance's memory may be half changed. The
 JavaScript driver therefore never enters such an instance again: `guardModule`
 (`web/cubical-kernel.mjs`) wraps each export, and after the first exception
-every call throws `KernelFault` (`E668`) without entering. A check on that
-instance ends at its next declaration. The pages' worker
+every call throws `KernelFault` (`E668`) without entering. An argument the
+engine could not convert (a BigInt, a Symbol or an object) is refused before
+the call and ends nothing: the exports take 32-bit integers and doubles, so
+an exception from a call whose arguments convert came from the instance, or
+from the engine refusing to enter it for want of stack. A check on a failed
+instance ends at its next declaration, and a runtime query on it
+(`web/cubical-runtime.mjs`) publishes nothing more. The pages' worker
 (`web/cubical-worker.mjs`) and the command line replace the instance, check
-the proof again, and replay the REPL session's entries on the new one; the
-workbench's worker reports the failure as fatal and closes, as for a trap.
+the proof again, and replay the REPL session's entries on the new one, each
+as the entry it was, saying which could not be replayed; the worker keeps the
+proof's contextual scopes as revoked as they were. The workbench's worker
+reports the failure as fatal and closes, as for a trap.
 
 Full cubical canonicity for every implemented constructor is not claimed by this project.

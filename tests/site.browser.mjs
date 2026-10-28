@@ -222,17 +222,47 @@ export default async options => {
 };`));
   const faulty = await injected.newPage();
   await faulty.goto(new URL("repl.html", base).href);
-  for (const text of ["import unat;", "use unat;", "let x := 7;", "evaluate x + 1;", "evaluate !!x;", "evaluate x + 1;", "typeof x;"]) {
+  // The query typeof tt is entry repl_3, and is not replayed; repl_5 names
+  // repl_4, which the replay keeps as it was.
+  for (const text of ["import unat;", "use unat;", "typeof tt;", "let x := 7;", "let saved := repl_4::x;",
+    "evaluate x + 1;", "evaluate !!x;", "evaluate x + 1;", "typeof x;", "typeof saved;"]) {
     await faulty.locator(".repl-text").last().fill(text);
     await faulty.locator(".repl-text").last().press("Enter");
     await faulty.waitForFunction(() => !document.querySelector(".repl-form.busy"));
   }
-  const faultLines = ["E668: The kernel's WebAssembly instance failed (Maximum call stack size exceeded), and is not used again: nothing computed after the failure is kept.",
-    "The kernel was restarted, and the session's entries were checked again."];
-  assert.deepEqual((await faulty.locator(".repl-log").last().locator(".repl-result").allTextContents()).slice(-6),
-    [...faultLines, ...faultLines, "8", "UNat"]);
+  const fault = "E668: The kernel's WebAssembly instance failed (Maximum call stack size exceeded), and is not used again: nothing computed after the failure is kept.";
+  const restarted = [fault, "The kernel was restarted: the session's entries were checked again."];
+  assert.deepEqual((await faulty.locator(".repl-log").last().locator(".repl-result").allTextContents()).slice(-7),
+    [...restarted, ...restarted, "8", "UNat", "UNat"]);
+  // The proof's contextual scopes stay as they were across a replacement:
+  // they stay ready, and once revoked they stay revoked until a check.
+  const scopes = await faulty.evaluate(async () => {
+    const run = async revoke => {
+      const worker = new Worker(new URL("cubical-worker.mjs", location.href), { type: "module" });
+      const replies = new Map();
+      let serial = 0, started;
+      const ready = new Promise(resolve => { started = resolve; });
+      worker.onmessage = ({ data }) => { if (data.ready) started(); else if (data.progress === undefined) replies.get(data.id)?.(data); };
+      await ready;
+      const send = (command, args = {}) => new Promise(resolve => {
+        const id = ++serial;
+        replies.set(id, resolve);
+        worker.postMessage({ id, command, args });
+      });
+      await send("check", { source: "import unat;\nuse unat;\ndef x : UNat := 7;\n", collectScopes: true });
+      if (revoke) await send("context-invalidate");
+      const repl = await send("repl", { input: "evaluate x + 1;", fresh: false });
+      const contexts = await send("contexts");
+      worker.terminate();
+      return { repl: repl.result?.map(result => result.text) ?? repl.error, contexts: contexts.error?.message ?? "ready" };
+    };
+    return [await run(false), await run(true)];
+  });
+  const rechecked = [fault, "The kernel was restarted: the proof was checked again; the session's entries were checked again."];
+  assert.deepEqual(scopes, [{ repl: rechecked, contexts: "ready" },
+    { repl: rechecked, contexts: "Check the current source with contextual scopes enabled." }]);
   await injected.close();
-  console.log("PASS REPL page: a failed kernel instance is replaced, and the session goes on");
+  console.log("PASS REPL page: a failed kernel instance is replaced; the session, its entries' names and revoked scopes go on");
   // Slash commands: /modules lists what import can load; /clear and /restart
   // act on the console.
   await enter("/modules lists");
