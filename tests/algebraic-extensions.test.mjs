@@ -13,7 +13,7 @@ const module = await createCubical();
 const cases = (t, name) => checkTestModule(t, name, { module, options: { collectReferences: false } });
 // Archive modules resolve their imports in the archive, then the library.
 const readSource = sourceReader();
-const allowed = /^(LEM|Truncate(?:Intro|Prop|Elim)?)$/;
+const allowed = /^(LEM\[Truncate\]|Truncate(?:Intro|Prop|Elim)?)$/;
 // Archive modules, each checked as a program's main module.
 async function archive(t, ...names) {
   const p = new CubicalProgram(module, readSource, { collectReferences: false });

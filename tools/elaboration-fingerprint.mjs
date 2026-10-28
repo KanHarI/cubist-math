@@ -44,12 +44,13 @@ export async function elaborationFingerprint({ modules, readSource }) {
     const declarations = {}, definitions = {}, references = {};
     for (const [binding, symbol] of Object.entries(program.symbols)) {
       if (binding.startsWith("fingerprint__")) continue;
-      const view = views.get(binding);
+      // An axiom has no definition: its type is the statement it assumes.
+      const view = views.get(binding), assumed = program.checker.assumptions.get(program.checker.axioms.get(binding));
       declarations[binding] = { status: symbol.status, reason: symbol.reason ?? null,
         errorStart: symbol.errorStart ?? null, errorEnd: symbol.errorEnd ?? null,
         axioms: [...symbol.axioms].sort(),
         displayedType: symbol.type, rewriteWork: symbol.rewriteWork ?? null,
-        term: view ? hash(view.term) : null, type: view ? hash(view.type) : null,
+        term: view ? hash(view.term) : null, type: view ? hash(view.type) : assumed ? hash(assumed) : null,
         references: program.declarationReferences.get(binding)?.map(({ start, binding }) =>
           `${start}:${helper(binding) ? "helper" : binding}`) ?? null };
     }

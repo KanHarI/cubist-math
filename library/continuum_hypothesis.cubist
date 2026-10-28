@@ -109,7 +109,8 @@ computable def decidable_gch_implies_decidable_ch(
   DecidableContinuumHypothesis(U) := gch(Nat, nat_is_set, cardinal_le_refl(U, Nat));
 
 // These are statements and conditional theorems, with no assumed CH or GCH.
-// Once axiom expressions are supported, their proposed declarations are:
+// Each would be assumed by an axiom definition, which needs its own reviewed
+// decision and assumption expectations; none is admitted here:
 // def CH := axiom ContinuumHypothesis;
 // def DecidableCH := axiom DecidableContinuumHypothesis;
 // def GCH := axiom GeneralizedContinuumHypothesis;

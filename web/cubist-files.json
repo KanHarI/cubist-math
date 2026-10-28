@@ -1575,6 +1575,14 @@
    "summary": "For `tests/computability.test.mjs`: a computable declaration is refused when it depends on an assumption, naming the path, and its dependents with it."
   },
   {
+   "path": "cubist-tests/continuum_axioms.cubist",
+   "summary": "The continuum hypotheses of `continuum_hypothesis` as user-supplied axioms, `def CH := axiom ContinuumHypothesis;`: every result that uses one lists it."
+  },
+  {
+   "path": "cubist-tests/declarations_axioms.cubist",
+   "summary": "`def Name := axiom F;`: one assumption of F's body closed over its parameters, shared by every use, listed by its label, and refused by `computable`, `evaluate` and a declared type."
+  },
+  {
    "path": "cubist-tests/declarations_definitions.cubist",
    "summary": "Constructions and proofs checked with their bodies exposed, and a false claim refused."
   },
@@ -2304,7 +2312,7 @@
   },
   {
    "path": "cubist-tests/truncation_rebuilt_classical.cubist",
-   "summary": "Rebuilt classical assumptions beside the legacy signatures, and a false truncation former refused."
+   "summary": "The library's excluded middle, an axiom over `Trunc`, beside the archive's legacy builtin over `Truncate`: a program that uses both lists both, and the retired truncation former is refused."
   },
   {
    "path": "cubist-tests/truncation_resize.cubist",
@@ -2492,11 +2500,11 @@
   },
   {
    "path": "library/classical_axioms.cubist",
-   "summary": "The statements of the classical assumptions as types, `ExcludedMiddle(U)` and `AxiomOfChoice(U)`, with checks that `LEM(U)` and `Choice(U)` have them."
+   "summary": "Excluded middle and the axiom of choice: their statements over `Trunc`, `ExcludedMiddle(U)` and `AxiomOfChoice(U)`, and the axioms that assume them, `def LEM := axiom ExcludedMiddle;` and `def Choice := axiom AxiomOfChoice;`. Importing it brings `Trunc` into scope."
   },
   {
    "path": "library/continuum_hypothesis.cubist",
-   "summary": "Universe-indexed CH and GCH over full powersets, with stronger cardinality-dichotomy variants (`DecidableContinuumHypothesis`, `DecidableGeneralizedContinuumHypothesis`); checked implications from each dichotomy to its negative statement and from each GCH to its CH. Infinitude means a mere injection from `Nat`. Generic mere cardinal comparisons, equinumerosity and the separate `CantorContinuumHypothesis` over binary sequences are included. Statements are explicit hypotheses; axiom declarations and the implications to excluded middle and choice remain follow-ups."
+   "summary": "Universe-indexed CH and GCH over full powersets, with stronger cardinality-dichotomy variants (`DecidableContinuumHypothesis`, `DecidableGeneralizedContinuumHypothesis`); checked implications from each dichotomy to its negative statement and from each GCH to its CH. Infinitude means a mere injection from `Nat`. Generic mere cardinal comparisons, equinumerosity and the separate `CantorContinuumHypothesis` over binary sequences are included. Statements are explicit hypotheses; no axiom assumes them, and the implications to excluded middle and choice remain follow-ups."
   },
   {
    "path": "library/contractible_maps.cubist",
@@ -2520,7 +2528,7 @@
   },
   {
    "path": "library/h1_classical.cubist",
-   "summary": "Excluded middle and choice stated over `Trunc`, as `LEM(Trunc, U)` and `Choice(Trunc, U)` give them; double-negation elimination for propositions, deciding a proposition, and resizing a proposition in `U1` to one in `U0`."
+   "summary": "Classical logic from [`classical_axioms`](classical_axioms.cubist)'s `LEM`: double-negation elimination for propositions, deciding a proposition, and resizing a proposition in `U1` to one in `U0`."
   },
   {
    "path": "library/h1_truncation.cubist",
@@ -2592,7 +2600,7 @@
   },
   {
    "path": "library/universe_automorphisms.cubist",
-   "summary": "Excluded middle for `U0` holds exactly when there merely is an automorphism of `U0` sending `Unit` to `Void`, for the equivalences of [`contractible_maps`](contractible_maps.cubist), with equal types from [`univalence`](univalence.cubist)'s `glue_path`. Both directions without the truncations use no assumption."
+   "summary": "Excluded middle for `U0` holds exactly when there merely is an automorphism of `U0` sending `Unit` to `Void`, for the equivalences of [`contractible_maps`](contractible_maps.cubist), with equal types from [`univalence`](univalence.cubist)'s `glue_path`. Both directions use no assumption, and are computable."
   },
   {
    "path": "library/universe_smallness.cubist",

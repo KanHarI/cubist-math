@@ -3,8 +3,8 @@
 // imports resolve by their importer's place, never by a global library-first
 // fallback. `read` supplies pinned files and any explicitly shared foundations.
 import { moduleReader, moduleNamePattern, moduleRoots, placeOfPath, searchOrder } from "../web/module-resolution.mjs";
-import { currentSyntax, reservedBindingRenaming } from "../web/cubist/legacy-syntax.mjs";
-import { parse, tokenize, languageKeywords } from "../web/cubist/parser.mjs";
+import { currentSyntax, historicalKeywords, historicalRenamingAt, reservedBindingRenaming } from "../web/cubist/legacy-syntax.mjs";
+import { parse, tokenize } from "../web/cubist/parser.mjs";
 
 // The relocation is valid only for the source unary epoch. A transitional
 // UNat module may be bypassed only when it is the published identity alias;
@@ -26,11 +26,20 @@ export function unaryNaturalBase({available,readSource}) {
 // Resolve renamed and relocated modules once for both baseline checks and
 // historical declaration discovery. A relocated file has its current place
 // even though its contents are read from the old archive path.
-export function historicalModulePaths({ available, movedToLibrary = new Set(), unaryNat = false }) {
+//
+// A module a renaming plan renamed is read by the word it renames: the
+// plan's inverse, never a spelling's suffix. `spellings` gives the shared
+// plan in effect (renamingFor), which spells axiom axiom__ where the sources
+// spell axiom_ already; each keyword's own spelling (historicalRenamingAt)
+// is the one the keyword migration gave renamed modules' files, as paths_
+// for paths.
+export function historicalModulePaths({ available, movedToLibrary = new Set(), unaryNat = false, spellings = () => historicalRenamingAt() }) {
   const movedPaths = new Set();
+  const renames = name => [spellings(), historicalRenamingAt()]
+    .map(plan => Object.keys(plan).find(word => plan[word] === name)).find(word => word !== undefined);
   const modulePath = (place, name) => {
     const historicalName=unaryNat&&name==="unat"?"nat":name;
-    const oldName = historicalName.endsWith("_") && languageKeywords.has(historicalName.slice(0, -1)) ? historicalName.slice(0, -1) : historicalName;
+    const oldName = renames(historicalName) ?? historicalName;
     const moved = movedToLibrary.has(name) || movedToLibrary.has(oldName);
     if (moved && place !== "library") return null;
     const root = moduleRoots[moved ? "archive" : place];
@@ -71,24 +80,31 @@ export function importedDeclarationsReader({ available, readSyntax, modulePath, 
 
 // Only the selected modules and their dependencies participate in the shared
 // fresh-name plan. Syntax errors in that graph retain the importing path;
-// unrelated historical files are never read or tokenized.
-export function historicalMigrationSources({ available, readSource, modulePath, placeOf, implicitNat = false }) {
+// unrelated historical files are never read or tokenized. `axiomForm` says
+// whether the revision reads the axiom form (legacy-syntax.mjs,
+// historicalKeywords).
+export function historicalMigrationSources({ available, readSource, modulePath, placeOf, implicitNat = false, axiomForm = false }) {
   const sources = new Map(), syntax = new Map();
   const source = path => {
-    if (!sources.has(path)) sources.set(path, currentSyntax(readSource(path)));
+    if (!sources.has(path)) sources.set(path, currentSyntax(readSource(path), { axiomForm }));
     return sources.get(path);
   };
   const importsOf = importedDeclarationsReader({ available, modulePath, placeOf, readSyntax: path => {
     if (!syntax.has(path)) {
-      const ast = parse(source(path), false, { bindable: languageKeywords });
+      const ast = parse(source(path), false, { bindable: historicalKeywords({ axiomForm }) });
       if (implicitNat && !path.endsWith("/nat.cubist") && !ast.imports.includes("nat")) ast.imports.unshift("nat");
       syntax.set(path, ast);
     }
     return syntax.get(path);
   } });
+  // A fresh spelling names no module of the revision either: a renamed
+  // import, as axiom read as axiom_, would otherwise name another module,
+  // the importing one itself where it is axiom_.
+  const modules = [...available].filter(path => path.endsWith(".cubist"))
+    .map(path => path.slice(path.lastIndexOf("/") + 1, -".cubist".length));
   const renamingFor = paths => {
     for (const path of paths) importsOf(path);
-    return reservedBindingRenaming([...syntax.keys()].map(source));
+    return reservedBindingRenaming([...syntax.keys()].map(source), historicalRenamingAt({ axiomForm }), modules);
   };
   return { source, importsOf, renamingFor };
 }
@@ -106,6 +122,6 @@ export function migrationSourceReader(read, modules) {
     }
     return reader(name, importer);
   };
-  for (const name of ["place", "placeOf", "beginCheck", "checkImports"]) original[name] = reader[name];
+  for (const name of ["place", "placeOf", "fromLibrary", "beginCheck", "checkImports"]) original[name] = reader[name];
   return original;
 }

@@ -1,0 +1,52 @@
+// From tests/declarations.test.mjs: an axiom is a definition's whole value, def Name := axiom F;.
+// It assumes F's type, or F's body closed over F's parameters, universes and values alike:
+// one context entry, named by the definition, which every use and alias shares. It computes
+// nothing, so a result that depends on it lists it, and a computable declaration, an evaluation
+// or a declared type cannot use it.
+
+import unat;
+use unat;
+
+// Double-negation shift, a consequence of excluded middle.
+def DoubleNegationShift(U < UU0) :=
+  forall A : U. forall B : A -> U. (forall a : A. (B(a) -> Void) -> Void)
+  -> ((forall a : A. B(a)) -> Void) -> Void;
+
+def Shift := axiom DoubleNegationShift;
+
+// Output: forall U < UU0. forall A : U. forall B : A -> U. (forall a : A. (B(a) -> Void) -> Void)
+//   -> ((forall a : A. B(a)) -> Void) -> Void
+print(typeof(Shift));
+
+// Each use instantiates the one assumption at its universe.
+def shifted(B : UNat -> U0, nn : forall n : UNat. (B(n) -> Void) -> Void) :
+  ((forall n : UNat. B(n)) -> Void) -> Void := Shift(U0, UNat, B, nn);
+
+def shift_large := Shift(U1);
+
+def shift_again := Shift;
+
+// A type has no parameters to close.
+def Unknown := axiom UNat;
+
+def next_unknown : UNat := Unknown + 1;
+
+// Error: E330: This computable declaration depends on non-computing assumptions:
+//   declarations_axioms::Unknown. Path to declarations_axioms::Unknown: next_unknown →
+//   declarations_axioms::Unknown.
+computable def unknown_again : UNat := next_unknown;
+
+// Error: E324: The evaluated term depends on non-computing assumptions:
+//   declarations_axioms::Unknown. Path to declarations_axioms::Unknown: next_unknown →
+//   declarations_axioms::Unknown.
+evaluate next_unknown expecting 1;
+
+// Error: E507: pin's argument p uses the assumption declarations_axioms::Unknown: a declared type's
+//   parameters and constructors cannot use assumptions, since its signature is closed.
+inductive Pinned {
+  pin(p : Unknown = 0);
+}
+
+// Error: E666: An axiom states a type, or a family of types: axiom T; or axiom F; where F(x) is a
+//   type.
+def NotAType := axiom 3;
