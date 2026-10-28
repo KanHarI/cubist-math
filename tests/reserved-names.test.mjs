@@ -59,7 +59,7 @@ test("keywords and generated interface names cannot be bound at any naming site"
       `theory T(U < UU0) extends ${word} : Parent { M : set U; }`,
     ]) assert.equal(parseError(source), reserved(word), `${word}: ${source}`);
   }
-  for (const word of ["UNat", "zero", "succ", "axiom", "opaque"]) {
+  for (const word of ["UNat", "zero", "succ", "opaque", "LEM", "Choice"]) {
     assert.equal(parseError(`def f(${word} : UNat) : UNat := 0;`), null, word);
   }
 });

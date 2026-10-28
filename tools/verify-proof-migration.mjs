@@ -18,7 +18,7 @@ import { assertFreshBuild } from "./build-stamp.mjs";
 import { migrationSourceReader, historicalModulePaths, historicalMigrationSources, unaryNaturalBase } from "./migration-sources.mjs";
 import { placeOfFile } from "./module-sources.mjs";
 import { moduleRoots, searchOrder } from "../web/module-resolution.mjs";
-import { historicalSource } from "../web/cubist/legacy-syntax.mjs";
+import { historicalRenamingAt, historicalSource } from "../web/cubist/legacy-syntax.mjs";
 import { parse } from "../web/cubist/parser.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
@@ -91,6 +91,10 @@ const minusReverses = (() => { try { return !git(["show",`${base}:web/cubist/leg
 // name. A base of that time is read so: its modules keep the reading, and
 // today's modules select its nat's notation (historicalSource).
 const nameBased = (() => { try { return !git(["show",`${base}:web/translator/translate.mjs`]).includes("nameBased"); } catch { return true; } })();
+// Until #317 (2026-10-26) axiom meant nothing, and a source could name
+// anything by it; a base since reads `def Name := axiom F;` as the axiom
+// form and reserves the word (legacy-syntax.mjs, historicalKeywords).
+const axiomForm = (() => { try { return git(["show",`${base}:web/cubist/parser.mjs`]).includes('kind: "axiom"'); } catch { return false; } })();
 const historical = new Set();
 // A module moved from the archive into the library since the base, as nat
 // was, is read from its old path but lives in the library, where
@@ -99,9 +103,12 @@ const movedToLibrary = new Set([...available].filter(path => path.startsWith(mod
   .map(path => path.slice(moduleRoots.archive.length, -".cubist".length))
   .filter(name => existsSync(`${root}${moduleRoots.library}${name}.cubist`)
     && !existsSync(`${root}${moduleRoots.archive}${name}.cubist`)));
-const paths = historicalModulePaths({ available, movedToLibrary, unaryNat });
+// The shared renaming plan, once made: module paths read its renamed
+// modules by the words they rename.
+let renaming = null;
+const paths = historicalModulePaths({ available, movedToLibrary, unaryNat, spellings: () => renaming ?? historicalRenamingAt({ axiomForm }) });
 const originalModulePath = paths.modulePath;
-const historicalSources = historicalMigrationSources({ available, ...paths, implicitNat,
+const historicalSources = historicalMigrationSources({ available, ...paths, implicitNat, axiomForm,
   readSource: path => git(["show", `${base}:${path}`]),
 });
 // Build one plan across the selected checks before rewriting any dependency.
@@ -116,7 +123,7 @@ for (const name of modules) {
     if (path) selectedPaths.add(path);
   }
 }
-const renaming = historicalSources.renamingFor(selectedPaths);
+renaming = historicalSources.renamingFor(selectedPaths);
 const readOriginal = migrationSourceReader(async (place, name) => {
   const path = originalModulePath(place, name);
   if (path === null) return null;
@@ -124,7 +131,7 @@ const readOriginal = migrationSourceReader(async (place, name) => {
     // A baseline may predate a syntax change, or the implicit import of nat;
     // it is read in today's syntax, with the imports it had then.
     let text = available.has(path) ? historicalSource(historicalSources.source(path), unaryNat&&name==="unat"?"nat":name,
-      { implicitNat, minusReverses, renaming, unaryNat, importedDeclarations: historicalSources.importsOf(path) }) : null;
+      { implicitNat, minusReverses, renaming, unaryNat, axiomForm, importedDeclarations: historicalSources.importsOf(path) }) : null;
     if (text !== null) historical.add(name);
     // A new shared foundation has no predecessor. It is available only in
     // library resolution; archive importers never see this fallback.

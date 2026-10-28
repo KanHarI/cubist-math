@@ -1,9 +1,11 @@
 import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalKernel } from "../web/cubical-kernel.mjs";
 import { InstructionGraph } from "../web/cubical-instructions.mjs";
+import { checkProgram } from "./check-program.mjs";
 
 test("checked alias chains reduce within the ordinary WASM stack", async () => {
   const module = await createCubical();
@@ -61,4 +63,33 @@ test("nested prerequisite heads retain a controlled WASM recursion failure", asy
       assert.equal(kernel.head(graph.judgement(point).term), graph.judgement(point).term);
     } finally { kernel.dispose(); }
   }
+});
+
+// A declared type's eliminator nested in itself takes about 3.7 KiB of the
+// WASM stack a level. On a 2 MiB stack placed after the static data, 600
+// levels ran past its end without a trap and overwrote the session table:
+// the declaration, and every later one, failed with "Invalid cubical session.".
+test("nested declared eliminators reach the recursion guard within the WASM stack", async t => {
+  const { verdicts } = await checkProgram(t, `import unat;
+use unat;
+inductive Lamp { dark; lit; }
+def toggle(f : Lamp) : Lamp := match f { dark => lit; lit => dark; };
+def parity(n : UNat) : Lamp := match n { zero => dark; succ(m) => toggle(parity(m)); };
+def deep : parity(5 * 200) = dark := refl(dark);
+def past_the_guard : parity(10 * 200) = dark := refl(dark);
+def after : toggle(dark) = lit := refl(lit);
+`);
+  assert.deepEqual(verdicts.deep, true);
+  assert.match(verdicts.past_the_guard, /Native reduction recursion depth exceeded/);
+  assert.deepEqual(verdicts.after, true);
+});
+
+// The stack lies below the static data (the Makefile's --stack-first), so an
+// overflow runs below address 0 and traps rather than overwriting that data:
+// a static string of the bridge lies past the whole stack.
+test("the WASM stack lies below the static data", async () => {
+  const module = await createCubical();
+  const makefile = await readFile(new URL("../Makefile", import.meta.url), "utf8");
+  const stack = Number(makefile.match(/-sSTACK_SIZE=(\d+)/)[1]);
+  assert.ok(module._cb_error(0) >= stack, `"Invalid cubical session." at ${module._cb_error(0)}, below the stack's end at ${stack}`);
 });

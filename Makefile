@@ -18,8 +18,15 @@ CUBICAL_SRC = $(wildcard $(CUBICAL_DIR)/src/*.c)
 CUBICAL_EXPORTS = '["_cb_abi_version","_cb_new","_cb_optimizations","_cb_step_budget","_cb_work","_cb_deadline_ms","_cb_checkpoint","_cb_rollback","_cb_commit_checkpoint","_cb_relocated","_cb_free","_cb_error","_cb_error_kind","_cb_mismatch","_cb_term","_cb_formula_begin","_cb_formula_clause","_cb_formula_end","_cb_normalize","_cb_normalize_folded","_cb_node","_cb_alpha_equal","_cb_formula_view","_cb_definition","_cb_head","_cb_position_clear","_cb_position_push","_cb_position_set","_cb_subterm","_cb_clear_error","_cb_instr","_cb_judgement_count","_cb_judgement","_cb_judgement_context","_cb_entry_count","_cb_entry","_cb_rename","_cb_equiv_type","_cb_fresh_symbol","_cb_endpoint_term","_cb_arena","_cb_extensions","_cb_signature","_cb_signature_constructor"]'
 .PHONY: cubical-wasm wasm-locked
 # The compiler's flags, before and after the sources; the stamp records them.
+# The stack comes first in memory (--stack-first): an overflow runs below
+# address 0 and traps. Placed after the static data, as an optimized build
+# places it by default, an overflow overwrote the session table and the
+# allocator's state, and the kernel went on. The stack's 8 MiB, a native main
+# thread's default, lets ck_whnf's 1,024-level recursion guard fail first on
+# nested eliminators, about 3.7 KiB of stack a level, in Node; in a Chromium
+# worker the engine's own stack runs out first, at about 630 levels.
 WASM_CFLAGS = -O3 -std=c11 -Wall -Wextra -Wpedantic -Werror -I$(CUBICAL_DIR)/include -I$(CUBICAL_DIR)/src
-WASM_LDFLAGS = --no-entry -sMODULARIZE -sEXPORT_ES6 -sENVIRONMENT=web,worker,node -sALLOW_MEMORY_GROWTH -sINITIAL_MEMORY=16777216 -sMAXIMUM_MEMORY=4294967296 -sSTACK_SIZE=2097152 -sABORTING_MALLOC=0 -sFILESYSTEM=0 -sEXPORTED_FUNCTIONS=$(CUBICAL_EXPORTS) -sEXPORTED_RUNTIME_METHODS='["UTF8ToString"]'
+WASM_LDFLAGS = --no-entry -sMODULARIZE -sEXPORT_ES6 -sENVIRONMENT=web,worker,node -sALLOW_MEMORY_GROWTH -sINITIAL_MEMORY=16777216 -sMAXIMUM_MEMORY=4294967296 -sSTACK_SIZE=8388608 -Wl,--stack-first -sABORTING_MALLOC=0 -sFILESYSTEM=0 -sEXPORTED_FUNCTIONS=$(CUBICAL_EXPORTS) -sEXPORTED_RUNTIME_METHODS='["UTF8ToString"]'
 # One build of web/dist at a time, under a lock (tools/build-stamp.mjs). A
 # kernel whose sources, compiler, flags or outputs no longer match its stamp
 # is rebuilt, whatever the file times say: a source edited while emcc ran is

@@ -604,3 +604,78 @@ print(typeof(p));
     } finally { again.dispose(); }
   } finally { program.dispose(); }
 });
+
+// The review's case: hlevel's chain of obligations binds m in its prose,
+// "for every m : Unit", so the obligation after it reads m as that Unit:
+// a model m's qualifier there is no m.(3). The goal and every obligation
+// are one display, and each reads back where the prose puts it.
+test("an hlevel failure's goal and obligations are one display, and its obligations read back under its prose binders", async () => {
+  const three = "b_positive(bp_odd(bp_one))";
+  const source = `${unitHeader.replace("def m1 :", "def m :").replace("notation m1 {", "notation m {")}import hlevels;
+def bad(F : BNat -> U0) : IsProp(U0, forall m : Unit. m = m and F(${three})) {
+  hlevel;
+}
+`.replace("import hlevels;\n", "").replace("import bnat;\n", "import bnat;\nimport hlevels;\n");
+  await withChecked(source, async (_, result) => {
+    const reason = result.outputs.find(output => output.name === "bad")?.reason ?? "";
+    const match = /^hlevel could not prove IsProp\(U0, (.*)\): it needs (.*) to be a proposition for every m : Unit, which needs (.*) to be a proposition;/.exec(reason);
+    assert.ok(match, reason);
+    const [, goal, body, needed] = match;
+    assert.ok(!reason.includes("m.("), reason);
+    assert.equal(needed, `F(${three})`);
+    await withChecked(`${source}def goal_again(F : BNat -> U0) : U0 := ${goal};\ndef body_again(F : BNat -> U0, m : Unit) : U0 := ${body};\n`
+      + `def needed_again(F : BNat -> U0, m : Unit) : U0 := ${needed};\n`, (_, again) => {
+      for (const name of ["goal_again", "body_again", "needed_again"])
+        assert.deepEqual(again.outputs.filter(output => output.name === name).map(output => [output.verified, output.reason ?? null]), [[true, null]], name);
+    });
+  });
+});
+
+// The contextual console's outputs that show several terms, a goal and its
+// expected type, a proof and its goal, a scratch binding and its type, the
+// locals listing, are each one display (the diagnostics are checked so in
+// tests/cubist-tests-inlined.mjs).
+test("contextual outputs that show several terms are each one display", async () => {
+  const { NativeCubicalElaborator } = await import("../web/cubical-elaborator.mjs");
+  const printedTogether = NativeCubicalElaborator.prototype.printedTogether;
+  let displays = 0;
+  NativeCubicalElaborator.prototype.printedTogether = function (...args) {
+    const printed = printedTogether.apply(this, args), display = displays++;
+    return { ...printed, texts: printed.texts.map(text => `⁣${display}⁤${text}`) };
+  };
+  try {
+    const three = "b_positive(bp_odd(bp_one))";
+    const source = `${unitHeader}def g(m : Unit, p : m = m) : ${three} = ${three} {\n  exact refl(${three});\n}\n`;
+    await withChecked(source, async program => {
+      const at = source.indexOf("exact");
+      const point = [...program.scopePoints.values()].find(point => point.origin.module === "main"
+        && point.origin.start <= at && point.available && point.phase !== "expression") ?? [...program.scopePoints.values()]
+        .filter(point => point.origin.module === "main" && point.available).at(-1);
+      assert.ok(point);
+      const session = new ContextualSession(program, point.id);
+      try {
+        for (const entry of ["/locals", "/goal", `/prove { exact refl(${three}); }`, `let k := ${three};`]) {
+          const [answer] = await session.run(entry);
+          const fields = [answer.text, answer.goal, answer.expected, answer.proof, ...(answer.bindings ?? []).flatMap(row => [row.type, row.value])]
+            .filter(field => typeof field === "string");
+          const shown = new Set(fields.flatMap(field => Array.from(field.matchAll(/⁣(\d+)⁤/g), match => match[1])));
+          assert.ok(shown.size <= 1, `${entry}: ${JSON.stringify(answer)}`);
+        }
+      } finally { session.dispose(); }
+    }, { collectScopes: true });
+  } finally { NativeCubicalElaborator.prototype.printedTogether = printedTogether; }
+});
+
+// An axiom's assumption prints by its label (#317) beside a numeral printed
+// by its reader, and the text reads back.
+test("a printed type that mentions an axiom and a numeral reads back", async () => {
+  const three = "b_positive(bp_odd(bp_one))";
+  const source = `import unat;\nimport bnat;\ndef Pick := axiom (BNat -> BNat);\n`
+    + `def p : Pick(${three}) = Pick(${three}) := refl(Pick(${three}));\nprint(typeof(p));\n`;
+  await withChecked(source, async (_, result) => {
+    const text = result.prints[0].text;
+    assert.equal(text, "main::Pick(bnat_numerals.(3)) = main::Pick(bnat_numerals.(3))");
+    await withChecked(`${source}def again : ${text} := refl(Pick(${three}));\n`, (_, again) =>
+      assert.deepEqual(again.outputs.filter(output => output.name === "again").map(output => [output.verified, output.reason ?? null]), [[true, null]]));
+  });
+});

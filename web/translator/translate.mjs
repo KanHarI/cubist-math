@@ -14,6 +14,7 @@ import {lowerBindingDeclaration} from "./binding-module.mjs";
 import {retainedRuleOperation,appliedRetainedRule} from "./named-notation.mjs";
 import {tacticSite,expressionSite} from "../cubist/link-sites.mjs";
 import {sourceText} from "../cubical-source-text.mjs";
+import {betaReduce,contextDimensions} from "../display-naming.mjs";
 import {binaryLiteralSyntax} from "../cubist/binary-literals.mjs";
 import {T,substituteTerm,substituteDimension} from "./core.mjs";
 import {interval as I,face as F,latticeBudget} from "./lattice.mjs";
@@ -22,6 +23,7 @@ import {equalityRule,simplificationRule,findRewrite,SearchLimit} from "./proof-r
 import {SearchFuel,SearchFuelExhausted,SEARCH_FUEL,recordSearch,emptySearchRecord} from "./fuel.mjs";
 import {copySimpRegistry,orderedDefaultRules,orderedHLevelRules,resolveSimpSet,uniqueSimpRules} from "./simp-registry.mjs";
 import {builtinTerm} from "./builtins.mjs";
+import {axiomAssumption} from "../cubical-assumptions.mjs";
 import {transportToDependentPath} from "./path-over.mjs";
 import {tacticProof,PREMISE_ATTEMPT_LIMIT,dependentNote} from "./tactics.mjs";
 import {Scope,SourceUnit,emptyRewriteWork} from "./elaboration.mjs";
@@ -33,7 +35,8 @@ import {HLevelSearch,HLevelUnproved,statement as hlevelStatement,levelName,ruleS
 import {repeatedName,stem,bindingStem} from "./names.mjs";
 import {DeclarationOwnership,duplicateDeclaration,declaredNames,publicationGroups,restoreMap,failureRoot,untranslated,sourceFailure} from "./declarations.mjs";
 import {numeralValue} from "./numerals.mjs";
-import {bareHole,fullInsideFolded,fullUnderFolded,isPattern,markInExpression,observe,printedNodes,typedMismatch,valueForm,valueMismatch,witnessOf} from "./evaluation.mjs";
+import {bareHole,fullInsideFolded,fullUnderFolded,isPattern,markInExpression,observe,printedNodes,runtimeStop,typedMismatch,valueForm,valueMismatch,witnessOf} from "./evaluation.mjs";
+import {RuntimeError} from "../cubical-runtime.mjs";
 import {initialDeclarations,initialRefusal} from "./initial-models.mjs";
 import {unboundOperator,unselectedOperator,unselectedNegation,unboundNegation,literalUnread,literalRefused,literalUnevaluated,unselectedLiteral} from "./notations.mjs";
 import {lexemeKey,notationForScope,notationForUses} from "./notation-context.mjs";
@@ -41,7 +44,7 @@ import {notationOperand} from "./model-notation.mjs";
 import {enterExpressionScope} from "./expression-scopes.mjs";
 import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,sectionScope,selected,usesScope,sourceItemScope,qualifiedOperator,notationDeclaration,SELECTION} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
-import {availablePrefix,bindQualifiedNames,constructorText,declaredIn,qualifiedNamesIn,unknownQualifiedName} from "./qualified-names.mjs";
+import {availablePrefix,bindQualifiedNames,constructorText,declaredIn,identityCollision,qualifiedNamesIn,unknownQualifiedName} from "./qualified-names.mjs";
 
 // A tactic search (rw's for one rule, a simplification, simpa's two,
 // hlevel's) spends counted fuel (fuel.mjs), never elapsed time. Its fuel
@@ -89,12 +92,14 @@ const directiveKinds=new Set(["use","notation","evaluate","print","simp_rule","s
 // The lambdas over a declaration's parameters, a group of names with one
 // type one binder group, around `body`.
 export class Translator {
-  constructor({checker,definitionModule=null,testMode=false,normalize=true,onReference=null,onDeclaration=null,onDeclarationStart=null,onQueued=null,onPublicationStart=null,onPublicationEnd=null,
+  constructor({checker,definitionModule=null,libraryModule=false,testMode=false,normalize=true,onReference=null,onDeclaration=null,onDeclarationStart=null,onQueued=null,onPublicationStart=null,onPublicationEnd=null,
     onStep=null,simpRegistry,moduleName="source",freezeSuggestions=true,searchFuel=SEARCH_FUEL,declarationFuel,
     inspectSignature=null,nameBased=false,scopePoints=null,compilationBindings=null,onDirectiveStart=null,onDirective=null,sources=null,collectGeneration=false}={}) {
     // Definition ownership is separate from source provenance. Raw translator
     // clients omit the namespace; program modules pass it explicitly.
     this.definitionModule=definitionModule;
+    // Whether the module is the library's own, read from library/.
+    this.libraryModule=libraryModule;
     this.testMode=testMode;
     this.sources=sources;
     this.collectGeneration=collectGeneration;
@@ -161,7 +166,7 @@ export class Translator {
   // must not create a second meaning for IDs in the checker's model records.
   forkScope(scope,{normalize=this.normalize,searchFuel=this.searchFuel,declarationFuel=this.declarationFuel}={}) {
     if(scope.checker!==this.checker)throw new TypeError("A scope fork must belong to this translator's checker.");
-    return new Translator({checker:this.checker,definitionModule:this.definitionModule,compilationBindings:this.compilationBindings,sources:scope.unit.sources,
+    return new Translator({checker:this.checker,definitionModule:this.definitionModule,libraryModule:this.libraryModule,compilationBindings:this.compilationBindings,sources:scope.unit.sources,
       moduleName:this.moduleName,simpRegistry:scope.unit.simpRegistry,nameBased:this.nameBased,
       normalize,searchFuel,declarationFuel});
   }
@@ -412,21 +417,23 @@ export class Translator {
     // as far as it was computed.
     if(isPattern(expected)) {
       const {shown,failed}=observe(expected,result.expression,()=>result.type,scope,this.demandQueries(scope,source));
-      const text=this.shownIn(shown,scope);
-      // A part's type is shown as it is, reducing nothing for display: its
-      // parameters may be large unreduced, as no comparison computed them.
-      if(failed?.type)throw typedMismatch(text,source(expected),this.shownIn(failed.type,scope,{reduce:0}),source(failed.pattern));
-      if(failed)throw valueMismatch(text,source(expected),this.shownIn(failed.shown,scope),source(failed.pattern));
-      return text;
+      if(!failed)return this.shownIn(shown,scope);
+      // The value and its failing part, as one display. A part's type is
+      // shown as it is, reducing nothing for display: its parameters may be
+      // large unreduced, as no comparison computed them.
+      const message=this.messageIn(scope);
+      if(failed.type)throw message.resolve(typedMismatch(message.show(shown),source(expected),message.show(failed.type,{reduce:0}),source(failed.pattern)));
+      throw message.resolve(valueMismatch(message.show(shown),source(expected),message.show(failed.shown),source(failed.pattern)));
     }
     // An expected value without either is an expression: both normal forms
     // are computed, stuck definitions folded, and compared by conversion.
     scope.spend("queries");
     const value=this.checker.verify(this.term(d.expected,scope));
+    const options={width:1000,limit:printedNodes,notation:notationForScope(scope)};
     if(!scope.equal(result.type,value.type))
-      throw Error(`The evaluated term has type ${this.shownIn(result.type,scope)}, but the expected value has type ${this.shownIn(value.type,scope)}.`);
+      throw Error(this.composed(scope,show=>`The evaluated term has type ${show(result.type)}, but the expected value has type ${show(value.type)}.`,options));
     if(!scope.equal(normal,value.normal))
-      throw Error(`The term evaluates to ${this.shownIn(normal,scope)}, not ${this.shownIn(value.normal,scope)}.`);
+      throw Error(this.composed(scope,show=>`The term evaluates to ${show(normal)}, not ${show(value.normal)}.`,options));
     return this.shownIn(normal,scope);
   }
   // The kernel queries a pattern's demands ask (evaluation.mjs's observe):
@@ -461,13 +468,78 @@ export class Translator {
       source,
     };
   }
+  // The value form of an evaluated term (DM3, valueForm in evaluation.mjs),
+  // observed by the runtime (EVAL3/EVAL4, web/cubical-runtime.mjs): a closed
+  // judgement's data executes with shared closures, building no kernel
+  // syntax, and only the heads the walk shows are demanded. Its one
+  // fallback is demand the runtime reports unsupported, such as a path
+  // applied, a composition, Glue or a higher constructor: the kernel's head
+  // queries, `kernel`, then compute the whole walk again from the start, as
+  // they did before the runtime, and nothing the runtime computed is shown.
+  // A runtime stop at its limits is reported, not retried. Neither answer
+  // is evidence: the kernel's queries certify nothing either. Which
+  // computed it is recorded on the print directive (valueFormRecord), with
+  // the runtime's counters, and on a fallback the demand it did not support.
+  // The fallback is decided before the runtime's snapshot where the term's
+  // type shows that the first head is demand the runtime refuses, as for a
+  // value of a quotient: the same decision, at the cost of the type's weak
+  // head, a query of the evaluation's fuel, and recorded with no runtime
+  // counters.
+  valueFormOf(result,scope,node,kernel) {
+    let query=null,unsupported=null;
+    try {
+      if(this.checker.runtimeEvaluation!==false) {
+        scope.spend("queries");
+        const refused=this.checker.runtimeRefusal(result.typeHandle);
+        if(refused)throw new RuntimeError("unsupported",refused);
+      }
+      query=this.checker.runtimeQuery(result.judgement);
+      if(query) {
+        const value=valueForm(query.root,this.runtimeQueries(scope,query,kernel),node);
+        this.valueFormRecord={by:"runtime",...query.stats};
+        return value;
+      }
+    } catch(error) {
+      if(!(error instanceof RuntimeError))throw scope.unit.locate(error,node);
+      if(error.kind!=="unsupported") {
+        // The declaration's time limit, when it is what ran out, as the
+        // kernel's queries report it.
+        if(error.kind==="deadline")this.checker.kernel.checkDeadline();
+        throw scope.unit.locate(runtimeStop(error),node);
+      }
+      unsupported={unsupported:error.message,...query?{runtime:query.stats}:{}};
+    } finally {query?.dispose();}
+    const value=valueForm(result.expression,kernel,node);
+    this.valueFormRecord={by:"kernel",...unsupported};
+    return value;
+  }
+  // The runtime's answers to the value form's walk, read as the kernel's
+  // (demandQueries): a head is an observation, whose spine names it by the
+  // kernel's node kinds, and each spends a query of the evaluation's fuel,
+  // as the head query it stands for does. An observation's signature is the
+  // kernel's index at the query's snapshot, which no kernel operation
+  // changes before the walk ends.
+  runtimeQueries(scope,query,kernel) {
+    const checker=this.checker,shape=(kind,children=[])=>({root:{kind,children},args:[]});
+    return {
+      head:handle=>{scope.spend("queries");return query.observeNow(handle,checker.runtimeLimits());},
+      spine:head=>head.kind==="Con"?{root:{kind:"Con",id:head},args:head.args}
+        :head.kind==="Pair"?shape("Pair",[0,head.first,head.second])
+        :head.kind==="Inl"||head.kind==="Inr"?shape(head.kind,[0,head.item])
+        :shape({Function:"Lam",LevelFunction:"LLam",PathAbstraction:"PLam",Type:"U"}[head.kind]??head.kind),
+      constructor:head=>checker.shownConstructorOf(head.signature,head.index),
+      fieldOrder:kernel.fieldOrder,
+    };
+  }
   // `print(evaluate(e));` shows the value form of a closed, assumption-free
   // term, `print(evaluate(!!e));` its normal form, stuck definitions folded,
   // and `print(evaluate(!!!e));` its full normal form; `print(typeof(e));`
   // its type; and
   // `print(inspect(e));` the term the kernel checked, in kernel notation. A
   // name shows what the CLI's inspect shows: a definition's checked body, or
-  // a declared type's signature and its eliminator's clause types.
+  // a declared type's signature and its eliminator's clause types. It gives
+  // the text with the assumptions the printed term relies on: none for an
+  // evaluation or a witness, which refuse any.
   printed(d,scope) {
     if(d.show==="evaluate"||d.show==="witness") {
       scope.spend("queries");
@@ -486,29 +558,32 @@ export class Translator {
       // the kernel leaves it, its arguments uncomputed; and
       // print(evaluate(!!e)); and print(evaluate(!!!e)); the normal form.
       if(d.show==="evaluate") {
-        if(d.mark==="!!"||d.mark==="!!!")return this.shownIn(normal,scope);
+        if(d.mark==="!!"||d.mark==="!!!")return {text:this.shownIn(normal,scope),axioms:[]};
         const at=this.demandQueries(scope,node=>scope.unit.source.slice(node.start,node.end).trim());
         // A weak head and a value form are shown as computed, reducing
         // nothing more for display; a value form whole, within the budget
         // its walk kept.
-        if(d.mark==="!")return this.shownIn(this.checker.decoded(at.head(result.expression,d.value)),scope,{reduce:0});
-        return this.shownIn(valueForm(result.expression,at,d.value),scope,{width:Infinity,reduce:0});
+        if(d.mark==="!")return {text:this.shownIn(this.checker.decoded(at.head(result.expression,d.value)),scope,{reduce:0}),axioms:[]};
+        return {text:this.shownIn(this.valueFormOf(result,scope,d.value,at),scope,{width:Infinity,reduce:0}),axioms:[]};
       }
       // print(witness(t)); reads the witness off a closed truncation's
       // normal form, with its type (evaluation.mjs, L2.9b).
-      const {witness,type}=witnessOf(normal,result.type,scope,term=>this.shownIn(term,scope));
-      return `${this.shownIn(witness,scope)} : ${this.shownIn(type,scope)}`;
+      const message=this.messageIn(scope);
+      let found;
+      try {found=witnessOf(normal,result.type,scope,message.show);}
+      catch(error) {throw message.resolve(error);}
+      return {text:message.text(`${message.show(found.witness)} : ${message.show(found.type)}`),axioms:[]};
     }
-    const result=scope.infer(this.term(d.value,scope));
-    if(d.show==="typeof")return this.shownIn(result.type,scope);
+    const result=scope.infer(this.term(d.value,scope)),axioms=result.native?.axioms??[];
+    if(d.show==="typeof")return {text:this.shownIn(result.type,scope),axioms};
     if(d.value.kind==="name") {
       let body=result.term;
       while(body.tag==="Lam"||body.tag==="LLam")body=body.body;
       if(body.tag==="Sort"&&this.inspectSignature)
-        return this.inNotation(scope,()=>this.inspectSignature(body.signature));
+        return {text:this.inNotation(scope,()=>this.inspectSignature(body.signature)),axioms};
     }
     const definition=d.value.kind==="name"&&result.term.tag==="DefRef"?this.checker.definitionViews?.get(result.term.name):null;
-    return this.checker.kernelText(definition?.term??result.term,scope.dimensions,1000);
+    return {text:this.checker.kernelText(definition?.term??result.term,scope.dimensions,1000),axioms};
   }
   // A term as messages show it, in `scope`'s context: source names,
   // generated suffixes removed. Every display here is given the scope it
@@ -536,9 +611,57 @@ export class Translator {
   // reads alike in each, apart from every label any of them prints. Closed
   // terms share no variable, and are shown alone.
   shownTogether(terms,scope) {return this.checker.displayTexts?.(terms,scope?.dimensions,{width:1000})??terms.map(term=>sourceText(term));}
+  // A message that shows terms, as one display (sourceTexts): it stands for
+  // each term by `show(term)`, and writes each name its prose binds, as
+  // "for every m : Unit" or "A := …", by `bind(variable, name)`, which the
+  // terms then show by that name; `text` prints the terms the message holds,
+  // together, in its place, once the message is composed. A message that
+  // shows more than one term, or binds a name in prose, is composed so:
+  // printed apart, one term's text could read a name another writes
+  // (tests/numeral-readback.test.mjs). A search that refuses in words, as
+  // hlevel's, is given `show` and its refusals are printed with the message
+  // that reports them. `options` are displayTexts': shownIn's, by
+  // messageIn.
+  message(scope,{width=1000,limit=4000,notation,reduce=256}={}) {
+    const terms=[],names=new Map();
+    const show=(term,{reduce:own=reduce}={})=>`\u0001${terms.push({term,reduce:own})-1}\u0002`;
+    const bind=(variable,name=variable)=>{names.set(variable,name);return name;};
+    // Several parts of one message, as a list's rows, each its text: all
+    // their terms are printed at once.
+    const texts=templates=>{
+      const placeholders=/\u0001(\d+)\u0002/g,parts=templates.map(template=>typeof template==="string"?template:null);
+      const used=[...new Set(parts.flatMap(part=>part===null?[]:Array.from(part.matchAll(placeholders),match=>Number(match[1]))))];
+      if(!used.length)return templates;
+      const shown=used.map(k=>terms[k]);
+      const printed=this.checker.displayTexts?this.checker.displayTexts(shown.map(({term,reduce})=>reduce?betaReduce(term,reduce):term),
+        scope?.dimensions,{width,limit,reduce:0,names,locals:[...new Set(names.values())],...(notation?{notation}:{})})
+        :shown.map(({term})=>sourceText(term));
+      const at=new Map(used.map((k,index)=>[k,printed[index]]));
+      return templates.map((template,index)=>parts[index]===null?template:parts[index].replace(placeholders,(_,k)=>at.get(Number(k))));
+    };
+    const text=template=>texts([template])[0];
+    // An error whose message the parts hold, its terms printed.
+    const resolve=error=>{if(typeof error?.message==="string")error.message=text(error.message);return error;};
+    return {show,bind,text,texts,resolve};
+  }
+  messageIn(scope,{width=1000}={}) {return this.message(scope,{width,limit:printedNodes,notation:notationForScope(scope)});}
+  // A message composed at once: `compose(show, bind)` writes it.
+  composed(scope,compose,options) {const message=this.message(scope,options);return message.text(compose(message.show,message.bind));}
   translate(source, imported=new Map()) {
     const ast=qualifySource(parse(source),{revision:this.sourceRevision,module:this.moduleName});
     return this.translateSyntax(ast,source,imported);
+  }
+  // The other module whose declaration already holds `key`, module__name, or
+  // null. Two modules' spellings can join to one key, as a::b__c and
+  // a__b::c do in a__b__c; the later declaration is refused (identityClash),
+  // so that neither qualified name can ever read the other's value.
+  identityHolder(key) {
+    const holder=this.compilationBindings.keyModule(key);
+    return holder!==undefined&&holder!==this.moduleName?holder:null;
+  }
+  identityClash(local,key=this.bindingName(local)) {
+    const holder=this.identityHolder(key);
+    return holder?identityCollision(this.moduleName,local,holder,key):null;
   }
   // Availability has one writer for public names and exact identities.
   // Reservations carry no values; a failed/rolled-back family publishes the
@@ -547,7 +670,8 @@ export class Translator {
     env.set(name,value);
     const key=this.bindingName(name);
     const declared=this.compilationBindings.declaration(key);
-    if(declared) {
+    // Never under another module's identity: its declaration keeps its value.
+    if(declared&&!this.identityHolder(key)) {
       this.compilationBindings.published(declared.binding,value);
       env.set(this.identityAdapter.key(declared.binding.id),value);
     }
@@ -754,8 +878,10 @@ export class Translator {
         try {
           // A file-level use selects for directives too, which print in it.
           const scope=this.itemScope(new Scope(unit,new Map(),env),d);
-          directives.push({kind:"print",name:`${d.show} at line ${line}`,status:"checked",start:d.start,
-            text:this.printed(d,scope)});
+          this.valueFormRecord=null;
+          const printed=this.printed(d,scope);
+          directives.push({kind:"print",name:`${d.show} at line ${line}`,status:"checked",start:d.start,...printed,
+            ...(this.valueFormRecord?{valueForm:this.valueFormRecord}:{})});
         } catch(error) {
           propagateElaborationStop(error);
           directives.push({kind:"print",name:`${d.show} at line ${line}`,status:"not-translated",
@@ -803,9 +929,13 @@ export class Translator {
           const scope=new Scope(unit.with({references:null}),new Map(),env);
           const term=this.term({kind:"name",name:d.rule.text,start:d.rule.start,end:d.rule.end},scope,null);
           const type=scope.infer(term).type;
-          const shape=ruleShape(type,t=>this.shown(t,scope));
-          if(shape.refusal)throw unit.locate(noRule(d.rule.text,shape.refusal),d.rule);
-          const identity=term.tag==="DefRef"?term.name:d.rule.text;
+          const message=this.message(scope),shape=ruleShape(type,message.show,message.bind);
+          if(shape.refusal)throw unit.locate(message.resolve(noRule(d.rule.text,shape.refusal)),d.rule);
+          // The rule's declaration, by its identity, not its spelling: a
+          // definition, applied to any assumptions it uses, or an axiom.
+          let head=term;
+          while(head.tag==="App")head=head.fn;
+          const identity=head.tag==="DefRef"||head.tag==="Var"&&this.checker.assumptions?.has(head.name)?head.name:d.rule.text;
           if(this.simpRegistry.hlevel.get(identity)?.origin===this.moduleName)
             throw unit.locate(ruleTwice(d.rule.text),d.rule);
           const existing=this.simpRegistry.hlevel.get(identity);
@@ -831,6 +961,8 @@ export class Translator {
         bindingAdapter:retained?.adapter});
       this.onDeclarationStart?.(d);
       try {
+        const clash=this.identityClash(d.name.text);
+        if(clash)throw unit.locate(clash,d.name);
         // A theory's sorts need their evidence's definitions (L2.4).
         const missing=missingEvidence(d,env);
         if(missing)throw unit.locate(missing,d.name);
@@ -867,7 +999,14 @@ export class Translator {
         // Resolve file-level uses once, outside the parameter/section scopes.
         // The closing kernel check reports in this same retained notation.
         bodyScope=this.itemScope(bodyScope,d);
-        const term=this.term(expression,bodyScope);
+        // `def Name := axiom F;` names an assumption, which is its value.
+        const axiom=expression.kind==="axiom";
+        const assumed=statement=>{
+          try {return axiomAssumption(this.checker,{module:this.moduleName,declaration:d.name.text,
+            binding:this.bindingName(d.name.text),library:this.libraryModule},statement,bodyScope);}
+          catch(error) {throw unit.locate(error,expression.statement);}
+        };
+        const term=axiom?assumed(this.term(expression.statement,bodyScope,null)):this.term(expression,bodyScope);
         // Normal forms are optional inspection output, not a prerequisite for
         // checking a declaration whose Nat value may have millions of successors.
         // The declaration's closing check, and its admission below, are
@@ -883,10 +1022,10 @@ export class Translator {
           if(assumptions.length)throw Error(this.nonComputingMessage("This computable declaration",
             assumptions,checked.term,checked.type));
         }
-        if(this.checker.define)unit.fuel.spend("queries");
+        if(this.checker.define&&!axiom)unit.fuel.spend("queries");
         // Its parameters as the source declares them, for named arguments
         // and implicit parameters.
-        const definition=this.checker.define?.(this.bindingName(d.name.text),checked.term,checked.type,
+        const definition=axiom?checked.term:this.checker.define?.(this.bindingName(d.name.text),checked.term,checked.type,
           own.length?own.map(p=>({name:p.label??p.name.label??p.name.text,implicit:!!p.implicit})):null)??checked.term;
         this.checker.kernel?.checkDeadline();
         publish(d,definition);
@@ -904,7 +1043,7 @@ export class Translator {
         // `failure` classifies a checker rejection ("mismatch", "budget",
         // "deadline", "resource" or "other"), so callers need not read the reason.
         declarations.push({name:d.name.text,status:"not-translated",...sourceFailure(error,module),
-          syntax:d});
+          ...(error.duplicate?{duplicate:true}:{}),syntax:d});
       }
       declarations.at(-1).notation=this.checker.notation;
       declarations.at(-1).rewriteWork={...unit.work};
@@ -961,6 +1100,11 @@ export class Translator {
         failure.reason??failure.message,root));
     };
     try {
+      // The type's identity, and each constructor's, module__name.
+      for(const [name,at] of [[d.name.text,d.name],...d.constructors.map(c=>[c.name.text,c.name])]) {
+        const clash=this.identityClash(name);
+        if(clash)throw unit.locate(clash,at);
+      }
       const scope=this.itemScope(new Scope(unit,new Map(),env),d);
       const lowered=lowerInductive(this,d,scope);
       for(const [name,value] of lowered.entries)this.publishDeclaration(env,name,value);
@@ -976,7 +1120,7 @@ export class Translator {
       const refusal=initialRefusal(d,failure), error=refusal?unit.locate(refusal.error,refusal.at):failure;
       unavailable(error);
       declarations.push({name:d.name.text,status:"not-translated",...sourceFailure(error,module),
-        syntax:d});
+        ...(error.duplicate?{duplicate:true}:{}),syntax:d});
     }
     declarations.at(-1).notation=this.checker.notation;
     declarations.at(-1).rewriteWork={...unit.work};
@@ -1834,33 +1978,39 @@ export class Translator {
     const hints=first.hints.map(node=>{
       const term=this.term(node,scope,null),type=scope.infer(term).type;
       if(hlevelStatement(type))return {term,type};
+      const message=this.message(scope);
       if(!["Pi","LPi"].includes(scope.nf(type).tag))
-        throw Error(`The hint ${this.shown(term,scope)} has type ${this.shown(type,scope)}, which states no h-level.`);
-      const shape=ruleShape(type,t=>this.shown(t,scope));
-      if(shape.refusal)throw noRule(`The hint ${this.shown(term,scope)}`,shape.refusal);
+        throw Error(message.text(`The hint ${message.show(term)} has type ${message.show(type)}, which states no h-level.`));
+      const shape=ruleShape(type,message.show,message.bind);
+      if(shape.refusal)throw message.resolve(noRule(`The hint ${message.show(term)}`,shape.refusal));
       return {term,type};
     });
     const locals=this.hlevelLocals(scope);
     const proof=this.search(scope,"hlevel",at=>{
-      const search=new HLevelSearch(at,hints,term=>this.shown(term,at),locals,{rules:orderedHLevelRules(this.simpRegistry)});
+      // The search's refusals are printed with the message that reports
+      // them, as one display.
+      const message=this.message(at);
+      const search=new HLevelSearch(at,hints,message.show,locals,{rules:orderedHLevelRules(this.simpRegistry)});
       const stated=hlevelStatement(goal.target);
       try {
         if(stated)return search.prove(stated.level,stated.universe,stated.type);
         const path=goal.equality();
-        if(!path)throw Error(`hlevel proves IsContr, IsProp, IsSet or HasLevel, or an equality in a proposition; the goal is ${this.shown(goal.target,at)}.`);
+        if(!path)throw Error(message.text(`hlevel proves IsContr, IsProp, IsSet or HasLevel, or an equality in a proposition; the goal is ${message.show(goal.target)}.`));
         const sort=at.nf(at.infer(path.family).type);
         if(sort.tag!=="U")throw Error("hlevel needs the type of the equality's sides to be in a universe.");
         return T.app(T.app(search.prove(0,sort.level,path.family),path.left),path.right);
       } catch(error) {
         propagateElaborationStop(error);
-        if(!(error instanceof HLevelUnproved))throw error;
+        if(!(error instanceof HLevelUnproved))throw message.resolve(error);
         // Each variable the search introduced for a binder is shown by that
-        // binder's name.
-        const shown=(term,names)=>this.shown([...names].reduce((renamed,[name,binder])=>
-          substituteTerm(renamed,name,T.variable(stem(binder))),term),at);
-        const needs=error.chain.slice(1).map(step=>`${shown(step.type,step.names)} to be ${levelName(step.level)}`
-          +(step.binder?` for every ${stem(step.binder.name)} : ${shown(step.binder.domain,step.names)}`:""));
-        throw Error(`hlevel could not prove ${this.shown(goal.target,at)}${needs.length?`: it needs ${needs.join(", which needs ")}`:""}; ${error.reason}.`);
+        // binder's name, which the message's prose binds ("for every m").
+        const shown=(term,names)=>message.show([...names].reduce((renamed,[name,binder])=>
+          substituteTerm(renamed,name,T.variable(stem(binder))),term));
+        // A step under a binder states its body, whose variable is the
+        // binder's own: it is shown by the name the prose binds too.
+        const needs=error.chain.slice(1).map(step=>`${shown(step.type,step.binder?[...step.names,[step.binder.name,step.binder.name]]:step.names)} to be ${levelName(step.level)}`
+          +(step.binder?` for every ${message.bind(stem(step.binder.name))} : ${shown(step.binder.domain,step.names)}`:""));
+        throw Error(message.text(`hlevel could not prove ${message.show(goal.target)}${needs.length?`: it needs ${needs.join(", which needs ")}`:""}; ${error.reason}.`));
       }
     });
     return this.conclude(first,new Transition(goal),proof,()=>({
@@ -1888,7 +2038,7 @@ export class Translator {
     const locals=this.hlevelLocals(scope);
     try {
       return scope.check(this.search(scope,"hlevel",at=>
-        new HLevelSearch(at,[],term=>this.shown(term,at),locals,{rules:orderedHLevelRules(this.simpRegistry)})
+        new HLevelSearch(at,[],this.message(at).show,locals,{rules:orderedHLevelRules(this.simpRegistry)})
           .prove(stated.level,stated.universe,stated.type)),type);
     } catch(error) {
       propagateElaborationStop(error);
@@ -1947,12 +2097,18 @@ export class Translator {
       {width,notation:notationForScope(goal.scope),telescope:false}).goal??sourceText(goal.target);}
     catch (control) {propagateElaborationStop(control);return "(too large to show)";}
   }
-  // Two goals one diagnostic shows, named together when they share a scope,
-  // as displayGoal names a goal and the term built for it.
+  // Two goals one diagnostic shows, as one display, named together as
+  // displayGoal names a goal and the term built for it: in both scopes'
+  // contexts where they differ.
   goalTexts(goal,other,width=160) {
-    if(goal.scope!==other.scope||!this.checker.displayGoal)return [this.goalText(goal,width),this.goalText(other,width)];
+    if(!this.checker.displayGoal)return [this.goalText(goal,width),this.goalText(other,width)];
     try {
-      const shown=this.checker.displayGoal(goal.scope.shownContext([goal.target,other.target]),goal.scope.dimensions,goal.target,other.target,
+      const same=goal.scope===other.scope;
+      const context=same?goal.scope.shownContext([goal.target,other.target])
+        :new Map([...goal.scope.shownContext([goal.target]),...other.scope.shownContext([other.target])]);
+      const dimensions=same?goal.scope.dimensions
+        :[...new Set([...contextDimensions(goal.scope.dimensions),...contextDimensions(other.scope.dimensions)])];
+      const shown=this.checker.displayGoal(context,dimensions,goal.target,other.target,
         {width,notation:notationForScope(goal.scope),telescope:false});
       return [shown.goal,shown.built];
     } catch (control) {propagateElaborationStop(control);return ["(too large to show)","(too large to show)"];}

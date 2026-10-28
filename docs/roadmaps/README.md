@@ -17,7 +17,8 @@ and compatibility gates passed. The reals roadmap stays paused. See the
    - B8 of the [debugging plan](runtime/rational-normalization-debug-plan.md),
      done on 2026-10-26;
    - the default binary `Z`/`Q`, gated on folded normal forms;
-   - #289's runtime in the REPLs;
+   - #289's runtime in the REPLs: value forms on 2026-10-26; constructor
+     patterns and quotient point constructors remain;
    - typed readback;
    - all of the archive's number theory moved to the library and removed
      from the archive ([NT1–NT5](archive-retirement.md#number-theory-in-the-library)),

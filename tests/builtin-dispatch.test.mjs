@@ -1,15 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { builtinNames, reservedReferences } from "../web/cubist/parser.mjs";
+import { builtinNames, legacyBuiltinNames, reservedReferences } from "../web/cubist/parser.mjs";
 import { builtinHandlers, builtinTerm } from "../web/translator/builtins.mjs";
 
-test("every reserved builtin has a call handler or an explicit syntax owner", () => {
+test("every reserved builtin and legacy fallback has a call handler or an explicit syntax owner", () => {
   // Interval is a binder domain; face/face_when are composition/gluing
   // pieces; flip/meet/join are handled by Translator.interval.
   const syntax = ["Interval", "face", "face_when", "flip", "meet", "join"];
   const callKeywords = ["typed", "path", "fill", "at", "left", "right"];
   assert.deepEqual([...new Set([...builtinHandlers.keys(), ...syntax])].sort(),
-    [...new Set([...builtinNames, ...callKeywords])].sort());
+    [...new Set([...builtinNames, ...legacyBuiltinNames, ...callKeywords])].sort());
   const references = new Set(reservedReferences(""));
   for (const [name, handler] of builtinHandlers) {
     assert.equal(typeof handler, "function", name);

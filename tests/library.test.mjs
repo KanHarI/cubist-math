@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { libraryModules } from "../web/cubist/modules.mjs";
+import { parse } from "../web/cubist/parser.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 
 // The rebuilt library under library/: every listed module checks completely.
@@ -15,9 +16,9 @@ import { sourceReader } from "../tools/module-sources.mjs";
 
 // The assumptions each module's declarations use; a module not listed uses none.
 const assumptions = {
-  classical_axioms: ["Choice", "LEM", "Truncate"],
-  universe_automorphisms: ["LEM", "Truncate", "TruncateElim", "TruncateIntro", "TruncateProp"],
-  h1_classical: ["Choice[h1_truncation.Trunc]", "LEM[h1_truncation.Trunc]"],
+  classical_axioms: ["Choice", "LEM"],
+  universe_automorphisms: ["LEM"],
+  h1_classical: ["LEM"],
 };
 
 test("every library module checks completely", async t => {
@@ -34,4 +35,21 @@ test("every library module checks completely", async t => {
       .map(axiom => result.assumptionLabels[axiom] ?? axiom))].sort();
     assert.deepEqual(used, assumptions[name] ?? [], `${name}: its assumptions`);
   }
+});
+
+// A library axiom is labelled by its bare name (web/cubical-assumptions.mjs),
+// so no two library modules may assume under one name. Each is listed here,
+// as each module's assumptions are above: adding one is a reviewed change.
+// The legacy builtins' labels cannot meet them: they are reserved words,
+// or carry brackets, as LEM[Truncate] does.
+test("the library's axioms have distinct names, which are their labels", async () => {
+  const axioms = [];
+  for (const name of libraryModules) {
+    const source = await readFile(new URL(`../library/${name}.cubist`, import.meta.url), "utf8");
+    for (const declaration of parse(source).declarations)
+      if (declaration.value?.kind === "axiom") axioms.push([declaration.name.text, name]);
+  }
+  const names = axioms.map(([name]) => name);
+  assert.deepEqual(names.filter((name, index) => names.indexOf(name) !== index), [], JSON.stringify(axioms));
+  assert.deepEqual(axioms, [["LEM", "classical_axioms"], ["Choice", "classical_axioms"]]);
 });

@@ -19,7 +19,10 @@ and `Q` since 2026-10-26, with binary generic ring numerals and casts; the
 full normal forms of the rational inverses remain targets. EVAL3–EVAL8 remain open:
 [#289](https://github.com/KanHarI/cubist-math/pull/289) adds a
 [first internal EVAL3/EVAL4 query](#first-implementation-289) for ordinary
-data, which no checker, REPL or page uses yet. EVAL5's observation contract
+data. Since its [REPL integration](#repl-integration) of 2026-10-26 it
+computes the value form of `evaluate e` and `print(evaluate(e))`, with one
+fallback to the kernel's head queries; no checker uses it, and patterns,
+`!`, `!!`, `!!!` and expected values stay on the kernel's queries. EVAL5's observation contract
 has shipped as the [demand marks](../historical/evaluation-demand-marks.md) and
 [folded normal forms](../historical/folded-normal-forms.md); its typed readback has not.
 [#284](https://github.com/KanHarI/cubist-math/pull/284)'s explicit-evidence
@@ -55,8 +58,8 @@ type descent, level arithmetic and level canonicalization. Composition/Glue/HIT
 tube construction, the Glue-step reduction comparison (`normal_agree`/
 `parts_agree`), prerequisite head queries and frontend traversals remain
 open, and the fixed four larger BNat cases still hit the syntax guard.
-Joint EVAL3/EVAL4 evaluator integration and the remaining protected traversals
-are still open.
+EVAL3/EVAL4 integration beyond the value form and the remaining protected
+traversals are still open.
 A [small arithmetic-free reproduction and partial-reduction report](../../reports/rational-normalization.md)
 now records the remaining failure. Its
 [completion path](#rational-full-normalization-completion-path) below assigns
@@ -102,6 +105,15 @@ stays within its stated contract.
 - The [work plan](../work-plan.md#first-actions) orders these steps after the
   site-publication fix and B8 of the
   [debugging plan](rational-normalization-debug-plan.md).
+- With the runtime in the REPLs, constructor patterns stay on the kernel's
+  queries, with exact expected values and the demand marks, until typed
+  readback and the applicable EVAL8 review: a pattern's verdict is a check,
+  which the runtime's observations may not decide.
+- A stop at the runtime's limits is reported, not retried: the one fallback
+  is demand the runtime reports unsupported. Sharing a call written twice,
+  which the kernel's weak-head cache shares by syntax and the runtime
+  computes twice ([`duplicated-calls-24`](../../reports/runtime-repl-evaluation.md#findings)),
+  is EVAL4 work.
 
 ## Goal and current failure
 
@@ -395,8 +407,8 @@ scope, as in the work plan.
 | NUM1 | Natural semiring isomorphism, U0 path/transport, bitwise setness, comparison correctness, H1 binary Peano view, coherent strong recursion and factorial; implemented | NUM0; semiring and order laws; H1 dependent elimination; computational univalence | L |
 | NUM2 | New binary-backed Z and Q, ring/domain/field laws and default APIs. Generic fractions (#279), binary integers (#280, #281) and the binary-rational API, released on folded normal forms (#283); binary generic ring numerals and the default `Z`/`Q` migration, with casts and rendering, on the same gate (2026-10-26). The rational inverses' full normal forms remain targets | NUM1; current quotients, rings and fractions | L |
 | EVAL2 | Memoized full normalization; implemented | EVAL0; independent of EVAL1 | M |
-| EVAL3 | Closure evaluator for a specified data fragment. A first internal query for ordinary data (#289); integration remains | EVAL0 and semantic contract | L |
-| EVAL4 | Explicit evaluation stack and bounded runtime. #289's machine loop; snapshot responsiveness and memory calibration remain | EVAL3 design; implement alongside it | M |
+| EVAL3 | Closure evaluator for a specified data fragment. A first internal query for ordinary data (#289), which computes REPL and print value forms (REPL integration); higher sorts, patterns and typed readback remain | EVAL0 and semantic contract | L |
+| EVAL4 | Explicit evaluation stack and bounded runtime. #289's machine loop and a synchronous observation for the checker; a responsive snapshot for asynchronous use, memory calibration, closed-environment pruning and sharing of repeated calls remain | EVAL3 design; implement alongside it | M |
 | EVAL5 | Lazy observation and typed readback. The observation contract is implemented: demand marks (#304–#306) and folded normal forms (#309, #310); typed readback remains | EVAL3, EVAL4 | L |
 | EVAL6 | Packed BNat runtime values and checked specialization | NUM0–NUM2, EVAL3, EVAL4; new profile | L |
 | EVAL7 | Efficient checked divisibility and search over BNat | NUM1, EVAL0; independent of the new evaluator | M |
@@ -877,7 +889,12 @@ recording each name as the printer writes it, and where a model qualifier
 it wrote is a name the texts also write for something else, prints them
 again with that name known, until none is. So a binder it leaves out, as an
 equality's coordinate, takes no name, and one inside a literal it prints
-as its parse does. Operators and a model's bare operators
+as its parse does. A message that shows several terms, or whose prose binds
+a name, as hlevel's "for every m : Unit", is composed as one display
+(`message` in `web/translator/translate.mjs`): its terms and its prose's
+names are printed together. `tests/cubist-tests-inlined.mjs` numbers each
+display while it checks the Cubist test modules and refuses a message
+printed from two. Operators and a model's bare operators
 keep the name-only check
 ([pr-318-todo](../../reports/pr-318-todo.md)).
 `tests/numeral-readback.test.mjs` combines each way of shadowing a reader's
@@ -1121,10 +1138,53 @@ are unsupported, and observations are not kernel evidence. In one exploratory
 sample the primes of `euclid(4)` and `euclid(5)` observe as 5 and 11 with no
 native syntax allocation, at 469,195 and 28,187,972 work. `euclid(6)` stops
 at a 2M work limit. Retained memory is substantial (about 667 MiB process RSS
-after the 5 case). No checker, REPL or page uses the query. Still open: the
-written readback correspondence (EVAL5/EVAL8), a responsive snapshot copy,
-memory calibration and closed-environment pruning, cubical execution, and
-the integration that would let a user's `evaluate euclid(4).1` use it.
+after the 5 case). Still open after #289: the written readback
+correspondence (EVAL5/EVAL8), a responsive snapshot copy, memory calibration
+and closed-environment pruning, cubical execution, and the integration that
+would let a user's `evaluate euclid(4).1` use it, which the REPL integration
+below delivers for value forms.
+
+#### REPL integration
+
+On 2026-10-26 the value form, `evaluate e` in every REPL that runs entries
+as modules (the CLI, the REPL page, the reference pages' REPL bar and the
+proof workspace's console) and `print(evaluate(e))` in files, is observed by
+the runtime; the [report](../../reports/runtime-repl-evaluation.md) has the
+design, the trust statement, the differential coverage and measurements.
+The translator's `valueFormOf` asks the elaborator for a query over the
+closed judgement it checked, after the assumption check, and walks the value
+form with synchronous observations (`observeNow`). Demand the runtime
+reports unsupported, such as a path applied, a composition, Glue, a higher
+or truncated sort or η of a path abstraction, is the one fallback: the whole
+walk is computed again from the start by the kernel's head queries, once,
+and nothing the runtime computed is shown. A runtime stop at its limits is
+reported (E487–E489, or the declaration's time limit), not retried. Where
+the evaluated term's type is a declared type the runtime does not execute, a
+quotient or another higher or truncated sort, the same fallback is decided
+before the snapshot from the type's weak head, with the same reason: the
+value's first head is that type's constructor or a composition. The
+observation now takes the kernel's weak head: η of term and level lambdas,
+partially applied constructors with their arity, types, and unapplied path
+abstractions.
+
+Over the demand marks' 197 constructs, the runtime computes 135 value forms
+and falls back on 58, 18 of them from the value's type, and every value form
+is the kernel's. The runtime shows
+`euclid(4)`'s value form and the primes of `euclid(4)` and `euclid(5)`,
+where the kernel's queries stop with K344; `euclid(6).1` stops at the
+runtime's 20M-cell cap. A computation written twice in nested functions,
+which the kernel's weak-head cache shares by syntax, is computed twice by the
+runtime: the report's `duplicated-calls-24` stops at the cap where the
+kernel's queries answer.
+
+Decided on 2026-10-26: constructor patterns stay on the kernel's queries
+until typed readback and the applicable EVAL8 review, since a pattern's
+verdict is a check and its expression leaves need kernel terms for runtime
+parts; and a stop at the runtime's limits stays reported, not retried.
+EVAL4's open items are a responsive snapshot copy for asynchronous use,
+memory calibration, closed-environment pruning, and sharing of repeated
+calls, a memo whose retention is measured: a per-environment memo of
+delayed syntax was tried and withdrawn, as the report records.
 
 ### Rational full-normalization completion path
 
@@ -1392,7 +1452,8 @@ The order from 2026-10-26 on is in the work plan's
 1. B8 of the [debugging plan](rational-normalization-debug-plan.md), done on
    2026-10-26;
 2. the default `Z`/`Q`;
-3. #289's runtime in the REPLs: ordinary data first, then the point
+3. #289's runtime in the REPLs: ordinary data first, done for value forms
+   on 2026-10-26 (constructor patterns await a decision), then the point
    constructors of set quotients so that `BInt` and `BQ` values evaluate;
 4. typed readback (EVAL5).
 

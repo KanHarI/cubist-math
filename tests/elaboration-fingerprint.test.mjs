@@ -27,6 +27,14 @@ test("elaboration fingerprints detect a changed proof term and a changed source 
   assert.ok(moved.some(line => line.startsWith("fingerprint.references.")));
 });
 
+// An axiom has no definition; its fingerprint pins the statement it assumes.
+test("elaboration fingerprints pin an axiom's assumed statement", async () => {
+  const before = await fingerprint("def A := axiom Unit;\ndef use_ := A;\n");
+  assert.ok(before.declarations.fingerprint_fixture__A.type);
+  const changed = compareFingerprints(before, await fingerprint("def A := axiom Unit -> Unit;\ndef use_ := A;\n"));
+  assert.ok(changed.some(line => line.startsWith("fingerprint.declarations.fingerprint_fixture__A.type:")), changed.join("\n"));
+});
+
 test("a compiled match names its generated binders alike in every elaboration", async () => {
   // Several values make a compiled match (web/translator/patterns.mjs), whose
   // generated names are numbered within the match, not across elaborations.
