@@ -168,6 +168,8 @@ and `module::name` references as continuing contracts.
   remain.
 - [Rational normalization debugging plan](runtime/rational-normalization-debug-plan.md):
   the attribution of the rational full-normalization cluster; D1 and B8 done.
+- [Typed readback](runtime/typed-readback.md): EVAL5's readback of runtime
+  values into kernel terms, proposed on 2026-10-28 for decision.
 
 EVAL5's observation contract, the
 [evaluation demand marks](historical/evaluation-demand-marks.md) (DM0–DM6,

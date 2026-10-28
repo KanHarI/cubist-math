@@ -1208,6 +1208,10 @@ Both notes below are complete and archived in `historical/` (2026-10-26).
 Their decisions remain this package's contract, and the open work is in this
 section.
 
+The [typed readback note](typed-readback.md) of 2026-10-28 proposes the
+readback, its correspondence and the observations it moves, for the
+user's decision.
+
 The [evaluation demand marks](../historical/evaluation-demand-marks.md) note of 2026-10-21,
 decided the same day, is this package's observation contract: unmarked
 positions are forced as far as the pattern or printer observes them, `!`
