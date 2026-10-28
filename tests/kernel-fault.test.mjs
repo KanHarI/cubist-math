@@ -69,7 +69,8 @@ test("an engine error out of an export ends the instance: no later call enters i
 // one of those reads ends the entry at that statement, as anywhere else, and
 // a session rebased on a new instance replays the entries that extended it.
 // The error is injected beneath the guard, as the engine's RangeError, at
-// the first export the snapshot calls.
+// the first export the runtime calls to read the kernel lazily (#324):
+// RuntimeQuery.#node, or judged when the query is made.
 const stackOf = () => {
   const limit = Error.stackTraceLimit;
   Error.stackTraceLimit = 100;
@@ -81,7 +82,7 @@ test("a failure in a runtime value form's kernel reads ends the entry, and a reb
   for (const name of Object.keys(module).filter(name => name.startsWith("_cb_"))) {
     const call = module[name];
     module[name] = (...args) => {
-      if (armed && /\bat snapshot\b/.test(stackOf())) {
+      if (armed && /RuntimeQuery\.#node\b|\bat judged\b/.test(stackOf())) {
         armed = false; injectedIn = name;
         throw new RangeError("Maximum call stack size exceeded");
       }
