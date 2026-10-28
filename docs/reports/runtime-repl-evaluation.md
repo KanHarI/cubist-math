@@ -289,20 +289,27 @@ reaches. Since #324 the query copies only what the walk reaches:
   the walk never reaches is never copied. The runtime's counters say what
   was copied (`snapshotNodes`, `snapshotDefinitions`): `2/3 + 1/6` copies
   1,256 nodes through 50 definitions.
-- **Isolation.** The query reads the judgement as it was checked. A kernel
-  handle keeps its node, definition or signature while the session is
-  open, except the handles made since a declaration's checkpoint, which its
-  commit compacts and its rollback drops (`kernel/src/checkpoint.c`). The
-  kernel's wrapper counts those ends and knows whether a checkpoint is open
-  (`handleToken` and `handlesHeld` in `web/cubical-kernel.mjs`; the
-  declaration's transaction opens it). A query made with no checkpoint open
-  reads correctly until the session is disposed; one made inside a
-  checkpoint, as a value form's is, until that checkpoint ends. A read
-  after either fails as `expired` instead of reading another state, and
-  what the query copied and computed before stays observable. A value form
-  makes and disposes of its query inside one check, before its
-  declaration's checkpoint ends, so it never meets an expiry: one there
-  would be a runtime defect, E490, not a fallback.
+- **Isolation.** The query reads the judgement as it was checked. In the
+  kernel a handle moves or vanishes only at a checkpoint's rollback, which
+  drops what was made since it, at its commit, which compacts that, and
+  when the session is freed (`kernel/src/checkpoint.c`,
+  `wasm/cubical_bridge.c`). `web/cubical-kernel.mjs` replaces, once per
+  module, the module's exports for those calls (`_cb_rollback`,
+  `_cb_commit_checkpoint`, `_cb_free`) with calls that also end the handle
+  generation of the kernel owning the session, so every caller is seen, a
+  declaration's transaction or a kernel test calling the module directly;
+  forgetting the nodes read ends it too. A query records the generation it
+  was made in (`handleToken`) and reads only while it holds
+  (`handlesHeld`). A read after any such call fails as `expired` instead of
+  reading another state, conservatively even when the call moved none of
+  the query's handles, and what the query copied and computed before stays
+  observable. A value form makes and disposes of its query inside one
+  check, before its declaration's transaction ends, so it never meets an
+  expiry: one there would be a runtime defect, E490, not a fallback. The
+  first review round found that the first version, which expired a query
+  only at the end of a checkpoint open when it was made, missed a
+  checkpoint opened through the module's export: its rolled-back handle,
+  recycled, was read as the query's own.
 - **Budgets.** Each read is work, and each copied node cells, of the
   observation that demands it, counted as the eager copy's were in the
   query's construction: the work, cell and time limits, cancellation and
@@ -310,11 +317,13 @@ reaches. Since #324 the query copies only what the walk reaches:
 - **Tests.** In `tests/cubical-runtime.test.mjs`: a pair copies its
   reference, the identity application that ascribes its type and the pair
   node, but neither component's definition until that component is
-  demanded; a query made outside a checkpoint reads correctly after later
-  declarations, accepted and refused; one made inside a checkpoint expires
-  at its commit and at its rollback, and every query at the session's
-  disposal, with what it read still observable; a cell or work limit stops
-  a query in the middle of a read. In `tests/runtime-evaluation.test.mjs`,
+  demanded; a query expires at a later declaration's end, accepted or
+  refused, at its own transaction's commit and rollback, and at the
+  session's disposal, with what it read still observable; a checkpoint
+  opened and ended through the module's exports, nested or not, committed
+  or rolled back, and forgetting the nodes read, expire every query made
+  before, the one whose rolled-back handle is recycled among them; a cell
+  or work limit stops a query in the middle of a read. In `tests/runtime-evaluation.test.mjs`,
   the unused argument's definitions are never copied, and `2/3 + 1/6`
   copies under a tenth of the closure's 32,015 nodes. The differential
   coverage is unchanged and passes.

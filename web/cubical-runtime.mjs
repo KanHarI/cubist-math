@@ -66,12 +66,12 @@ class Budget {
 // projects an operation from, is never copied. Each read is counted in the
 // query's work and cells, as the eager copy's were. What is read is copied:
 // runtime cells hold copied syntax and kernel indices, never a kernel
-// object. A handle names what it named when the query was made until the
-// session is disposed or, for a query made while a declaration's checkpoint
-// is open, until that checkpoint is committed or rolled back, which moves
-// or drops the handles made since it (kernel.handlesHeld). A read after
-// either fails as "expired" instead of reading another state; what was
-// copied and computed before stays observable.
+// object. The query reads only while nothing can have moved the handles it
+// holds since it was made: no checkpoint's rollback or commit, no freeing
+// of the session and no forgetting of the nodes read, however they were
+// called (kernel.handlesHeld). A read after any of them fails as "expired"
+// instead of reading another state; what was copied and computed before
+// stays observable.
 function judged(kernel, judgement, budget) {
   budget.check(); kernel.assertOpen();
   const graph = new InstructionGraph(kernel);

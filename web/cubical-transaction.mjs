@@ -23,7 +23,6 @@ export class CubicalDeclarationTransaction {
     this.metadata = new Map([checker.theories,checker.theoryProjections,checker.notationPrinting]
       .filter(Boolean).map(collection => [collection,new Map(collection)]));
     kernel.module._cb_checkpoint(kernel.handle);
-    kernel.checkpointOpen = true;
     this.active = true;
   }
   added(collection) {

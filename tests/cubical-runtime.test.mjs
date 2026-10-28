@@ -308,21 +308,23 @@ def value : Unit and UNat := (helper(tt), unused_);
   assert.equal(runtime.retainedObjects().snapshotNodes, runtime.stats.snapshotNodes);
 });
 
-// The kernel's handles name what they named when the query was made until
-// the session is disposed or a checkpoint open then ends; a read after that
-// expires, and what the query copied and computed before stays observable.
+// A query reads the kernel only while nothing can have moved the handles
+// it holds: a later declaration's commit or rollback, a transaction's end
+// or the session's disposal expires its unread syntax, and what it copied
+// and computed before stays observable.
 test("unread syntax expires with the kernel's handles, and what was read survives", async t => {
   const { program, query, kernel, graph } = await setup(t, "def value : Unit and Unit := (tt, (fun (u : Unit) => u)(tt));");
-  // Made with no checkpoint open, a query survives later declarations,
-  // accepted or refused: no handle it holds moves.
-  const outside = query("value");
+  // Made before later declarations, accepted or refused, a query expires at
+  // the first one's end, though no handle it holds moved: no reader tells.
+  const outside = query("value"), fields = await outside.observe();
+  assert.deepEqual(await outside.observe(fields.first), { kind: "Point" });
   const later = await program.check("def other : Unit := tt;\ndef refused : Unit := Unit;", "later");
   assert.deepEqual(later.outputs.filter(output => output.name !== "value").map(output => [output.name, output.verified]),
     [["other", true], ["refused", false]]);
-  const fields = await outside.observe();
-  assert.deepEqual(await outside.observe(fields.second), { kind: "Point" });
-  // Made while a declaration's checkpoint is open, a query expires when it
-  // is committed or rolled back, which move or drop the handles made since.
+  assert.deepEqual(await outside.observe(fields.first), { kind: "Point" });
+  await assert.rejects(outside.observe(fields.second), fails("expired"));
+  // Made inside a declaration's transaction, a query expires when it is
+  // committed or rolled back, which move or drop the handles made since.
   for (const accept of [false, true]) {
     const transaction = new CubicalDeclarationTransaction(kernel, program.checker), unit = graph.unit(), point = graph.point();
     const applied = graph.apply(graph.lambda(graph.extend(unit, "y"), point), point);
@@ -346,6 +348,45 @@ test("unread syntax expires with the kernel's handles, and what was read survive
   await assert.rejects(second.observe(root), fails("input"));
   first.dispose();
   await assert.rejects(first.observe(root), fails("disposed"));
+});
+
+// However a checkpoint is opened and ended, through a declaration's
+// transaction or the module's own exports as kernel tests call them, its
+// rollback or commit expires every query made before it: a rolled-back
+// handle is reused by the next node made, which a query must never read as
+// its own.
+test("a checkpoint ended through the module's exports expires every query made before", async t => {
+  const kernel = new CubicalKernel(await createCubical()), g = new InstructionGraph(kernel), m = kernel.module;
+  t.after(() => kernel.dispose());
+  const queried = judgement => { const query = new RuntimeQuery(kernel, judgement); t.after(() => query.dispose()); return query; };
+  // A point made inside a checkpoint opened through the module, rolled
+  // back, its handle recycled for the type Void.
+  g.unit();
+  m._cb_checkpoint(kernel.handle);
+  const recycled = queried(g.point());
+  m._cb_rollback(kernel.handle);
+  kernel.forgetNodes();
+  g.void();
+  assert.throws(() => recycled.observeNow(), fails("expired"));
+  // Nested checkpoints: the second replaces the first's base; its rollback
+  // expires a query made in either.
+  m._cb_checkpoint(kernel.handle);
+  const outer = queried(g.point());
+  m._cb_checkpoint(kernel.handle);
+  const inner = queried(g.point());
+  m._cb_rollback(kernel.handle);
+  for (const query of [outer, inner]) assert.throws(() => query.observeNow(), fails("expired"));
+  // A commit compacts, and forgetting the nodes read says handles moved,
+  // checkpoint or none.
+  m._cb_checkpoint(kernel.handle);
+  const committed = queried(g.point());
+  assert.equal(m._cb_commit_checkpoint(kernel.handle), 1);
+  assert.throws(() => committed.observeNow(), fails("expired"));
+  const forgotten = queried(g.point());
+  kernel.forgetNodes();
+  assert.throws(() => forgotten.observeNow(), fails("expired"));
+  // A query made after all of them reads.
+  assert.deepEqual(queried(g.point()).observeNow(), { kind: "Point" });
 });
 
 // A lazy read is work and cells of the observation that demands it: a

@@ -1083,10 +1083,10 @@ EVAL4's items:
   [#324](https://github.com/KanHarI/cubist-math/pull/324) (2026-10-28,
   [report](../../reports/runtime-repl-evaluation.md#the-query-copies-only-what-the-walk-reaches)).
   The query reads each node, definition and signature from the kernel when
-  its walk first demands it, counted in its work and cells. A read after the
-  kernel's handles move, at the commit or rollback of a checkpoint open
-  when the query was made, or after disposal, expires instead of reading
-  another state. A binary rational's eager copy had made its value form
+  its walk first demands it, counted in its work and cells. A read after
+  any call that can move the kernel's handles, a checkpoint's rollback or
+  commit or the session's freeing, however it is made, expires instead of
+  reading another state. A binary rational's eager copy had made its value form
   about three times as slow by the runtime as by the kernel's queries:
   `2/3 + 1/6` now copies 1,256 nodes where the closure of its judgement
   holds 32,015, and takes 28,170 steps against the kernel walk's 32,755

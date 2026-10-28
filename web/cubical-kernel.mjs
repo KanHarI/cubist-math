@@ -45,6 +45,31 @@ function uint32(value, label) {
   return value;
 }
 
+// The bridge calls that move or drop a session's handles: a checkpoint's
+// rollback drops the nodes, definitions, signatures and judgements made
+// since it, its commit compacts them (kernel/src/checkpoint.c), and freeing
+// the session drops them all (wasm/cubical_bridge.c). Each module's exports
+// for them are replaced, once, by calls that also end the handle generation
+// of the kernel that owns the session, so no caller, through a kernel's
+// methods or the module itself, moves a handle unseen by a holder of
+// handles (handlesHeld). Session tokens are never reused.
+const movingHandles = ["_cb_rollback", "_cb_commit_checkpoint", "_cb_free"];
+const sessionOwners = new WeakMap();
+function ownersOf(module) {
+  let owners = sessionOwners.get(module);
+  if (!owners) {
+    sessionOwners.set(module, owners = new Map());
+    for (const name of movingHandles) {
+      const call = module[name];
+      if (typeof call !== "function") continue;
+      module[name] = (token, ...rest) => {
+        try { return call(token, ...rest); } finally { owners.get(token)?.deref()?.handlesMoved(); }
+      };
+    }
+  }
+  return owners;
+}
+
 export class CubicalKernel {
   constructor(module) {
     const version = module._cb_abi_version?.();
@@ -54,6 +79,10 @@ export class CubicalKernel {
     this.module = module;
     this.handle = module._cb_new();
     if (!this.handle) throw new KernelError("Could not allocate cubical kernel session.", "resource");
+    // How many times this session's handles may have moved (handleToken).
+    this.handleGeneration = 0;
+    this.owners = ownersOf(module);
+    this.owners.set(this.handle, new WeakRef(this));
     this.names = new Map();
     this.symbolNames = new Map();
     // A node read's name: its payload's symbol's, which symbolName may give
@@ -69,10 +98,6 @@ export class CubicalKernel {
     // its checkpoint (kernel/src/checkpoint.c): what is read of them is
     // kept from one declaration to the next (forgetNodes).
     this.settled = 0;
-    // Whether a declaration's checkpoint is open, and how many have ended
-    // (handleToken).
-    this.checkpointOpen = false;
-    this.generation = 0;
     this.nextSymbol = 1;
     this.stepBudget = 10000000n;
     // The most steps one query may grow to (withGrowingBudget).
@@ -193,7 +218,7 @@ export class CubicalKernel {
     return error;
   }
   dispose() {
-    if (this.handle) this.module._cb_free(this.handle);
+    if (this.handle) { this.module._cb_free(this.handle); this.owners.delete(this.handle); }
     this.handle = 0;
   }
   symbol(name) {
@@ -311,19 +336,17 @@ export class CubicalKernel {
   // rolled back.
   // At a declaration's end, after its commit or rollback: the nodes there
   // are now settled until the next checkpoint's commit or rollback.
-  forgetNodes() {
-    this.nodes.clear(); this.settled = this.arena().nodes + 1;
-    this.checkpointOpen = false; this.generation++;
-  }
+  forgetNodes() { this.nodes.clear(); this.settled = this.arena().nodes + 1; this.handlesMoved(); }
   // A token for the node, definition and signature handles a reader holds
   // now, as a runtime query does across operations (web/cubical-runtime.mjs):
-  // handlesHeld(token) says whether they still name what they named. Only a
-  // checkpoint's commit or rollback moves or drops handles, those made since
-  // it (kernel/src/checkpoint.c), and disposal drops them all, so handles
-  // taken with no checkpoint open stay valid until disposal, and handles
-  // taken while one is open until it ends.
-  handleToken() { return { open: this.checkpointOpen, generation: this.generation }; }
-  handlesHeld(token) { return Boolean(this.handle) && (!token.open || token.generation === this.generation); }
+  // handlesHeld(token) says whether they still name what they named. Any
+  // call that can move or drop a handle, a rollback, a commit, the session's
+  // freeing (movingHandles) or forgetting the nodes read, ends the
+  // generation, whichever handles it moved, so a token holds only while
+  // nothing could have moved.
+  handlesMoved() { this.handleGeneration++; }
+  handleToken() { return this.handleGeneration; }
+  handlesHeld(token) { return Boolean(this.handle) && token === this.handleGeneration; }
   // Syntactic equality only: no reduction and no typing judgement.
   alphaEqual(left, right) {
     this.assertOpen();
