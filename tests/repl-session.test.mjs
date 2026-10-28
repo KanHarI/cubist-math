@@ -145,10 +145,10 @@ test("plain evaluation preserves selected notation and non-computing assumption 
   const repl = await session(t);
   await repl.run("import binary_arithmetic; use binary;");
   assert.deepEqual(texts(await repl.run("evaluate binary_succ(0b111);")), ["value: 0b1000"]);
-  await repl.run("import classical;");
+  await repl.run("import h1_classical;");
   const previous = repl.previous, accepted = [...repl.accepted];
   assert.deepEqual(texts(await repl.run("evaluate double_negation;")), [
-    "error: E324: The evaluated term depends on non-computing assumptions: LEM[Truncate], Truncate, TruncateElim. Path to LEM[Truncate]: double_negation (classical) → LEM[Truncate].",
+    "error: E324: The evaluated term depends on non-computing assumptions: LEM. Path to LEM: double_negation (h1_classical) → LEM.",
   ]);
   assert.equal(repl.previous, previous);
   assert.deepEqual(repl.accepted, accepted);

@@ -77,7 +77,8 @@ test("a generic assumption is one kernel entry, and each use is a level applicat
   const { program } = await checkTestModule(t, "assembly_generic_assumptions", { module });
   // The command line and the workbench check through the instruction kernel;
   // the term checker has no level rules.
-  const view = program.inspect("__assumption_Choice#");
+  const choice = program.checker.axioms.get("classical_axioms__Choice");
+  const view = program.inspect(choice);
   const checked = program.checker.checkView(view.expression, view.type, view.context.map(entry => [entry.name, entry.type]), new Map(view.dimensions));
   assert.equal(view.expression.tag, "Var");
   assert.equal(view.type.tag, "LPi");
@@ -87,13 +88,13 @@ test("a generic assumption is one kernel entry, and each use is a level applicat
   for (const level of [0, 1]) {
     const use = program.inspect(`assembly_generic_assumptions__choice${level}`).expression;
     assert.equal(use.tag, "LApp");
-    assert.deepEqual([use.fn, use.level], [{ tag: "Var", name: "__assumption_Choice#" }, level]);
+    assert.deepEqual([use.fn, use.level], [{ tag: "Var", name: choice }, level]);
   }
-  // One assumption, whatever levels it is used at (G0 Q4).
-  // Choice's statement mentions Truncate.
+  // One assumption, whatever levels it is used at (G0 Q4). Choice's
+  // statement mentions Trunc, which is no assumption.
   const labels = name => program.symbols[name].axioms.map(id => program.checker.assumptionLabels.get(id)).sort();
-  assert.deepEqual(labels("assembly_generic_assumptions__choice0"), ["Choice[Truncate]", "Truncate"]);
-  assert.deepEqual(labels("assembly_generic_assumptions__choice1"), ["Choice[Truncate]", "Truncate"]);
-  // Truncate keeps the archive's resizing signature until H1 (G0 Q5): the
-  // module prints its type.
+  assert.deepEqual(labels("assembly_generic_assumptions__choice0"), ["Choice"]);
+  assert.deepEqual(labels("assembly_generic_assumptions__choice1"), ["Choice"]);
+  // Trunc keeps its universe, where the archive's Truncate resized into U0
+  // (G0 Q5): the module prints its type.
 });

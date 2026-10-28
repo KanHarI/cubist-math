@@ -1,0 +1,521 @@
+import bnat_order_laws;
+
+// Division with remainder of binary naturals, high bits first, and the
+// binary difference it subtracts with. Both compute on bits; unary order
+// only refutes impossible branches, through bnat_order_laws.
+
+// Doubling and addition, by computation on the low bits.
+computable def bnat_twice_add(a, b : BNat) :
+  bnat_add(bnat_twice(a), bnat_twice(b)) = bnat_twice(bnat_add(a, b)) := match a, b {
+    b_zero, b_zero => refl(b_zero);
+    b_zero, b_positive(q) => refl(b_positive(bp_even(q)));
+    b_positive(p), b_zero => refl(b_positive(bp_even(p)));
+    b_positive(p), b_positive(q) => refl(b_positive(bp_even(bpositive_add(p, q))));
+  };
+
+computable def bnat_twice_add_twice_succ(a, b : BNat) :
+  bnat_add(bnat_twice(a), bnat_twice_succ(b)) = bnat_twice_succ(bnat_add(a, b)) := match a, b {
+    b_zero, b_zero => refl(b_positive(bp_one));
+    b_zero, b_positive(q) => refl(b_positive(bp_odd(q)));
+    b_positive(p), b_zero => refl(b_positive(bp_odd(p)));
+    b_positive(p), b_positive(q) => refl(b_positive(bp_odd(bpositive_add(p, q))));
+  };
+
+computable def bnat_twice_succ_add_twice(a, b : BNat) :
+  bnat_add(bnat_twice_succ(a), bnat_twice(b)) = bnat_twice_succ(bnat_add(a, b)) := match a, b {
+    b_zero, b_zero => refl(b_positive(bp_one));
+    b_zero, b_positive(q) => refl(b_positive(bp_odd(q)));
+    b_positive(p), b_zero => refl(b_positive(bp_odd(p)));
+    b_positive(p), b_positive(q) => refl(b_positive(bp_odd(bpositive_add(p, q))));
+  };
+
+computable def bnat_twice_succ_add(a, b : BNat) :
+  bnat_add(bnat_twice_succ(a), bnat_twice_succ(b)) = bnat_twice(bnat_succ(bnat_add(a, b))) := match a,
+  b {
+    b_zero, b_zero => refl(b_positive(bp_even(bp_one)));
+    b_zero, b_positive(q) => refl(b_positive(bp_even(bpositive_succ(q))));
+    b_positive(p), b_zero => refl(b_positive(bp_even(bpositive_succ(p))));
+    b_positive(p), b_positive(q) => refl(b_positive(bp_even(bpositive_succ(bpositive_add(p, q)))));
+  };
+
+computable def bnat_succ_twice(a : BNat) :
+  bnat_succ(bnat_twice(a)) = bnat_twice_succ(a) := match a {
+    b_zero => refl(b_positive(bp_one));
+    b_positive(p) => refl(b_positive(bp_odd(p)));
+  };
+
+computable def bnat_one_add(a : BNat) : bnat_add(b_positive(bp_one), a) = bnat_succ(a) := match a {
+    b_zero => refl(b_positive(bp_one));
+    b_positive(p) => refl(b_positive(bpositive_succ(p)));
+  };
+
+computable def bnat_twice_mul(q : BNat, d : BPositive) :
+  bnat_mul(bnat_twice(q), b_positive(d)) = bnat_twice(bnat_mul(q, b_positive(d))) := match q {
+    b_zero => refl(b_zero);
+    b_positive(p) => refl(b_positive(bp_even(bpositive_mul(p, d))));
+  };
+
+computable def bnat_twice_succ_mul(q : BNat, d : BPositive) :
+  bnat_mul(bnat_twice_succ(q), b_positive(d)) = bnat_add(
+    b_positive(d), bnat_twice(bnat_mul(q, b_positive(d)))
+  ) := match q {
+    b_zero => refl(b_positive(d));
+    b_positive(p) => refl(b_positive(bpositive_add(d, bp_even(bpositive_mul(p, d)))));
+  };
+
+// An odd and an even numeral compare as their halves do, the low bit
+// breaking a tie (bnat_odd_even_order, bnat_even_odd_order).
+computable def bordering_odd_even_le(
+  order : BOrdering, below : BOrderingLe(bnat_odd_even_order(order))
+) :
+  BOrderingLt(order) := match order {
+    b_less => tt;
+    b_equal => absurd(below);
+    b_greater => absurd(below);
+  };
+
+computable def bordering_odd_even_lt(
+  order : BOrdering, smaller : BOrderingLt(bnat_odd_even_order(order))
+) :
+  BOrderingLt(order) := match order {
+    b_less => tt;
+    b_equal => absurd(smaller);
+    b_greater => absurd(smaller);
+  };
+
+computable def bordering_lt_odd_even(order : BOrdering, smaller : BOrderingLt(order)) :
+  BOrderingLt(bnat_odd_even_order(order)) := match order {
+    b_less => tt;
+    b_equal => absurd(smaller);
+    b_greater => absurd(smaller);
+  };
+
+computable def bordering_even_odd_le(
+  order : BOrdering, below : BOrderingLe(bnat_even_odd_order(order))
+) :
+  BOrderingLe(order) := match order {
+    b_less => below;
+    b_equal => below;
+    b_greater => absurd(below);
+  };
+
+computable def bordering_even_odd_lt(
+  order : BOrdering, smaller : BOrderingLt(bnat_even_odd_order(order))
+) :
+  BOrderingLe(order) := match order {
+    b_less => smaller;
+    b_equal => smaller;
+    b_greater => absurd(smaller);
+  };
+
+// The difference of positive numerals, low bit first, with a borrow: for
+// q <= p the first component is p - q, and for q < p the second is p - q - 1.
+computable def bpositive_sub_borrow(p, q : BPositive) : BNat and BNat := match p {
+    bp_one => (b_zero, b_zero);
+    bp_even(x) => match q {
+      bp_one => (bpositive_pred(bp_even(x)), bnat_twice(bpositive_pred(x)));
+      bp_even(y) => (
+        bnat_twice(bpositive_sub_borrow(x, y).1), bnat_twice_succ(bpositive_sub_borrow(x, y).2)
+      );
+      bp_odd(y) => (
+        bnat_twice_succ(bpositive_sub_borrow(x, y).2), bnat_twice(bpositive_sub_borrow(x, y).2)
+      );
+    };
+    bp_odd(x) => match q {
+      bp_one => (b_positive(bp_even(x)), bnat_twice_succ(bpositive_pred(x)));
+      bp_even(y) => (
+        bnat_twice_succ(bpositive_sub_borrow(x, y).1), bnat_twice(bpositive_sub_borrow(x, y).1)
+      );
+      bp_odd(y) => (
+        bnat_twice(bpositive_sub_borrow(x, y).1), bnat_twice_succ(bpositive_sub_borrow(x, y).2)
+      );
+    };
+  };
+
+computable def BPositiveDifference(p, q : BPositive) :
+  U0 := (
+    BOrderingLe(bpositive_compare(q, p))
+    -> bnat_add(b_positive(q), bpositive_sub_borrow(p, q).1) = b_positive(p)
+  )
+  and (
+    BOrderingLt(bpositive_compare(q, p))
+    -> bnat_succ(bnat_add(b_positive(q), bpositive_sub_borrow(p, q).2)) = b_positive(p)
+  );
+
+computable def bpositive_sub_borrow_correct(p, q : BPositive) :
+  BPositiveDifference(p, q) := match p {
+    bp_one => match q {
+      bp_one => (
+        fun (below : Unit) => refl(b_positive(bp_one)), fun (smaller : Void) => absurd(smaller)
+      );
+      bp_even(y) => (fun (below : Void) => absurd(below), fun (smaller : Void) => absurd(smaller));
+      bp_odd(y) => (fun (below : Void) => absurd(below), fun (smaller : Void) => absurd(smaller));
+    };
+    bp_even(x) => match q {
+      bp_one => (
+        fun (below : Unit) => trans(
+          bnat_one_add(bpositive_pred(bp_even(x))), bpositive_succ_pred(bp_even(x))
+        ),
+        fun (smaller : Unit) => trans(
+          cong(bnat_succ, bnat_one_add(bnat_twice(bpositive_pred(x)))),
+          trans(
+            cong(bnat_succ, bnat_succ_twice(bpositive_pred(x))),
+            trans(bnat_succ_twice_succ(bpositive_pred(x)), cong(bnat_twice, bpositive_succ_pred(x)))
+          )
+        )
+      );
+      bp_even(y) => (
+        fun (below : BOrderingLe(bpositive_compare(y, x))) => trans(
+          bnat_twice_add(b_positive(y), bpositive_sub_borrow(x, y).1),
+          cong(bnat_twice, bpositive_sub_borrow_correct(x, y).1(below))
+        ),
+        fun (smaller : BOrderingLt(bpositive_compare(y, x))) => trans(
+          cong(bnat_succ, bnat_twice_add_twice_succ(b_positive(y), bpositive_sub_borrow(x, y).2)),
+          trans(
+            bnat_succ_twice_succ(bnat_add(b_positive(y), bpositive_sub_borrow(x, y).2)),
+            cong(bnat_twice, bpositive_sub_borrow_correct(x, y).2(smaller))
+          )
+        )
+      );
+      bp_odd(y) => (
+        fun (below : BOrderingLe(bnat_odd_even_order(bpositive_compare(y, x)))) => trans(
+          bnat_twice_succ_add(b_positive(y), bpositive_sub_borrow(x, y).2),
+          cong(
+            bnat_twice,
+            bpositive_sub_borrow_correct(x, y).2(
+              bordering_odd_even_le(bpositive_compare(y, x), below)
+            )
+          )
+        ),
+        fun (smaller : BOrderingLt(bnat_odd_even_order(bpositive_compare(y, x)))) => trans(
+          cong(bnat_succ, bnat_twice_succ_add_twice(b_positive(y), bpositive_sub_borrow(x, y).2)),
+          trans(
+            bnat_succ_twice_succ(bnat_add(b_positive(y), bpositive_sub_borrow(x, y).2)),
+            cong(
+              bnat_twice,
+              bpositive_sub_borrow_correct(x, y).2(
+                bordering_odd_even_lt(bpositive_compare(y, x), smaller)
+              )
+            )
+          )
+        )
+      );
+    };
+    bp_odd(x) => match q {
+      bp_one => (
+        fun (below : Unit) => refl(b_positive(bp_odd(x))),
+        fun (smaller : Unit) => trans(
+          cong(bnat_succ, bnat_one_add(bnat_twice_succ(bpositive_pred(x)))),
+          cong(
+            bnat_succ,
+            trans(bnat_succ_twice_succ(bpositive_pred(x)), cong(bnat_twice, bpositive_succ_pred(x)))
+          )
+        )
+      );
+      bp_even(y) => (
+        fun (below : BOrderingLe(bnat_even_odd_order(bpositive_compare(y, x)))) => trans(
+          bnat_twice_add_twice_succ(b_positive(y), bpositive_sub_borrow(x, y).1),
+          cong(
+            bnat_twice_succ,
+            bpositive_sub_borrow_correct(x, y).1(
+              bordering_even_odd_le(bpositive_compare(y, x), below)
+            )
+          )
+        ),
+        fun (smaller : BOrderingLt(bnat_even_odd_order(bpositive_compare(y, x)))) => trans(
+          cong(bnat_succ, bnat_twice_add(b_positive(y), bpositive_sub_borrow(x, y).1)),
+          trans(
+            bnat_succ_twice(bnat_add(b_positive(y), bpositive_sub_borrow(x, y).1)),
+            cong(
+              bnat_twice_succ,
+              bpositive_sub_borrow_correct(x, y).1(
+                bordering_even_odd_lt(bpositive_compare(y, x), smaller)
+              )
+            )
+          )
+        )
+      );
+      bp_odd(y) => (
+        fun (below : BOrderingLe(bpositive_compare(y, x))) => trans(
+          bnat_twice_succ_add_twice(b_positive(y), bpositive_sub_borrow(x, y).1),
+          cong(bnat_twice_succ, bpositive_sub_borrow_correct(x, y).1(below))
+        ),
+        fun (smaller : BOrderingLt(bpositive_compare(y, x))) => trans(
+          cong(bnat_succ, bnat_twice_succ_add(b_positive(y), bpositive_sub_borrow(x, y).2)),
+          trans(
+            bnat_succ_twice(bnat_succ(bnat_add(b_positive(y), bpositive_sub_borrow(x, y).2))),
+            cong(bnat_twice_succ, bpositive_sub_borrow_correct(x, y).2(smaller))
+          )
+        )
+      );
+    };
+  };
+
+// a - b for b <= a (bnat_add_sub). Division subtracts only after its
+// comparison; for a < b the value is not a difference.
+computable def bnat_sub(a, b : BNat) : BNat := match a, b {
+    b_zero, _ => b_zero;
+    b_positive(p), b_zero => b_positive(p);
+    b_positive(p), b_positive(q) => bpositive_sub_borrow(p, q).1;
+  };
+
+computable def bnat_add_sub(a, b : BNat) :
+  bnat_le(b, a) -> bnat_add(b, bnat_sub(a, b)) = a := match a, b {
+    b_zero, b_zero => fun (below : Unit) => refl(b_zero);
+    b_zero, b_positive(q) => fun (below : Void) => absurd(below);
+    b_positive(p), b_zero => fun (below : Unit) => refl(b_positive(p));
+    b_positive(p), b_positive(q) => bpositive_sub_borrow_correct(p, q).1;
+  };
+
+// Division with remainder by a positive divisor: q * d + r = n and r < d.
+computable def DivisionWithRemainder(n : BNat, d : BPositive, division : BNat and BNat) :
+  U0 := (bnat_add(bnat_mul(division.1, b_positive(d)), division.2) = n)
+  and bnat_lt(division.2, b_positive(d));
+
+// One digit of long division. The remainder so far, doubled with the next
+// bit, is below twice the divisor: it holds the divisor at most once. The
+// quotient doubles, and gains one where the divisor is subtracted.
+computable def bnat_divmod_digit(
+  d : BPositive, q, r : BNat, decision : Decidable(U0, bnat_lt(r, b_positive(d)))
+) :
+  BNat and BNat := match decision return BNat and BNat {
+    left smaller => (bnat_twice(q), r);
+    right not_smaller => (bnat_twice_succ(q), bnat_sub(r, b_positive(d)));
+  };
+
+computable def bnat_divmod_step(d : BPositive, q, r : BNat) :
+  BNat and BNat := bnat_divmod_digit(d, q, r, bnat_lt_decide(r, b_positive(d)));
+
+// The recursion reaches the leading bit, and each lower bit is a digit.
+computable def bpositive_divmod(n, d : BPositive) : BNat and BNat := match n {
+    bp_one => bnat_divmod_step(d, b_zero, b_positive(bp_one));
+    bp_even(m) => bnat_divmod_step(
+      d, bpositive_divmod(m, d).1, bnat_twice(bpositive_divmod(m, d).2)
+    );
+    bp_odd(m) => bnat_divmod_step(
+      d, bpositive_divmod(m, d).1, bnat_twice_succ(bpositive_divmod(m, d).2)
+    );
+  };
+
+computable def bnat_divmod(n : BNat, d : BPositive) : BNat and BNat := match n {
+    b_zero => (b_zero, b_zero);
+    b_positive(m) => bpositive_divmod(m, d);
+  };
+
+computable def bnat_divmod_digit_correct(
+  d : BPositive, q, r : BNat, decision : Decidable(U0, bnat_lt(r, b_positive(d))),
+  bound : bnat_lt(r, bnat_twice(b_positive(d)))
+) :
+  DivisionWithRemainder(
+    bnat_add(bnat_twice(bnat_mul(q, b_positive(d))), r), d, bnat_divmod_digit(d, q, r, decision)
+  ) {
+  match decision {
+    left(smaller) => {
+      exact (cong(fun (x : BNat) => bnat_add(x, r), bnat_twice_mul(q, d)), smaller);
+    }
+    right(not_smaller) => {
+      let doubled := bnat_twice(bnat_mul(q, b_positive(d)));
+      let rest := bnat_sub(r, b_positive(d));
+      let restored : bnat_add(b_positive(d), rest) = r :=
+        bnat_add_sub(r, b_positive(d), bnat_le_of_not_lt(r, b_positive(d), not_smaller));
+      let sum : bnat_add(bnat_mul(bnat_twice_succ(q), b_positive(d)), rest) = bnat_add(doubled, r) {
+        calc {
+          bnat_add(bnat_mul(bnat_twice_succ(q), b_positive(d)), rest) = bnat_add(
+            bnat_add(b_positive(d), doubled), rest
+          ) by cong(fun (x : BNat) => bnat_add(x, rest), bnat_twice_succ_mul(q, d));
+          _ = bnat_add(bnat_add(doubled, b_positive(d)), rest) by cong(
+            fun (x : BNat) => bnat_add(x, rest), bnat_add_comm(b_positive(d), doubled)
+          );
+          _ = bnat_add(doubled, bnat_add(b_positive(d), rest)) by bnat_add_assoc(
+            doubled, b_positive(d), rest
+          );
+          _ = bnat_add(doubled, r) by cong(bnat_add(doubled), restored);
+        }
+      }
+      let smaller : bnat_lt(rest, b_positive(d)) := bnat_lt_add_cancel(
+        b_positive(d), rest, b_positive(d),
+        comp(fun (i : Interval) => bnat_lt(restored @ ~i, bnat_add_self(b_positive(d)) @ ~i), bound)
+      );
+      exact (sum, smaller);
+    }
+  }
+}
+
+computable def bnat_divmod_step_correct(
+  d : BPositive, q, r : BNat, bound : bnat_lt(r, bnat_twice(b_positive(d)))
+) :
+  DivisionWithRemainder(
+    bnat_add(bnat_twice(bnat_mul(q, b_positive(d))), r), d, bnat_divmod_step(d, q, r)
+  ) := bnat_divmod_digit_correct(d, q, r, bnat_lt_decide(r, b_positive(d)), bound);
+
+// A remainder below the divisor stays below twice the divisor with the
+// next bit.
+computable def bnat_twice_lt(r : BNat, d : BPositive) :
+  bnat_lt(r, b_positive(d)) -> bnat_lt(bnat_twice(r), bnat_twice(b_positive(d))) := match r {
+    b_zero => fun (smaller : Unit) => tt;
+    b_positive(p) => fun (smaller : BOrderingLt(bpositive_compare(p, d))) => smaller;
+  };
+
+computable def bnat_twice_succ_lt(r : BNat, d : BPositive) :
+  bnat_lt(r, b_positive(d)) -> bnat_lt(bnat_twice_succ(r), bnat_twice(b_positive(d))) := match r {
+    b_zero => fun (smaller : Unit) => tt;
+    b_positive(p) => bordering_lt_odd_even(bpositive_compare(p, d));
+  };
+
+computable def bpositive_divmod_correct(n, d : BPositive) :
+  DivisionWithRemainder(b_positive(n), d, bpositive_divmod(n, d)) {
+  match n {
+    bp_one => {
+      exact bnat_divmod_step_correct(d, b_zero, b_positive(bp_one), tt);
+    }
+    bp_even(m) => {
+      let below := bpositive_divmod_correct(m, d);
+      let step := bnat_divmod_step_correct(
+        d, bpositive_divmod(m, d).1, bnat_twice(bpositive_divmod(m, d).2),
+        bnat_twice_lt(bpositive_divmod(m, d).2, d, below.2)
+      );
+      exact (
+        trans(
+          step.1,
+          trans(
+            bnat_twice_add(
+              bnat_mul(bpositive_divmod(m, d).1, b_positive(d)), bpositive_divmod(m, d).2
+            ), cong(bnat_twice, below.1)
+          )
+        ), step.2
+      );
+    }
+    bp_odd(m) => {
+      let below := bpositive_divmod_correct(m, d);
+      let step := bnat_divmod_step_correct(
+        d, bpositive_divmod(m, d).1, bnat_twice_succ(bpositive_divmod(m, d).2),
+        bnat_twice_succ_lt(bpositive_divmod(m, d).2, d, below.2)
+      );
+      exact (
+        trans(
+          step.1,
+          trans(
+            bnat_twice_add_twice_succ(
+              bnat_mul(bpositive_divmod(m, d).1, b_positive(d)), bpositive_divmod(m, d).2
+            ), cong(bnat_twice_succ, below.1)
+          )
+        ), step.2
+      );
+    }
+  }
+}
+
+computable def bnat_divmod_correct(n : BNat, d : BPositive) :
+  DivisionWithRemainder(n, d, bnat_divmod(n, d)) := match n {
+    b_zero => (refl(b_zero), tt);
+    b_positive(m) => bpositive_divmod_correct(m, d);
+  };
+
+// A multiple of d leaves no remainder: k * d = q * d + r with r < d gives
+// r = 0. The unary argument compares k with q.
+computable def unat_remainder_zero_succ(
+  e, k, q, r : UNat, smaller : isLt(r, succ(e)),
+  multiple : mul(k, succ(e)) = add(mul(q, succ(e)), r)
+) :
+  r = zero {
+  match unat_trichotomy(k, q) {
+    left(above) => {
+      let shifted : add(mul(q, succ(e)), mul(succ(above.1), succ(e))) = add(mul(q, succ(e)), r) {
+        calc {
+          add(mul(q, succ(e)), mul(succ(above.1), succ(e))) = mul(add(q, succ(above.1)), succ(e)) by sym(
+            unat_add_mul(q, succ(above.1), succ(e))
+          );
+          _ = mul(k, succ(e)) by cong(fun (x : UNat) => mul(x, succ(e)), sym(above.2));
+          _ = add(mul(q, succ(e)), r) by multiple;
+        }
+      }
+      let excess := unat_add_cancel(mul(q, succ(e)), mul(succ(above.1), succ(e)), r, shifted);
+      exact absurd(
+        unat_lt_le_absurd(
+          r, succ(e), smaller,
+          comp(
+            fun (i : Interval) => le(succ(e), excess @ i),
+            unat_le_add_right(succ(e), mul(above.1, succ(e)))
+          )
+        )
+      );
+    }
+    right(rest) => {
+      match rest {
+        left(same) => {
+          exact sym(
+            unat_add_cancel(
+              mul(q, succ(e)), zero, r,
+              trans(
+                unat_add_zero(mul(q, succ(e))),
+                trans(cong(fun (x : UNat) => mul(x, succ(e)), sym(same)), multiple)
+              )
+            )
+          );
+        }
+        right(below) => {
+          let shifted :
+            add(mul(k, succ(e)), zero) = add(mul(k, succ(e)), add(mul(succ(below.1), succ(e)), r)) {
+            calc {
+              add(mul(k, succ(e)), zero) = mul(k, succ(e)) by unat_add_zero(mul(k, succ(e)));
+              _ = add(mul(add(k, succ(below.1)), succ(e)), r) by trans(
+                multiple, cong(fun (x : UNat) => add(mul(x, succ(e)), r), below.2)
+              );
+              _ = add(add(mul(k, succ(e)), mul(succ(below.1), succ(e))), r) by cong(
+                fun (x : UNat) => add(x, r), unat_add_mul(k, succ(below.1), succ(e))
+              );
+              _ = add(mul(k, succ(e)), add(mul(succ(below.1), succ(e)), r)) by unat_add_assoc(
+                mul(k, succ(e)), mul(succ(below.1), succ(e)), r
+              );
+            }
+          }
+          exact absurd(
+            unat_zero_ne_succ(
+              add(add(e, mul(below.1, succ(e))), r),
+              unat_add_cancel(mul(k, succ(e)), zero, add(mul(succ(below.1), succ(e)), r), shifted)
+            )
+          );
+        }
+      }
+    }
+  }
+}
+
+computable def unat_remainder_zero(
+  d, k, q, r : UNat, smaller : isLt(r, d), multiple : mul(k, d) = add(mul(q, d), r)
+) :
+  r = zero := match d {
+    zero => absurd(smaller);
+    succ(e) => unat_remainder_zero_succ(e, k, q, r, smaller, multiple);
+  };
+
+computable def bnat_remainder_zero(
+  d : BPositive, k, q, r : BNat, smaller : bnat_lt(r, b_positive(d)),
+  multiple : bnat_mul(k, b_positive(d)) = bnat_add(bnat_mul(q, b_positive(d)), r)
+) :
+  r = b_zero {
+  let decoded :
+    mul(bnat_to_unat(k), bpositive_to_unat(d)) = add(
+      mul(bnat_to_unat(q), bpositive_to_unat(d)), bnat_to_unat(r)
+    ) {
+    calc {
+      mul(bnat_to_unat(k), bpositive_to_unat(d)) = bnat_to_unat(bnat_mul(k, b_positive(d))) by sym(
+        bnat_decode_mul(k, b_positive(d))
+      );
+      _ = bnat_to_unat(bnat_add(bnat_mul(q, b_positive(d)), r)) by cong(bnat_to_unat, multiple);
+      _ = add(bnat_to_unat(bnat_mul(q, b_positive(d))), bnat_to_unat(r)) by bnat_decode_add(
+        bnat_mul(q, b_positive(d)), r
+      );
+      _ = add(mul(bnat_to_unat(q), bpositive_to_unat(d)), bnat_to_unat(r)) by cong(
+        fun (x : UNat) => add(x, bnat_to_unat(r)), bnat_decode_mul(q, b_positive(d))
+      );
+    }
+  }
+  exact bnat_decode_injective(
+    r, b_zero,
+    unat_remainder_zero(
+      bpositive_to_unat(d), bnat_to_unat(k), bnat_to_unat(q), bnat_to_unat(r),
+      bnat_lt_decode(r, b_positive(d), smaller), decoded
+    )
+  );
+}

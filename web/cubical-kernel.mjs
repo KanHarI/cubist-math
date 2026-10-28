@@ -112,6 +112,7 @@ export class CubicalKernel {
     if (version !== CUBICAL_ABI_VERSION)
       throw new Error(`The cubical kernel module encodes syntax as ABI version ${version ?? 1}, `
         + `but this code expects version ${CUBICAL_ABI_VERSION}. Rebuild it with \`make wasm\`.`);
+    if (!module._cb_generation) throw new Error("This cubical kernel module has no handle generations. Rebuild it with `make wasm`.");
     this.module = module;
     this.handle = module._cb_new();
     if (!this.handle) throw new KernelError("Could not allocate cubical kernel session.", "resource");
@@ -370,6 +371,19 @@ export class CubicalKernel {
   // At a declaration's end, after its commit or rollback: the nodes there
   // are now settled until the next checkpoint's commit or rollback.
   forgetNodes() { this.nodes.clear(); this.settled = this.arena().nodes + 1; }
+  // A token for the node, definition and signature handles a reader holds
+  // now, as a runtime query does across operations (web/cubical-runtime.mjs):
+  // handlesHeld(token) says whether they still name what they named. The
+  // token is the session's handle generation, kept by the bridge
+  // (cb_generation in wasm/cubical_bridge.c), which every rollback and
+  // commit moves on, however it is called, and never repeats: it is 0 for
+  // a freed session and for one whose generations are spent, and no handle
+  // is held in generation 0, so such a session's readers fail closed.
+  handleToken() { this.assertOpen(); return this.module._cb_generation(this.handle) >>> 0; }
+  handlesHeld(token) {
+    const generation = this.handle ? this.module._cb_generation(this.handle) >>> 0 : 0;
+    return generation !== 0 && generation === token;
+  }
   // Syntactic equality only: no reduction and no typing judgement.
   alphaEqual(left, right) {
     this.assertOpen();

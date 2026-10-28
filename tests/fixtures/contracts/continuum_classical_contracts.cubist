@@ -1,0 +1,46 @@
+// The decidable continuum hypothesis gives excluded middle, with no assumption: each conditional
+// theorem takes its hypothesis as a parameter, lists no axiom and is computable, although
+// importing continuum_classical brings classical_axioms' LEM and Choice into scope, and
+// continuum_axioms the continuum hypotheses. Applied to an assumed hypothesis, it lists that
+// hypothesis alone.
+// Authority: docs/roadmaps/hott/h1-truncation-migration.md#excluded-middle-from-the-decidable-continuum-hypothesis
+import continuum_classical;
+import continuum_axioms;
+
+# test(continuum_classical.excluded_middle)
+# expect_axioms([])
+computable def excluded_middle_under(U < UU0, ch : DecidableContinuumHypothesis(U)) :
+  ExcludedMiddle(U) := decidable_ch_excluded_middle(U, ch);
+
+# test(continuum_classical.generalized)
+# expect_axioms([])
+computable def generalized_excluded_middle_under(
+  U < UU0, gch : DecidableGeneralizedContinuumHypothesis(U)
+) :
+  ExcludedMiddle(U) := decidable_gch_excluded_middle(U, gch);
+
+// The dichotomy for any set and its powerset of propositions in U decides each proposition in U.
+# test(continuum_classical.decides)
+# expect_axioms([])
+computable def decided_under(
+  U < UU0, A : U, setA : IsSet(U, A), dichotomy : CardinalityDichotomy(next(U), A, PowerSet(U, A)),
+  P : U, prop_ : IsProp(U, P)
+) :
+  Decidable(U, P) := dichotomy_decides(U, A, setA, dichotomy, P, prop_);
+
+// Cantor's diagonal argument, for subsets of the naturals in U0.
+# test(continuum_classical.cantor)
+# expect_axioms([])
+computable def diagonal_unreached(f : Nat -> PowerSet(U0, Nat), n : Nat) :
+  (f(n) = diagonal_subset(U0, Nat, f)) -> Void := cantor_diagonal(U0, Nat, f, n);
+
+// Applied to the assumed DecidableCH, the theorem lists exactly DecidableCH.
+# test(continuum_classical.from_decidable_ch)
+# expect_axioms([DecidableCH])
+def excluded_middle_from_decidable_ch(U < UU0) :
+  ExcludedMiddle(U) := decidable_ch_excluded_middle(U, DecidableCH(U));
+
+# test(continuum_classical.from_decidable_gch)
+# expect_axioms([DecidableGCH])
+def excluded_middle_from_decidable_gch(U < UU0) :
+  ExcludedMiddle(U) := decidable_gch_excluded_middle(U, DecidableGCH(U));

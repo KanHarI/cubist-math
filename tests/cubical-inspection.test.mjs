@@ -153,11 +153,20 @@ test("path notation and raw syntax display stay bounded on shared terms", () => 
 
 test("axiom labels and derived cubical helpers remain inspectable", async t => {
   const { program } = await cases(t, "axiom_labels");
-  const view = program.inspect("inspection_axiom_labels__Mere");
-  const tree = cubicalMathTree(view.folded.expression, view.symbols, undefined, { dimensions: (view.dimensions ?? []).map(([name]) => name) });
-  assert.equal(tree.body.fn.axiomNotation, "truncation");
-  assert.equal(tree.body.fn.truncationArgument, 1);
-  assert.equal(program.inspect(tree.body.fn.binding).expression.tag, "Var");
+  const tree = view => cubicalMathTree(view.folded.expression, view.symbols, undefined, { dimensions: (view.dimensions ?? []).map(([name]) => name) });
+  // The library's excluded middle shows by its label, with no notation of
+  // its own, and inspects as the assumption it is.
+  const lem = tree(program.inspect("inspection_axiom_labels__excluded")).body.body.fn;
+  assert.deepEqual([lem.name, lem.binding, lem.axiomNotation], ["LEM", program.checker.axioms.get("classical_axioms__LEM"), undefined]);
+  assert.equal(program.inspect(lem.binding).expression.tag, "Var");
+  // The archive's legacy Truncate(U, A) is written ‖A‖ until it retires
+  // with the archive: its own truncation module shows it so.
+  const archive = new CubicalProgram(module, archiveReader("truncation")); t.after(() => archive.dispose());
+  assert.equal((await archive.check(await archiveSource("truncation"), "truncation")).complete, true);
+  const truncate = tree(archive.inspect("truncation__Mere")).body.fn;
+  assert.equal(truncate.axiomNotation, "truncation");
+  assert.equal(truncate.truncationArgument, 1);
+  assert.equal(archive.inspect(truncate.binding).expression.tag, "Var");
   const ordinary = cubicalMathTree(variable("Truncate"), { Truncate: { name: "Truncate" } }, undefined, { dimensions: [] });
   assert.equal(ordinary.axiomNotation, undefined);
 });

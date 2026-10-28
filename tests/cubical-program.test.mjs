@@ -8,6 +8,8 @@ import { CubicalProgram } from "../web/cubical-program.mjs";
 import { cubicalMathTree } from "../web/cubical-notation.mjs";
 import naturalSource from "../web/translator/unat-source.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
+import { libraryProvenance } from "../web/module-resolution.mjs";
+import { moduleListing } from "../web/module-listing.mjs";
 import { testModulePath } from "../tools/inline-errors.mjs";
 import { checkTestModule } from "./check-program.mjs";
 const module = await createCubical();
@@ -90,14 +92,21 @@ test("native path interiors retain their interval context in the inspector and r
 
 test("logical assumptions remain explicit, minimal, and inspectable after native closure", async t => {
   const { result, program } = await cases(t, "assumptions");
-  assert.equal(result.outputs.find(d => d.name === "introduction").axioms.length, 2);
-  const view = program.inspect("program_assumptions__introduction");
+  const labels = name => result.outputs.find(d => d.name === name).axioms.map(id => program.checker.assumptionLabels.get(id)).sort();
+  assert.deepEqual(labels("excluded_and_choice"), ["Choice", "LEM"]);
+  assert.deepEqual(labels("excluded"), ["LEM"]);
+  assert.deepEqual(labels("innocent"), []);
+  const view = program.inspect("program_assumptions__excluded_and_choice");
   assert.equal(view.context.length, 2);
-  assert.ok(view.context.some(entry => entry.label === "Truncate"));
+  assert.deepEqual(view.context.map(entry => entry.label).sort(), ["Choice", "LEM"]);
   const assumption = program.inspect(view.axioms[0]);
   assert.equal(assumption.expression.tag, "Var");
-  const payload = program.export("program_assumptions__introduction");
-  const replay = new CubicalProgram(module, async name => payload.sources[name]); t.after(() => replay.dispose());
+  // A replay of the export asks which of its sources are the library's, as
+  // the workbench does, so the library's axioms keep their labels.
+  const payload = program.export("program_assumptions__excluded_and_choice");
+  const read = async name => payload.sources[name];
+  read.fromLibrary = libraryProvenance(moduleListing, path => readFile(new URL(`../${path}`, import.meta.url), "utf8"));
+  const replay = new CubicalProgram(module, read); t.after(() => replay.dispose());
   await replay.check(payload.source, payload.main);
   assert.deepEqual(replay.inspect(payload.binding).context, view.context);
 });

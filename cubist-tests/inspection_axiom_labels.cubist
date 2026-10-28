@@ -2,8 +2,9 @@
 // helpers remain inspectable.
 
 import unat;
+import classical_axioms;
 
-def Mere(A : U1) := Truncate(U1, A);
+def excluded(A : U0, nn : (A -> Void) -> Void) : Trunc(U0, A) := LEM(U0, A, nn);
 
 def refl_nat(n : UNat) : n = n {
   exact refl(n);

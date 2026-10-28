@@ -1,6 +1,7 @@
 // From tests/universe-generic.test.mjs.
 
 import paths_;
+import classical_axioms;
 
 // S12, D4 and Q10: instantiation, assumptions and builtins take universes
 // below UU0.
@@ -9,7 +10,9 @@ def identity(U < UU0, A : U, x : A) := x;
 // Error: E518: A universe argument must lie below UU0: U0, U1, … or a universe variable.
 def S12(T : UU0, x : T) := identity(UU0, T, x);
 
-// Error: E407: LEM holds only for universes below UU0.
+// The library's LEM is an axiom over U < UU0, so it refuses UU0 as a
+// generic definition does.
+// Error: E518: A universe argument must lie below UU0: U0, U1, … or a universe variable.
 def D4(T : UU0, nn : (T -> Void) -> Void) := LEM(UU0, T, nn);
 
 def D4_small(T : U1, nn : (T -> Void) -> Void) := LEM(U1, T, nn);

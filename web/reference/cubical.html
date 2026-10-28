@@ -515,6 +515,22 @@ def discard(A : U0, x : Mere(A)) : Unit := match x {
   point(value) =&gt; tt;
 };</code></pre>
             <p>A match on a truncated type must also respect its squash constructor. Importing <code>hlevels</code> lets the checker generate that branch when it can establish the required level of the result; <code>Unit</code> is a proposition in <code>discard</code>. Otherwise, write the squash clause, as the point it covers: <code>Mere.squash(x, y) @ i =&gt; …</code>, or give level evidence in <a href="#obligations"><code>obligations</code></a>.</p>
+            <h3 id="trunc">The library’s truncation: <code>Trunc</code></h3>
+            <p>The library’s propositional truncation is such a declaration, in the module <code>h1_truncation</code>, for a type in any universe below <code>UU0</code>:</p>
+            <pre><code data-check="excerpt" data-module="h1_truncation">inductive Trunc(U &lt; UU0, A : U) : prop U {
+  point(a : A);
+}</code></pre>
+            <p><code>Trunc(U, A)</code> says that <code>A</code> has an element without providing one, and is a proposition in <code>A</code>’s own universe. Its point <code>point(a)</code>, also <code>merely(U, A, a)</code>, computes; its generated <code>Trunc.squash(x, y)</code> identifies any two of its elements; and <code>mere_eliminate(U, V, A, P, proposition, map, t)</code> maps it into a proposition <code>P</code> of any universe <code>V</code> below <code>UU0</code>, given <code>proposition : IsProp(V, P)</code> and <code>map : A -&gt; P</code>. It is no assumption. The library’s excluded middle and choice conclude such truncations (<a href="assumptions.html#truncation">truncation</a>).</p>
+            <pre><code data-check="accept">import h1_truncation;
+
+def inhabited(A : U0, a : A) : Trunc(U0, A) := point(a);
+
+def all_equal(A : U0, x, y : Trunc(U0, A)) : x = y := Trunc.squash(x, y);
+
+def into_a_proposition(A, P : U0, proposition : IsProp(U0, P), map_ : A -&gt; P, t : Trunc(U0, A)) : P :=
+  mere_eliminate(U0, U0, A, P, proposition, map_, t);
+
+evaluate inhabited(Unit, tt) expecting merely(U0, Unit, tt);</code></pre>
           </section>
           <section id="obligations">
             <h2>Coherence obligations: <code>obligations</code></h2>
@@ -763,11 +779,11 @@ computable def same_parity : SameParity(1, 3) := quotient_effective(
 );
 
 evaluate same_parity expecting refl(1);</code></pre>
-            <p>The library builds number systems this way. <code>integers</code> takes the quotient of pairs of naturals, <code>(a, b)</code> standing for <code>a - b</code>, by having the same difference, <code>a + d = c + b</code>: <code>int(a, b)</code> is that integer, and <code>int_add</code>, <code>int_mul</code> and <code>int_neg</code> descend from pairs. Effectiveness makes its equality decidable (<code>int_decide</code>), since pairs have the same difference or not. <code>rationals</code> takes the quotient of fractions, as the integers' field of fractions. Both are <a href="theories.html#library-algebra">models of the algebraic theories</a>, and their arithmetic computes:</p>
+            <p>The library builds number systems this way. <code>integers</code> takes the quotient of pairs of binary naturals, <code>(a, b)</code> standing for <code>a - b</code>, by having the same difference, <code>a + d = c + b</code>: <code>int(a, b)</code> is that integer, and <code>int_add</code>, <code>int_mul</code> and <code>int_neg</code> descend from pairs. Effectiveness makes its equality decidable (<code>int_decide</code>), since pairs have the same difference or not. <code>rationals</code> takes the quotient of fractions, as the integers' field of fractions. Both are <a href="theories.html#library-algebra">models of the algebraic theories</a>, and their arithmetic computes:</p>
             <pre><code data-check="accept">import integers;
-use unat;
+use nat;
 
-def equal_or_not(x, y : Z) : UNat := match int_decide(x, y) return UNat {
+def equal_or_not(x, y : Z) : Nat := match int_decide(x, y) return Nat {
   left same =&gt; 1;
   right different =&gt; 0;
 };

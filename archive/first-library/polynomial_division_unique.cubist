@@ -97,7 +97,7 @@ def polynomial_small_multiple_zero(
         (fun (k : UNat) => le(k, d))
       );
     exact successor_not_le_self(
-      d, nat_le_trans(succ(d), succ(add_count(m, d)), d, nat_le_add(m, d), tooSmall)
+      d, unat_le_trans(succ(d), succ(add_count(m, d)), d, unat_le_add(m, d), tooSmall)
     );
   }
   exact double_negation(
