@@ -1,8 +1,8 @@
 // Module sources on disk, resolved by the shared contract in
 // web/module-resolution.mjs. The CLI, the test runner and the tests read
 // imports through sourceReader, so each resolves them as the others do.
-import { realpathSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { lstatSync, realpathSync } from "node:fs";
+import { open } from "node:fs/promises";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { moduleListing } from "../web/module-listing.mjs";
@@ -49,18 +49,35 @@ export const placeOfFile = (path, root = projectRoot) => placeOfPath(realPath(pa
 
 // The file at `path` as moduleReader's provenance takes it
 // (web/module-resolution.mjs): its text, the root it really lives in and its
-// path there, whatever place or name it is read under. The text is read from
-// the same real path the root and the path are taken from, so that what is
-// read and the file it is vouched for are one file. A missing file is null,
-// or, `required`, an error.
+// path there, whatever place or name it is read under. The path is resolved
+// once, the text read from that real path, and the root and the path there
+// taken from it as text, never by resolving it again: what is read and the
+// file it is vouched for are one file. If that real path is no longer the
+// file that was read, a link swapped in or the file replaced while it was
+// read, no root vouches for the text. A missing file is null, or,
+// `required`, an error.
 const fileAt = async (path, root, { required = false } = {}) => {
   let canonical;
   try { canonical = realpathSync.native(absolute(path)); }
   catch (error) { if (error.code === "ENOENT" && !required) return null; throw error; }
-  const content = await readFile(canonical, "utf8");
-  const place = placeOfFile(canonical, root);
-  return { text: content, root: place, file: place === "local" ? null : realPath(canonical, root) };
+  const handle = await open(canonical, "r");
+  let content, opened;
+  try { opened = await handle.stat(); content = await handle.readFile("utf8"); }
+  finally { await handle.close(); }
+  let unchanged = false;
+  try {
+    const entry = lstatSync(canonical);
+    unchanged = entry.isFile() && entry.dev === opened.dev && entry.ino === opened.ino
+      && realpathSync.native(canonical) === canonical;
+  } catch { unchanged = false; }
+  if (!unchanged) return { text: content, root: "local", file: null };
+  const there = relative(real(root), canonical).split(sep).join("/"), place = placeOfPath(there);
+  return { text: content, root: place, file: place === "local" ? null : there };
 };
+// A file read as its provenance takes it: its text, and the root it really
+// lives in, for a tool that reads a file itself, as the migration verifier
+// reads an edited one. A missing file is an error.
+export const readFileAt = (path, root = projectRoot) => fileAt(path, root, { required: true });
 
 // A readSource for CubicalProgram. With `path`, it checks that file: the file
 // is placed where it really lives, so an archive file is checked

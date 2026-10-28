@@ -9,7 +9,7 @@
 import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
+import fs, { existsSync, renameSync, symlinkSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -174,6 +174,39 @@ test("a path through a link and .. is vouched for as the file it reads", async t
   const { result } = await checkProgram(t, await readFile(through, "utf8"), { module, name: "classical",
     reader: sourceReader({ path: through, root: project }) });
   assert.match(verdicts(result).forged, /^E491: /);
+});
+
+// A file replaced by a link into the archive while it is read: its real path
+// is resolved once, the text read from it, and the root taken from that path
+// as text, so a link swapped in after the read never vouches for the text
+// read before it (#332's review round 5, finding 1). The swap is made at the
+// next resolution of the path after the first, as the reviewer's mocks did.
+test("a file swapped for a link into the archive while it is read is not the archive's", async t => {
+  const directory = await mkdtemp(join(tmpdir(), "cubist-swap-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const external = join(fs.realpathSync.native(directory), "external.cubist");
+  await writeFile(external, (await readFile(join(root, "cubist-tests/truncation_legacy_confined.cubist"), "utf8")));
+  const archiveFile = join(root, "archive/first-library/truncation.cubist");
+  try { symlinkSync(archiveFile, join(directory, "probe.cubist")); }
+  catch (error) { t.skip(`symbolic links cannot be made here (${error.code})`); return; }
+  const native = fs.realpathSync.native;
+  let resolutions = 0;
+  t.mock.method(fs.realpathSync, "native", function (path, ...rest) {
+    if (path === external && ++resolutions === 2) {
+      renameSync(external, `${external}.read`);
+      symlinkSync(archiveFile, external);
+    }
+    return native.call(this, path, ...rest);
+  });
+  const reader = sourceReader({ files: new Map([["archive/swapped", external]]) });
+  reader.place("fingerprint", "archive");
+  const program = new CubicalProgram(module, reader, { collectReferences: false });
+  t.after(() => program.dispose());
+  await program.checkModules(["swapped"], "fingerprint");
+  t.mock.restoreAll();
+  assert.ok(resolutions >= 2, "the path was resolved again after it was read");
+  for (const name of ["truncated", "introduced", "proposition", "eliminated", "excluded", "choice_at_zero", "named"])
+    assert.equal(program.symbols[`swapped__${name}`].code, "E491", name);
 });
 
 // A file aliased into the archive's place, as the fingerprint tool's
@@ -415,6 +448,31 @@ test("a workbench transfer authenticates each source by the file it was read fro
   for (const files of [{ borrowed: "cubist-tests/truncation_legacy_confined.cubist" }, { borrowed: "archive/first-library/../../library/unat.cubist" },
     { borrowed: "archive/first-library/truncation.cubist" }])
     await assert.rejects(load({ ...borrowed, files: { ...borrowed.files, ...files } }), /did not replay completely/, JSON.stringify(files));
+});
+
+// A program checked again from another file of the same text, as an alias
+// moved from one archive file to another, records the new file, so that an
+// export names the file it was read from and its transfer replays (#332's
+// review round 5, finding 2).
+test("a module read again from another file of the same text is exported with that file", async t => {
+  const text = "def truncated(A : U0) := Truncate(U0, A);\n";
+  let file = "archive/first-library/old.cubist";
+  const reader = moduleReader((place, name) => place === "archive" && name === "borrowed" ? { text, root: "archive", file } : null);
+  const program = new CubicalProgram(module, reader, { collectReferences: false });
+  t.after(() => program.dispose());
+  const source = "import borrowed;\ndef again := truncated;";
+  await program.check(source, "workbench");
+  assert.equal(program.export("workbench__again").files.borrowed, "archive/first-library/old.cubist");
+  file = "archive/first-library/new.cubist";
+  await program.check(source, "workbench");
+  const exported = program.export("workbench__again");
+  assert.equal(exported.files.borrowed, "archive/first-library/new.cubist");
+  // The archive now holds new.cubist and no old.cubist.
+  const listing = { archive: ["new"] }, fetched = async path => path === "archive/first-library/new.cubist" ? text : null;
+  const session = new WorkbenchSession(module, { fromArchive: archiveProvenance(listing, fetched) });
+  t.after(() => session.dispose());
+  const loaded = await session.load(exported);
+  assert.ok(loaded.view.axioms.map(name => loaded.view.symbols[name].name).includes("Truncate"));
 });
 
 // The migration verifier reads a baseline from the archive at its revision,

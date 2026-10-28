@@ -16,7 +16,7 @@ import { archiveModules } from "../web/cubist/modules.mjs";
 import { verifyMigration } from "./proof-migration.mjs";
 import { assertFreshBuild } from "./build-stamp.mjs";
 import { migrationSourceReader, historicalModulePaths, historicalMigrationSources, unaryNaturalBase } from "./migration-sources.mjs";
-import { canonicalFile, placeOfFile } from "./module-sources.mjs";
+import { readFileAt } from "./module-sources.mjs";
 import { moduleRoots, searchOrder } from "../web/module-resolution.mjs";
 import { historicalRenamingAt, historicalSource } from "../web/cubist/legacy-syntax.mjs";
 import { parse } from "../web/cubist/parser.mjs";
@@ -61,9 +61,9 @@ const readEdited = async name => {
     : [`${editedRoot}/${name}.cubist`,`${root}archive/first-library/${name}.cubist`];
   for (const path of candidates) {
     try {
-      // Read through the path its place is taken from: one file for both.
-      const file = canonicalFile(path), text = await readFile(file,"utf8");
-      editedPlaces.set(name,placeOfFile(file)); return text;
+      // Read as its place is taken: one file for both (readFileAt).
+      const found = await readFileAt(path);
+      editedPlaces.set(name,found.root); return found.text;
     } catch(error) { if(error.code!=="ENOENT")throw error; }
   }
   throw Error(`No edited source for ${name}.`);

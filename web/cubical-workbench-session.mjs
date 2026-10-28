@@ -52,7 +52,7 @@ export class WorkbenchSession {
     };
     // Each source is authenticated by the file its transfer says it was read
     // from, which the provenance reads again.
-    const file = name => typeof payload.files?.[name] === "string" ? payload.files[name] : null;
+    const file = name => payload.files && Object.hasOwn(payload.files, name) && typeof payload.files[name] === "string" ? payload.files[name] : null;
     if (this.fromLibrary) read.fromLibrary = (name, text) => this.fromLibrary(name, text, file(name));
     if (this.fromArchive) read.fromArchive = (name, text) => this.fromArchive(name, text, file(name));
     this.program = new CubicalProgram(this.module, read);

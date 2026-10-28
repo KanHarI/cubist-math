@@ -689,7 +689,10 @@ transition land together.
      read through that same real path (`fileAt` in
      `tools/module-sources.mjs`; the command line and the verifier read
      their files through `canonicalFile`): what is read and the file it is
-     vouched for are one file. Unlike the library's labels, provenance is not transitive, so a
+     vouched for are one file. That path is resolved once and never again
+     after the read: the root is taken from it as text, and if it is no
+     longer the file that was read (a link swapped in, or another file put
+     there, by its device and inode), no root vouches for the text. Unlike the library's labels, provenance is not transitive, so a
      module of the user's may import the archive and use its declarations
      over the builtins.
    - **Where written.** A builtin is the archive's when the module its
@@ -717,9 +720,10 @@ transition land together.
      library also requires its file of the module's own name, since a bare
      label is a name: a library file checked under another name, through a
      link, would give a second assumption the same label.
-   - **A program checked again** reuses a module only from the same text
-     and the same provenance, library and archive: text its root no longer
-     holds is checked again (`CubicalProgram.check`).
+   - **A program checked again** reuses a module only from the same text,
+     the same provenance, library and archive, and the same file: text its
+     root no longer holds, or holds in another file, is checked again
+     (`CubicalProgram.check`), so an export names the file it was read from.
    - **An edited archive module is not the archive's**, in the workspace or
      as a file outside the root: the archive is frozen until it retires,
      with no in-place remedies (I0.5), so an edit is a module of the user's
