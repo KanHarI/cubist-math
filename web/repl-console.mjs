@@ -5,6 +5,7 @@
 import { scan, tokenStyle, numeralAt } from "./source-tokens.mjs";
 import { replStatements, consoleCommands, restartNote } from "./repl-session.mjs";
 import { WorkerRequests } from "./worker-requests.mjs";
+import { workerMaintenance } from "./worker-maintenance.mjs";
 import { withCode } from "./diagnostics.mjs";
 
 const element = (tag, className, text) => {
@@ -213,15 +214,23 @@ export function recordedSession(request, { fresh = false, generation = () => 0, 
 
 // A REPL with its own worker and an empty program, for pages without a proof.
 // The worker starts on first use, and again after a kernel failure stops it;
-// such a failure begins the next generation.
+// such a failure begins the next generation. A worker starts only as a
+// request is sent, and each request goes through the REPL's maintenance
+// (worker-maintenance.mjs), as on the proof page: the restore of its
+// session is maintenance, and nothing else is sent, or starts a worker,
+// while it runs.
 export function standaloneRepl() {
   let worker = null, workers = 0;
-  const request = (command, args) => {
+  const upkeep = workerMaintenance();
+  const send = (command, args) => () => {
     worker ??= new WorkerRequests(new Worker(new URL("./cubical-worker.mjs", import.meta.url), { type: "module" }),
       { onError: error => { if (error.fatal) { worker = null; workers++; } } });
     return worker.request(command, args);
   };
-  const session = recordedSession(request, { fresh: true, generation: () => workers });
+  const request = (command, args) => upkeep.request(send(command, args));
+  const internal = (command, args) => upkeep.internal(send(command, args));
+  const session = recordedSession(request, { fresh: true, generation: () => workers,
+    maintain: work => upkeep.run(() => work(internal)) });
   return {
     run: session.run,
     reset: () => { session.reset(); return request("repl-reset", { fresh: true }); },

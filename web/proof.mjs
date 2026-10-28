@@ -1204,25 +1204,51 @@ async function serverVersion() {
     return null;
   }
 }
+// A newer compiler on the server replaces the worker, as maintenance
+// (replaceWorker), which decides again once it is its turn: a restore or a
+// rebuild under way when the version came is not cut off, and a worker that
+// replaced this one meanwhile, or a page that stopped, is left as it is. The
+// new worker checks the current source again and restores the console's
+// session (rebuild); an embedded page that has checked no example yet
+// waits for one.
 async function refreshCompiler() {
   if (worker?.pendingCount || !ready || upkeep.busy) return false;
-  const version = await serverVersion();
+  const current = worker, version = await serverVersion();
   if (!version || version === workerVersion) return false;
-  ready = false;
-  showChecking(true, "Updating proof checker…");
-  worker.terminate();
-  contextual?.invalidate("The compiler changed. Check the source and select a new context.");
-  last = null;
-  $("result").hidden = true;
-  $("source-notice").hidden = false;
-  $("source-notice").textContent =
-    "The compiler was updated. Rechecking your current source; edits are preserved.";
-  await startWorker(version);
-  return true;
+  let recheck = true;
+  return replaceWorker({ version, onReady: () => rebuild(recheck), prepare: () => {
+    if (worker !== current || !ready || version === workerVersion) return false;
+    recheck = !embedded || last !== null;
+    ready = false;
+    showChecking(true, "Updating proof checker…");
+    contextual?.invalidate("The compiler changed. Check the source and select a new context.");
+    last = null;
+    $("result").hidden = true;
+    $("source-notice").hidden = false;
+    $("source-notice").textContent =
+      "The compiler was updated. Rechecking your current source; edits are preserved.";
+    return true;
+  } });
 }
 // The workers started, counted: the console restores its session on a new
 // one (recordedSession in repl-console.mjs).
 let workers = 0;
+// Every start of the page's worker, and every replacement, is maintenance
+// (upkeep): it begins once maintenance under way and the requests already
+// sent are done, and then, unless `prepare` declines, ends the worker there
+// was, if any, and lasts until the new one is ready and has done what
+// `onReady` does (startWorker). So no request is sent to a worker on its way
+// out or before its successor is ready, and nothing replaces a worker while
+// a restore or a rebuild runs on it.
+function replaceWorker({ version = undefined, onReady = null, prepare = () => true } = {}) {
+  return upkeep.run(async () => {
+    if (!prepare()) return false;
+    worker?.terminate();
+    const { started } = await startWorker(version, { onReady });
+    await started;
+    return true;
+  });
+}
 // A worker and, once it is ready, the page's first check, or what `onReady`
 // does instead, as rebuild after a kernel failure. `started` settles when
 // that is done.
@@ -1275,12 +1301,12 @@ function restartAfterFault(error) {
   $("source-notice").textContent = recheck
     ? "The kernel's WebAssembly instance failed, so a new checking worker checks your current source again; edits are preserved."
     : "The kernel's WebAssembly instance failed while checking, so a new checking worker waits for the next check.";
-  // The new worker and its rebuild are maintenance, taken up at once: what
-  // is asked from here on waits for them.
-  upkeep.run(async () => {
-    const { started } = await startWorker(workerVersion, { onReady: () => rebuild(recheck) });
-    await started;
-  }).catch(diagnostic);
+  // The new worker and its rebuild are maintenance, asked for at once: what
+  // is asked from here on waits for them. A worker that replaced the failed
+  // one meanwhile is left as it is.
+  const failed = worker;
+  replaceWorker({ version: workerVersion, onReady: () => rebuild(recheck), prepare: () => worker === failed })
+    .catch(diagnostic);
 }
 // What the page held, built again on a new worker: the source checked again,
 // or the latest example the embedding page sent while the worker started,
@@ -1297,13 +1323,12 @@ async function rebuild(recheck) {
   for (const note of await consoleSession.restore(internal)) replConsole?.show(note);
 }
 // The reader's check after the page stopped replacing workers: a new worker,
-// for that check. False when it does not start.
+// for that check, unless one is ready by its turn. False when none is.
 async function retry() {
   halted = null;
   $("source-notice").hidden = true;
   refreshStatus();
-  const { started } = await startWorker(undefined, { onReady: () => {} });
-  await started;
+  await replaceWorker({ onReady: () => {}, prepare: () => !ready });
   return ready;
 }
 addEventListener("focus", () => {
@@ -1327,4 +1352,4 @@ const replConsole = embedded ? null : createReplConsole($("repl"), {
   run: consoleSession.run,
   reset: () => { consoleSession.reset(); return request("repl-reset", {}); },
 });
-await startWorker();
+await replaceWorker();

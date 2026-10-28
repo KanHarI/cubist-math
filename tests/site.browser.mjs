@@ -275,6 +275,16 @@ export default async options => {
     if (hlevelsHeld) await hlevelsHeld;
     await route.fulfill({ body: "def lifted : Unit := tt;\n", contentType: "text/plain" });
   });
+  // The compiler's version, as the server reports it: `compiler`, but the
+  // next request after `versionHeld` is set waits for it, announced, and is
+  // answered with the version then.
+  let compiler = "fixture-1", versionHeld = null, versionAsked = () => {};
+  await injected.route("**/cubist-version*", async route => {
+    const held = versionHeld;
+    versionHeld = null;
+    if (held) { versionAsked(); await held; }
+    await route.fulfill({ body: JSON.stringify({ version: compiler }), contentType: "application/json" });
+  });
   const fault = "E668: The kernel's WebAssembly instance failed (Maximum call stack size exceeded), and is not used again: nothing computed after the failure is kept.";
   const restarted = [fault, "The kernel was restarted. The session's entries were checked again."];
   const entries = async (target, texts) => {
@@ -455,8 +465,42 @@ export default async options => {
   await workspace.waitForFunction(() => !document.querySelector(".repl-form.busy"));
   assert.deepEqual((await entries(workspace, [])).slice(-2), [restarted[1], "Unit"]);
   assert.deepEqual((await entries(workspace, ["typeof lifted;"])).slice(-1), ["Unit"]);
-  await workspace.close();
   console.log("PASS proof page: after a kernel fails in a check, the console's session waits for the next one");
+  // A newer compiler, found while the session is restored after another
+  // failure in a check: the worker is replaced only once the restore is
+  // done, and the new one checks the source and restores the session again.
+  assert.deepEqual((await entries(workspace, ["/fail-next-kernel-call"])).slice(-1), [unknown]);
+  await workspace.locator("#check").click();
+  await workspace.waitForFunction(() => !document.querySelector("#diagnostic").hidden
+    && document.querySelector("#diagnostic").textContent.includes("WebAssembly instance failed"));
+  let answer, readImport;
+  versionHeld = new Promise(resolve => { answer = resolve; });
+  const asking = new Promise(resolve => { versionAsked = resolve; });
+  // The page asks once its new worker is ready and nothing is under way.
+  for (let tries = 0, asked = false; !asked; tries++) {
+    assert.ok(tries < 120, "The page did not ask for the compiler's version.");
+    await workspace.evaluate(() => dispatchEvent(new Event("focus")));
+    asked = await Promise.race([asking.then(() => true), new Promise(resolve => setTimeout(() => resolve(false), 1000))]);
+  }
+  hlevelsHeld = new Promise(resolve => { readImport = resolve; });
+  const reading = new Promise(resolve => { hlevelsAsked = resolve; });
+  await workspace.locator("#check").click();
+  await workspace.waitForFunction(() => document.querySelector("#diagnostic").hidden);
+  await workspace.locator(".repl-text").last().fill("typeof kept;");
+  await workspace.locator(".repl-text").last().press("Enter");
+  await Promise.race([reading, new Promise((_, reject) =>
+    setTimeout(() => reject(new Error("No restore read the import.")), 120000))]);
+  compiler = "fixture-2";
+  answer();
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  readImport();
+  hlevelsHeld = null; hlevelsAsked = () => {};
+  await workspace.waitForFunction(() => !document.querySelector(".repl-form.busy"));
+  assert.equal(await shown("#source-notice"), "The compiler was updated. Rechecking your current source; edits are preserved.");
+  assert.deepEqual((await entries(workspace, [])).slice(-3), [restarted[1], restarted[1], "Unit"]);
+  assert.deepEqual((await entries(workspace, ["typeof lifted;"])).slice(-1), ["Unit"]);
+  await workspace.close();
+  console.log("PASS proof page: a newer compiler found during a restore replaces the worker once it is done");
   // An embedded proof page, a reference page's inspector: its kernel fails
   // in an example's inspection, and the example the reference page sends
   // while the new worker loads is the one the new worker checks.
