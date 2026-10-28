@@ -1,6 +1,6 @@
 import { displayFreeNames } from "./translator/display-names.mjs";
 import { inductionBinders } from "./display-naming.mjs";
-import { cubicalText } from "./cubical-notation.mjs";
+import { cubicalMathTree, cubicalTextParts } from "./cubical-notation.mjs";
 import { renameLevel, universeText } from "./cubical-levels.mjs";
 import { localName } from "./translator/names.mjs";
 import {numeralValue} from "./translator/numerals.mjs";
@@ -35,37 +35,41 @@ const operatorLevel = { "+": LEVEL.plus, "-": LEVEL.plus, "*": LEVEL.times, "/":
 // here, where names are settled, was the source of #310's captures
 // (web/README.md, "Displaying terms").
 export function sourceText(term, symbols = {}, limit = 4000, context = {}) {
-  return render(term, symbols, limit, context, null);
+  return sourceTexts([term], symbols, limit, context).texts[0];
 }
 
-// The names a source text of `term` writes for variables, binders and
-// dimensions, each with what it names (`var:` and the variable's name, or
-// `dim`): the printer's own, written as it prints, so a binder it leaves
-// out, as the coordinate of an equality, is not one, and a variable it
-// shows under a name the naming gave, as m1, is. It prints every
-// abbreviation it can, so it reaches at least as far into the term as the
-// text does. A display of several texts, as a goal with its locals, merges
-// theirs (unitNames) and gives each text the whole (`context.shown`, or a
-// function that computes it once, when a text first asks): a name any of
-// them shows is read there as what it shows.
-export function printedNames(term, symbols = {}, limit = 4000, context = {}) {
-  const names = new Map();
-  render(term, symbols, limit, context, names);
-  return names;
+// The texts of one display, as a goal's locals, target and term, or a
+// mismatch's two types, with the names they write for variables, binders
+// and dimensions, each with what it names (`var:` and the variable's name,
+// `dim`, or `kernel` for a binder of kernel notation): the names of the
+// texts as printed, recorded as the printer writes them, so a binder it
+// leaves out, as an equality's coordinate, is none, and a variable shown
+// under a name the naming gave, as m1, is one. `locals` are names the
+// display writes beside the texts, a telescope's.
+// A model's notation is read by the model's name, which any of these takes
+// wherever the display writes it. The texts are printed, and where a
+// model's qualifier they write is a name they also write for something
+// else, printed again with that name known, until none is: each round
+// declines more qualifiers, so the names known only grow, and the texts
+// returned are checked against exactly the names they write.
+export function sourceTexts(terms, symbols = {}, limit = 4000, context = {}, { locals = [] } = {}) {
+  let known = new Map();
+  for (let round = 0; ; round++) {
+    const written = new Map(locals.map(name => [name, new Set([`var:${name}`])])), qualifiers = [];
+    // Past a bound that no display reaches, a round writes no qualifier.
+    const state = { known, written, qualifiers, decline: round >= 64 };
+    const texts = terms.map(term => render(term, symbols, limit, context, state));
+    if (!qualifiers.some(({ name, allow }) => [...written.get(name) ?? []].some(owner => owner !== allow))) return { texts, names: written };
+    known = new Map([...known, ...written].map(([name]) => [name, new Set([...known.get(name) ?? [], ...written.get(name) ?? []])]));
+  }
 }
 
-// Names several texts of one display show, merged, and `locals`, a
-// telescope's names the display writes beside them.
-export function unitNames(maps, locals = []) {
-  const names = new Map();
-  for (const map of maps) for (const [name, owners] of map) names.set(name, new Set([...names.get(name) ?? [], ...owners]));
-  for (const name of locals) names.set(name, new Set([...names.get(name) ?? [], `var:${name}`]));
-  return names;
-}
+// The names a source text of `term` writes, as sourceTexts gives them.
+export const printedNames = (term, symbols = {}, limit = 4000, context = {}) => sourceTexts([term], symbols, limit, context).names;
 
-// `written` collects the names the text writes (printedNames), and is null
-// where the text is printed.
-function render(term, symbols, limit, context, written) {
+// `state` holds the names known to be written for other things, the names
+// this round writes, and the model qualifiers it writes (sourceTexts).
+function render(term, symbols, limit, context, state) {
   let budget = limit, selection = context.selection ?? null, selectionIdentity = context.selectionIdentity;
   let selectionReceiver = context.selectionReceiver ?? null;
   // A numeral or literal prints abbreviated only where the scope it is
@@ -78,31 +82,37 @@ function render(term, symbols, limit, context, written) {
   const reads = typeof context.reads === "function" ? context.reads : () => undefined;
   const opens = typeof context.opens === "function" ? context.opens : () => false;
   const known = identity => identity !== undefined && identity !== null;
-  // A name written for a variable, a binder or a dimension, recorded where
-  // the names are collected.
+  // A name written for a variable, a binder or a dimension, as what it
+  // names; a comparison that writes nothing records nothing (quietly).
+  let recording = true;
   const write = (name, owner) => {
-    if (written) written.set(name, new Set([...written.get(name) ?? [], owner]));
+    if (recording) state.written.set(name, new Set([...state.written.get(name) ?? [], owner]));
     return name;
   };
-  // What each name the display writes names (printedNames): this text's,
-  // or the whole display's where it is one of several. A model's notation
-  // is read by the model's name, which a variable, a binder or a dimension
-  // the display shows by that name takes, wherever it shows it, so a
-  // model's name is not written as a qualifier there; a named notation is
-  // read before any value or dimension. A bare numeral reads no name.
-  let shown = null;
-  const shows = name => (shown ??= (typeof context.shown === "function" ? context.shown() : context.shown)
-    ?? printedNames(term, symbols, limit, context)).get(name);
-  const selects = entry => written ? true
-    : selection === entry.notation && known(selectionIdentity) && selectionIdentity === entry.identity;
-  const qualifies = entry => written ? true : !(entry.attached && shows(entry.notation))
+  const quietly = fn => { const saved = recording; recording = false; try { return fn(); } finally { recording = saved; } };
+  // A model's notation is read by the model's name, so its qualifier is
+  // not written where the display writes that name for anything else
+  // (`allow`, the model variable's own name, or nothing); a named notation
+  // is read before any value or dimension. A bare numeral reads no name.
+  const takenBy = (name, allow) => [...state.known.get(name) ?? []].some(owner => owner !== allow);
+  // An abbreviation the printer writes: `site` names the kind of place,
+  // which tests/numeral-readback.test.mjs classifies (a new one fails there
+  // until it is), and `qualifier` a model qualifier it writes, which
+  // sourceTexts checks against the names the display writes.
+  const abbreviated = (site, text, qualifier = null, level = LEVEL.atom) => {
+    if (qualifier && recording) state.qualifiers.push(qualifier);
+    return [text, level];
+  };
+  const selects = entry => selection === entry.notation && known(selectionIdentity) && selectionIdentity === entry.identity;
+  const qualifies = entry => !(entry.attached && (state.decline || takenBy(entry.notation, null)))
     && known(entry.identity) && reads(entry.notation) === entry.identity;
   // A reading among `entries` that prints the text: bare, qualified, or
   // none, when no notation in scope reads it back.
   const readBack = (entries, text) => {
-    if (entries.some(selects)) return atom(text);
+    if (entries.some(selects)) return abbreviated("selected reading", text);
     const reading = entries.find(qualifies);
-    return reading ? atom(`${reading.notation}.(${text})`) : null;
+    return reading ? abbreviated("qualified reading", `${reading.notation}.(${text})`,
+      reading.attached ? { name: reading.notation, allow: null } : null) : null;
   };
   const label = binding => symbols[binding]?.name
     ?? localName(binding);
@@ -192,15 +202,22 @@ function render(term, symbols, limit, context, written) {
   // binders apart from those free in their bodies. Definitions keep their
   // labels.
   const fallback = t => {
-    // Kernel notation writes no abbreviation, and its own binders scope
-    // only within it, so they are not collected; it writes the variables
-    // free in it as the scope shows them, which are.
-    if (written) for (const name of free(t)) variable(name);
+    // Kernel notation writes no abbreviation. It writes the variables free
+    // in it as the scope shows them, and binders of its own spelling.
+    for (const name of free(t)) variable(name);
     const scope = new Map([...bound.keys()].filter(name => bound.get(name)).map(name => [name, shownAs(name)]));
     // forSource has marked each definition named as a dimension of the term
     // or of its context qualified, which kernel notation shows by its
     // kernel name.
-    const text = cubicalText(t, symbols, { scope, dimensions: [] });
+    const tree = cubicalMathTree(t, symbols, undefined, { scope, dimensions: [] });
+    const binders = node => {
+      if (!node || typeof node !== "object") return;
+      if (["Lambda", "Pi", "Sigma", "LevelPi", "LevelLambda"].includes(node.kind) && typeof node.name === "string") write(node.name, "kernel");
+      if (node.kind === "Scope") for (const name of node.names ?? []) write(name, "kernel");
+      Object.values(node).forEach(binders);
+    };
+    binders(tree);
+    const text = cubicalTextParts(tree).map(part => part.text).join("");
     return atom(/^[[λΠΣ]/.test(text) ? `(${text})` : text);
   };
   // A declared type's eliminator applied to a value, as the match or the
@@ -356,7 +373,7 @@ function render(term, symbols, limit, context, written) {
         if (printing?.operator && !printing.model && args.length === 2) {
           const [text, level] = infixText(printing, args, printing.notation);
           const own = selection === printing.notation;
-          return own ? [text, level] : atom(`${printing.notation}.(${text})`);
+          return own ? abbreviated("selected operator", text, null, level) : abbreviated("named operator", `${printing.notation}.(${text})`);
         }
         // A literal read from its characters prints as it was written, in
         // its notation (L2.10c): parsed_value(parse(lexeme), tt).
@@ -370,7 +387,7 @@ function render(term, symbols, limit, context, written) {
           const values = args.slice(args.length - printing.numeral.length).map(numeral);
           const value = values[printing.numeral.indexOf(null)];
           if (values.every((v, k) => v !== null && v === (printing.numeral[k] ?? value)))
-            return atom(String(value));
+            return abbreviated("selected numeral rule", String(value));
         }
         // A theory's numeral operation applied to a model and a numeral, as
         // CommRing.of_nat(A, n), reads back from the numeral in the model's
@@ -389,15 +406,13 @@ function render(term, symbols, limit, context, written) {
             : model?.tag === "DefRef" && !symbols[model.name]?.printing?.some(entry => entry.modelRules)
               ? qualifiedText(label(model.name), model) : null;
           if (args.length === at + 2 && value !== null && /^[A-Za-z_][A-Za-z0-9_]*$/.test(name ?? "")) {
-            if (written) return atom(`${name}.(${value})`);
             if (model.tag === "DefRef" && selection === name && selectionReceiver?.tag === "DefRef"
-              && selectionReceiver.name === model.name) return atom(value);
+              && selectionReceiver.name === model.name) return abbreviated("selected theory numeral", value);
             // A model variable's name may show only that variable; a
-            // declared model's, nothing the display shows.
-            const owners = shows(name);
-            if ((!owners || model.tag === "Var" && [...owners].every(owner => owner === `var:${model.name}`))
-              && opens(name, model, !!bound.get(name)) === true)
-              return atom(`${name}.(${value})`);
+            // declared model's, nothing else the display shows.
+            const allow = model.tag === "Var" ? `var:${model.name}` : null;
+            if (!state.decline && !takenBy(name, allow) && opens(name, model, !!bound.get(name)) === true)
+              return abbreviated("qualified theory numeral", `${name}.(${value})`, { name, allow });
           }
         }
         const operator = head.tag === "DefRef" && args.length === 2 && !printing && arithmetic.exec(head.name)?.[1];
@@ -409,7 +424,7 @@ function render(term, symbols, limit, context, written) {
           selection = "unat"; selectionIdentity = reads("unat"); selectionReceiver = null;
           const text = `${sub(args[0], left)} ${symbol} ${sub(args[1], level + 1)}`;
           selection = saved; selectionIdentity = savedIdentity; selectionReceiver = savedReceiver;
-          return selection === "unat" ? [text, level] : atom(`unat.(${text})`);
+          return selection === "unat" ? abbreviated("selected operator", text, null, level) : abbreviated("named operator", `unat.(${text})`);
         }
         // A theory's projection of a model is m.f, and applied further,
         // m.f(x, y), as the source writes it (L2.4).
@@ -420,8 +435,10 @@ function render(term, symbols, limit, context, written) {
             const rest = args.slice(at + 1);
             // Where the model is selected, its operation prints with its
             // notation's operator (L2.10d).
-            if (printing?.operator && rest.length === 2 && selection !== null && selection === show(model))
-              return infixText(printing, rest, selection);
+            if (printing?.operator && rest.length === 2 && selection !== null && selection === quietly(() => show(model))) {
+              const [text, level] = infixText(printing, rest, selection);
+              return abbreviated("selected model operator", text, null, level);
+            }
             return atom(`${sub(model, LEVEL.atom)}.${projection}${rest.length ? `(${rest.map(show).join(", ")})` : ""}`);
           }
         }
