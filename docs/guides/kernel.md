@@ -874,7 +874,7 @@ The kernel separates **trusted equality steps** (invoked explicitly by `cc_instr
 
 ### 2. Weak-head normal form (`ck_whnf` in `term_normalize.c`)
 
-`ck_whnf(k, term)` reduces a term to its weak-head normal form by call-by-name, memoized by exact handle in `k->weak_cache`. The worker `weak` performs one head step and either returns a final head or hands back a continuation term, which the driver loop `weak_tails` reduces next; the loop records the terms it passes through, up to `WEAK_MAX_TAILS` (`16384`) of them, so that the final head is cached for all of those; later tails still reduce but are not cached. Reducing the head of an eliminated subterm (the function of `CC_APP`/`CC_LAPP`, the pair of `CC_FST`/`CC_SND`, the path of `CC_PAPP`, the scrutinee of a recursor) is a recursive `ck_whnf` call bounded by the `k->recursion` guard (`1024`); there is no explicit stack of elimination frames:
+`ck_whnf(k, term)` reduces a term to its weak-head normal form by call-by-name, memoized by exact handle in `k->weak_cache`. The worker `weak` performs one head step and either returns a final head or hands back a continuation term, which the driver loop `weak_tails` reduces next; the loop records the terms it passes through, up to `WEAK_MAX_TAILS` (`16384`) of them, so that the final head is cached for all of those; later tails still reduce but are not cached. Reducing the head of an eliminated subterm (the function of `CC_APP`/`CC_LAPP`, the pair of `CC_FST`/`CC_SND`, the path of `CC_PAPP`, the scrutinee of a recursor) is a recursive `ck_whnf` call, a step of the recursion guard `ck_enter` (see [Verification and limits](#verification-and-limits)); there is no explicit stack of elimination frames:
 
 1. **Definitions:** `CC_DEFREF(idx)` unfolds to `k->definitions[idx].value`.
 2. **Eliminations:** `CC_APP(f, a)` reduces $f$ to WHNF; on `CC_LAM(x, A, body)` it continues with `ck_substitute(k, body, x, a)`, on `CC_ELIM(sig, M, clauses)` it runs `ck_eliminate(k, Elim(sig, M, clauses), a, true, &reduced)` (`weak = true`, which reduces `a` to WHNF first), and otherwise it returns the neutral application. `CC_LAPP(f, l)` reduces $f$ and, on `CC_LLAM(x, B, body)`, continues with `ck_level_instantiate(k, body, x, l)`. `CC_FST`/`CC_SND` reduce the pair and, on `CC_PAIR(T, a, b)`, continue with `a` or `b`.
@@ -1040,4 +1040,35 @@ not retry these failures. The elaborator preserves an unresolved limit through
 inference and proof search, and negative-test contracts cannot count it as an
 expected refusal. Bounded conversion shortcuts may still use a cheaper
 alternative; a successful answer requires the ordinary checked derivation.
+
+Native recursion is bounded by `ck_enter` (`term_store.c`). Each recursive
+step of `ck_whnf`, `folding_head`, `normal`, `normal_agree` and `ck_glue_step`
+(`term_normalize.c`), `canonical_traverse` (`levels.c`), `alpha`
+(`term_conversion.c`) and `rebuild` (`instruction_equality.c`) is entered
+through it and left through `ck_leave`. The outermost step records its frame's
+address in `k->stack_base`, and `k->recursion` counts the steps entered. A
+step fails with `CC_ERROR_RESOURCE` and its caller's message (`K336` for
+reduction, `K337` normal forms, `K326` comparison, `K322` levels, `K207`
+positions) when `CC_RECURSION_LIMIT` (`448`) steps are already entered, or when
+its frame is more than `CC_STACK_BUDGET` (4 MiB) from the base. A nested step
+never moves the base, and a failed step is not entered. An operation's start,
+and a rollback, set `k->recursion` to `0`, so the next step records the base
+again. The
+bytes bound the stack the kernel runs on, whatever a cycle's frames cost: a
+native main thread's 8 MiB, and the WebAssembly build's (`-sSTACK_SIZE` in the
+`Makefile`). The steps bound a stack the kernel cannot measure: under
+WebAssembly the engine keeps frames on its own stack, about 0.5 MiB in a
+Chromium worker, and the cycles measured take 0.6 to 0.9 KiB of it a step,
+so their 448 steps end before it does. In a Chromium worker nested declared
+eliminators ran out of that stack at 622 steps and nested unit eliminations
+at 708, so the limit is 28% and 37% under them; in Node they ran out at
+about 1,100 and 1,686. The test suite and the library need at most 320
+steps.
+
+On 2026-10-28 the user decided the guard's three open questions: the step
+bound stays beside the byte bound, since no byte budget alone stops every
+cycle before an engine's stack runs out; the limit is 448 steps, for margin
+in a Chromium worker; and it holds on every platform, native included, so
+that a recursion is refused at the same depth wherever it is checked.
+
 Full cubical canonicity for every implemented constructor is not claimed by this project.

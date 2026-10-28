@@ -350,11 +350,58 @@ refusals' messages. #317's `cubist-tests/continuum_axioms.cubist` assumed
 `continuum_axioms::GCH`; it became that module, which imports the library's,
 since a test module may not share a library module's name.
 No axiom assumes `CantorContinuumHypothesis`.
-The targets `DecidableCH -> LEM` and `DecidableGCH -> Choice` are follow-up
-proofs. [Kirst and Rech's HoTT mechanization](https://hott-uf.github.io/2021/HoTTUF_2021_paper_4.pdf)
+The target `DecidableCH -> LEM` is checked since 2026-10-28, with no
+resizing ([below](#excluded-middle-from-the-decidable-continuum-hypothesis)).
+`DecidableGCH -> Choice` remains a follow-up proof.
+[Kirst and Rech's HoTT mechanization](https://hott-uf.github.io/2021/HoTTUF_2021_paper_4.pdf)
 uses propositional resizing; adapting it must account explicitly for that
-requirement at these universe levels. No implication to LEM or choice is
-claimed as checked here.
+requirement at these universe levels. No implication to choice is claimed
+as checked here.
+
+#### Excluded middle from the decidable continuum hypothesis
+
+Added on 2026-10-28, with no assumptions, `continuum_classical.cubist`
+proves, for every `U < UU0`,
+
+```text
+computable def decidable_ch_excluded_middle(U < UU0, ch : DecidableContinuumHypothesis(U)) :
+  ExcludedMiddle(U)
+```
+
+and `decidable_gch_excluded_middle` from
+`DecidableGeneralizedContinuumHypothesis(U)` through it. The universes line
+up without resizing. For a proposition `P : U`, the subsets of `Nat` that
+are singletons or for which `P` holds,
+`SingletonsOrAll(U, Nat, nat_is_set, P)`, are pairs of an
+`S : PowerSet(U, Nat)` and `Trunc(next(U), P or IsSingleton(U, Nat, nat_is_set, S))`,
+in `next(U)`, where `DecidableContinuumHypothesis(U)` quantifies its
+intermediate sets; and the powerset's subsets take their propositions from
+`U`, the universe that `ExcludedMiddle(U)` is about.
+
+The proof holds for any set `A` and its powerset (`dichotomy_decides`):
+
+- `A` injects into the type by singletons, which determine their elements
+  (`powersets`' `singleton_injective`), and the type injects into
+  `PowerSet(U, A)` by the first projection, since its condition is a
+  proposition (`hlevels`' `subtype_injective`); it is a set.
+- The dichotomy merely gives an equivalence to `A` or to the powerset. The
+  decision of `P` is a proposition, so the truncations are eliminated.
+- Equivalent to `A`, the type refutes `P`: with `P` every subset belongs to
+  it, so the inverse of the equivalence, followed by the first projection,
+  reaches the diagonal subset of that very map, against Cantor's diagonal
+  argument (`powersets`' `cantor_diagonal`).
+- Equivalent to the powerset by `e`, the type proves `P`: the element that
+  `e` sends to the diagonal subset of `a ↦ e({a})` is no singleton `{k}`,
+  since `e({k})` would then be that diagonal, so its condition gives `P`.
+
+Deciding `Trunc(U, A)` for each `A : U` then gives excluded middle at `U`
+(`excluded_middle_from_decisions`). The module imports `classical_axioms`
+only for the statement `ExcludedMiddle`; its results list no assumption,
+and all are computable.
+`tests/fixtures/contracts/continuum_classical_contracts.cubist` keeps the
+conditional theorems axiom-free and computable, with `continuum_axioms` in
+scope, and applied to `continuum_axioms`' `DecidableCH` the theorem lists
+exactly `DecidableCH` (and `DecidableGCH` alone for the generalized one).
 
 ### Steps
 

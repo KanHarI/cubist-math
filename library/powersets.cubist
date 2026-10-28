@@ -21,3 +21,36 @@ computable def decidable_powerset_is_set(U < UU0, A : U) :
 
 hlevel_rule powerset_is_set;
 hlevel_rule decidable_powerset_is_set;
+
+// The singleton of an element of a set: the elements equal to it. A
+// singleton determines its element.
+computable def singleton(U < UU0, A : U, setA : IsSet(U, A), a : A) :
+  PowerSet(U, A) := fun (b : A) => (a = b, setA(a, b));
+
+computable def singleton_injective(
+  U < UU0, A : U, setA : IsSet(U, A), a, b : A,
+  p : singleton(U, A, setA, a) = singleton(U, A, setA, b)
+) :
+  a = b := sym(
+    transport refl(a) along cong(fun (S : PowerSet(U, A)) => S(a).1, p) in ((fun (T : U) => T))
+  );
+
+def IsSingleton(U < UU0, A : U, setA : IsSet(U, A), S : PowerSet(U, A)) :
+  next(U) := exists a : A. S = singleton(U, A, setA, a);
+
+// A type equal to its own negation is contradictory: it is empty, by the
+// path, and so inhabited, by the path again.
+computable def not_own_negation(U < UU0, Q : U, p : Q = (Q -> Void)) : Void {
+  let no : Q -> Void := fun (q : Q) => (transport q along p in ((fun (T : U) => T)))(q);
+  exact no(transport no along sym(p) in ((fun (T : U) => T)));
+}
+
+// Cantor's diagonal argument: the elements outside their own subset under
+// f form a subset that f does not reach.
+computable def diagonal_subset(U < UU0, A : U, f : A -> PowerSet(U, A)) :
+  PowerSet(U, A) := fun (a : A) => (f(a)(a).1 -> Void, not_is_prop(U, f(a)(a).1));
+
+computable def cantor_diagonal(
+  U < UU0, A : U, f : A -> PowerSet(U, A), a : A, p : f(a) = diagonal_subset(U, A, f)
+) :
+  Void := not_own_negation(U, f(a)(a).1, path i => (p @ i)(a).1);

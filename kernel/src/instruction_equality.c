@@ -178,13 +178,11 @@ static cc_term locate(cc_kernel *k, cc_term term, const uint8_t *position, size_
 static cc_term rebuild(cc_kernel *k, cc_term term, const uint8_t *position, size_t depth, cc_term replacement) {
     if (!depth || !replacement)
         return replacement;
-    if (++k->recursion > 1024) {
-        --k->recursion;
-        return ck_fail_as(k, CC_ERROR_RESOURCE, "Position depth exceeded."), 0;
-    }
+    if (!ck_enter(k, "Position depth exceeded."))
+        return 0;
     cc_node n = k->nodes[term];
     n.child[position[0]] = rebuild(k, n.child[position[0]], position + 1, depth - 1, replacement);
-    --k->recursion;
+    ck_leave(k);
     if (!n.child[position[0]])
         return 0;
     return ck_instr_make(k, n.kind, n.payload, n.child[0], n.child[1], n.child[2], n.child[3]);
