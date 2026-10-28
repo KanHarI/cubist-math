@@ -103,12 +103,11 @@ export function replTranscript(text) {
 }
 
 // What replacing a failed kernel instance restored, for its owner to say
-// (web/cubical-worker.mjs, cli/repl.mjs): the source it had checked, named
-// by `source` as a sentence starts, and the result of checking it again,
-// `rechecked`, complete
-// or with what failed, or null when it could not be checked; and the
-// session's entries replayed, or those of them that could not be
-// (ReplSession.rebase's `lost`), whose names are gone. It never says more
+// (cli/repl.mjs; replaying in web/repl-console.mjs): the source it had
+// checked, named by `source` as a sentence starts, and the result of
+// checking it again, `rechecked`, complete or with what failed, or null when
+// it could not be checked; and the session's entries replayed, or those of
+// them that could not be (`lost`), whose names are gone. It never says more
 // was restored than was.
 export function restartNote({ source = null, rechecked = null, replayed = false, session = null }) {
   const sentences = ["The kernel was restarted."], gaps = rechecked?.gaps ?? [];

@@ -14,9 +14,12 @@ import { assumptionNote, assumptionsOf } from "../axiom-labels.mjs";
 const workerURL = new URL("../cubical-worker.mjs", import.meta.url);
 const workspaceURL = new URL("../proof.html?example=1", import.meta.url);
 
+// Each example is checked on its own, so a worker a kernel failure stopped
+// (a fatal reply) is simply replaced by the next request.
 let worker = null;
 function request(command, args) {
-  worker ??= new WorkerRequests(new Worker(workerURL, { type: "module" }));
+  worker ??= new WorkerRequests(new Worker(workerURL, { type: "module" }),
+    { onError: error => { if (error.fatal) worker = null; } });
   return worker.request(command, args);
 }
 

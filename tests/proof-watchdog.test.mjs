@@ -86,26 +86,3 @@ test("module and contextual queries share the finite checking timeout", () => {
     assert.equal(expired, 1, command);
   }
 });
-
-// A request whose kernel instance failed waits while the worker replaces it
-// and checks the proof again: watched as a check from then on, with the
-// check's time and its progress.
-test("a request the worker recovers from is watched as a check", () => {
-  const clock = fakeClock();
-  let expired = 0;
-  const request = proofRequestWatchdog("inspect", () => expired++, clock);
-  clock.advance(20000);
-  request.recovering();
-  clock.advance(299000);
-  request.progress({ instructions: 1000, completed: 0 });
-  clock.advance(299000);
-  assert.equal(expired, 0);
-  clock.advance(1000);
-  assert.equal(expired, 1);
-  // Without the announcement an inspection has its own thirty seconds.
-  const plain = proofRequestWatchdog("inspect", () => expired++, clock);
-  plain.progress({ instructions: 1000, completed: 0 });
-  clock.advance(30000);
-  assert.equal(expired, 2);
-  plain.stop();
-});

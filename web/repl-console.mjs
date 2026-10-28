@@ -3,8 +3,9 @@
 // line; ↑ and ↓ recall earlier entries. `run(text)` returns the results of
 // a ReplSession (see repl-session.mjs).
 import { scan, tokenStyle, numeralAt } from "./source-tokens.mjs";
-import { replStatements, consoleCommands } from "./repl-session.mjs";
+import { replStatements, consoleCommands, restartNote } from "./repl-session.mjs";
 import { WorkerRequests } from "./worker-requests.mjs";
+import { withCode } from "./diagnostics.mjs";
 
 const element = (tag, className, text) => {
   const node = document.createElement(tag);
@@ -146,16 +147,64 @@ export function createReplConsole(root, { run, reset, greeting = [], label = "RE
     load: text => execute(text, { echo: false }) };
 }
 
+// A REPL's entries, kept by its page so that a new worker can run them
+// again. A kernel failure stops the worker (a fatal reply, WorkerRequests),
+// and its page starts another, whose number `generation()` gives: before
+// the next entry, or at once when the entry that failed was this REPL's, the
+// entries answered before are run again on it, unshown and in order, so that
+// its session, and the names repl_N of its entries, are what they were. The
+// entry that failed is not run again. An entry that answered without an
+// error before and does not now is lost, and the note says so
+// (restartNote); so is the whole session when running them again fails.
+export function replaying(run, generation) {
+  let answered = [], at = generation();
+  async function replay() {
+    at = generation();
+    const lost = [];
+    try {
+      for (const entry of answered) {
+        const results = await run(entry.input);
+        if (!entry.failed && results.some(result => result.kind === "error")) lost.push(entry.input);
+      }
+    } catch (error) {
+      answered = []; at = generation();
+      return [{ kind: "error", text: withCode(error.message) }, { kind: "info", text: restartNote({ replayed: true }) }];
+    }
+    at = generation();
+    return [{ kind: "info", text: restartNote({ replayed: true, session: { lost } }) }];
+  }
+  return {
+    reset() { answered = []; at = generation(); },
+    async run(input) {
+      const replayed = generation() === at || !answered.length ? [] : await replay();
+      let results;
+      try { results = await run(input); }
+      catch (error) {
+        if (!error.fatal) throw error;
+        return [...replayed, { kind: "error", text: withCode(error.message) }, ...answered.length ? await replay() : []];
+      }
+      answered.push({ input, failed: results.some(result => result.kind === "error") });
+      at = generation();
+      return [...replayed, ...results];
+    },
+  };
+}
+
 // A REPL with its own worker and an empty program, for pages without a proof.
-// The worker starts on first use.
+// The worker starts on first use, and again after a kernel failure stops it.
 export function standaloneRepl() {
-  let worker = null;
+  let worker = null, workers = 0;
   const request = (command, args) => {
-    worker ??= new WorkerRequests(new Worker(new URL("./cubical-worker.mjs", import.meta.url), { type: "module" }));
+    if (!worker) {
+      worker = new WorkerRequests(new Worker(new URL("./cubical-worker.mjs", import.meta.url), { type: "module" }),
+        { onError: error => { if (error.fatal) worker = null; } });
+      workers++;
+    }
     return worker.request(command, args);
   };
+  const entries = replaying(input => request("repl", { input, fresh: true }), () => workers);
   return {
-    run: input => request("repl", { input, fresh: true }),
-    reset: () => request("repl-reset", { fresh: true }),
+    run: entries.run,
+    reset: () => { entries.reset(); return request("repl-reset", { fresh: true }); },
   };
 }

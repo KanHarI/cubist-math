@@ -83,16 +83,19 @@ test("a message that cannot be posted releases its pending request", async () =>
   assert.equal(client.pendingCount, 0);
 });
 
-// The worker says it is replacing a failed kernel instance before it answers
-// the request that failed; the announcement is no answer.
-test("a recovery announcement reaches its request and settles nothing", async () => {
-  const native = worker(), client = new WorkerRequests(native), announced = [];
-  const pending = client.request("inspect", { binding: "x" }, undefined, () => announced.push("recovering"));
+// A fatal reply: the worker's kernel instance failed and the worker stopped.
+// The request and every other one fail with it, the transport stops, and
+// its owner hears of it, with the command that failed.
+test("a fatal reply fails every request and stops the transport", async () => {
+  const native = worker(), errors = [], client = new WorkerRequests(native, { onError: error => errors.push(error) });
   native.receive({ ready: true });
   await client.ready;
-  native.receive({ id: 1, recovering: true });
-  assert.deepEqual(announced, ["recovering"]);
-  assert.equal(client.pendingCount, 1);
-  native.receive({ id: 1, error: { message: "failed, and restarted" } });
-  await assert.rejects(pending, /failed, and restarted/);
+  const failed = client.request("inspect", { binding: "x" }), queued = client.request("signature", { binding: "T" });
+  native.receive({ id: 1, error: { message: "The kernel failed.", kind: "fault", fatal: true } });
+  await assert.rejects(failed, { message: "The kernel failed.", fatal: true, command: "inspect" });
+  await assert.rejects(queued, { message: "The kernel failed.", fatal: true });
+  assert.equal(native.stopped, true);
+  assert.equal(errors.length, 1);
+  assert.equal(errors[0].command, "inspect");
+  await assert.rejects(client.request("check"), /The kernel failed/);
 });

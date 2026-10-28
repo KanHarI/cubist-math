@@ -1073,21 +1073,25 @@ the call and ends nothing: the exports take 32-bit integers and doubles, so
 an exception from a call whose arguments convert came from the instance, or
 from the engine refusing to enter it for want of stack. A check on a failed
 instance ends at its next declaration, and a runtime query on it
-(`web/cubical-runtime.mjs`) publishes nothing more. The pages' worker
-(`web/cubical-worker.mjs`) and the command line replace the instance, check
-the proof again, and replay the REPL session's entries on the new one, each
-as the entry it was. The reply to the request that failed says what was
-restored and what was not: a proof that no longer checks completely, and
-entries that could not be replayed. Nothing is installed before it has
-succeeded: a check's program only once it answers, and a session rebased
-onto a checked-again proof only once its replay ends, which a failed instance
-stops, so that the whole session is replayed on the new one. The worker keeps
-the proof's contextual scopes as revoked as they were, and clones each reply
-before sending it, so that a part read lazily, as a check's steps, reads the
-kernel where a failure is caught. Before it replaces an instance it says so
-to the request that failed, with the progress of checking the proof again;
-the proof page then watches that request as a check, and reads its contexts
-again from the new instance once it answers. The workbench's worker reports
-the failure as fatal and closes, as for a trap.
+(`web/cubical-runtime.mjs`) publishes nothing more.
+
+The command line replaces the instance itself: it checks its last source
+again and replays the REPL session's entries on the new instance, each as
+the entry it was, and says what was restored and what not (`restartNote` in
+`web/repl-session.mjs`). In the browser a failed instance ends its worker
+instead: the worker answers the request with the failure, marked fatal, and
+stops, and `WorkerRequests` (`web/worker-requests.mjs`) fails every other
+request it held and tells the page. The page starts a new worker and builds
+again, by its usual paths, what it held: the proof page checks the current
+source again, as after a compiler update, and reads its result, inspector,
+contexts and generated declarations from that check; a REPL runs its
+entries again on the new worker before the next one (`replaying` in
+`web/repl-console.mjs`), each as the entry it was, and names those it could
+not; the reference examples check each example on a new worker. A check
+that failed so is not checked again, and a new worker that cannot load is
+reported as at startup. The workbench's worker reports the failure as fatal
+and closes, as for a trap. A worker installs a check's program only once its
+reply is made, and clones each reply before sending it, so that a part read
+lazily, as a check's steps, reads the kernel where a failure is caught.
 
 Full cubical canonicity for every implemented constructor is not claimed by this project.

@@ -191,26 +191,38 @@ await browserTest(async ({ browser, base }) => {
     ...Array(4).fill("K336: Native reduction recursion depth exceeded."), "after : toggle(dark) = lit"]);
   console.log("PASS REPL page: the kernel's recursion guard in the worker, and the worker after it");
   // A kernel instance that fails, as when the engine's own stack runs out
-  // inside it, is never entered again: the worker replaces it, says so, and
-  // checks the session's entries again on the new one. The failures are
-  // injected as the engine's RangeError out of the kernel's exports, once
-  // each: the first export a runtime value form's snapshot calls
-  // (cubical-runtime.mjs), then the first folded normal form (evaluate !!).
+  // inside it, is never entered again: its worker answers the request with
+  // the failure, marked fatal, and stops, failing every request it held.
+  // The page starts a new worker and builds again what it holds: a REPL runs
+  // its entries again, the proof page checks its source again.
   const injected = await browser.newContext();
-  const inject = (pattern, edit) => injected.route(pattern, async route => {
-    const response = await route.fetch(), body = await response.text(), edited = edit(body);
-    assert.notEqual(edited, body, pattern);
+  // The runtime's snapshot arms its worker's kernel to fail, if its plan says.
+  await injected.route("**/cubical-runtime.mjs*", async route => {
+    const response = await route.fetch(), body = await response.text();
+    const edited = body.replace("function snapshot(kernel, judgement, budget) {", "$& globalThis.armKernelFault?.();");
+    assert.notEqual(edited, body);
     await route.fulfill({ response, body: edited });
   });
-  // The runtime's snapshot arms the next export call to fail, once.
-  await inject("**/cubical-runtime.mjs*", body => body.replace("function snapshot(kernel, judgement, budget) {",
-    "$& globalThis.armKernelFault?.();"));
-  // A message the worker does not know arms a failure on demand: the next
-  // kernel call, or the next one made while a check's steps are read.
-  await inject("**/dist/cubical.mjs*", body => body.replace(/export default Module;\s*$/, `let armed = false, inSteps = false, snapshots = 0, normals = 0;
-globalThis.armKernelFault = () => { if (!snapshots++) armed = true; };
+  // Each worker loads the kernel anew, and fails as the next plan says, with
+  // the engine's RangeError out of an export: at the first export a runtime
+  // value form's snapshot calls ("snapshot"), at the first folded normal
+  // form ("normal"), or only on demand: a message the worker does not know
+  // arms the next kernel call, the next `_cb_free` (with a trap), or the next
+  // call made while a check's steps are read; with "entry", a REPL entry
+  // /fail-next-kernel-call arms the next kernel call too. "unavailable" fails
+  // the kernel's load.
+  const plans = [];
+  await injected.route("**/dist/cubical.mjs*", async route => {
+    const plan = plans.shift() ?? "on demand";
+    if (plan === "unavailable") return route.abort();
+    const response = await route.fetch(), body = await response.text();
+    assert.match(body, /export default Module;\s*$/);
+    await route.fulfill({ response, body: body.replace(/export default Module;\s*$/, `const plan = ${JSON.stringify(plan)};
+let armed = false, freeing = false, inSteps = false, snapshots = 0, normals = 0;
+globalThis.armKernelFault = () => { if (plan === "snapshot" && !snapshots++) armed = true; };
 self.addEventListener("message", ({ data }) => {
-  if (data?.command === "fail-next-kernel-call" || data?.command === "repl" && data.args?.input === "/fail-next-kernel-call") armed = true;
+  if (data?.command === "fail-next-kernel-call" || plan === "entry" && data?.command === "repl" && data.args?.input === "/fail-next-kernel-call") armed = true;
+  if (data?.command === "fail-next-free") freeing = true;
   if (data?.command === "fail-in-steps") inSteps = true;
 });
 const overflow = () => { throw new RangeError("Maximum call stack size exceeded"); };
@@ -225,162 +237,106 @@ export default async options => {
     const call = module[name];
     module[name] = (...args) => {
       if (armed) { armed = false; overflow(); }
+      if (freeing && name === "_cb_free") { freeing = false; throw new WebAssembly.RuntimeError("unreachable"); }
       if (inSteps && readingSteps()) { inSteps = false; overflow(); }
-      if (name === "_cb_normalize_folded" && !normals++) overflow();
+      if (plan === "normal" && name === "_cb_normalize_folded" && !normals++) overflow();
       return call(...args);
     };
   }
   return module;
-};`));
-  // A module that is there for the first check and gone, or held up, for the
-  // next; each request for it is announced.
-  let listsGone = false, listsHeld = null, listsAsked = () => {};
+};`) });
+  });
+  // The lists module, served as the test says: a stand-in, held up while
+  // `listsHeld` is pending, and each request for it announced.
+  let lists = "def h : Unit := tt;\n", listsHeld = null, listsAsked = () => {};
   await injected.route("**/lists.cubist*", async route => {
     listsAsked();
     if (listsHeld) await listsHeld;
-    return listsGone ? route.fulfill({ status: 404, body: "" }) : route.fallback();
+    await route.fulfill({ body: lists, contentType: "text/plain" });
   });
-  const faulty = await injected.newPage();
-  await faulty.goto(new URL("repl.html", base).href);
-  // The query typeof tt is entry repl_3, and is not replayed; repl_5 names
-  // repl_4, which the replay keeps as it was.
-  for (const text of ["import unat;", "use unat;", "typeof tt;", "let x := 7;", "let saved := repl_4::x;",
-    "evaluate x + 1;", "evaluate !!x;", "evaluate x + 1;", "typeof x;", "typeof saved;"]) {
-    await faulty.locator(".repl-text").last().fill(text);
-    await faulty.locator(".repl-text").last().press("Enter");
-    await faulty.waitForFunction(() => !document.querySelector(".repl-form.busy"));
-  }
   const fault = "E668: The kernel's WebAssembly instance failed (Maximum call stack size exceeded), and is not used again: nothing computed after the failure is kept.";
   const restarted = [fault, "The kernel was restarted. The session's entries were checked again."];
-  assert.deepEqual((await faulty.locator(".repl-log").last().locator(".repl-result").allTextContents()).slice(-7),
+  const entries = async (target, texts) => {
+    for (const text of texts) {
+      await target.locator(".repl-text").last().fill(text);
+      await target.locator(".repl-text").last().press("Enter");
+      await target.waitForFunction(() => !document.querySelector(".repl-form.busy"));
+    }
+    return target.locator(".repl-log").last().locator(".repl-result").allTextContents();
+  };
+  // The REPL page: its first worker fails in a value form's snapshot, its
+  // second in a folded normal form. Each time the entries answered before run
+  // again on a new worker; the query typeof tt is entry repl_3, so repl_5,
+  // which names repl_4, still finds it.
+  plans.push("snapshot", "normal");
+  const faulty = await injected.newPage();
+  await faulty.goto(new URL("repl.html", base).href);
+  assert.deepEqual((await entries(faulty, ["import unat;", "use unat;", "typeof tt;", "let x := 7;", "let saved := repl_4::x;",
+    "evaluate x + 1;", "evaluate !!x;", "evaluate x + 1;", "typeof x;", "typeof saved;"])).slice(-7),
     [...restarted, ...restarted, "8", "UNat", "UNat"]);
-  // The proof's contextual scopes stay as they were across a replacement:
-  // they stay ready, and once revoked they stay revoked until a check.
-  const scopes = await faulty.evaluate(async () => {
-    const run = async revoke => {
-      const worker = new Worker(new URL("cubical-worker.mjs", location.href), { type: "module" });
-      const replies = new Map();
-      let serial = 0, started;
-      const ready = new Promise(resolve => { started = resolve; });
-      worker.onmessage = ({ data }) => { if (data.ready) started(); else if (data.progress === undefined && !data.recovering) replies.get(data.id)?.(data); };
-      await ready;
-      const send = (command, args = {}) => new Promise(resolve => {
-        const id = ++serial;
-        replies.set(id, resolve);
-        worker.postMessage({ id, command, args });
-      });
-      await send("check", { source: "import unat;\nuse unat;\ndef x : UNat := 7;\n", collectScopes: true });
-      if (revoke) await send("context-invalidate");
-      const repl = await send("repl", { input: "evaluate x + 1;", fresh: false });
-      const contexts = await send("contexts");
-      worker.terminate();
-      return { repl: repl.result?.map(result => result.text) ?? repl.error, contexts: contexts.error?.message ?? "ready" };
-    };
-    return [await run(false), await run(true)];
-  });
-  const rechecked = [fault, "The kernel was restarted. The proof was checked again. The session's entries were checked again."];
-  assert.deepEqual(scopes, [{ repl: rechecked, contexts: "ready" },
-    { repl: rechecked, contexts: "Check the current source with contextual scopes enabled." }]);
-  // Workers driven by their messages, each its own instance. A request that
-  // gets no reply within its time is answered { timeout: true }.
+  // A new worker that cannot load answers too, and the console is free.
+  plans.push("snapshot", "unavailable");
+  const stranded = await injected.newPage();
+  await stranded.goto(new URL("repl.html", base).href);
+  assert.deepEqual((await entries(stranded, ["import unat;", "use unat;", "evaluate 1 + 1;"])).slice(-3), [fault,
+    "E227: Unable to load the checking worker. Build with make wasm.",
+    "The kernel was restarted. The session's entries could not be checked again, and what they defined is gone."]);
+  await stranded.close();
+  console.log("PASS REPL page: a failed kernel stops its worker; a new one runs the entries again, under their names");
+  // Workers driven by their messages: every request a failure ends is
+  // answered, fatal, and nothing is left waiting.
   await faulty.evaluate(() => {
-    const workers = new Map(), recovered = new Set();
-    window.recovered = name => [...recovered].filter(key => key.startsWith(`${name}:`)).map(key => Number(key.split(":")[1]));
+    const workers = new Map();
     window.startWorker = async name => {
       const worker = new Worker(new URL("cubical-worker.mjs", location.href), { type: "module" });
       const replies = new Map();
       let serial = 0, started;
       const ready = new Promise(resolve => { started = resolve; });
-      // A recovery announcement and progress precede a reply; the test sees
-      // which requests announced one (window.recovered).
-      worker.onmessage = ({ data }) => {
-        if (data.ready) started();
-        else if (data.recovering) recovered.add(`${name}:${data.id}`);
-        else if (data.progress === undefined) replies.get(data.id)?.(data);
-      };
+      worker.onmessage = ({ data }) => { if (data.ready) started(); else if (data.progress === undefined) replies.get(data.id)?.(data); };
       await ready;
       workers.set(name, (command, args = {}) => Promise.race([
         new Promise(resolve => { const id = ++serial; replies.set(id, resolve); worker.postMessage({ id, command, args }); }),
         new Promise(resolve => setTimeout(() => resolve({ timeout: true }), 60000))]));
     };
-    window.request = (name, ...requests) => Promise.all(requests.map(([command, args]) => workers.get(name)(command, args)));
+    window.request = (name, command, args) => workers.get(name)(command, args);
   });
-  const request = async (name, command, args) => (await faulty.evaluate(([name, command, args]) => window.request(name, [command, args]), [name, command, args]))[0];
-  const requests = (name, ...list) => faulty.evaluate(([name, list]) => window.request(name, ...list), [name, list]);
-  // A worker's error reply is the message alone; a page shows its code.
-  const restartedAfter = note => `${fault.replace(/^E668: /, "")} ${note}`;
-  // A check's steps are read lazily, when its reply is cloned: a failure
-  // there is caught, the instance replaced, and the check answered.
+  const request = (name, command, args) => faulty.evaluate(([name, command, args]) => window.request(name, command, args), [name, command, args]);
+  const fatal = (id, cause = "Maximum call stack size exceeded") => ({ id, error: { kind: "fault", fatal: true,
+    message: `The kernel's WebAssembly instance failed (${cause}), and is not used again: nothing computed after the failure is kept.` } });
+  // A check's steps are read when its reply is made, inside the boundary.
   const lamp = "inductive Lamp { dark; lit; }\ndef x : Lamp { exact dark; }\n";
   await faulty.evaluate(() => window.startWorker("steps"));
   await request("steps", "fail-in-steps");
-  assert.deepEqual(await request("steps", "check", { source: lamp }), { id: 2, error: { message: restartedAfter("The kernel was restarted.") } });
-  assert.equal((await request("steps", "check", { source: lamp })).result.complete, true);
-  // A scoped check submitted while a failing entry runs keeps its scopes:
-  // the replacement is no edit. The entry reads a module first, so the
-  // check arrives before it fails.
+  assert.deepEqual(await request("steps", "check", { source: lamp }), fatal(2));
+  // A check is installed as its reply is made: a trap freeing the program it
+  // replaces is answered too.
+  await faulty.evaluate(() => window.startWorker("install"));
+  assert.equal((await request("install", "check", { source: lamp })).result.complete, true);
+  await request("install", "fail-next-free");
+  assert.deepEqual(await request("install", "check", { source: lamp }), fatal(3, "unreachable"));
+  // An inspection, a contextual query and a signature.
   const scoped = { source: "import unat;\nuse unat;\ninductive Lamp { dark; lit; }\ndef x : UNat := 7;\n", collectScopes: true };
-  await faulty.evaluate(() => window.startWorker("queued"));
-  await request("queued", "check", scoped);
-  await request("queued", "fail-next-kernel-call");
-  const [failedEntry, queuedCheck] = await requests("queued", ["repl", { input: "import lists;", fresh: false }], ["check", scoped]);
-  assert.deepEqual(failedEntry.result.map(result => result.text), rechecked);
-  assert.equal(queuedCheck.result.complete, true);
-  const queuedContexts = await request("queued", "contexts");
-  assert.ok(queuedContexts.result?.points.length, JSON.stringify(queuedContexts));
-  // The proof checked again on the new instance need not check as before:
-  // here a module it imports is gone.
-  await faulty.evaluate(() => window.startWorker("gone"));
-  await request("gone", "check", { source: "import lists;\ndef x : Unit := tt;\n" });
-  listsGone = true;
-  await request("gone", "fail-next-kernel-call");
-  const gone = (await request("gone", "repl", { input: "typeof x;", fresh: false })).result;
-  assert.equal(gone[0].text, fault);
-  assert.match(gone[1].text, /^The kernel was restarted\. The proof was checked again, and did not check completely: .*lists.* The session's entries were checked again\.$/);
-  listsGone = false;
-  // A failure in any other command answers with the failure and with what
-  // the replacement restored: an inspection, a contextual query, a signature.
-  await faulty.evaluate(() => window.startWorker("notes"));
-  await request("notes", "check", scoped);
-  await request("notes", "repl", { input: "import lists;", fresh: false });
-  listsGone = true;
-  await request("notes", "fail-next-kernel-call");
-  assert.equal((await request("notes", "inspect", { binding: "current__x" })).error.message, restartedAfter("The kernel was restarted. "
-    + "The proof was checked again. These entries could not be checked again, and what they defined is gone: import lists;"));
-  listsGone = false;
-  const point = (await request("notes", "contexts")).result.points.at(-1);
-  const opened = (await request("notes", "context-open", { scope: point.id })).result;
-  await request("notes", "fail-next-kernel-call");
-  const afterwards = restartedAfter("The kernel was restarted. The proof was checked again. The session's entries were checked again.");
-  assert.equal((await request("notes", "context-run", { session: opened.session, input: "typeof x;" })).error.message, afterwards);
-  await request("notes", "fail-next-kernel-call");
-  assert.equal((await request("notes", "signature", { binding: "current__Lamp" })).error.message, afterwards);
-  assert.equal((await request("notes", "signature", { binding: "current__Lamp" })).result.constructors.length, 2);
-  // Each of those replies came after the worker announced the replacement.
-  assert.deepEqual(await faulty.evaluate(() => window.recovered("notes")), [4, 8, 10]);
-  // A session rebased onto a checked-again proof, whose instance fails while
-  // it replays, is not installed in part: the whole session is replayed on
-  // the new instance.
-  await faulty.evaluate(() => window.startWorker("rebase"));
-  await request("rebase", "check", scoped);
-  assert.deepEqual((await request("rebase", "repl", { input: "let saved := tt;", fresh: false })).result, [{ kind: "defined", text: "saved : Unit" }]);
-  await request("rebase", "check", scoped);
-  await request("rebase", "fail-next-kernel-call");
-  assert.equal((await request("rebase", "repl", { input: "typeof x;", fresh: false })).error.message,
-    restartedAfter("The kernel was restarted. The proof was checked again. The session's entries were checked again."));
-  assert.deepEqual((await request("rebase", "repl", { input: "typeof saved;", fresh: false })).result, [{ kind: "type", text: "Unit" }]);
-  // A check is installed only once it answers: one whose instance fails
-  // leaves the proof checked before, which the new instance checks again.
-  await request("rebase", "fail-next-kernel-call");
-  assert.equal((await request("rebase", "check", { source: "def z : Unit := tt;\n" })).error.message,
-    restartedAfter("The kernel was restarted. The proof was checked again. The session's entries were checked again."));
-  assert.deepEqual((await request("rebase", "repl", { input: "typeof x; typeof saved;", fresh: false })).result,
-    [{ kind: "type", text: "UNat" }, { kind: "type", text: "Unit" }]);
-  // On the proof page: an inspection whose instance fails is watched as a
-  // check while the worker replaces the instance, here held up reading an
-  // import past the thirty seconds an inspection has (the page's clock runs
-  // them at once); and the contexts the page held of the old instance are
-  // read again from the new one.
+  for (const [name, command, args] of [["inspect", "inspect", { binding: "current__x" }],
+    ["context", "context-run", { input: "typeof x;" }], ["signature", "signature", { binding: "current__Lamp" }]]) {
+    await faulty.evaluate(name => window.startWorker(name), name);
+    await request(name, "check", scoped);
+    if (name === "context") {
+      const point = (await request(name, "contexts")).result.points.at(-1);
+      args.session = (await request(name, "context-open", { scope: point.id })).result.session;
+    }
+    await request(name, "fail-next-kernel-call");
+    const reply = await request(name, command, args);
+    assert.deepEqual(reply, fatal(reply.id), name);
+  }
+  await faulty.close();
+  console.log("PASS workers: every request a kernel failure ends is answered, fatal, and the worker stops");
+  // The proof page: its worker's kernel fails in an inspection, with another
+  // inspection queued behind it, after the module it imports has changed.
+  // Both are answered; a new worker checks the source again, held up reading
+  // that import past the thirty seconds an inspection has (the page's clock
+  // runs them at once), and the page reads everything again from the check:
+  // the assumption the import now states, its contexts, its console's entries.
+  plans.push("entry");
   const workspace = await injected.newPage();
   const shown = selector => workspace.evaluate(selector => document.querySelector(selector)?.textContent ?? "", selector);
   const until = async (selector, test) => {
@@ -389,40 +345,39 @@ export default async options => {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
   };
-  const lamps = "import lists;\ndef x : Unit := tt;\ndef y(n : Unit) : Unit := n;\n";
-  await workspace.goto(new URL(`proof.html?example=1#source=${Buffer.from(lamps).toString("base64url")}`, base).href);
-  await until("#status", text => text.includes("checked"));
+  const helped = "import lists;\ndef x : Unit := h;\ndef y(n : Unit) : Unit := n;\n";
+  await workspace.goto(new URL(`proof.html?example=1#source=${Buffer.from(helped).toString("base64url")}`, base).href);
+  await until("#status", text => text.endsWith("checked · no axioms"));
   await workspace.locator("#collect-contexts").check();
   await until("#context-panel [role=status]", text => text.startsWith("Open a context"));
-  // A local variable where it is used: its inspection links to its context.
-  const occurrence = workspace.locator('#read-source button[data-name="n"]').last();
-  await occurrence.click();
-  await workspace.locator("#open-context-repl").waitFor();
-  await workspace.locator(".repl-text").last().fill("/fail-next-kernel-call");
-  await workspace.locator(".repl-text").last().press("Enter");
-  await until(".repl-log", text => text.includes("Unknown command /fail-next-kernel-call"));
+  assert.deepEqual((await entries(workspace, ["let saved := tt;", "/fail-next-kernel-call"])).slice(-2),
+    ["saved : Unit", "E237: Unknown command /fail-next-kernel-call. /help lists the commands."]);
+  lists = "def h := axiom Unit;\n";
   await workspace.clock.install();
   let release;
   listsHeld = new Promise(resolve => { release = resolve; });
   const asked = new Promise(resolve => { listsAsked = resolve; });
+  // A local variable where it is used: its inspection links to its context.
+  const occurrence = workspace.locator('#read-source button[data-name="n"]').last();
   await workspace.locator('#read-source [data-name="x"]').first().click();
-  // The worker announced the replacement before it asked for the import.
-  await asked;
+  await occurrence.click();
+  await Promise.race([asked, new Promise((_, reject) =>
+    setTimeout(() => reject(new Error("No new worker read the import.")), 120000))]);
   await new Promise(resolve => setTimeout(resolve, 1000));
   await workspace.clock.runFor(31000);
   release();
   listsHeld = null; listsAsked = () => {};
-  await until("#diagnostic", text => text.includes("The kernel was restarted. The proof was checked again."));
-  assert.match(await shown("#diagnostic"), /^The kernel's WebAssembly instance failed \(Maximum call stack size exceeded\)/);
+  await until("#status", text => text.endsWith("checked · 1 explicit assumptions"));
+  assert.match(await shown("#source-notice"), /^The kernel's WebAssembly instance failed, so a new checking worker checks your current source again/);
   await until("#context-panel [role=status]", text => text.startsWith("Open a context"));
   await occurrence.click();
   await workspace.locator("#open-context-repl").waitFor();
   await workspace.locator("#open-context-repl").click();
   await until("#context-panel [role=status]", text => text.includes("Results apply only to this selected instance"));
+  assert.deepEqual((await entries(workspace, ["typeof saved;"])).slice(-2), [restarted[1], "Unit"]);
   await workspace.close();
   await injected.close();
-  console.log("PASS REPL page: a failed kernel instance is replaced; the session, its entries' names and revoked scopes go on");
-  console.log("PASS workers: replies cloned inside the boundary, a queued scoped check, an incomplete check again, every reply's restart note, nothing installed that a failure interrupted, and the proof page's watchdog and contexts across a replacement");
+  console.log("PASS proof page: a failed kernel stops its worker; a new one checks the source again, and the page reads it all again");
   // Slash commands: /modules lists what import can load; /clear and /restart
   // act on the console.
   await enter("/modules lists");

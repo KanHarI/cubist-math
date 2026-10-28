@@ -2,8 +2,7 @@
 // Repeated heartbeats do not extend a stalled request's deadline.
 export function proofRequestWatchdog(command, onTimeout, clock = globalThis) {
   // A REPL entry is checked like a small file, and may evaluate at length.
-  let duration = ["check", "repl", "context-run"].includes(command) ? 300000 : 30000;
-  let checking = command === "check";
+  const duration = ["check", "repl", "context-run"].includes(command) ? 300000 : 30000;
   let timer;
   let instructions = 0;
   let completed = 0;
@@ -17,15 +16,8 @@ export function proofRequestWatchdog(command, onTimeout, clock = globalThis) {
   }
   arm();
   return {
-    // The worker replaces a failed kernel instance before it answers, and
-    // checks the proof again: from here on the request is watched as a check.
-    recovering() {
-      if (stopped) return;
-      checking = true; duration = 300000; instructions = completed = 0;
-      arm();
-    },
     progress(value) {
-      if (stopped || !checking) return;
+      if (stopped || command !== "check") return;
       const nextInstructions = value.instructions ?? 0;
       const nextCompleted = value.completed ?? 0;
       if (nextInstructions > instructions || nextCompleted > completed) {
