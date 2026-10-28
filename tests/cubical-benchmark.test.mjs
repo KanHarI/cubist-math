@@ -2,7 +2,9 @@ import "./fresh-build.mjs";
 import {sourceReader} from "../tools/module-sources.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
-import {readFile} from "node:fs/promises";
+import {readFile, mkdtemp, rm, writeFile} from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
@@ -165,20 +167,36 @@ test("every link from a saved benchmark opens the source it measured, at the rev
 });
 
 // A report measured with working changes pins only the modules whose measured
-// text is the committed one: a declaration added in memory to nat, at a line
-// past the committed file's end, gets no link into the committed nat.
-test("a saved benchmark pins no source it did not measure", async () => {
+// text is the committed one, byte for byte: a declaration added in memory to
+// nat, at a line past the committed file's end, gets no link into the
+// committed nat; nor does a file that is not valid UTF-8, whose byte 0xff and
+// any other invalid byte both decode to U+FFFD.
+test("a saved benchmark pins no source it did not measure", async t => {
   const revision = execFileSync("git", ["rev-parse", "HEAD"], { cwd: checkout, encoding: "utf8" }).trim();
   const committed = path => committedSource(revision, path, checkout);
-  const nat = committed("library/nat.cubist"), lists = committed("library/lists.cubist");
+  const nat = committed("library/nat.cubist").toString(), lists = committed("library/lists.cubist").toString();
   const edited = `${nat}\ncomputable def added_in_memory : Nat := 0;\n`;
+  // A repository whose one file has the byte 0xff in a comment; the working
+  // tree's 0xfe there decodes as it does.
+  const scratch = await mkdtemp(join(tmpdir(), "cubist-pins-"));
+  t.after(() => rm(scratch, { recursive: true, force: true }));
+  const git = args => execFileSync("git", args, { cwd: scratch, encoding: "utf8" });
+  const bytes = byte => Buffer.from(`// ${byte}\ncomputable def odd : Unit := tt;\n`, "latin1");
+  git(["init", "-q"]);
+  await writeFile(join(scratch, "invalid.cubist"), bytes("\xff"));
+  git(["add", "invalid.cubist"]);
+  git(["-c", "user.name=test", "-c", "user.email=test@example.com", "commit", "-q", "-m", "invalid UTF-8"]);
+  const scratchRevision = git(["rev-parse", "HEAD"]).trim(), invalid = bytes("\xfe").toString();
+  assert.equal(invalid, bytes("\xff").toString(), "both bytes decode to U+FFFD");
+  assert.deepEqual(pinnedSources([{ name: "invalid", path: "invalid.cubist", text: invalid }],
+    path => committedSource(scratchRevision, path, scratch)), {});
   const sources = pinnedSources([
     { name: "nat", path: "library/nat.cubist", text: edited },
     { name: "lists", path: "library/lists.cubist", text: lists },
     { name: "uncommitted", path: "library/uncommitted.cubist", text: "computable def fresh : Unit := tt;\n" },
   ], committed);
   assert.deepEqual(Object.keys(sources), ["lists"]);
-  assert.equal(sources.lists.sha256, createHash("sha256").update(lists).digest("hex"));
+  assert.equal(sources.lists.sha256, createHash("sha256").update(committed("library/lists.cubist")).digest("hex"));
   const report = { revision, dirty: true, sources, declarations: [] }, line = edited.split("\n").length - 1;
   assert.ok(line > nat.split("\n").length - 1, "the added declaration lies past the committed file");
   assert.equal(declarationLink(report, { module: "nat", name: "added_in_memory", line }), null);

@@ -12,20 +12,24 @@ import { sourceReader } from "./module-sources.mjs";
 import { moduleRoots } from "../web/module-resolution.mjs";
 import { assertFreshBuild } from "./build-stamp.mjs";
 
-// A file's text at a revision, or null where it has none.
+// A file's bytes at a revision, or null where it has none.
 export function committedSource(revision, path, cwd = fileURLToPath(new URL("../", import.meta.url))) {
-  try { return execFileSync("git", ["show", `${revision}:${path}`], { cwd, encoding: "utf8", maxBuffer: 1 << 28, stdio: ["ignore", "pipe", "ignore"] }); }
+  try { return execFileSync("git", ["show", `${revision}:${path}`], { cwd, maxBuffer: 1 << 28, stdio: ["ignore", "pipe", "ignore"] }); }
   catch { return null; }
 }
 // The sources a saved report's rows link to (web/benchmark-areas.mjs's
-// declarationLink): each measured module whose text is its file's at the
-// recorded revision, with its path and the text's SHA-256. A module measured
-// from working changes, edited or not yet committed, is left out, and its
-// rows are not linked: a link pins the source as it was at the revision,
-// which is not what was measured.
+// declarationLink): each measured module whose text, as UTF-8, is its file's
+// bytes at the recorded revision, with its path and their SHA-256. A module
+// measured from working changes, edited or not yet committed, is left out,
+// and its rows are not linked: a link pins the source as it was at the
+// revision, which is not what was measured. So is a file that is not valid
+// UTF-8: its text was decoded with replacement characters, which other bytes
+// decode to as well, and encodes to no committed file's bytes.
 export function pinnedSources(measured, committed) {
-  return Object.fromEntries(measured.filter(({ path, text }) => committed(path) === text)
-    .map(({ name, path, text }) => [name, { path, sha256: createHash("sha256").update(text).digest("hex") }]));
+  return Object.fromEntries(measured.flatMap(({ name, path, text }) => {
+    const bytes = Buffer.from(text, "utf8"), file = committed(path);
+    return file && bytes.equals(file) ? [[name, { path, sha256: createHash("sha256").update(bytes).digest("hex") }]] : [];
+  }));
 }
 
 
