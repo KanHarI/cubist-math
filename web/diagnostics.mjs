@@ -526,6 +526,7 @@ export const diagnostics = [
   ["E664", "A transport's face is a face formula; found an interval point."],
   ["E665", "A partial element's face is a face formula; found an interval point."],
   ["E666", "An axiom states a type, or a family of types: axiom T; or axiom F; where F(x) is a type."],
+  ["E667", "This cubical kernel module has no handle generations. Rebuild it with `make wasm`."],
   // Arguments and their inference
   ["E701", "… has no implicit parameters: give its arguments in parentheses, as …(…)."],
   ["E702", "… has … implicit parameter…, …; the double braces give …."],

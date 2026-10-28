@@ -21,7 +21,9 @@ full normal forms of the rational inverses remain targets. EVAL3–EVAL8 remain 
 [first internal EVAL3/EVAL4 query](#first-implementation-289) for ordinary
 data. Since its [REPL integration](#repl-integration) of 2026-10-26 it
 computes the value form of `evaluate e` and `print(evaluate(e))`, with one
-fallback to the kernel's head queries; no checker uses it, and patterns,
+fallback to the kernel's head queries, and since 2026-10-28 it executes the
+point constructors of quotients and other higher and truncated sorts, as
+binary integers' and rationals'; no checker uses it, and patterns,
 `!`, `!!`, `!!!` and expected values stay on the kernel's queries. EVAL5's observation contract
 has shipped as the [demand marks](../historical/evaluation-demand-marks.md) and
 [folded normal forms](../historical/folded-normal-forms.md); its typed readback has not.
@@ -1154,22 +1156,30 @@ design, the trust statement, the differential coverage and measurements.
 The translator's `valueFormOf` asks the elaborator for a query over the
 closed judgement it checked, after the assumption check, and walks the value
 form with synchronous observations (`observeNow`). Demand the runtime
-reports unsupported, such as a path applied, a composition, Glue, a higher
-or truncated sort or η of a path abstraction, is the one fallback: the whole
+reports unsupported, such as a path applied, a path constructor, a
+composition, Glue or η of a path abstraction, is the one fallback: the whole
 walk is computed again from the start by the kernel's head queries, once,
 and nothing the runtime computed is shown. A runtime stop at its limits is
-reported (E487–E489, or the declaration's time limit), not retried. Where
-the evaluated term's type is a declared type the runtime does not execute, a
-quotient or another higher or truncated sort, the same fallback is decided
-before the snapshot from the type's weak head, with the same reason: the
-value's first head is that type's constructor or a composition. The
+reported (E487–E489, or the declaration's time limit), not retried. The
 observation now takes the kernel's weak head: η of term and level lambdas,
 partially applied constructors with their arity, types, and unapplied path
 abstractions.
 
-Over the demand marks' 197 constructs, the runtime computes 135 value forms
-and falls back on 58, 18 of them from the value's type, and every value form
-is the kernel's. The runtime shows
+Since 2026-10-28 the runtime executes the point constructors of quotients
+and other higher and truncated sorts, and their eliminators' clauses for
+them, as the kernel's iota does; path constructors, the squash among
+them, stay unsupported, with paths applied and compositions
+([report](../../reports/runtime-repl-evaluation.md#higher-sorts-point-constructors)).
+Binary integers' and rationals' arithmetic, inverses and decisions compute
+their value forms in the runtime, but for a decision that finds two values
+equal, which holds the quotient's path constructor. The first slice's
+check of the evaluated term's type, which took the fallback before the
+snapshot for a value of such a sort, is removed: no type decides the
+fallback now.
+
+Over the demand marks' 197 constructs, the runtime computes 156 value forms
+and falls back on 37 (135 and 58, 18 of them from the value's type, on
+2026-10-26), and every value form is the kernel's. The runtime shows
 `euclid(4)`'s value form and the primes of `euclid(4)` and `euclid(5)`,
 where the kernel's queries stop with K344; `euclid(6).1` stops at the
 runtime's 20M-cell cap. A computation written twice in nested functions,
@@ -1181,10 +1191,40 @@ Decided on 2026-10-26: constructor patterns stay on the kernel's queries
 until typed readback and the applicable EVAL8 review, since a pattern's
 verdict is a check and its expression leaves need kernel terms for runtime
 parts; and a stop at the runtime's limits stays reported, not retried.
-EVAL4's open items are a responsive snapshot copy for asynchronous use,
-memory calibration, closed-environment pruning, and sharing of repeated
-calls, a memo whose retention is measured: a per-environment memo of
-delayed syntax was tried and withdrawn, as the report records.
+
+EVAL4's items:
+- **A snapshot that copies only what the walk reaches: done** in
+  [#324](https://github.com/KanHarI/cubist-math/pull/324) (2026-10-28,
+  [report](../../reports/runtime-repl-evaluation.md#the-query-copies-only-what-the-walk-reaches)).
+  The query reads each node, definition and signature from the kernel when
+  its walk first demands it, counted in its work and cells. A read after
+  any call that can move the kernel's handles, a checkpoint's rollback or
+  commit or the session's freeing, however it is made, expires instead of
+  reading another state: the bridge keeps a handle generation per session
+  (`cb_generation`, moved on by `cb_rollback` and `cb_commit_checkpoint`
+  in `wasm/cubical_bridge.c`), which never repeats: where it would wrap it
+  is spent, and every query on the session expires. A binary rational's eager copy had made its value form
+  about three times as slow by the runtime as by the kernel's queries:
+  `2/3 + 1/6` now copies 1,256 nodes where the closure of its judgement
+  holds 32,015, and takes 28,170 steps against the kernel walk's 32,755
+  ticks. The wide inverse and a decision of distinct wide integers still
+  take more steps than the kernel's walk takes ticks, though not more time.
+- Open: a responsive snapshot copy for asynchronous use, narrowed by the
+  lazy copy, which reads inside observations, between the slices at which
+  `observe` yields, to the η check's walk of a function's syntax and a
+  declared type's descriptors, each within one transition; memory
+  calibration; closed-environment pruning; and sharing of repeated calls, a
+  memo whose retention is measured: a per-environment memo of delayed
+  syntax was tried and withdrawn, as the report records.
+
+**For the user's decision, recorded on 2026-10-28 and not scheduled:**
+whether the runtime may show a path constructor applied to its data with
+its fields, as the kernel's walk shows it, instead of falling back. A
+decision that finds two binary rationals or integers equal has one at its
+weak head, `left(relate(…))`, and today its entry pays the runtime's walk
+up to it and then the kernel's whole walk. Showing it needs no dimension or
+composition; the second slice refuses it, as specified, and a path
+constructor applied at an interval point stays unsupported either way.
 
 ### Rational full-normalization completion path
 

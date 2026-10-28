@@ -10,12 +10,10 @@ import { cubicalText } from "./cubical-notation.mjs";
 import { levelNormal } from "./cubical-levels.mjs";
 import { InstructionDriver } from "./cubical-instruction-driver.mjs";
 import { KernelError } from "./cubical-kernel.mjs";
-import { RuntimeQuery, ordinarySignature, higherDataRefused } from "./cubical-runtime.mjs";
+import { RuntimeQuery } from "./cubical-runtime.mjs";
 import { admitSignature } from "./cubical-signatures.mjs";
 
 const speculativeFailure = kind => kind === "mismatch" || isResourceLimit(kind);
-// The kernel steps runtimeRefusal may spend on an evaluated term's type.
-const RUNTIME_TYPE_STEPS = 100000;
 // A display's naming lives in display-naming.mjs; these were defined here.
 export { betaReduce, dimensionNames, displayTerm, printedLabels, readableDimensions } from "./display-naming.mjs";
 
@@ -722,19 +720,6 @@ export class NativeCubicalElaborator {
   runtimeQuery(judgement) {
     if (this.runtimeEvaluation === false || this.driver.graph.judgement(judgement).context.length) return null;
     return new RuntimeQuery(this.kernel, judgement, this.runtimeLimits());
-  }
-  // Unsupported demand the runtime would certainly report for a value of
-  // this type, known from its weak head before any snapshot, or null. A
-  // closed value of a declared type the runtime does not execute, a higher
-  // or truncated sort, has a constructor of that type at its weak head, or a
-  // composition: the runtime refuses either, so the value form's first head
-  // falls back. The type's head is asked within a small budget; one that
-  // does not come within it decides nothing.
-  runtimeRefusal(typeHandle) {
-    const head = this.driver.graph.head(typeHandle, RUNTIME_TYPE_STEPS);
-    if (!head) return null;
-    const node = this.kernel.node(head);
-    return node.kind === "Sort" && !ordinarySignature(this.kernel.signature(node.payload)) ? higherDataRefused : null;
   }
   runtimeLimits() {
     this.kernel.checkDeadline();
