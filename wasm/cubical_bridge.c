@@ -14,6 +14,7 @@ typedef struct {
     cc_error_kind error_kind;
     uint8_t position[1024]; /* the highlighted position of the next step or replacement */
     size_t depth;
+    uint32_t generation; /* cb_generation: never 0 for a live session */
 } browser_session;
 
 static browser_session sessions[8];
@@ -37,7 +38,7 @@ uint32_t cb_new(void) {
         if (sessions[i].kernel) continue;
         cc_kernel *kernel = cc_kernel_new();
         if (!kernel) return 0;
-        sessions[i] = (browser_session){.kernel = kernel, .token = next_token++};
+        sessions[i] = (browser_session){.kernel = kernel, .token = next_token++, .generation = 1};
         cc_init(&sessions[i].formula, CC_INTERVAL);
         return sessions[i].token;
     }
@@ -80,6 +81,24 @@ void cb_optimizations(uint32_t token, unsigned flags) {
     if (s) cc_kernel_set_optimizations(s->kernel, flags);
 }
 
+/* A session's handle generation: it moves on at every call that can move,
+ * drop or recycle the session's node, definition, signature or judgement
+ * handles, a rollback (which drops what was made since the checkpoint, its
+ * handles reused by what is made next) and a commit (which compacts it),
+ * whether or not either had anything to move; freeing the session drops
+ * them all. A reader that holds handles across calls, as a runtime query
+ * does, compares it with the generation it read them in, and no alias of
+ * an export or copy of the module can bypass it. Nothing else here or in
+ * the kernel shrinks or relocates a store (kernel/src/checkpoint.c). An
+ * unknown or freed session's generation is 0, which a live one never is. */
+static void handles_moved(browser_session *s) {
+    if (!++s->generation) s->generation = 1;
+}
+uint32_t cb_generation(uint32_t token) {
+    browser_session *s = lookup(token);
+    return s ? s->generation : 0;
+}
+
 void cb_checkpoint(uint32_t token) {
     browser_session *s = lookup(token);
     if (s) cc_kernel_checkpoint(s->kernel);
@@ -88,13 +107,16 @@ void cb_rollback(uint32_t token) {
     browser_session *s = lookup(token);
     if (!s) return;
     cc_kernel_rollback(s->kernel);
+    handles_moved(s);
     s->error = NULL;
 }
 
 int cb_commit_checkpoint(uint32_t token) {
     browser_session *s = lookup(token);
     if (!s) return 0;
-    return cc_kernel_commit_checkpoint(s->kernel) ? 1 : 0;
+    int committed = cc_kernel_commit_checkpoint(s->kernel) ? 1 : 0;
+    handles_moved(s);
+    return committed;
 }
 cc_term cb_relocated(uint32_t token, cc_term term) {
     browser_session *s = lookup(token);

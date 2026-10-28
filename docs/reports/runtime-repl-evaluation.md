@@ -291,25 +291,30 @@ reaches. Since #324 the query copies only what the walk reaches:
   1,256 nodes through 50 definitions.
 - **Isolation.** The query reads the judgement as it was checked. In the
   kernel a handle moves or vanishes only at a checkpoint's rollback, which
-  drops what was made since it, at its commit, which compacts that, and
-  when the session is freed (`kernel/src/checkpoint.c`,
-  `wasm/cubical_bridge.c`). `web/cubical-kernel.mjs` replaces, once per
-  module, the module's exports for those calls (`_cb_rollback`,
-  `_cb_commit_checkpoint`, `_cb_free`) with calls that also end the handle
-  generation of the kernel owning the session, so every caller is seen, a
-  declaration's transaction or a kernel test calling the module directly;
-  forgetting the nodes read ends it too. A query records the generation it
-  was made in (`handleToken`) and reads only while it holds
-  (`handlesHeld`). A read after any such call fails as `expired` instead of
-  reading another state, conservatively even when the call moved none of
-  the query's handles, and what the query copied and computed before stays
-  observable. A value form makes and disposes of its query inside one
-  check, before its declaration's transaction ends, so it never meets an
-  expiry: one there would be a runtime defect, E490, not a fallback. The
-  first review round found that the first version, which expired a query
-  only at the end of a checkpoint open when it was made, missed a
-  checkpoint opened through the module's export: its rolled-back handle,
-  recycled, was read as the query's own.
+  drops what was made since it and reuses those handles for what is made
+  next, at its commit, which compacts that, and when the session is freed
+  (`kernel/src/checkpoint.c`). The bridge keeps a handle generation per
+  session (`wasm/cubical_bridge.c`): `cb_rollback` and
+  `cb_commit_checkpoint` move it on (`handles_moved`), whether or not they
+  had anything to move, nothing else does, and `cb_generation` reads it,
+  0 for a freed or unknown session, which a live one never has. A query
+  records the generation it was made in (`CubicalKernel.handleToken`) and
+  reads only while the session's is the same (`handlesHeld`), so no caller
+  can move a handle unseen: a declaration's transaction, a kernel test
+  calling the module, an export captured before any kernel was made or a
+  copy of the module. A read after any such call fails as `expired`
+  instead of reading another state, conservatively even when the call
+  moved none of the query's handles, and what the query copied and
+  computed before stays observable. A value form makes and disposes of its
+  query inside one check, before its declaration's transaction ends, so it
+  never meets an expiry: one there would be a runtime defect, E490, not a
+  fallback. Two review rounds shaped this. The first found that expiring a
+  query only at the end of a checkpoint open when it was made missed a
+  checkpoint opened through the module's export; the second, that wrapping
+  the module's exports in JavaScript missed an export captured before the
+  wrapping and a copy of the module. In both, a rolled-back handle,
+  recycled, was read as the query's own; keeping the generation in the
+  bridge closes every such path.
 - **Budgets.** Each read is work, and each copied node cells, of the
   observation that demands it, counted as the eager copy's were in the
   query's construction: the work, cell and time limits, cancellation and
@@ -320,10 +325,14 @@ reaches. Since #324 the query copies only what the walk reaches:
   demanded; a query expires at a later declaration's end, accepted or
   refused, at its own transaction's commit and rollback, and at the
   session's disposal, with what it read still observable; a checkpoint
-  opened and ended through the module's exports, nested or not, committed
-  or rolled back, and forgetting the nodes read, expire every query made
-  before, the one whose rolled-back handle is recycled among them; a cell
-  or work limit stops a query in the middle of a read. In `tests/runtime-evaluation.test.mjs`,
+  rolled back or committed through the module's export, an alias of it
+  captured before any kernel was made or a copy of the module, nested or
+  not, expires every query made before, each rolled-back handle shown
+  recycled, while opening a checkpoint or forgetting the nodes read
+  expires none; a cell or work limit stops a query in the middle of a
+  read. `tests/cubical-wasm.test.mjs` checks the bridge's generation: it
+  moves on at each rollback and commit and at nothing else, and a freed
+  session has none. In `tests/runtime-evaluation.test.mjs`,
   the unused argument's definitions are never copied, and `2/3 + 1/6`
   copies under a tenth of the closure's 32,015 nodes. The differential
   coverage is unchanged and passes.

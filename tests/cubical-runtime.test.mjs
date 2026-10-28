@@ -351,23 +351,46 @@ test("unread syntax expires with the kernel's handles, and what was read survive
 });
 
 // However a checkpoint is opened and ended, through a declaration's
-// transaction or the module's own exports as kernel tests call them, its
-// rollback or commit expires every query made before it: a rolled-back
-// handle is reused by the next node made, which a query must never read as
-// its own.
-test("a checkpoint ended through the module's exports expires every query made before", async t => {
-  const kernel = new CubicalKernel(await createCubical()), g = new InstructionGraph(kernel), m = kernel.module;
+// transaction, the module's exports as kernel tests call them, an export
+// captured before any kernel was made or a copy of the module, its rollback
+// or commit expires every query made before it: the bridge's handle
+// generation moves on (cb_generation), and a rolled-back handle is reused
+// by the next node made, which a query must never read as its own.
+test("a checkpoint ended through any alias of the module's exports expires every query made before", async t => {
+  const module = await createCubical();
+  // Aliases taken before any kernel is made for the module, and a copy.
+  const rollback = module._cb_rollback, commit = module._cb_commit_checkpoint, facade = { ...module };
+  const kernel = new CubicalKernel(module), g = new InstructionGraph(kernel), m = kernel.module;
   t.after(() => kernel.dispose());
   const queried = judgement => { const query = new RuntimeQuery(kernel, judgement); t.after(() => query.dispose()); return query; };
-  // A point made inside a checkpoint opened through the module, rolled
-  // back, its handle recycled for the type Void.
+  // A point made inside a checkpoint and rolled back, its handle recycled
+  // for the next node made, the type Void at first: through the module's
+  // export, the captured alias and the copy alike.
   g.unit();
-  m._cb_checkpoint(kernel.handle);
-  const recycled = queried(g.point());
-  m._cb_rollback(kernel.handle);
-  kernel.forgetNodes();
-  g.void();
-  assert.throws(() => recycled.observeNow(), fails("expired"));
+  const fresh = [() => g.judgement(g.void()).term, () => kernel.term("Var", kernel.symbol("recycled_1")),
+    () => kernel.term("Var", kernel.symbol("recycled_2"))];
+  for (const [i, roll] of [token => m._cb_rollback(token), rollback, token => facade._cb_rollback(token)].entries()) {
+    m._cb_checkpoint(kernel.handle);
+    const point = g.point(), recycled = queried(point), handle = g.judgement(point).term;
+    roll(kernel.handle);
+    assert.equal(fresh[i](), handle, "the rolled-back handle is reused");
+    assert.throws(() => recycled.observeNow(), fails("expired"));
+  }
+  // A commit compacts: through the module, the captured alias and the copy.
+  for (const close of [token => m._cb_commit_checkpoint(token), commit, token => facade._cb_commit_checkpoint(token)]) {
+    m._cb_checkpoint(kernel.handle);
+    const committed = queried(g.point());
+    assert.equal(close(kernel.handle), 1);
+    assert.throws(() => committed.observeNow(), fails("expired"));
+  }
+  // A kernel made over the copy reads the same generation.
+  const copied = new CubicalKernel(facade), h = new InstructionGraph(copied);
+  t.after(() => copied.dispose());
+  const before = new RuntimeQuery(copied, h.point());
+  t.after(() => before.dispose());
+  copied.module._cb_checkpoint(copied.handle);
+  rollback(copied.handle);
+  assert.throws(() => before.observeNow(), fails("expired"));
   // Nested checkpoints: the second replaces the first's base; its rollback
   // expires a query made in either.
   m._cb_checkpoint(kernel.handle);
@@ -376,17 +399,12 @@ test("a checkpoint ended through the module's exports expires every query made b
   const inner = queried(g.point());
   m._cb_rollback(kernel.handle);
   for (const query of [outer, inner]) assert.throws(() => query.observeNow(), fails("expired"));
-  // A commit compacts, and forgetting the nodes read says handles moved,
-  // checkpoint or none.
+  // Opening a checkpoint, and forgetting the nodes read, move no handle: a
+  // query made before either still reads.
+  const kept = queried(g.point());
   m._cb_checkpoint(kernel.handle);
-  const committed = queried(g.point());
-  assert.equal(m._cb_commit_checkpoint(kernel.handle), 1);
-  assert.throws(() => committed.observeNow(), fails("expired"));
-  const forgotten = queried(g.point());
   kernel.forgetNodes();
-  assert.throws(() => forgotten.observeNow(), fails("expired"));
-  // A query made after all of them reads.
-  assert.deepEqual(queried(g.point()).observeNow(), { kind: "Point" });
+  assert.deepEqual(kept.observeNow(), { kind: "Point" });
 });
 
 // A lazy read is work and cells of the observation that demands it: a

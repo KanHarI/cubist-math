@@ -1086,7 +1086,9 @@ EVAL4's items:
   its walk first demands it, counted in its work and cells. A read after
   any call that can move the kernel's handles, a checkpoint's rollback or
   commit or the session's freeing, however it is made, expires instead of
-  reading another state. A binary rational's eager copy had made its value form
+  reading another state: the bridge keeps a handle generation per session
+  (`cb_generation`, moved on by `cb_rollback` and `cb_commit_checkpoint`
+  in `wasm/cubical_bridge.c`). A binary rational's eager copy had made its value form
   about three times as slow by the runtime as by the kernel's queries:
   `2/3 + 1/6` now copies 1,256 nodes where the closure of its judgement
   holds 32,015, and takes 28,170 steps against the kernel walk's 32,755
