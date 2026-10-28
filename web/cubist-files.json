@@ -1575,8 +1575,8 @@
    "summary": "For `tests/computability.test.mjs`: a computable declaration is refused when it depends on an assumption, naming the path, and its dependents with it."
   },
   {
-   "path": "cubist-tests/continuum_axioms.cubist",
-   "summary": "The continuum hypotheses of `continuum_hypothesis` as user-supplied axioms, `def CH := axiom ContinuumHypothesis;`: every result that uses one lists it."
+   "path": "cubist-tests/continuum_assumptions.cubist",
+   "summary": "The library's continuum hypotheses, assumed in `continuum_axioms` (`def CH := axiom ContinuumHypothesis;` and three more): the axioms' types, results that use them, and their refusal by `computable` and `evaluate`, under the bare labels `CH` and `GCH`."
   },
   {
    "path": "cubist-tests/declarations_axioms.cubist",
@@ -2499,8 +2499,12 @@
    "summary": "Excluded middle and the axiom of choice: their statements over `Trunc`, `ExcludedMiddle(U)` and `AxiomOfChoice(U)`, and the axioms that assume them, `def LEM := axiom ExcludedMiddle;` and `def Choice := axiom AxiomOfChoice;`. Importing it brings `Trunc` into scope."
   },
   {
+   "path": "library/continuum_axioms.cubist",
+   "summary": "The continuum hypotheses of [`continuum_hypothesis`](continuum_hypothesis.cubist) as optional assumptions, each for every universe `U < UU0`: `def CH := axiom ContinuumHypothesis;`, `DecidableCH`, `GCH` and `DecidableGCH` likewise. A module states that it may rely on them by importing this one; importing `continuum_hypothesis` alone, for the statements and the conditional proofs, assumes none. Every result lists the ones it relies on."
+  },
+  {
    "path": "library/continuum_hypothesis.cubist",
-   "summary": "Universe-indexed CH and GCH over full powersets, with stronger cardinality-dichotomy variants (`DecidableContinuumHypothesis`, `DecidableGeneralizedContinuumHypothesis`); checked implications from each dichotomy to its negative statement and from each GCH to its CH. Infinitude means a mere injection from `Nat`. Generic mere cardinal comparisons, equinumerosity and the separate `CantorContinuumHypothesis` over binary sequences are included. Statements are explicit hypotheses; no axiom assumes them, and the implications to excluded middle and choice remain follow-ups."
+   "summary": "Universe-indexed CH and GCH over full powersets, with stronger cardinality-dichotomy variants (`DecidableContinuumHypothesis`, `DecidableGeneralizedContinuumHypothesis`); checked implications from each dichotomy to its negative statement and from each GCH to its CH. Infinitude means a mere injection from `Nat`. Generic mere cardinal comparisons, equinumerosity and the separate `CantorContinuumHypothesis` over binary sequences are included. Statements are explicit hypotheses, which this module never assumes; [`continuum_axioms`](continuum_axioms.cubist) assumes four of them. The implications to excluded middle and choice remain follow-ups."
   },
   {
    "path": "library/contractible_maps.cubist",

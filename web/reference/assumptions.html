@@ -143,6 +143,17 @@ def merely_assumed(A : U0, nn : (A -&gt; Void) -&gt; Void) : Trunc(U0, A) {
   exact merely_under(LEM(U0), A, nn);
 }</code></pre>
             <p>Only <code>merely_assumed</code> uses <code>LEM</code>; <code>merely_under</code> uses no assumption, and is computable. A result can also state an equivalence with excluded middle: the library’s <a href="../proof.html?proof=universe_automorphisms&amp;name=excluded_middle_iff_universe_swap"><code>universe_automorphisms</code></a> proves that <code>ExcludedMiddle(U0)</code> holds exactly when there merely is an automorphism of <code>U0</code> sending <code>Unit</code> to <code>Void</code>.</p>
+            <h3 id="continuum">Optional assumptions: the continuum hypotheses</h3>
+            <p>The library’s <code>continuum_hypothesis</code> module states further principles as types, for every universe <code>U &lt; UU0</code>, and assumes none of them: the continuum hypothesis <code>ContinuumHypothesis(U)</code>, that no set lies strictly between <code>Nat</code> and its powerset in cardinality; its generalization <code>GeneralizedContinuumHypothesis(U)</code>, the same for every set <code>A</code> into which <code>Nat</code> merely injects and the powerset of <code>A</code>; and the stronger <code>DecidableContinuumHypothesis(U)</code> and <code>DecidableGeneralizedContinuumHypothesis(U)</code>, by which a set between the two is merely equinumerous with one of them. It proves the implications among them, each taking its premise as a parameter. The separate module <code>continuum_axioms</code> assumes these four as <code>CH</code>, <code>GCH</code>, <code>DecidableCH</code> and <code>DecidableGCH</code>:</p>
+            <pre><code data-check="excerpt" data-module="continuum_axioms">def CH := axiom ContinuumHypothesis;</code></pre>
+            <p>A module states that it may rely on them by importing <code>continuum_axioms</code>. One that imports only <code>continuum_hypothesis</code> has none of them in scope, and may as well assume the negation of the continuum hypothesis, or leave it open. With all four in scope, a result is still listed with exactly those it uses:</p>
+            <pre><code data-check="accept">import continuum_axioms;
+
+computable def ch_under(U &lt; UU0, gch : DecidableGeneralizedContinuumHypothesis(U)) :
+  ContinuumHypothesis(U) := gch_implies_ch(U, decidable_gch_implies_gch(U, gch));
+
+def ch_assumed : ContinuumHypothesis(U0) := ch_under(U0, DecidableGCH(U0));</code></pre>
+            <p><code>ch_under</code> uses no assumption, and is computable; <code>ch_assumed</code> uses <code>DecidableGCH</code> alone, and is not.</p>
           </section>
           <section id="univalence">
             <h2>Extensionality and univalence compute</h2>
