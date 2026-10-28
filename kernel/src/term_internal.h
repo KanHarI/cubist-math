@@ -171,7 +171,10 @@ struct cc_kernel {
     unsigned work_phase;
     double deadline_ms;
     unsigned deadline_ticks;
+    /* The recursive steps now active (ck_enter), and the stack's address
+     * where the outermost of them was entered. */
     unsigned recursion;
+    uintptr_t stack_base;
     char error[192];
     cc_error_kind error_kind; /* meaningful only while error is set */
     cc_term mismatch_found, mismatch_expected; /* meaningful for a MISMATCH error */
@@ -273,6 +276,22 @@ bool ck_fail(cc_kernel *, const char *);
 bool ck_fail_as(cc_kernel *, cc_error_kind, const char *);
 bool ck_formula_result(cc_kernel *, cc_status, const char *);
 bool ck_tick(cc_kernel *);
+/* Native recursion (term_store.c): reduction, normal forms, conversion,
+ * levels and positions re-enter themselves on the C stack. Each recursive
+ * step is entered with ck_enter and left with ck_leave. ck_enter fails, a
+ * resource error with its message, when the step would be more than
+ * CC_RECURSION_LIMIT steps or CC_STACK_BUDGET bytes of stack below the
+ * outermost step entered. The bytes bound the stack the kernel runs on, 8 MiB
+ * natively and in WebAssembly, whatever a cycle's frames cost. The steps
+ * bound what the kernel cannot measure: under WebAssembly the engine keeps
+ * frames on its own, smaller stack, as V8's of about 0.5 MiB in a Chromium
+ * worker, and the cycles measured take 0.6 to 0.9 KiB of it a step: it ran
+ * out at 622 and 708 steps. The limit holds on every platform (decided
+ * 2026-10-28, docs/roadmaps/kernel/kernel-instructions.md). */
+#define CC_RECURSION_LIMIT 448
+#define CC_STACK_BUDGET ((uintptr_t)4 << 20)
+bool ck_enter(cc_kernel *, const char *message);
+void ck_leave(cc_kernel *);
 /* Start an operation (cubical_kernel.h, cc_kernel_work): charge its steps and
  * its error to its kind, count it, and give it a full budget. It leaves the
  * recursion depth to the caller, as each entry point did before. */

@@ -51,8 +51,8 @@ function recordedProgram(t) {
   };
   checker.evaluated = function (term, ...rest) {
     const result = evaluated.call(this, term, ...rest);
-    // `asked`, the first query of the evaluation's own: a handle is a number,
-    // which an earlier declaration's rolled-back work may have used too.
+    // A handle number can be reused after a rollback: the evaluation's
+    // queries are the ones asked from here on.
     if (term.tag === "DefRef") evaluations.push({ name: term.name, handle: result.expression, normalized: false, heads: [], asked: asked.length });
     return result;
   };

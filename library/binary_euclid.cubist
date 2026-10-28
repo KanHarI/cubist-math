@@ -1,0 +1,30 @@
+// Euclid's theorem over public binary Nat: for every n, the least divisor
+// of n! + 1 above one is a prime above n. The witness is prime_numbers'
+// least divisor search, on nat's binary factorial.
+import prime_numbers;
+use nat;
+
+computable def InfinitelyManyPrimes : U0 := forall n : Nat. exists p : Nat. Prime(p) and n < p;
+
+computable def factorial_succ_above_one(n : Nat) :
+  1 < succ(factorial(n)) := bnat_succ_lt_succ(0, factorial(n), factorial_positive(n));
+
+// Every bound has a larger prime. Each number from one to n divides n!, so
+// none of them above one divides n! + 1.
+computable def euclid : InfinitelyManyPrimes {
+  intro n;
+  obtain (p, least) := least_divisor(succ(factorial(n)), factorial_succ_above_one(n));
+  let bigger : n < p := match bnat_lt_decide(n, p) return n < p {
+      left larger => larger;
+      right not_larger => absurd(
+        divisor_not_consecutive(
+          p, factorial(n), least.1,
+          divides_factorial(
+            p, n, fun (zero_ : p = 0) => comp(fun (i : Interval) => 1 < (zero_ @ i), least.1),
+            bnat_le_of_not_lt(n, p, not_larger)
+          ), least.2.1
+        )
+      );
+    };
+  exact (p, least_divisor_prime(succ(factorial(n)), p, least), bigger);
+}

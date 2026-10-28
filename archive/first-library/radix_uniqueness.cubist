@@ -12,10 +12,10 @@ def radix_nat_no_smaller_self(n : UNat) : (succ(n) <= n) -> Void {
 }
 
 def radix_nat_small_not_large(r, d, e : UNat, small : succ(d) <= r, same : d = r + e) : Void {
-  let large := transport nat_le_add(e, r) along trans(unat_add_comm(e, r), sym(same)) in (
+  let large := transport unat_le_add(e, r) along trans(unat_add_comm(e, r), sym(same)) in (
     (fun (v : UNat) => r <= v)
   );
-  exact radix_nat_no_smaller_self(d, nat_le_trans(succ(d), r, d, small, large));
+  exact radix_nat_no_smaller_self(d, unat_le_trans(succ(d), r, d, small, large));
 }
 
 def radix_eval_succ(r, n, d : UNat) : r * succ(n) + d = r + (r * n + d) {
@@ -88,7 +88,7 @@ def radix_digit_bound(n : UNat) : forall d : RadixDigit(n). succ(radix_digit_val
       succ(radix_digit_value(succ(k), digit)) <= succ(k)
     ) {
       left top => unat_le_refl(succ(k));
-      right lower => nat_le_step(succ(radix_digit_value(k, lower)), k, previous(lower));
+      right lower => unat_le_step(succ(radix_digit_value(k, lower)), k, previous(lower));
     };
   };
 }

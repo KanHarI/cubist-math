@@ -63,6 +63,26 @@ bool ck_tick(cc_kernel *k) {
     return true;
 }
 
+/* The outermost step records where the stack stands, and a nested step never
+ * moves it. Every step leaves, so the count is zero between operations; an
+ * operation's start resets it too (k->recursion = 0), and its first step
+ * records the base again. The address is the frame's, not a local's, which a
+ * sanitizer may move to a heap frame. The distance is taken either way, so
+ * the direction the stack grows does not matter. */
+bool ck_enter(cc_kernel *k, const char *message) {
+    uintptr_t here = (uintptr_t)__builtin_frame_address(0);
+    if (!k->recursion) k->stack_base = here;
+    else if (k->recursion >= CC_RECURSION_LIMIT ||
+             (here < k->stack_base ? k->stack_base - here : here - k->stack_base) > CC_STACK_BUDGET)
+        return ck_fail_as(k, CC_ERROR_RESOURCE, message);
+    ++k->recursion;
+    return true;
+}
+
+void ck_leave(cc_kernel *k) {
+    --k->recursion;
+}
+
 unsigned ck_arity(cc_term_kind kind) {
     switch (kind) {
     /* Retired primitive tags stay reserved in ABI 3, and are not syntax. */

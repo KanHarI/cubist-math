@@ -145,7 +145,7 @@ between columns.
 | Declarations | **Released** on 2026-10-02, on by default with no marker, after K2.1's review (Lemma H2 and the critical pairs approved on 2026-09-30, the model and canonicity on 2026-10-02): K2.2, K2.3, L2.1, L2.2a's first three slices (the expression `match`, the closing statement, and recursion whose other arguments vary), and since 2026-10-04 its fourth (several values and nested patterns), the match statement on sums, which replaced `cases`, and L2.2b's automatic clauses. Nat, W and pushouts are source declarations; sums stay native; the circle's winding number computes in source. K2.4a's differential gate/tooling is retired; K2.5's ledger verifier is implemented | K2.5's removal of the legacy truncation assumptions through `axiom` definitions (steps 1–4 scheduled on 2026-10-26; step 5 with I0.5); a review record per K2.2 family; L2.3, L2.3b and L2.7; stages 4 and 5 |
 | Computation notation | Design only. N1 core's prerequisites are delivered: L2.4 on 2026-10-05, and on 2026-10-06 L2.4c's theory families, whose laws state a monad's on sets (the identity monad is a `Monad`) | N0–N5; N1's later categorical bridge also needs L3.4 |
 | Simplicial types | Design only, proposed on 2026-10-24; `x ->[C] y` spelling agreed | ST0–ST6: preservation/model design, shared ordinary arrow syntax, separate directed shapes/extensions, synthetic categories and later mathematical bridges |
-| Reference and library | Checked-reference harness; universe chapter rewritten; induction chapter rewritten for declared types: declarations, `match`, structural recursion, dependent matches, path and truncation clauses (D2.1); quick reference (`proof.html`), with a file explorer over every published source; since 2026-10-05 a chapter on [theories and models](../../web/reference/theories.html) with the library's algebra and numbers, and set quotients, the library's univalence and `propositions` in the cubical chapters (#159); since 2026-10-06 the theories chapter covers headers, families, `use`, named notations and initial and free models, and the cubical chapter the box notation and squares. Since 2026-10-21 the language reference has kernel chapters 14–17 (#301). The library now has forty self-contained modules: `nat`, `lists`, `quotients`, effective since 2026-10-05, `algebra`, the hierarchy as theories, `integers`, `rationals`, `lexemes` (L2.10c's literals), `hlevels` (L2.5a), `squares` (L2.8), `contractible_maps`, `univalence` (L3.1's start) and `propositions`, `h1_truncation`, `h1_classical`, `classical_axioms`, `universe_automorphisms` and `universe_smallness` (Russell-style universe size contradictions, #226); since 2026-10-17 the binary naturals (`unat`, `unat_models`, `bnat` and its ten `bnat_*` modules), `semirings`, `differences`, `fractions`, `binary_integers`, `binary_rationals` and `ordered_algebra`; and #295's `finite_sets`, `binary`, `powersets` and `continuum_hypothesis`. The test suite's Cubist sources are modules in `cubist-tests/` | An H1 chapter on higher constructors, obligations and truncation clauses beyond chapter 6's introduction (D0.2, D2.1); one module for the classical assumptions, which `classical_axioms` and `h1_classical` state over two truncations; the library is foundations, not a rebuild wave |
+| Reference and library | Checked-reference harness; universe chapter rewritten; induction chapter rewritten for declared types: declarations, `match`, structural recursion, dependent matches, path and truncation clauses (D2.1); quick reference (`proof.html`), with a file explorer over every published source; since 2026-10-05 a chapter on [theories and models](../../web/reference/theories.html) with the library's algebra and numbers, and set quotients, the library's univalence and `propositions` in the cubical chapters (#159); since 2026-10-06 the theories chapter covers headers, families, `use`, named notations and initial and free models, and the cubical chapter the box notation and squares. Since 2026-10-21 the language reference has kernel chapters 14–17 (#301). The library now has forty-three self-contained modules: `nat`, `lists`, `quotients`, effective since 2026-10-05, `algebra`, the hierarchy as theories, `integers`, `rationals`, `lexemes` (L2.10c's literals), `hlevels` (L2.5a), `squares` (L2.8), `contractible_maps`, `univalence` (L3.1's start) and `propositions`, `h1_truncation`, `h1_classical`, `classical_axioms`, `universe_automorphisms` and `universe_smallness` (Russell-style universe size contradictions, #226); since 2026-10-17 the binary naturals (`unat`, `unat_models`, `bnat` and its ten `bnat_*` modules), `semirings`, `differences`, `fractions`, `binary_integers`, `binary_rationals` and `ordered_algebra`; #295's `finite_sets`, `binary`, `powersets` and `continuum_hypothesis`; and since 2026-10-28 `continuum_axioms`, the continuum hypotheses as optional assumptions, and `continuum_classical`, DecidableCH's excluded middle. The test suite's Cubist sources are modules in `cubist-tests/` | An H1 chapter on higher constructors, obligations and truncation clauses beyond chapter 6's introduction (D0.2, D2.1); one module for the classical assumptions, which `classical_axioms` and `h1_classical` state over two truncations; the library is foundations, not a rebuild wave |
 
 Evidence lives in `tests/universe-generic.test.mjs`,
 `tests/proof-ergonomics.test.mjs`, `tests/computability.test.mjs`,
@@ -491,9 +491,13 @@ check stays strict for unrelated changes. The [ledger verifier and scoped migrat
 `Fin(n)`, Boolean operations on `Binary := Fin(2)`, full and decidable powersets,
 universe-indexed CH/GCH, and their stronger cardinality dichotomies.
 The basic implications among those statements are checked.
-The proposed axiom definitions and the proofs from DecidableCH to LEM and
-from DecidableGCH to choice remain follow-ups; see the
-[assumption study](hott/h1-truncation-migration.md#continuum-hypotheses-checked-statements-planned-assumptions).
+Since 2026-10-28 the separate `continuum_axioms` module admits the optional
+assumptions `CH`, `DecidableCH`, `GCH` and `DecidableGCH`, each listed by
+every result that relies on it; `continuum_hypothesis` still assumes none.
+Since the same day `continuum_classical` proves, with no assumption and no
+resizing, that DecidableCH at a universe gives LEM at it. The proof from
+DecidableGCH to choice remains a follow-up; see the
+[assumption study](hott/h1-truncation-migration.md#continuum-hypotheses-checked-statements-optional-assumptions).
 
 **Release fixtures,** updated 2026-09-30: declared Nat, sum, W
 and pushout comparisons (K2.4a implemented, with the X2 remainder in its evidence record); a circle with computed winding
@@ -1018,10 +1022,16 @@ Each step lands in focused PRs under the review rule above.
       fallback in mid-computation can then go through the runtime.
    5. **The archive's number theory in the library**
       ([NT1–NT5](archive-retirement.md#number-theory-in-the-library)):
-      1. NT1: the unary order lemmas move to `unat`.
+      1. NT1: the unary order lemmas move to `unat`. **Done** on 2026-10-28.
       2. NT2 is EVAL7: primality, divisibility and Euclid over binary `Nat`.
          Every consumer of the archive's `euclid` moves to it, and the
          evaluator workloads and their acceptance move to the library Euclid.
+         - **Part one, the library modules, done on 2026-10-28**
+           ([report](../reports/binary-euclid.md)): `bnat_order_laws`,
+           `bnat_division`, `divisibility`, `prime_numbers` and
+           `binary_euclid`, with Euclid's witnesses `2, 2, 3, 7, 5, 11`
+           for 0 through 5. Part two moves the consumers and deletes the
+           archive's `euclid` and `primes`' divisibility and primality.
       3. NT3: least elements.
       4. NT4: binary and radix numerals.
       5. NT5: the 20 archive modules are deleted.
