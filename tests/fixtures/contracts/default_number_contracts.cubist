@@ -1,0 +1,131 @@
+// NUM2 default migration: public Z and Q are the binary-backed BInt and BQ.
+// Their API checks under folded normal forms, decided on 2026-10-26.
+// Authority: docs/roadmaps/runtime/runtime-evaluation-roadmap.md#num2-build-the-new-binary-backed-integers-and-rationals
+import rationals;
+use nat;
+
+# test(default_numbers.integers_binary)
+# expect_axioms([])
+def integers_binary : Z = BInt {
+  rfl;
+}
+
+# test(default_numbers.rationals_binary)
+# expect_axioms([])
+def rationals_binary : Q = BQ {
+  rfl;
+}
+
+// A representative's components are binary naturals, and a rational's
+// numerator and denominator are the binary integers.
+# test(default_numbers.integer_representative)
+# expect_axioms([])
+def integer_representative : int(2, 5) = typed(Z, class((nat.(2), nat.(5)))) {
+  rfl;
+}
+
+# test(default_numbers.rational_representative)
+# expect_axioms([])
+def rational_representative : rat(int(2, 0), 2) = bq(int(2, 0), int(3, 0), rat_succ_nonzero(2)) {
+  rfl;
+}
+
+# test(default_numbers.ring)
+# expect_axioms([])
+def ring : CommRing(U0) := integers;
+
+# test(default_numbers.field)
+# expect_axioms([])
+def field : Field(U0) := rationals;
+
+# test(default_numbers.domain)
+# expect_axioms([])
+computable def domain(
+  x, y : Z, nx : x = int_zero -> Void, ny : y = int_zero -> Void, p : int_mul(x, y) = int_zero
+) :
+  Void := int_mul_nonzero(x, y, nx, ny, p);
+
+# test(default_numbers.integer_cast)
+# expect_axioms([])
+computable def integer_cast(a, b : Nat) :
+  int_of_nat(a + b) = int_add(int_of_nat(a), int_of_nat(b)) := int_of_nat_add(a, b);
+
+# test(default_numbers.integer_numeral)
+# expect_axioms([])
+computable def integer_numeral(n : Nat) :
+  int_of_nat(n) = integers.of_nat(n) := int_of_nat_numeral(n);
+
+# test(default_numbers.rational_cast)
+# expect_axioms([])
+computable def rational_cast(x, y : Z) :
+  rat_of_int(int_mul(x, y)) = rationals.mul(rat_of_int(x), rat_of_int(y)) := rat_of_int_mul(x, y);
+
+# test(default_numbers.rational_numeral)
+# expect_axioms([])
+computable def rational_numeral(n : Nat) :
+  rat_of_nat(n) = rationals.of_nat(n) := rat_of_nat_numeral(n);
+
+# test(default_numbers.integer_equal)
+# expect_axioms([])
+computable def integer_equal(x, y : Z) : Nat := match int_decide(x, y) return Nat {
+    left same => 1;
+    right different => 0;
+  };
+
+# test(default_numbers.rational_equal)
+# expect_axioms([])
+computable def rational_equal(x, y : Q) : Nat := match rat_decide(x, y) return Nat {
+    left same => 1;
+    right different => 0;
+  };
+
+// Literals and arithmetic on large magnitudes, which a unary natural could
+// not hold.
+# test(default_numbers.integer_wide_product)
+# expect_axioms([])
+def integer_wide_product :
+  integers.(18446744073709551615 * -18446744073709551615 = -340282366920938463426481119284349108225) {
+  rfl;
+}
+
+# test(default_numbers.integer_cancel)
+evaluate integer_equal(
+  integers.(340282366920938463463374607431768211456 + -340282366920938463463374607431768211455),
+  int_one
+) expecting 1;
+
+# test(default_numbers.rational_wide_sum)
+evaluate rational_equal(
+  rationals.(1/18446744073709551616 + 1/18446744073709551616), rationals.(1/9223372036854775808)
+) expecting 1;
+
+# test(default_numbers.rational_constructor)
+evaluate rational_equal(rat(int(1, 0), 1), rationals.(0.5)) expecting 1;
+
+# test(default_numbers.rational_inverse)
+evaluate rational_equal(rat_inv(rationals.(-2/3)), rationals.(-3/2)) expecting 1;
+
+# test(default_numbers.rational_embedding)
+evaluate rational_equal(rat_of_nat(18446744073709551616), rationals.(18446744073709551616)) expecting 1;
+
+// The folded normal forms compute the values' data and keep their
+// certificates named (docs/roadmaps/historical/folded-normal-forms.md).
+# test(default_numbers.normalize_integer)
+evaluate integers.(-340282366920938463463374607431768211455) expecting !!_;
+
+# test(default_numbers.normalize_constructor)
+evaluate rat(int(2, 0), 2) expecting !!_;
+
+# test(default_numbers.normalize_wide_fraction)
+evaluate rationals.(18446744073709551615/340282366920938463463374607431768211455) expecting !!_;
+
+# test(default_numbers.normalize_wide_inverse)
+evaluate rat_inv(rationals.(-340282366920938463463374607431768211455/18446744073709551615)) expecting !!_;
+
+# test(default_numbers.zero_denominator)
+# expect_error(E905)
+def zero_denominator : Q := rationals.(1/0);
+
+# test(default_numbers.unary_argument)
+# expect_error(E606)
+def unary_argument : Z := int(unat.(1), unat.(0));

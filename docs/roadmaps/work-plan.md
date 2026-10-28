@@ -145,7 +145,7 @@ between columns.
 | Declarations | **Released** on 2026-10-02, on by default with no marker, after K2.1's review (Lemma H2 and the critical pairs approved on 2026-09-30, the model and canonicity on 2026-10-02): K2.2, K2.3, L2.1, L2.2a's first three slices (the expression `match`, the closing statement, and recursion whose other arguments vary), and since 2026-10-04 its fourth (several values and nested patterns), the match statement on sums, which replaced `cases`, and L2.2b's automatic clauses. Nat, W and pushouts are source declarations; sums stay native; the circle's winding number computes in source. K2.4a's differential gate/tooling is retired; K2.5's ledger verifier is implemented | K2.5's removal of the legacy truncation assumptions through `axiom` definitions (steps 1–4 scheduled on 2026-10-26; step 5 with I0.5); a review record per K2.2 family; L2.3, L2.3b and L2.7; stages 4 and 5 |
 | Computation notation | Design only. N1 core's prerequisites are delivered: L2.4 on 2026-10-05, and on 2026-10-06 L2.4c's theory families, whose laws state a monad's on sets (the identity monad is a `Monad`) | N0–N5; N1's later categorical bridge also needs L3.4 |
 | Simplicial types | Design only, proposed on 2026-10-24; `x ->[C] y` spelling agreed | ST0–ST6: preservation/model design, shared ordinary arrow syntax, separate directed shapes/extensions, synthetic categories and later mathematical bridges |
-| Reference and library | Checked-reference harness; universe chapter rewritten; induction chapter rewritten for declared types: declarations, `match`, structural recursion, dependent matches, path and truncation clauses (D2.1); quick reference (`proof.html`), with a file explorer over every published source; since 2026-10-05 a chapter on [theories and models](../../web/reference/theories.html) with the library's algebra and numbers, and set quotients, the library's univalence and `propositions` in the cubical chapters (#159); since 2026-10-06 the theories chapter covers headers, families, `use`, named notations and initial and free models, and the cubical chapter the box notation and squares. Since 2026-10-21 the language reference has kernel chapters 14–17 (#301). The library now has forty-one self-contained modules: `nat`, `lists`, `quotients`, effective since 2026-10-05, `algebra`, the hierarchy as theories, `integers`, `rationals`, `lexemes` (L2.10c's literals), `hlevels` (L2.5a), `squares` (L2.8), `contractible_maps`, `univalence` (L3.1's start) and `propositions`, `h1_truncation`, `h1_classical`, `classical_axioms`, `universe_automorphisms` and `universe_smallness` (Russell-style universe size contradictions, #226); since 2026-10-17 the binary naturals (`unat`, `unat_models`, `bnat` and its ten `bnat_*` modules), `semirings`, `differences`, `fractions`, `binary_integers`, `binary_rationals` and `ordered_algebra`; #295's `finite_sets`, `binary`, `powersets` and `continuum_hypothesis`; and since 2026-10-28 `continuum_axioms`, the continuum hypotheses as optional assumptions. The test suite's Cubist sources are modules in `cubist-tests/` | An H1 chapter on higher constructors, obligations and truncation clauses beyond chapter 6's introduction (D0.2, D2.1); one module for the classical assumptions, which `classical_axioms` and `h1_classical` state over two truncations; the library is foundations, not a rebuild wave |
+| Reference and library | Checked-reference harness; universe chapter rewritten; induction chapter rewritten for declared types: declarations, `match`, structural recursion, dependent matches, path and truncation clauses (D2.1); quick reference (`proof.html`), with a file explorer over every published source; since 2026-10-05 a chapter on [theories and models](../../web/reference/theories.html) with the library's algebra and numbers, and set quotients, the library's univalence and `propositions` in the cubical chapters (#159); since 2026-10-06 the theories chapter covers headers, families, `use`, named notations and initial and free models, and the cubical chapter the box notation and squares. Since 2026-10-21 the language reference has kernel chapters 14–17 (#301). The library now has forty-two self-contained modules: `nat`, `lists`, `quotients`, effective since 2026-10-05, `algebra`, the hierarchy as theories, `integers`, `rationals`, `lexemes` (L2.10c's literals), `hlevels` (L2.5a), `squares` (L2.8), `contractible_maps`, `univalence` (L3.1's start) and `propositions`, `h1_truncation`, `h1_classical`, `classical_axioms`, `universe_automorphisms` and `universe_smallness` (Russell-style universe size contradictions, #226); since 2026-10-17 the binary naturals (`unat`, `unat_models`, `bnat` and its ten `bnat_*` modules), `semirings`, `differences`, `fractions`, `binary_integers`, `binary_rationals` and `ordered_algebra`; #295's `finite_sets`, `binary`, `powersets` and `continuum_hypothesis`; and since 2026-10-28 `continuum_axioms`, the continuum hypotheses as optional assumptions. The test suite's Cubist sources are modules in `cubist-tests/` | An H1 chapter on higher constructors, obligations and truncation clauses beyond chapter 6's introduction (D0.2, D2.1); one module for the classical assumptions, which `classical_axioms` and `h1_classical` state over two truncations; the library is foundations, not a rebuild wave |
 
 Evidence lives in `tests/universe-generic.test.mjs`,
 `tests/proof-ergonomics.test.mjs`, `tests/computability.test.mjs`,
@@ -955,10 +955,15 @@ Each step lands in focused PRs under the review rule above.
       `!!!`, a literal of main's rationals falls from 72.0M ticks and
       1,116,794 nodes to 11.5M and 265,250, still over the plan's 10M
       target.
-   2. **NUM2's default `Z`/`Q`:** the public carriers become the binary
-      `BInt` and `BQ`, with generic ring numeral interpretation, numerical
-      casts and rendering, gated on folded normal forms. The unary integers
-      and rationals stay as compatibility clients.
+   2. **NUM2's default `Z`/`Q`,** done on 2026-10-26: public `Z` and `Q`
+      alias the binary `BInt` and `BQ`, and their API's contracts check
+      under folded normal forms. A ring reads numerals by doubling over
+      `BNat`, with checked agreement to its unary numerals
+      (`ring_numerals`); the casts `int_of_nat`, `rat_of_int` and
+      `rat_of_nat` keep binary magnitudes, and computed values print
+      decimal magnitudes from their bits. The unary integers and rationals
+      were removed by the user's decision; `UNat` remains for structural
+      recursion.
    3. **#289's runtime in the REPLs** (EVAL3/EVAL4 integration). The CLI,
       browser and contextual REPLs compute the value form and constructor
       patterns through the runtime query, with one specified fallback to
@@ -982,9 +987,27 @@ Each step lands in focused PRs under the review rule above.
         check, synchronously, as the kernel's queries do, bounded by 100M
         steps, 20M allocated cells and a time limit, the declaration's or 30
         seconds a part; a responsive snapshot matters only for asynchronous
-        use. A value whose type is a quotient or another higher or truncated
-        sort, as a binary rational's, falls back before the runtime's
-        snapshot, from its type's weak head.
+        use. A value whose type was a quotient or another higher or
+        truncated sort, as a binary rational's, fell back before the
+        runtime's snapshot, from its type's weak head, until the next slice.
+      - **Point constructors of higher sorts, done on 2026-10-28**
+        ([report](../reports/runtime-repl-evaluation.md#higher-sorts-point-constructors)):
+        the runtime executes the point constructors of quotients and other
+        higher and truncated sorts and their eliminators' clauses for them,
+        so `BInt` and `BQ` arithmetic, inverses and decisions compute their
+        value forms in the runtime, each the kernel's. Path constructors,
+        the squash among them, paths applied and compositions stay
+        unsupported and fall back as before; a decision that finds two
+        values equal holds the quotient's path constructor, and falls back.
+        No type decides the fallback any more. Over the demand marks'
+        constructs the runtime computes 156 value forms, and 40 of the
+        binary contracts' 41 evaluated terms. A query copies from the
+        kernel only what its walk reaches, when it first demands it
+        (EVAL4's item, done in #324): `2/3 + 1/6` copies 1,256 nodes where
+        the eager copy took 32,015, and its runtime steps fell from 146,459
+        to 28,170, below the kernel walk's 32,755 ticks; the wide inverse
+        and a decision of distinct wide integers still take more steps
+        than the kernel's walk takes ticks.
       - **Decided on 2026-10-26:** constructor patterns stay on the kernel's
         queries until typed readback (4) and the applicable EVAL8 review: a
         pattern's verdict is a check, which the runtime's observations may

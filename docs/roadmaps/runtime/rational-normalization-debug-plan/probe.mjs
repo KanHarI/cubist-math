@@ -111,10 +111,12 @@ def m_set := difference_is_set{{U0}}(bnat_semiring, bnat_decide, bnat_add_cancel
 def m_add_left := fun (p, s, q : BNat and BNat, r : BIntSameDifference(p, s)) =>
   difference_add_pairs_left{{U0}}(bnat_semiring, bnat_decide, bnat_add_cancel, p, s, q, r);
 `;
-// `unary`: main's public rationals and integers, over UNat.
-const unary = `import rationals;
-import integers;
-use unat;
+// `public`: main's public rationals and integers. Until NUM2's default switch
+// of 2026-10-26 these were over UNat, and this fixture was named `unary`;
+// the unary construction was then removed, and the fixture now measures the
+// binary-backed public ones (BQ and BInt).
+const publicNumbers = `import rationals;
+use nat;
 
 def q_two_thirds := rationals.(2/3);
 
@@ -122,12 +124,12 @@ def q_half := rationals.(0.5);
 
 def q_one := rationals.one;
 
-// A literal's nonzero certificate, open in the equation it refutes.
-def q_nonzero_open := int_succ_nonzero(2);
+// rat's nonzero certificate, open in the equation it refutes.
+def q_nonzero_open := rat_succ_nonzero(2);
 
 def q_effective_open := quotient_effective(
-  U0, UNat and UNat, SameDifference, same_difference_props, same_difference_refl,
-  same_difference_sym, same_difference_trans, (succ(2), 0), (0, 0)
+  U0, Nat and Nat, SameDifference, bint_same_difference_props, bint_same_difference_refl,
+  bint_same_difference_sym, bint_same_difference_trans, (succ(2), 0), (0, 0)
 );
 
 def z_decision := int_decide(int(2, 0), int_zero);
@@ -145,7 +147,7 @@ def z_add_comm := integers.add_comm;
 
 def z_add_assoc := integers.add_assoc;
 `;
-const fixtures = { binary, unary };
+const fixtures = { binary, public: publicNumbers };
 const sha256 = text => createHash("sha256").update(text).digest("hex");
 const fixtureOf = name => {
   const found = Object.keys(fixtures).filter(key => new RegExp(`^(computable )?def ${name} `, "m").test(fixtures[key]));

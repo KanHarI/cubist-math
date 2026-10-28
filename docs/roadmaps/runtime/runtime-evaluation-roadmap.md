@@ -14,14 +14,16 @@ representations and bit arithmetic are implemented below. NUM1's semiring
 agreement, universe transport, bitwise equality/setness and comparison
 correctness are implemented, together with dependent Peano/strong recursion
 and factorial. The default-`Nat` migration is implemented below; its release checks pass.
-NUM2 is in progress: the binary integer ring/domain and rational field are
-constructed; certificate-normalization validation and the default `Z`/`Q`
-migration remain. EVAL3–EVAL8 remain open:
+NUM2's binary integer ring/domain and rational field are the default `Z`
+and `Q` since 2026-10-26, with binary generic ring numerals and casts; the
+full normal forms of the rational inverses remain targets. EVAL3–EVAL8 remain open:
 [#289](https://github.com/KanHarI/cubist-math/pull/289) adds a
 [first internal EVAL3/EVAL4 query](#first-implementation-289) for ordinary
 data. Since its [REPL integration](#repl-integration) of 2026-10-26 it
 computes the value form of `evaluate e` and `print(evaluate(e))`, with one
-fallback to the kernel's head queries; no checker uses it, and patterns,
+fallback to the kernel's head queries, and since 2026-10-28 it executes the
+point constructors of quotients and other higher and truncated sorts, as
+binary integers' and rationals'; no checker uses it, and patterns,
 `!`, `!!`, `!!!` and expected values stay on the kernel's queries. EVAL5's observation contract
 has shipped as the [demand marks](../historical/evaluation-demand-marks.md) and
 [folded normal forms](../historical/folded-normal-forms.md); its typed readback has not.
@@ -40,7 +42,7 @@ budget failures. The [nondependent descent change](../../reports/nondependent-qu
 closes the generic quotient gate. The quotient-free transport gates and the
 binary-rational inverses' full normalization remain open. The binary-rational
 API was released on the inverses' folded normal forms (2026-10-26), and the
-default `Z`/`Q` migration is gated the same way, by the decision of that day.
+default `Z`/`Q` migration passed the same gate that day.
 These fixes do not complete NUM2.
 The [explicit normalization stack](../../reports/normalization-stack.md) covers
 the existing full normalizer's traversal. The
@@ -93,6 +95,9 @@ stays within its stated contract.
 **Decisions of 2026-10-26:**
 - The default `Z`/`Q` switch is gated on folded normal forms, as the
   binary-rational API's release was.
+- The unary integers and rationals are not kept after the switch: only
+  tests and measurement fixtures used them. `UNat` remains the one unary
+  number type, for structural recursion.
 - This phase also connects the runtime query of #289 to the REPLs, adds
   typed readback and lands EVAL7.
 - EVAL7 moves primality and divisibility to `library/`, as step NT2 of moving
@@ -335,11 +340,10 @@ Define both representations early, independently of the new evaluator:
   fractions of that binary-backed `Z`. They must not implement arithmetic
   by converting magnitudes through `UNat`.
 
-This is a new numerical library. The existing
-[integers](../../../library/integers.cubist) and
-[rationals](../../../library/rationals.cubist) provide construction evidence;
-comparison maps, isomorphisms and universe paths to those old types are
-outside this track. The unary/binary natural equivalence remains an early
+This is a new numerical library. The unary integers and rationals built on
+2026-10-05 provided construction evidence, and were removed when the binary
+ones became the default on 2026-10-26; comparison maps, isomorphisms and
+universe paths to those old types were outside this track. The unary/binary natural equivalence remains an early
 deliverable because both representations are useful. Here `BNat` names the
 binary carrier explicitly; once NUM0/NUM1's correctness and compatibility
 gates pass, expose it as the new default `Nat` as directed on 2026-10-17.
@@ -392,7 +396,8 @@ below the algebraic model layer to avoid an import cycle through `algebra`.
 EVAL0 is done. EVAL1 is implemented in #266; EVAL2 and NUM0 are implemented below.
 NUM1's semiring, transport, equality/order and dependent-recursion work is
 implemented. The default-`Nat` compatibility migration is implemented with
-release validation passed (#278, 2026-10-18). NUM2, EVAL3/EVAL4 and EVAL5 are
+release validation passed (#278, 2026-10-18), and the default `Z`/`Q`
+migration on 2026-10-26. NUM2, EVAL3/EVAL4 and EVAL5 are
 partly delivered, as their rows say; the other rows remain. Sizes are relative
 scope, as in the work plan.
 
@@ -402,7 +407,7 @@ scope, as in the work plan.
 | EVAL1 | One-pass REPL evaluation; implemented in #266 | EVAL0 | S |
 | NUM0 | Explicit UNat and canonical BNat with direct binary arithmetic; implemented | Current inductive declarations; archive evidence | M |
 | NUM1 | Natural semiring isomorphism, U0 path/transport, bitwise setness, comparison correctness, H1 binary Peano view, coherent strong recursion and factorial; implemented | NUM0; semiring and order laws; H1 dependent elimination; computational univalence | L |
-| NUM2 | New binary-backed Z and Q, ring/domain/field laws and default APIs. In progress: generic fractions (#279), binary integers (#280, #281) and the binary-rational API, released on folded normal forms (#283); the default `Z`/`Q` migration, generic numerals and rendering remain | NUM1; current quotients, rings and fractions | L |
+| NUM2 | New binary-backed Z and Q, ring/domain/field laws and default APIs. Generic fractions (#279), binary integers (#280, #281) and the binary-rational API, released on folded normal forms (#283); binary generic ring numerals and the default `Z`/`Q` migration, with casts and rendering, on the same gate (2026-10-26). The rational inverses' full normal forms remain targets | NUM1; current quotients, rings and fractions | L |
 | EVAL2 | Memoized full normalization; implemented | EVAL0; independent of EVAL1 | M |
 | EVAL3 | Closure evaluator for a specified data fragment. A first internal query for ordinary data (#289), which computes REPL and print value forms (REPL integration); higher sorts, patterns and typed readback remain | EVAL0 and semantic contract | L |
 | EVAL4 | Explicit evaluation stack and bounded runtime. #289's machine loop and a synchronous observation for the checker; a responsive snapshot for asynchronous use, memory calibration, closed-environment pruning and sharing of repeated calls remain | EVAL3 design; implement alongside it | M |
@@ -817,8 +822,7 @@ the kernel's normal-form depth (`K337`) after about 127M query ticks, and of
 `bq_decide(1/2, 2/3)`, whose certificate is negative, at its syntax depth
 (`K344`) after about 82M; their folded normal forms take 689,608 and 89,617.
 The new API is released on these folded normal forms (2026-10-26). Public
-`Z`/`Q`, generic ring numeral interpretation and numerical rendering still
-require their migration; no
+`Z` and `Q` alias these carriers since the default migration below. No
 canonical signed or lowest-terms presentation is claimed.
 
 The original bounded follow-up probes localized the growth to full normalization of the
@@ -829,6 +833,118 @@ deadline, reaching roughly 5.3 million terms. The `bint_mul` probe reproduced
 on merged main after #280, before these domain changes. Closed large integer
 products still normalize. These timings are diagnostic observations on one
 machine, not benchmark thresholds or a change to normal evaluation limits.
+
+**Generic ring numerals (2026-10-26).** `Ring.of_nat`, the derived
+operation marked `notation numeral`, now takes a `BNat` and doubles from the
+leading bit: `bp_even(q)` is `(one + one) * of_bpositive(q)` and `bp_odd(q)`
+is one more. The unary operation is kept as `of_unat`. When a theory's
+numeral operation takes the canonical `BNat`, the translator builds the
+numeral's bits directly (`binaryNatural` in `web/translator/translate.mjs`),
+so its size is the number of bits and the unary limit of 256 does not apply.
+[ring_numerals.cubist](../../../library/ring_numerals.cubist) proves, in any
+ring, that `of_nat` agrees with `of_unat` through the explicit conversions,
+and that a map from `BNat` preserving zero, one, addition and multiplication
+agrees with `of_nat`, as `bint_of_nat` does. A 128-bit numeral in a section
+over an arbitrary commutative ring computes at `binary_integers`. At
+`binary_rationals` each doubling also composes a nonzero-denominator
+certificate: a 64-bit numeral's folded normal form computes, and a 128-bit
+one stops at the syntax depth (`K344`). The rationals' own literal rule
+builds the value directly and is unaffected.
+A named notation's numeral rule over `BNat`, `numeral(n : BNat) := e`, reads
+the bits the same way. `bnat_numerals` in the import-free `bnat` module is
+one, so where `bnat_notation`'s literal reader is not imported, a binary
+value prints as `bnat_numerals.(n)`, which reads back as the same bits. A
+generic numeral, `CommRing.of_nat(A, n)` for a numeral `n`, prints as `A.(n)`
+when `A` reads numerals by its theory: a model variable, or a model whose
+module added no numeral or literal rule. It prints bare only where the
+selected model is that declared model. A model with rules of its own would
+read the text otherwise, so its numeral prints as the call (`theoryNumeral`
+in `web/cubical-source-text.mjs`). Before, a unary numeral printed as
+`CommRing.of_nat{{U}}(A, unat.(2))`.
+Every numeral or literal abbreviation, bare or `name.(n)`, now prints only
+where the scope it is printed for establishes that it reads back.
+`notationContext` (`web/translator/notation-context.mjs`) asks the scope
+what `name.(…)` selects there, through the elaborator's own resolution:
+`selectionTarget`, which `selected` (`web/translator/theories.mjs`) calls to
+decide the same question, on the scope's environment, where a model's
+opening is an alias of each name it opens; or, in a scope with a retained
+lexical context, `LexicalContext.selector`, deciding a slot or an opening by
+the scope's outcomes. A lookup costs a few map reads, never a walk of the
+environment. `selects`, `qualifies` and `readBack` in `sourceText` require a
+positive answer; where the scope cannot give one, or a context has no
+lookups, the term prints as written, a call or constructors. Every context
+that shows text is given a real scope: a declaration's own, the module's
+final one for terms shown after checking (the scope a definition appended
+to it reads, its uses applied), and contextual queries. A declaration's
+messages print before its scope is entered, in the selection its file-level
+uses make (`notationForUses`); after a use that opens a model, whose fields
+may hide any name but a named notation's, only named notations are trusted.
+Generated-Cubist displays read no environment and print explicit forms. A
+shadowed `unat` or `bnat_numerals` prints a value as its constructors, and
+a model variable whose name a named notation takes prints its numeral as
+the call; this also covers `unat.(n)` and the literal readers' qualifiers,
+which main printed by name alone. A model's name is no qualifier where the
+display writes that name for a variable, a binder or a dimension:
+`sourceTexts` (`web/cubical-source-text.mjs`) prints a display's texts, a
+proof step's locals, goal and term or a mismatch's two types together,
+recording each name as the printer writes it, and where a model qualifier
+it wrote is a name the texts also write for something else, prints them
+again with that name known, until none is. So a binder it leaves out, as an
+equality's coordinate, takes no name, and one inside a literal it prints
+as its parse does. A message that shows several terms, or whose prose binds
+a name, as hlevel's "for every m : Unit", is composed as one display
+(`message` in `web/translator/translate.mjs`): its terms and its prose's
+names are printed together. `tests/cubist-tests-inlined.mjs` numbers each
+display while it checks the Cubist test modules and refuses a message
+printed from two. Operators and a model's bare operators
+keep the name-only check
+([pr-318-todo](../../reports/pr-318-todo.md)).
+`tests/numeral-readback.test.mjs` combines each way of shadowing a reader's
+name (a named notation, a binder, `use`, an import, a section opening) with
+each numeral kind, and reads every printed text back on each surface: a
+print, a type mismatch, a `use` message, the elaboration view, a REPL and a
+contextual `typeof`. It also counts a printing scope's environment reads, so
+displays stay linear in the number of terms shown, classifies every form the
+printer handles or the core has by the binders it prints, checks that each
+display's names are exactly the variable, binder and dimension names its
+texts show, classifies every place the printer writes an abbreviation, and
+reads back a numeral under a path dimension of its reader's name, a proof
+step's goal under its locals, a literal in an equality, and a numeral in
+the success proof of a literal printed as its parse.
+[ring_numeral_display.cubist](../../../cubist-tests/ring_numeral_display.cubist)
+and [numeral_display_scopes.cubist](../../../cubist-tests/numeral_display_scopes.cubist)
+check these displays with only the algebra and the number modules imported,
+each read back, and the contracts check mixed bit patterns against the
+binary integers' literal reader.
+
+**Default migration (2026-10-26).** Public `Z` and `Q` alias `BInt` and
+`BQ`. The facades [integers.cubist](../../../library/integers.cubist) and
+[rationals.cubist](../../../library/rationals.cubist) keep the public names
+over `Nat`: `int(a, b)`, the `int_` operations and laws, the `integers`
+ring, `rat(a, k)`, `rat_decide`, the `rationals` field and their notations,
+whose literal rules (`int_literal`, `rat_literal`) call the binary readers.
+`rat_inv` is the total inverse. The casts `int_of_nat`, `rat_of_int` and
+`rat_of_nat` keep binary magnitudes; `int_of_nat_numeral` and
+`rat_of_nat_numeral` prove that the casts the literal rules read into agree
+with the generic numerals. `rat`'s nonzero certificate uses the integers'
+zero decision, as the literal reader's does: in one fresh program each, the
+folded normal form of `rat(int(2, 0), 2)` took 44,197 query ticks and 942
+nodes, and the full one 3,493,093 ticks and 97,457 nodes. The unary
+constructions and proofs were removed the same day, by the user's
+decision: nothing in the library used them. Tests that covered general
+behavior use the public binary carriers; those that covered a unary numeral
+rule use test-local models, a ring over `unat_models` among them. The
+debugging plan's probe and its T6 target measure the public binary
+rationals, and its unary measurements stay as history. The migrated API's
+contracts check under folded normal forms in
+[default_number_contracts.cubist](../../../tests/fixtures/contracts/default_number_contracts.cubist),
+including a wide inverse. [default_numbers.cubist](../../../cubist-tests/default_numbers.cubist)
+checks the displays: computed values print as quotient representatives
+whose magnitudes are decimal from their bits, and literals print as
+written. Beyond the generic numerals above, the printers needed no change:
+both read `BNat` bits into decimal (`binaryNatural` in
+`web/cubical-source-text.mjs`, `binaryDigits` in `web/cubical-notation.mjs`). The archive imports neither module. The
+evaluation baseline's workloads import neither, and it was not refreshed.
 
 Construct `Z` from pairs of `BNat`, using the existing same-difference
 relation and quotient approach with binary addition and multiplication.
@@ -850,8 +966,8 @@ work remains proposed under the [number-order decision](../work-plan.md#open-dec
 the 2026-10-17 direction includes only ordered-ring/field definitions and
 keeps this further work paused. NUM2 does not wait for it. R2 and the later real constructions target the
 new `Q`, with positive-rational precision and binary natural bounds. The
-older unary-backed carriers remain compatibility clients, rather than a
-second target for the new order development. No comparison to them is
+older unary-backed carriers were not a second target for the new order
+development, and were removed on 2026-10-26. No comparison to them is
 required here. The later signed-integer and lowest-terms presentations
 must use binary magnitudes and present these same new carriers.
 
@@ -1040,22 +1156,30 @@ design, the trust statement, the differential coverage and measurements.
 The translator's `valueFormOf` asks the elaborator for a query over the
 closed judgement it checked, after the assumption check, and walks the value
 form with synchronous observations (`observeNow`). Demand the runtime
-reports unsupported, such as a path applied, a composition, Glue, a higher
-or truncated sort or η of a path abstraction, is the one fallback: the whole
+reports unsupported, such as a path applied, a path constructor, a
+composition, Glue or η of a path abstraction, is the one fallback: the whole
 walk is computed again from the start by the kernel's head queries, once,
 and nothing the runtime computed is shown. A runtime stop at its limits is
-reported (E487–E489, or the declaration's time limit), not retried. Where
-the evaluated term's type is a declared type the runtime does not execute, a
-quotient or another higher or truncated sort, the same fallback is decided
-before the snapshot from the type's weak head, with the same reason: the
-value's first head is that type's constructor or a composition. The
+reported (E487–E489, or the declaration's time limit), not retried. The
 observation now takes the kernel's weak head: η of term and level lambdas,
 partially applied constructors with their arity, types, and unapplied path
 abstractions.
 
-Over the demand marks' 197 constructs, the runtime computes 135 value forms
-and falls back on 58, 18 of them from the value's type, and every value form
-is the kernel's. The runtime shows
+Since 2026-10-28 the runtime executes the point constructors of quotients
+and other higher and truncated sorts, and their eliminators' clauses for
+them, as the kernel's iota does; path constructors, the squash among
+them, stay unsupported, with paths applied and compositions
+([report](../../reports/runtime-repl-evaluation.md#higher-sorts-point-constructors)).
+Binary integers' and rationals' arithmetic, inverses and decisions compute
+their value forms in the runtime, but for a decision that finds two values
+equal, which holds the quotient's path constructor. The first slice's
+check of the evaluated term's type, which took the fallback before the
+snapshot for a value of such a sort, is removed: no type decides the
+fallback now.
+
+Over the demand marks' 197 constructs, the runtime computes 156 value forms
+and falls back on 37 (135 and 58, 18 of them from the value's type, on
+2026-10-26), and every value form is the kernel's. The runtime shows
 `euclid(4)`'s value form and the primes of `euclid(4)` and `euclid(5)`,
 where the kernel's queries stop with K344; `euclid(6).1` stops at the
 runtime's 20M-cell cap. A computation written twice in nested functions,
@@ -1067,10 +1191,40 @@ Decided on 2026-10-26: constructor patterns stay on the kernel's queries
 until typed readback and the applicable EVAL8 review, since a pattern's
 verdict is a check and its expression leaves need kernel terms for runtime
 parts; and a stop at the runtime's limits stays reported, not retried.
-EVAL4's open items are a responsive snapshot copy for asynchronous use,
-memory calibration, closed-environment pruning, and sharing of repeated
-calls, a memo whose retention is measured: a per-environment memo of
-delayed syntax was tried and withdrawn, as the report records.
+
+EVAL4's items:
+- **A snapshot that copies only what the walk reaches: done** in
+  [#324](https://github.com/KanHarI/cubist-math/pull/324) (2026-10-28,
+  [report](../../reports/runtime-repl-evaluation.md#the-query-copies-only-what-the-walk-reaches)).
+  The query reads each node, definition and signature from the kernel when
+  its walk first demands it, counted in its work and cells. A read after
+  any call that can move the kernel's handles, a checkpoint's rollback or
+  commit or the session's freeing, however it is made, expires instead of
+  reading another state: the bridge keeps a handle generation per session
+  (`cb_generation`, moved on by `cb_rollback` and `cb_commit_checkpoint`
+  in `wasm/cubical_bridge.c`), which never repeats: where it would wrap it
+  is spent, and every query on the session expires. A binary rational's eager copy had made its value form
+  about three times as slow by the runtime as by the kernel's queries:
+  `2/3 + 1/6` now copies 1,256 nodes where the closure of its judgement
+  holds 32,015, and takes 28,170 steps against the kernel walk's 32,755
+  ticks. The wide inverse and a decision of distinct wide integers still
+  take more steps than the kernel's walk takes ticks, though not more time.
+- Open: a responsive snapshot copy for asynchronous use, narrowed by the
+  lazy copy, which reads inside observations, between the slices at which
+  `observe` yields, to the η check's walk of a function's syntax and a
+  declared type's descriptors, each within one transition; memory
+  calibration; closed-environment pruning; and sharing of repeated calls, a
+  memo whose retention is measured: a per-environment memo of delayed
+  syntax was tried and withdrawn, as the report records.
+
+**For the user's decision, recorded on 2026-10-28 and not scheduled:**
+whether the runtime may show a path constructor applied to its data with
+its fields, as the kernel's walk shows it, instead of falling back. A
+decision that finds two binary rationals or integers equal has one at its
+weak head, `left(relate(…))`, and today its entry pays the runtime's walk
+up to it and then the kernel's whole walk. Showing it needs no dimension or
+composition; the second slice refuses it, as specified, and a path
+constructor applied at an interval point stays unsupported either way.
 
 ### Rational full-normalization completion path
 

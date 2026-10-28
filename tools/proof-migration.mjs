@@ -244,8 +244,12 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
     };
     return { definitions: { ...definitions, type: read("type"), value: read("value") }, symbols: {}, dimensions: [] };
   };
+  // Snapshot text is read where unat's notation is selected: numerals print
+  // bare, as the ledger pins them.
+  const unatView = {symbols:{unat__UNat:{printing:[{notation:"unat",identity:"unat",identityNumeral:true}]}},
+    context:{selection:"unat",selectionIdentity:"unat",reads:name => name === "unat" ? "unat" : null,opens:() => false}};
   const snapshot = (term, edited = false) => ({hash:snapshotHash(term),
-    text:sourceText(forSource([readableBindings(term)],snapshotNaming(edited))[0],{},4000,{selection:"unat"})});
+    text:sourceText(forSource([readableBindings(term)],snapshotNaming(edited))[0],unatView.symbols,4000,unatView.context)});
   const localReferences = (module, ...terms) => {
     const found = new Set(), seen = new WeakSet();
     const visit = node => {

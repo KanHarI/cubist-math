@@ -68,10 +68,9 @@ export function parsedLiteral(term, symbols = {}, selection = null) {
   let parser = args.at(-2);
   const parsed = [];
   while (parser?.tag === "App") { parsed.unshift(parser.arg); parser = parser.fn; }
-  const readings = parser?.tag === "DefRef" ? symbols[parser.name]?.printing : undefined;
-  const reading = readings?.find(entry => entry.literal && entry.notation === selection)
-    ?? readings?.find(entry => entry.literal);
+  const readings = (parser?.tag === "DefRef" ? symbols[parser.name]?.printing : undefined)?.filter(entry => entry.literal) ?? [];
+  const reading = readings.find(entry => entry.notation === selection) ?? readings[0];
   if (!reading || !parsed.length) return null;
   const text = lexemeText(parsed.at(-1));
-  return text === null ? null : {text, reading};
+  return text === null ? null : {text, reading, readings};
 }

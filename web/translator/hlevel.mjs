@@ -101,7 +101,7 @@ export class HLevelUnproved extends Error {
 // proves. `binders` keeps their order, in which the rule is applied.
 // A type that is no rule gives { refusal }, which noRule states; `show`
 // displays a term.
-export function ruleShape(type, show = term => JSON.stringify(term)) {
+export function ruleShape(type, show = term => JSON.stringify(term), bind = (variable, name = variable) => name) {
   const binders = [];
   let body = headBeta(type);
   for (;;) {
@@ -114,11 +114,11 @@ export function ruleShape(type, show = term => JSON.stringify(term)) {
   if (typeof conclusion.level === "object") return { refusal: `its statement's level, ${show(conclusion.level.term)}, is no numeral` };
   const determined = new Set([...freeNames(conclusion.type), ...freeNames({ tag: "U", level: conclusion.universe })]);
   for (const binder of binders)
-    if (binder.universe && !determined.has(binder.name)) return { refusal: `its universe ${stem(binder.name)} is not determined by its statement` };
+    if (binder.universe && !determined.has(binder.name)) return { refusal: `its universe ${bind(binder.name, stem(binder.name))} is not determined by its statement` };
   for (const param of binders) {
     if (param.universe || determined.has(param.name)) continue;
     param.premise = premiseShape(param.domain);
-    if (!param.premise) return { refusal: `its parameter ${stem(param.name)} is neither read from the carrier ${show(conclusion.type)} nor an h-level premise` };
+    if (!param.premise) return { refusal: `its parameter ${bind(param.name, stem(param.name))} is neither read from the carrier ${show(conclusion.type)} nor an h-level premise` };
   }
   return { binders, conclusion };
 }
