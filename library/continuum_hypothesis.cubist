@@ -57,6 +57,14 @@ computable def cardinal_le_refl(U < UU0, A : U) : CardinalLE(U, A, A) := merely(
   (fun (x : A) => x, fun (x, y : A, p : x = y) => p)
 );
 
+// An injection compares cardinalities.
+computable def injection_cardinal_le(
+  U < UU0, A, B : U, f : A -> B, injective : forall x, y : A. (f(x) = f(y)) -> (x = y)
+) :
+  CardinalLE(U, A, B) := merely(
+    U, exists f : A -> B. forall x, y : A. (f(x) = f(y)) -> (x = y), (f, injective)
+  );
+
 computable def equinumerous_le(U < UU0, A, B : U, e : Equinumerous(U, A, B)) :
   CardinalLE(U, A, B) := mere_map(
     U, U, ContrEquiv(U, A, B), exists f : A -> B. forall x, y : A. (f(x) = f(y)) -> (x = y),
@@ -115,7 +123,8 @@ computable def decidable_gch_implies_decidable_ch(
 // def DecidableCH := axiom DecidableContinuumHypothesis;
 // def GCH := axiom GeneralizedContinuumHypothesis;
 // def DecidableGCH := axiom DecidableGeneralizedContinuumHypothesis;
-// DecidableCH -> excluded middle and DecidableGCH -> choice are follow-ups.
+// continuum_classical proves DecidableCH -> excluded middle, with no
+// resizing; DecidableGCH -> choice is a follow-up.
 // See Kirst and Rech, The Generalised Continuum Hypothesis Implies the Axiom
 // of Choice in HoTT (2021); its resizing assumptions need an explicit account
 // when adapting the proof to these universe-indexed statements.
