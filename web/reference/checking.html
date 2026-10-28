@@ -88,20 +88,21 @@
             <h2>The command-line checker</h2>
             <p><code>node cli/repl.mjs</code> checks source files with the same C kernel as the workspace. It needs the kernel built once with <code>make wasm</code>. Given a command, it runs that command and exits; with none, it reads one command per line. A line that is not a command is a <a href="#repl">REPL</a> entry. The examples below use this file, saved as <code>sample.cubist</code>:</p>
             <pre><code data-check="accept" data-name="sample">import unat;
-import classical;
+import h1_classical;
 use unat;
 
 // Twice a number.
 def double(n : UNat) := n + n;
 
-def recover(P : U0, prop_ : Proposition(P), nn : (P -&gt; Void) -&gt; Void) : P {
-  exact double_negation(P, prop_, nn);
+def recover(P : U0, prop_ : IsProp(U0, P), nn : (P -&gt; Void) -&gt; Void) : P {
+  exact double_negation(U0, P, prop_, nn);
 }
 
 evaluate double(2) expecting 4;</code></pre>
-            <p><code>check</code> checks the file and everything it imports. It prints the number of declarations and kernel steps, then each <a href="#warnings">warning</a> and each <a href="assumptions.html#evaluate"><code>evaluate</code></a> result, and exits with status 0. A file that does not check completely prints each failure on a line of its own, as <code>error E606 at line 2:3 (wrong): Type mismatch: …</code>, and exits with a nonzero status. Each code has an entry among the <a href="errors.html#errors">error messages</a>.</p>
+            <p><code>check</code> checks the file and everything it imports. It prints the number of declarations and kernel steps, then each declaration that relies on an assumption with every assumption it relies on, each <a href="#warnings">warning</a>, each <a href="assumptions.html#evaluate"><code>evaluate</code></a> result and each <a href="#print">print</a>, a print followed by the assumptions its term relies on, as <code>print typeof at line 4 assumes LEM</code>, and exits with status 0. A file that does not check completely, its own declarations or those of a module it imports, prints each failure on a line of its own, as <code>error E606 at line 2:3 (wrong): Type mismatch: …</code>, an import's as <code>(dep.bad)</code>, and exits with a nonzero status. Each code has an entry among the <a href="errors.html#errors">error messages</a>.</p>
             <pre><code data-check="cli" data-files="sample">$ node cli/repl.mjs check sample.cubist
 Checked 2 declarations · … kernel steps
+recover assumes LEM
 evaluate at line 12: 4</code></pre>
             <p>Imports are looked up first in the directory of the checked file, then in the rebuilt library under <code>library/</code>, then in the archived first library. So a local module can shadow a library module of the same name, and a library module shadows an archive module. A module of the library imports only from the library, which is self-contained. A module of the archive imports from the archive, then from the library, where <code>unat</code> lives; an archive module always comes before a library module of the same name. One check holds one module per name: if two of its modules would load a name from different places, the check fails and names both. A bare module name, as in <code>node cli/repl.mjs check euclid</code>, is found in <code>library/</code> first, then in the archive. A checked file is the module its name gives, as an identifier: <code>my-proof.cubist</code> is <code>my_proof</code>, whose declarations are <a href="first-proof.html#qualified-names"><code>my_proof::name</code></a>. The test runner, <code>npm test -- euclid</code>, resolves imports the same way.</p>
             <h3 id="cli-commands">Commands</h3>
@@ -128,6 +129,7 @@ evaluate at line 12: 4</code></pre>
             <pre><code data-check="cli" data-files="sample">$ node cli/repl.mjs
 &gt; check sample.cubist
 Checked 2 declarations · … kernel steps
+recover assumes LEM
 &gt; inspect double
 sample__double
 Expression: λ (n : UNat). add(n, n)
@@ -137,9 +139,9 @@ Assumptions: none
 6
 &gt; inspect recover
 sample__recover
-Assumptions: LEM, Truncate, TruncateElim
+Assumptions: LEM
 &gt; evaluate recover
-E324: The evaluated term depends on non-computing assumptions: LEM, Truncate, TruncateElim. Path to LEM: recover (sample) → double_negation (classical) → LEM.</code></pre>
+E324: The evaluated term depends on non-computing assumptions: LEM. Path to LEM: recover (sample) → double_negation (h1_classical) → LEM.</code></pre>
             <p>Lines starting with <code>&gt;</code> are typed commands; the other lines are output. The inspected name is shown with its module, as <code>sample__double</code>. Use that qualified form when a short name is ambiguous. <code>inspect</code> lists the assumptions a declaration uses, or <code>none</code>. <code>evaluate</code> follows the rules of the <a href="assumptions.html#evaluate">evaluate directive</a>: a term that uses an assumption is refused, with the path through which the first one enters.</p>
             <p><code>beta</code> and <code>delta</code> reduce the first applicable occurrence in the inspected expression, or in its type. The kernel checks the result. The workbench can select a particular occurrence instead.</p>
             <pre><code data-check="cli" data-files="sample">$ node cli/repl.mjs
@@ -156,7 +158,7 @@ Expression: λ (n : UNat). (λ …)(n, n)</code></pre>
           </section>
           <section id="repl">
             <h2>The REPL</h2>
-            <p>The REPL checks Cubist one entry at a time. An entry is a definition, a <code>typeof</code> or <code>evaluate</code> request, an import, a <code>use</code>, or any declaration of a file. The kernel checks each entry as a small module that imports the entries before it, so later entries see earlier names. A <code>use</code> selects a notation for every entry after it, as at a file’s top level, and entries after <code>check</code> read in the selections the checked file ends with. An entry that does not check changes nothing.</p>
+            <p>The REPL checks Cubist one entry at a time. An entry is a definition, a <code>typeof</code> or <code>evaluate</code> request, an import, a <code>use</code>, or any declaration of a file. The kernel checks each entry as a small module that imports the entries before it, so later entries see earlier names. Every result is shown with every assumption it relies on: a definition after its type, as <code>excluded assumes LEM</code>, and a type, a printed result or a console’s result after itself, as <code>assumes LEM</code>. A result that relies on none is shown alone. A <code>use</code> selects a notation for every entry after it, as at a file’s top level, and entries after <code>check</code> read in the selections the checked file ends with. An entry that does not check changes nothing.</p>
             <ul>
               <li>In the browser, the <a href="../repl.html">REPL page</a> starts from an empty program. Every page of this reference has a REPL bar at the bottom.</li>
               <li>In the <a href="../proof.html">proof workspace</a>, the console under a proof has the proof’s checked names loaded. After an edit is checked, the console replays its own definitions on the new version.</li>
@@ -191,6 +193,21 @@ E606: Type mismatch: found 7 = 7, expected x = 8.
 &lt;fun&gt;
 &gt; evaluate !!(fun (n : UNat) =&gt; x);
 fun (n : UNat) =&gt; 7</code></pre>
+            <p>A result that relies on an assumption is followed by every one it relies on, through the definitions it uses:</p>
+            <pre><code data-check="cli">$ node cli/repl.mjs
+&gt; import classical_axioms;
+Imported classical_axioms.
+&gt; def excluded : ExcludedMiddle(U0) := LEM(U0);
+excluded : ExcludedMiddle(U0)
+excluded assumes LEM
+&gt; typeof excluded;
+ExcludedMiddle(U0)
+assumes LEM
+&gt; print(typeof(excluded));
+ExcludedMiddle(U0)
+assumes LEM
+&gt; typeof tt;
+Unit</code></pre>
             <p><code>let x := 7;</code> defines <code>x</code> and prints its type; <code>def</code> works the same way. An entry continues on the next line while a bracket is open, so a proof block is one entry. A term alone is evaluated, and the final <code>;</code> of an entry can be left out. An evaluation shows the term's value as far as <a href="#print"><code>print(evaluate(…))</code></a> does: a function is <code>&lt;fun&gt;</code>, and <code>evaluate !!TERM;</code> shows its normal form. <code>x_is_eight</code> is rejected, so it does not exist for later entries. <code>/help</code> lists the entries and the commands, which start with <code>/</code>: <code>/modules</code> lists the modules <code>import</code> can load, <code>/clear</code> clears the log and <code>/restart</code> starts a new session. The consoles on the website take the same commands.</p>
           </section>
           <section id="print">

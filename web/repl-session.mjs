@@ -9,6 +9,7 @@
 // A `use` selects for every entry after it, as at a file's top level, and an
 // entry reads in the selections its base file ends with (L2.10j).
 import { withCode } from "./diagnostics.mjs";
+import { assumptionLines, assumptionNote } from "./axiom-labels.mjs";
 
 export const replHelp = [
   "let NAME := TERM;     define a name (def works too, with any declaration form)",
@@ -203,11 +204,19 @@ export class ReplSession {
     const defined = (result.declarations ?? []).filter(info => info.verified);
     if (defined.length || !failures.length && !result.error) this.advance(result, text);
     return [
-      ...defined.map(info => ({ kind: "defined", text: `${info.name} : ${this.typeText(info)}` })),
+      // Each definition with every assumption it relies on, if any.
+      ...defined.flatMap(info => [{ kind: "defined", text: `${info.name} : ${this.typeText(info)}` },
+        ...assumptionLines([info], this.program.checker.assumptionLabels).map(text => ({ kind: "info", text }))]),
       ...(result.evaluations ?? []).map(evaluation => ({ kind: "value", text: evaluation.value })),
-      ...(result.prints ?? []).map(print => ({ kind: "value", text: print.text })),
+      ...this.printed(result),
       ...failures,
     ];
+  }
+
+  // Each printed value, with the assumptions its term relies on, if any.
+  printed(result) {
+    return (result.prints ?? []).flatMap(print => [{ kind: "value", text: print.text },
+      ...[assumptionNote(print.axioms, this.program.checker.assumptionLabels)].filter(Boolean).map(text => ({ kind: "info", text }))]);
   }
 
   async import(name, text) {
@@ -229,14 +238,16 @@ export class ReplSession {
   async typeOf(term) {
     const result = await this.entry(`def repl_value := ${term};`), failures = this.failures(result);
     if (failures.length) return failures;
-    return [{ kind: "type", text: this.typeText(result.declarations[0]) }];
+    // The term's type, and the assumptions the term relies on, if any.
+    const note = assumptionNote(result.declarations[0].axioms, this.program.checker.assumptionLabels);
+    return [{ kind: "type", text: this.typeText(result.declarations[0]) }, ...note ? [{ kind: "info", text: note }] : []];
   }
 
   // print(witness(…)) reads a closed truncation's witness (L2.9b).
   async witness(term) {
     const result = await this.entry(`print(witness(${term}));`), failures = this.failures(result);
     if (failures.length) return failures;
-    return result.prints.map(print => ({ kind: "value", text: print.text }));
+    return this.printed(result);
   }
 
   // The print path checks closedness and assumptions, and computes the
@@ -246,6 +257,6 @@ export class ReplSession {
   async evaluate(term) {
     const result = await this.entry(`print(evaluate(${term}));`), failures = this.failures(result);
     if (failures.length) return failures;
-    return result.prints.map(print => ({ kind: "value", text: print.text }));
+    return this.printed(result);
   }
 }

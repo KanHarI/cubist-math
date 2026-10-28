@@ -7,8 +7,8 @@ import classical;
 
 computable def successor(n : UNat) := succ(n);
 
-// Error: E330: This computable declaration depends on non-computing assumptions: LEM, Truncate,
-//   TruncateElim. Path to LEM: double_negation (classical) → LEM.
+// Error: E330: This computable declaration depends on non-computing assumptions: LEM[Truncate],
+//   Truncate, TruncateElim. Path to LEM[Truncate]: double_negation (classical) → LEM[Truncate].
 computable def uses_lem(P : U0, prop_ : Proposition(P), nn : (P -> Void) -> Void) : P {
   exact double_negation(P, prop_, nn);
 }

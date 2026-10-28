@@ -36,15 +36,22 @@ The file is checked as the module its name gives, as an identifier:
 `my-proof.cubist` is the module `my_proof`, whose declarations are
 `my_proof::name` ([qualified names](../../web/reference/first-proof.html#qualified-names)).
 
-A successful check prints the declaration and kernel-step counts and exits with
-status 0. Parse errors, missing imports, or unchecked declarations exit nonzero,
+A successful check prints the declaration and kernel-step counts, then each
+declaration that relies on an assumption with every assumption it relies on,
+as `recover assumes LEM`, its warnings, `evaluate` results and prints, each
+print followed by the assumptions its term relies on, as
+`print typeof at line 4 assumes LEM`, and exits with status 0. Parse errors, missing imports, or unchecked declarations, the file's or an import's, exit nonzero,
 each printed on a line of its own with its code, as
 `error E606 at line 2:3 (wrong): Type mismatch: …`; a warning prints as
 `warning W703 at line 1:37 (copy): …`. Every code has an entry in the
 [error messages](../../web/reference/errors.html) chapter of the language
 reference, and `node tools/diagnostic-codes.mjs` checks that every message
 in the sources has one.
-There is no `axiom` declaration: a source file cannot add assumptions. Each
+A definition whose value is an axiom expression, `def Name := axiom F;`,
+adds an assumption: one of the type `F`, or of `F`'s body over its
+parameters, as the library's `classical_axioms` states excluded middle and
+choice ([declarations](../../web/reference/first-proof.html#axiom-definitions)).
+Every result that uses it lists it, and none that does is computable. Each
 `evaluate` directive's result is printed after the counts.
 A declaration with a universe variable `U < UU0` is checked once, for every
 universe.
@@ -130,7 +137,9 @@ x + 3 * 4            19
 selects a notation for the entries after it, as at a file's top level, so
 that numerals and operators mean the naturals'; after `check`, entries read
 in the selections the checked file ends with. `typeof`
-prints a type. `evaluate`, or a term alone, prints the value form of a closed
+prints a type. Every result, a definition, a type or a print, is followed by
+every assumption it relies on, as `assumes LEM`; one that relies on none is
+printed alone. `evaluate`, or a term alone, prints the value form of a closed
 term that uses no assumption: its data, computed as far as it is shown, and a
 marker such as `<fun>` where a function, a path or a type stops it. The
 runtime evaluator (`web/cubical-runtime.mjs`) computes the value form of

@@ -1,18 +1,9 @@
-import h1_truncation;
-
-// The same two non-computing assumptions, explicitly restated over Trunc.
-def ExcludedMiddle(U < UU0) := forall A : U. ((A -> Void) -> Void) -> Trunc(U, A);
-
-def AxiomOfChoice(U < UU0) :=
-  forall A : U. forall B : A -> U. IsSet(U, A) -> (forall a : A. IsSet(U, B(a)))
-  -> (forall a : A. Trunc(U, B(a))) -> Trunc(U, forall a : A. B(a));
-
-def excluded_middle_assumed(U < UU0) : ExcludedMiddle(U) := LEM(Trunc, U);
-
-def axiom_of_choice_assumed(U < UU0) : AxiomOfChoice(U) := Choice(Trunc, U);
+// Classical logic from the library's excluded middle, over Trunc: double
+// negation elimination, decidability and resizing of propositions.
+import classical_axioms;
 
 def double_negation(U < UU0, P : U, prop_ : IsProp(U, P), h : (P -> Void) -> Void) :
-  P := mere_eliminate(U, U, P, P, prop_, fun (p : P) => p, LEM(Trunc, U, P, h));
+  P := mere_eliminate(U, U, P, P, prop_, fun (p : P) => p, LEM(U, P, h));
 
 def decide_prop(U < UU0, P : U, prop_ : IsProp(U, P)) : P or (P -> Void) := double_negation(
   U, P or (P -> Void), decision_is_prop(U, P, prop_),

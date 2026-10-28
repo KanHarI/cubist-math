@@ -22,6 +22,7 @@ import {equalityRule,simplificationRule,findRewrite,SearchLimit} from "./proof-r
 import {SearchFuel,SearchFuelExhausted,SEARCH_FUEL,recordSearch,emptySearchRecord} from "./fuel.mjs";
 import {copySimpRegistry,orderedDefaultRules,orderedHLevelRules,resolveSimpSet,uniqueSimpRules} from "./simp-registry.mjs";
 import {builtinTerm} from "./builtins.mjs";
+import {axiomAssumption} from "../cubical-assumptions.mjs";
 import {transportToDependentPath} from "./path-over.mjs";
 import {tacticProof,PREMISE_ATTEMPT_LIMIT,dependentNote} from "./tactics.mjs";
 import {Scope,SourceUnit,emptyRewriteWork} from "./elaboration.mjs";
@@ -42,7 +43,7 @@ import {notationOperand} from "./model-notation.mjs";
 import {enterExpressionScope} from "./expression-scopes.mjs";
 import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,sectionScope,selected,usesScope,sourceItemScope,qualifiedOperator,notationDeclaration,SELECTION,selectionName} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
-import {availablePrefix,bindQualifiedNames,constructorText,declaredIn,qualifiedNamesIn,unknownQualifiedName} from "./qualified-names.mjs";
+import {availablePrefix,bindQualifiedNames,constructorText,declaredIn,identityCollision,qualifiedNamesIn,unknownQualifiedName} from "./qualified-names.mjs";
 
 // A tactic search (rw's for one rule, a simplification, simpa's two,
 // hlevel's) spends counted fuel (fuel.mjs), never elapsed time. Its fuel
@@ -90,12 +91,14 @@ const directiveKinds=new Set(["use","notation","evaluate","print","simp_rule","s
 // The lambdas over a declaration's parameters, a group of names with one
 // type one binder group, around `body`.
 export class Translator {
-  constructor({checker,definitionModule=null,testMode=false,normalize=true,onReference=null,onDeclaration=null,onDeclarationStart=null,onQueued=null,onPublicationStart=null,onPublicationEnd=null,
+  constructor({checker,definitionModule=null,libraryModule=false,testMode=false,normalize=true,onReference=null,onDeclaration=null,onDeclarationStart=null,onQueued=null,onPublicationStart=null,onPublicationEnd=null,
     onStep=null,simpRegistry,moduleName="source",freezeSuggestions=true,searchFuel=SEARCH_FUEL,declarationFuel,
     inspectSignature=null,nameBased=false,scopePoints=null,compilationBindings=null,onDirectiveStart=null,onDirective=null,sources=null,collectGeneration=false}={}) {
     // Definition ownership is separate from source provenance. Raw translator
     // clients omit the namespace; program modules pass it explicitly.
     this.definitionModule=definitionModule;
+    // Whether the module is the library's own, read from library/.
+    this.libraryModule=libraryModule;
     this.testMode=testMode;
     this.sources=sources;
     this.collectGeneration=collectGeneration;
@@ -162,7 +165,7 @@ export class Translator {
   // must not create a second meaning for IDs in the checker's model records.
   forkScope(scope,{normalize=this.normalize,searchFuel=this.searchFuel,declarationFuel=this.declarationFuel}={}) {
     if(scope.checker!==this.checker)throw new TypeError("A scope fork must belong to this translator's checker.");
-    return new Translator({checker:this.checker,definitionModule:this.definitionModule,compilationBindings:this.compilationBindings,sources:scope.unit.sources,
+    return new Translator({checker:this.checker,definitionModule:this.definitionModule,libraryModule:this.libraryModule,compilationBindings:this.compilationBindings,sources:scope.unit.sources,
       moduleName:this.moduleName,simpRegistry:scope.unit.simpRegistry,nameBased:this.nameBased,
       normalize,searchFuel,declarationFuel});
   }
@@ -524,7 +527,9 @@ export class Translator {
   // its type; and
   // `print(inspect(e));` the term the kernel checked, in kernel notation. A
   // name shows what the CLI's inspect shows: a definition's checked body, or
-  // a declared type's signature and its eliminator's clause types.
+  // a declared type's signature and its eliminator's clause types. It gives
+  // the text with the assumptions the printed term relies on: none for an
+  // evaluation or a witness, which refuse any.
   printed(d,scope) {
     if(d.show==="evaluate"||d.show==="witness") {
       scope.spend("queries");
@@ -543,29 +548,29 @@ export class Translator {
       // the kernel leaves it, its arguments uncomputed; and
       // print(evaluate(!!e)); and print(evaluate(!!!e)); the normal form.
       if(d.show==="evaluate") {
-        if(d.mark==="!!"||d.mark==="!!!")return this.shownIn(normal,scope);
+        if(d.mark==="!!"||d.mark==="!!!")return {text:this.shownIn(normal,scope),axioms:[]};
         const at=this.demandQueries(scope,node=>scope.unit.source.slice(node.start,node.end).trim());
         // A weak head and a value form are shown as computed, reducing
         // nothing more for display; a value form whole, within the budget
         // its walk kept.
-        if(d.mark==="!")return this.shownIn(this.checker.decoded(at.head(result.expression,d.value)),scope,{reduce:0});
-        return this.shownIn(this.valueFormOf(result,scope,d.value,at),scope,{width:Infinity,reduce:0});
+        if(d.mark==="!")return {text:this.shownIn(this.checker.decoded(at.head(result.expression,d.value)),scope,{reduce:0}),axioms:[]};
+        return {text:this.shownIn(this.valueFormOf(result,scope,d.value,at),scope,{width:Infinity,reduce:0}),axioms:[]};
       }
       // print(witness(t)); reads the witness off a closed truncation's
       // normal form, with its type (evaluation.mjs, L2.9b).
       const {witness,type}=witnessOf(normal,result.type,scope,term=>this.shownIn(term,scope));
-      return `${this.shownIn(witness,scope)} : ${this.shownIn(type,scope)}`;
+      return {text:`${this.shownIn(witness,scope)} : ${this.shownIn(type,scope)}`,axioms:[]};
     }
-    const result=scope.infer(this.term(d.value,scope));
-    if(d.show==="typeof")return this.shownIn(result.type,scope);
+    const result=scope.infer(this.term(d.value,scope)),axioms=result.native?.axioms??[];
+    if(d.show==="typeof")return {text:this.shownIn(result.type,scope),axioms};
     if(d.value.kind==="name") {
       let body=result.term;
       while(body.tag==="Lam"||body.tag==="LLam")body=body.body;
       if(body.tag==="Sort"&&this.inspectSignature)
-        return this.inNotation(scope,()=>this.inspectSignature(body.signature));
+        return {text:this.inNotation(scope,()=>this.inspectSignature(body.signature)),axioms};
     }
     const definition=d.value.kind==="name"&&result.term.tag==="DefRef"?this.checker.definitionViews?.get(result.term.name):null;
-    return this.checker.kernelText(definition?.term??result.term,scope.dimensions,1000);
+    return {text:this.checker.kernelText(definition?.term??result.term,scope.dimensions,1000),axioms};
   }
   // A term as messages show it, in `scope`'s context: source names,
   // generated suffixes removed. Every display here is given the scope it
@@ -598,6 +603,18 @@ export class Translator {
     const ast=qualifySource(parse(source),{revision:this.sourceRevision,module:this.moduleName});
     return this.translateSyntax(ast,source,imported);
   }
+  // The other module whose declaration already holds `key`, module__name, or
+  // null. Two modules' spellings can join to one key, as a::b__c and
+  // a__b::c do in a__b__c; the later declaration is refused (identityClash),
+  // so that neither qualified name can ever read the other's value.
+  identityHolder(key) {
+    const holder=this.compilationBindings.keyModule(key);
+    return holder!==undefined&&holder!==this.moduleName?holder:null;
+  }
+  identityClash(local,key=this.bindingName(local)) {
+    const holder=this.identityHolder(key);
+    return holder?identityCollision(this.moduleName,local,holder,key):null;
+  }
   // Availability has one writer for public names and exact identities.
   // Reservations carry no values; a failed/rolled-back family publishes the
   // same refusal under every alias, never a previous imported value.
@@ -605,7 +622,8 @@ export class Translator {
     env.set(name,value);
     const key=this.bindingName(name);
     const declared=this.compilationBindings.declaration(key);
-    if(declared) {
+    // Never under another module's identity: its declaration keeps its value.
+    if(declared&&!this.identityHolder(key)) {
       this.compilationBindings.published(declared.binding,value);
       env.set(this.identityAdapter.key(declared.binding.id),value);
     }
@@ -806,8 +824,8 @@ export class Translator {
           // A file-level use selects for directives too, which print in it.
           const scope=this.itemScope(new Scope(unit,new Map(),env),d);
           this.valueFormRecord=null;
-          const text=this.printed(d,scope);
-          directives.push({kind:"print",name:`${d.show} at line ${line}`,status:"checked",start:d.start,text,
+          const printed=this.printed(d,scope);
+          directives.push({kind:"print",name:`${d.show} at line ${line}`,status:"checked",start:d.start,...printed,
             ...(this.valueFormRecord?{valueForm:this.valueFormRecord}:{})});
         } catch(error) {
           propagateElaborationStop(error);
@@ -858,7 +876,11 @@ export class Translator {
           const type=scope.infer(term).type;
           const shape=ruleShape(type,t=>this.shown(t,scope));
           if(shape.refusal)throw unit.locate(noRule(d.rule.text,shape.refusal),d.rule);
-          const identity=term.tag==="DefRef"?term.name:d.rule.text;
+          // The rule's declaration, by its identity, not its spelling: a
+          // definition, applied to any assumptions it uses, or an axiom.
+          let head=term;
+          while(head.tag==="App")head=head.fn;
+          const identity=head.tag==="DefRef"||head.tag==="Var"&&this.checker.assumptions?.has(head.name)?head.name:d.rule.text;
           if(this.simpRegistry.hlevel.get(identity)?.origin===this.moduleName)
             throw unit.locate(ruleTwice(d.rule.text),d.rule);
           const existing=this.simpRegistry.hlevel.get(identity);
@@ -884,6 +906,8 @@ export class Translator {
         bindingAdapter:retained?.adapter});
       this.onDeclarationStart?.(d);
       try {
+        const clash=this.identityClash(d.name.text);
+        if(clash)throw unit.locate(clash,d.name);
         // A theory's sorts need their evidence's definitions (L2.4).
         const missing=missingEvidence(d,env);
         if(missing)throw unit.locate(missing,d.name);
@@ -920,7 +944,14 @@ export class Translator {
         // Resolve file-level uses once, outside the parameter/section scopes.
         // The closing kernel check reports in this same retained notation.
         bodyScope=this.itemScope(bodyScope,d);
-        const term=this.term(expression,bodyScope);
+        // `def Name := axiom F;` names an assumption, which is its value.
+        const axiom=expression.kind==="axiom";
+        const assumed=statement=>{
+          try {return axiomAssumption(this.checker,{module:this.moduleName,declaration:d.name.text,
+            binding:this.bindingName(d.name.text),library:this.libraryModule},statement,bodyScope);}
+          catch(error) {throw unit.locate(error,expression.statement);}
+        };
+        const term=axiom?assumed(this.term(expression.statement,bodyScope,null)):this.term(expression,bodyScope);
         // Normal forms are optional inspection output, not a prerequisite for
         // checking a declaration whose Nat value may have millions of successors.
         // The declaration's closing check, and its admission below, are
@@ -936,10 +967,10 @@ export class Translator {
           if(assumptions.length)throw Error(this.nonComputingMessage("This computable declaration",
             assumptions,checked.term,checked.type));
         }
-        if(this.checker.define)unit.fuel.spend("queries");
+        if(this.checker.define&&!axiom)unit.fuel.spend("queries");
         // Its parameters as the source declares them, for named arguments
         // and implicit parameters.
-        const definition=this.checker.define?.(this.bindingName(d.name.text),checked.term,checked.type,
+        const definition=axiom?checked.term:this.checker.define?.(this.bindingName(d.name.text),checked.term,checked.type,
           own.length?own.map(p=>({name:p.label??p.name.label??p.name.text,implicit:!!p.implicit})):null)??checked.term;
         this.checker.kernel?.checkDeadline();
         publish(d,definition);
@@ -957,7 +988,7 @@ export class Translator {
         // `failure` classifies a checker rejection ("mismatch", "budget",
         // "deadline", "resource" or "other"), so callers need not read the reason.
         declarations.push({name:d.name.text,status:"not-translated",...sourceFailure(error,module),
-          syntax:d});
+          ...(error.duplicate?{duplicate:true}:{}),syntax:d});
       }
       declarations.at(-1).notation=this.checker.notation;
       declarations.at(-1).rewriteWork={...unit.work};
@@ -1000,6 +1031,11 @@ export class Translator {
         failure.reason??failure.message,root));
     };
     try {
+      // The type's identity, and each constructor's, module__name.
+      for(const [name,at] of [[d.name.text,d.name],...d.constructors.map(c=>[c.name.text,c.name])]) {
+        const clash=this.identityClash(name);
+        if(clash)throw unit.locate(clash,at);
+      }
       const scope=this.itemScope(new Scope(unit,new Map(),env),d);
       const lowered=lowerInductive(this,d,scope);
       for(const [name,value] of lowered.entries)this.publishDeclaration(env,name,value);
@@ -1015,7 +1051,7 @@ export class Translator {
       const refusal=initialRefusal(d,failure), error=refusal?unit.locate(refusal.error,refusal.at):failure;
       unavailable(error);
       declarations.push({name:d.name.text,status:"not-translated",...sourceFailure(error,module),
-        syntax:d});
+        ...(error.duplicate?{duplicate:true}:{}),syntax:d});
     }
     declarations.at(-1).notation=this.checker.notation;
     declarations.at(-1).rewriteWork={...unit.work};

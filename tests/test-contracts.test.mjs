@@ -78,13 +78,25 @@ for(const [label,sources] of [
   assert.ok(report.prerequisites.length);
 });
 
-test("rebuilt assumptions resolve exact signature identities",async t=>{
-  const {report}=await checked(t,`import h1_truncation;
-# test(rebuilt) # expect_axioms([LEM[h1_truncation.Trunc]])
-def excluded := LEM(Trunc,U0);`);
-  assert.deepEqual(report.prerequisites,[]);
-  assert.deepEqual(report.failures,[]);
-  assert.deepEqual(report.cases[0].failures,[]);
+test("assumption expectations name axioms and legacy builtins by their labels",async t=>{
+  for(const source of [`import classical_axioms;
+# test(library) # expect_axioms([LEM])
+def excluded := LEM(U0);
+def Pointed := axiom UNat;
+# test(qualified) # expect_axioms([Choice, main::Pointed])
+def both : AxiomOfChoice(U0) and UNat := (Choice(U0), Pointed);`,`# test(legacy) # expect_axioms([LEM[Truncate], Truncate])
+def excluded := LEM(U0);`]) {
+    const {report}=await checked(t,`import unat;\n${source}`);
+    assert.deepEqual(report.prerequisites,[]);
+    assert.deepEqual(report.failures,[]);
+    assert.deepEqual(report.cases.map(entry=>entry.failures),report.cases.map(()=>[]));
+  }
+  const {report}=await checked(t,`import classical_axioms;
+# test(legacy) # expect_axioms([LEM[Truncate]])
+def excluded := LEM(U0);`);
+  // An import of classical_axioms shadows the legacy builtin.
+  assert.deepEqual(report.cases[0].failures,["Unknown checked assumption LEM[Truncate].",
+    "excluded: expected assumptions [LEM[Truncate]], observed [LEM]."]);
 });
 
 test("an imported expected refusal cannot make a dependency successful",async t=>{

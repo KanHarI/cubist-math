@@ -63,15 +63,20 @@ export const builtinNames = new Set([
   "Interval", "PathP", "comp", "face", "face_when", "flip", "meet", "join", "Glue", "glue", "unglue",
   "next", "max", "refl", "absurd", "sym", "trans", "cong", "transport", "apd", "apd_path",
   "pair_induction", "unit_induction", "path_induction", "based_induction", "path_from_transport", "path_to_transport",
-  "Choice", "LEM", "FunExt", "Truncate", "TruncateIntro", "TruncateProp", "TruncateElim", "UnivalenceBeta", "ua",
+  "FunExt", "Truncate", "TruncateIntro", "TruncateProp", "TruncateElim", "UnivalenceBeta", "ua",
 ]);
+// Excluded middle and choice are the library's axioms, LEM and Choice of
+// classical_axioms, and ordinary names. Where nothing binds them, they fall
+// back to the archive's legacy builtins over Truncate, labelled LEM[Truncate]
+// and Choice[Truncate] (docs/roadmaps/hott/h1-truncation-migration.md).
+export const legacyBuiltinNames = new Set(["LEM", "Choice"]);
 export const generatedNames = new Set([
   "Hom", "Iso", "cat", "equality", "make", "map", "id", "inverse", "compose", "to", "from", "from_to", "to_from",
   "model", "fold", "fold_map", "fold_unique", "universal", "gen", "squash",
   "IsInitial", "IsTerminal", "IsLimit", "IsColimit",
 ]);
 export const languageKeywords = new Set([
-  "import", "def", "computable", "inductive", "theory", "section",
+  "import", "def", "computable", "axiom", "inductive", "theory", "section",
   "deriving", "morphisms", "free", "initial",
   "isomorphisms", "limits", "preadditive", "additive", "preabelian", "abelian",
   "paths", "decidable_equality", "irrelevance", "ind_prop", "rec",
@@ -96,19 +101,25 @@ export const isUniverseConstant = name => /^U+[0-9]+$/.test(name);
 // keywords and generated member labels are not expression-level builtins.
 // Universe spellings are still validated by the translator when consumed.
 export function reservedReferences(source) {
-  return [...new Set([...builtinNames,...primitiveNames,"typed","left","right","path","fill","at","on",
+  return [...new Set([...builtinNames,...legacyBuiltinNames,...primitiveNames,"typed","left","right","path","fill","at","on",
     ...tokenize(source).map(token=>token.text).filter(isUniverseConstant)])];
 }
 
 // `bindable` lists reserved words a historical source may still bind
-// (web/cubist/legacy-syntax.mjs).
+// (web/cubist/legacy-syntax.mjs), the words its revision did not reserve.
+// Before the axiom form, no revision gave `axiom` any meaning: a reader of
+// such a revision lists it, and the word is then a name wherever it stands,
+// as it was then (historicalKeywords).
 export function parse(source, typeOnly = false, { bindable = [], historicalTransport = false, historicalOver = false } = {}) {
-  const ts = tokenize(source), bindableNames = new Set(bindable);
+  const ts = tokenize(source), bindableNames = new Set(bindable), axiomNames = bindableNames.has("axiom");
   let i = 0,
     depth = 0,
     // Whether a demand mark may start the next expression: in an
     // evaluation's expected pattern.
-    demandMarks = false;
+    demandMarks = false,
+    // Whether the next expression is a top-level definition's whole value,
+    // where `axiom` may start it.
+    axiomPosition = false;
   const peek = () => ts[i].text;
   function take(text) {
     const t = ts[i];
@@ -497,6 +508,19 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
   // The expression a token starts: a keyword form, a negation, a tuple, a
   // literal or a name.
   function prefix(t) {
+    // `axiom F` states an assumption of F's type, or of its family's body
+    // closed over the family's parameters. It is the whole value of a
+    // top-level definition without parameters, which names it:
+    // def LEM := axiom ExcludedMiddle;. A source of a revision before the
+    // form reads the word as a name instead (`bindable`, parse).
+    const axiomAllowed = axiomPosition;
+    axiomPosition = false;
+    if (t.text === "axiom" && !axiomNames) {
+      if (!axiomAllowed)
+        throw Object.assign(new Error("An axiom is the whole value of a top-level definition without parameters: def Name := axiom Statement;"), { offset: t.start });
+      const statement = expr();
+      return { kind: "axiom", statement, keywordStart: t.start, keywordEnd: t.end, start: t.start, end: statement.end };
+    }
     if (markTokens.includes(t.text)) {
       if (!demandMarks)
         throw Object.assign(new Error(`The demand mark ${t.text} stands right after evaluate, or at the start of a part of an expected pattern, as in evaluate e expecting (!_, _);.`), { offset: t.start });
@@ -1187,14 +1211,12 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
       if(!/^\d+$/.test(token.text)||!Number.isSafeInteger(value))
         throw testFailure("A search count needs a nonnegative safe integer.",token);
     } else if(pragma==="expect_axioms") {
+      // Assumptions by their labels: LEM, an axiom of another module as
+      // module::Name, or a legacy builtin over Truncate as LEM[Truncate].
       take("[");value=[];
       if(peek()!=="]")while(true) {
-        let assumption=testName();
-        if(peek()==="[") {
-          take("[");const signature=testReference(qualifiedDots).split(".");take("]");
-          if(signature.length<2)throw testFailure("An assumption signature needs a qualified module.name.",at);
-          assumption+=`:${signature.shift()}__${signature.join(".")}`;
-        }
+        let assumption=qualifiedWord.test(peek())?take().text:testName();
+        if(peek()==="[") {take("[");assumption+=`[${testName()}]`;take("]");}
         value.push(assumption);
         if(peek()!==",")break;
         take(",");
@@ -1636,6 +1658,8 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
     const header = implicitParameters ? { implicitParameters } : {};
     if (!params.length && binds()) {
       take();
+      // A section's definition takes the section's parameters.
+      axiomPosition = !section;
       const value = expr();
       const end = take(";").end;
       declarations.push({

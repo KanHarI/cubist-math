@@ -25,13 +25,18 @@ import { currentLiftSyntax } from "./legacy-lift.mjs";
 // The standalone transport prefix was retired on 2026-10-11. Only this
 // historical reader migrates it; normal source must use transport. The over
 // proof statement was replaced by the lift expression on the same day.
-export const currentSyntax = source => currentLiftSyntax(currentTransportSyntax(source
-  .replace(/(?<![A-Za-z0-9_'])have(\s+[A-Za-z_][A-Za-z0-9_]*\s*:)/g, "let$1")
-  .replace(/(?<![A-Za-z0-9_'])cases(?=\s+[^{};]*\{\s*left\s+[A-Za-z_][A-Za-z0-9_']*\s*=>)/g, "match")
-  .replace(/(?<![A-Za-z0-9_'.])(theory\s+[A-Z][A-Za-z0-9_]*)(?=\s+(?:extends\b|\{))/g, "$1(U < UU0)")
-  .replace(/(?<![A-Za-z0-9_'.])sort\s+([A-Za-z_][A-Za-z0-9_]*\s*:\s*)(set|prop)(\s*;)/g, "$1$2 U$3")
-  .replace(/(?<![A-Za-z0-9_'.])([A-Z][A-Za-z0-9_]*)\.Model(?![A-Za-z0-9_])/g, "$1")
-  .replace(/(?<![A-Za-z0-9_'.])open(\s+[A-Za-z_][A-Za-z0-9_.]*\s*;)/g, "use$1")));
+// `axiomForm` says whether the source's revision reads the axiom form
+// (historicalKeywords).
+export const currentSyntax = (source, { axiomForm = false } = {}) => {
+  const bindable = historicalKeywords({ axiomForm });
+  return currentLiftSyntax(currentTransportSyntax(source
+    .replace(/(?<![A-Za-z0-9_'])have(\s+[A-Za-z_][A-Za-z0-9_]*\s*:)/g, "let$1")
+    .replace(/(?<![A-Za-z0-9_'])cases(?=\s+[^{};]*\{\s*left\s+[A-Za-z_][A-Za-z0-9_']*\s*=>)/g, "match")
+    .replace(/(?<![A-Za-z0-9_'.])(theory\s+[A-Z][A-Za-z0-9_]*)(?=\s+(?:extends\b|\{))/g, "$1(U < UU0)")
+    .replace(/(?<![A-Za-z0-9_'.])sort\s+([A-Za-z_][A-Za-z0-9_]*\s*:\s*)(set|prop)(\s*;)/g, "$1$2 U$3")
+    .replace(/(?<![A-Za-z0-9_'.])([A-Z][A-Za-z0-9_]*)\.Model(?![A-Za-z0-9_])/g, "$1")
+    .replace(/(?<![A-Za-z0-9_'.])open(\s+[A-Za-z_][A-Za-z0-9_.]*\s*;)/g, "use$1"), bindable), bindable);
+};
 
 // Until 2026-10-06 prefix - reversed, as ~ does now: -p a path and -i a
 // coordinate. A revision of that time (minusReverses) is read with ~ for each
@@ -82,12 +87,34 @@ notation nat {
 // their imported declarations, so selections and calls retain their types.
 // Bound names change no checked term.
 // Contextual keywords could also be bound before all keywords were reserved.
-const historicalRenaming = Object.fromEntries([...languageKeywords].map(word => [word, `${word}_`]));
+//
+// The words a historical source may bind, as names its revision did not
+// reserve: every keyword, but axiom only in a revision before the axiom form
+// (#317, 2026-10-26). Before it, no Cubist revision gave axiom any meaning,
+// so a source of that time names something by it wherever the word stands,
+// a declaration, a binder, a field, an import's or a selected model's
+// member, and a later source writes the form, which a revision of that time
+// reserves. `axiomForm` says which a revision is
+// (tools/verify-proof-migration.mjs reads it off the revision's parser).
+export const historicalKeywords = ({ axiomForm = false } = {}) =>
+  [...languageKeywords].filter(word => !(axiomForm && word === "axiom"));
+// The fresh spelling each of them is read as, before a source's own names
+// are avoided (reservedBindingRenaming).
+export const historicalRenamingAt = revision =>
+  Object.fromEntries(historicalKeywords(revision).map(word => [word, `${word}_`]));
+const historicalRenaming = historicalRenamingAt();
+// A word no revision of a source's time gave a meaning: every occurrence is
+// a name, renamed with its declaration wherever it comes from, so no scope
+// need say where (renameReservedBindings).
+const meaningless = new Set(["axiom"]);
 // A migration across modules uses one plan for declarations, imported
 // references and argument labels. Include every original source so a local
 // spelling in an importer cannot capture a dependency's renamed export.
-export const reservedBindingRenaming = (sources, preferred = historicalRenaming) => {
-  const taken = new Set(sources.flatMap(source => tokenize(source).map(token => token.text)));
+// `reserved` names what else a spelling must avoid, as the modules a
+// migration may read, whose names an import of a renamed module would
+// otherwise take.
+export const reservedBindingRenaming = (sources, preferred = historicalRenaming, reserved = []) => {
+  const taken = new Set([...sources.flatMap(source => tokenize(source).map(token => token.text)), ...reserved]);
   return Object.fromEntries(Object.entries(preferred).map(([word, stem]) => {
     let name = stem;
     while (taken.has(name)) name += "_";
@@ -110,9 +137,11 @@ export const unaryNaturalRenaming = Object.freeze({nat:"unat",Nat:"UNat",
 // Only binders and their references change; grammar tokens keep their roles.
 export const renameReservedBindings = (source, renamedReserved = historicalRenaming, { importedNames = [], importedDeclarations = [], fixedNames = {} } = {}) => {
   let ast, tokens;
+  // A token's words: a qualified name's module and name, or the word.
+  const words = token => token.text.split("::");
   try {
     tokens = tokenize(source);
-    if (!tokens.some(token => Object.hasOwn(renamedReserved, token.text))) return source;
+    if (!tokens.some(token => words(token).some(word => Object.hasOwn(renamedReserved, word)))) return source;
     ast = parse(source, false, { bindable: Object.keys(renamedReserved) });
   } catch { return source; }
   // A replacement must not capture an existing name, even in an inner
@@ -396,6 +425,19 @@ export const renameReservedBindings = (source, renamedReserved = historicalRenam
     module = bind(module, [item.name], declarationType(item));
     module = bind(module, (item.constructors ?? []).map(constructor => constructor.name));
   }
+  // A qualified name, module::name: its module is renamed with the plan, as
+  // every import names a module (above), and its name, which always names a
+  // declaration of that module, as that declaration is. These are the
+  // places a module's name stands. And a word that meant nothing then
+  // (meaningless) is a name wherever it stands.
+  for (const token of tokens) {
+    const [module, part] = words(token);
+    if (part !== undefined) {
+      if (Object.hasOwn(renamedReserved, module)) edits.set(token.start, [token.start + module.length, renamedReserved[module]]);
+      if (Object.hasOwn(renamedReserved, part)) edits.set(token.end - part.length, [token.end, renamedReserved[part]]);
+    } else if (meaningless.has(token.text) && Object.hasOwn(renamedReserved, token.text) && !edits.has(token.start))
+      edits.set(token.start, [token.end, renamedReserved[token.text]]);
+  }
   let text = source;
   for (const [start, [end, name]] of [...edits].sort((a, b) => b[0] - a[0])) text = text.slice(0, start) + name + text.slice(end);
   return text;
@@ -404,11 +446,14 @@ export const renameReservedBindings = (source, renamedReserved = historicalRenam
 // Before 2026-10-05 every module imported nat without asking. A module of
 // a revision that did so (implicitNat), read in today's syntax, imports it,
 // unless it is nat or already does: so a baseline sees the names it saw then.
+// A revision with the axiom form (axiomForm) reserves axiom, and its sources
+// write the form; one before reads axiom as a name (historicalKeywords).
 export const historicalSource = (source, module, {
   implicitNat = true, minusReverses = true, importedNames = [], importedDeclarations = [], renaming = historicalRenaming,
-  unaryNat = false,
+  unaryNat = false, axiomForm = false,
 } = {}) => {
-  let text = currentSyntax(source);
+  let text = currentSyntax(source, { axiomForm });
+  if (axiomForm) renaming = Object.fromEntries(Object.entries(renaming).filter(([word]) => word !== "axiom"));
   if(module==="nat")text=withNatNotation(text);
   else if(implicitNat&&!/(?:^|\n)\s*import\s+(?:[^;]*,\s*)?nat\s*[;,]/.test(text))text=`import nat;\n${text}`;
   const fixedNames=unaryNat?unaryNaturalRenaming:{};

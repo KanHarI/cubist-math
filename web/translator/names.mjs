@@ -30,6 +30,16 @@ export class NameSupply {
   }
 }
 
+// An assumption's kernel name carries this mark, which no other name holds:
+// an identifier is [A-Za-z_][A-Za-z_0-9]* (parser.mjs, tokenize), a
+// declaration's identity module__name is made of two, a generated name is a
+// stem with a serial, a separator _, a variant's ' or a placeholder's ?,
+// and a kernel symbol is spelled native<id>. So no declaration, constructor,
+// binder, generated or qualified name can spell an assumption, capture it,
+// or share its display records (CubicalElaborator.assume).
+export const assumptionMark = "#";
+export const isAssumptionName = name => name.includes(assumptionMark);
+
 // Binding-aware tokens carry an opaque environment key in text. Only their
 // public label can seed a core name. Nominal syntax retains its existing
 // elaboration stem until that family migrates to identity-bearing tokens.
@@ -42,8 +52,13 @@ export const bindingStem = token => token?.bindingId ? token.label ?? token.text
 // predictions from them.
 //
 // A module's definition is module__local, and shows its local name. A name
-// that starts with __, such as an assumption's, has no module.
-export const localName = name => name.includes("__") && !name.startsWith("__") ? name.slice(name.indexOf("__") + 2) : name;
+// that starts with __, such as a legacy builtin's assumption, has no module.
+// An assumption shows without its mark, which only keeps it apart in the
+// kernel: an axiom m__A# shows A, as a display without labels shows it.
+export const localName = name => {
+  const shown = isAssumptionName(name) ? name.slice(0, name.indexOf(assumptionMark)) : name;
+  return shown.includes("__") && !shown.startsWith("__") ? shown.slice(shown.indexOf("__") + 2) : shown;
+};
 // A variable shows its stem: a generated name without its serial, n for n11,
 // and U for U_1, whose separator only keeps it apart from the constant U1. A
 // kernel symbol, native<id>, shows x.

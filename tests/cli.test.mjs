@@ -55,10 +55,48 @@ evaluate double(2) expecting 4;
   assert.equal(shell.status, 0, shell.stderr);
   assert.match(shell.stdout, /evaluate at line 7: 4\n/);
   assert.match(shell.stdout, /Type: .*\nAssumptions: none\n/);
-  assert.match(shell.stdout, /Assumptions: LEM, Truncate, TruncateElim\n/);
+  assert.match(shell.stdout, /Assumptions: LEM\[Truncate\], Truncate, TruncateElim\n/);
   assert.match(shell.stdout, /\n6\n/);
-  assert.match(shell.stderr, /The evaluated term depends on non-computing assumptions: LEM.*Path to LEM: recover \(sample\) → double_negation \(classical\) → LEM\./);
+  assert.match(shell.stderr, /The evaluated term depends on non-computing assumptions: LEM\[Truncate\].*Path to LEM\[Truncate\]: recover \(sample\) → double_negation \(classical\) → LEM\[Truncate\]\./);
   assert.match(shell.stderr, /missing_name/);
+  // check reports each result that relies on an assumption, with all of them.
+  assert.match(shell.stdout, /kernel steps\nrecover assumes LEM\[Truncate\], Truncate, TruncateElim\nevaluate at line 7/);
+});
+// A user's axiom, a library axiom and one reached through an import are
+// reported with every result that relies on them; a result that relies on
+// none is not reported.
+// check checks the file and everything it imports: an import's failing
+// declaration fails the check, though nothing the file uses fails (#317's
+// review round 5, finding 2).
+test("CLI check fails when an import fails a declaration", async t => {
+  const directory = await mkdtemp(join(tmpdir(), "cubist-cli-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  await writeFile(join(directory, "dep.cubist"), "def bad : Void := tt;\ndef kept := tt;\n");
+  await writeFile(join(directory, "main.cubist"), "import dep;\ndef use_ := kept;\n");
+  const checked = run(["check", "main.cubist"], { cwd: directory });
+  assert.notEqual(checked.status, 0, checked.stdout);
+  assert.match(checked.stderr, /^error E606 at line 1:\d+ \(dep\.bad\): Type mismatch/m);
+});
+
+test("CLI check reports every assumption a result relies on, a user's axiom among them", async t => {
+  const directory = await mkdtemp(join(tmpdir(), "cubist-cli-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  await writeFile(join(directory, "assumed.cubist"), "def Pointed := axiom Unit;\n");
+  await writeFile(join(directory, "uses.cubist"), "import classical_axioms;\nimport assumed;\n"
+    + "def both : ExcludedMiddle(U0) and Unit := (LEM(U0), Pointed);\ndef plain := tt;\ndef again := both;\n");
+  const checked = run(["check", "uses.cubist"], { cwd: directory });
+  assert.equal(checked.status, 0, checked.stderr);
+  assert.match(checked.stdout, /kernel steps\nboth assumes LEM, assumed::Pointed\nagain assumes LEM, assumed::Pointed\n$/);
+  // A print is a result too: it is followed by the assumptions its term
+  // relies on, if any (#317's review round 2, finding 4).
+  await writeFile(join(directory, "prints.cubist"), "import classical_axioms;\nimport assumed;\n"
+    + "def plain := tt;\nprint(typeof(LEM(U0, Unit)));\nprint(inspect(Pointed));\nprint(typeof(plain));\n");
+  const printed = run(["check", "prints.cubist"], { cwd: directory });
+  assert.equal(printed.status, 0, printed.stderr);
+  assert.match(printed.stdout, /^print typeof at line 4: .*\nprint typeof at line 4 assumes LEM\n/m);
+  assert.match(printed.stdout, /^print inspect at line 5: .*\nprint inspect at line 5 assumes assumed::Pointed\n/m);
+  assert.match(printed.stdout, /^print typeof at line 6: Unit\n?$/m);
+  assert.doesNotMatch(printed.stdout, /line 6 assumes|plain assumes/);
 });
 // The H1 specification's 6.5: inspecting a declared type prints its signature
 // in normal form and its eliminator's clause types, and no kernel extension

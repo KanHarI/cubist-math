@@ -1,3 +1,4 @@
+import { assumptionMark } from "./translator/names.mjs";
 import { displayFreeNames } from "./translator/display-names.mjs";
 import { renameLevel, universeText } from "./cubical-levels.mjs";
 import {numeralValue} from "./translator/numerals.mjs";
@@ -101,7 +102,7 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
     if (t.tag === "Var") {
       const symbol = outer(t.name) ? undefined : symbols[t.name];
       return { ...name(label(t.name)), local: symbol?.kind !== "axiom",
-        ...(symbol?.kind === "axiom" ? { binding: t.name, axiomNotation: t.name === "__assumption_Truncate" ? "truncation" : undefined }
+        ...(symbol?.kind === "axiom" ? { binding: t.name, axiomNotation: t.name === `__assumption_Truncate${assumptionMark}` ? "truncation" : undefined }
           : symbol?.binding ? { contextBinding: symbol.binding } : {}) };
     }
     if (t.tag === "U") return { kind: "Universe", level: renameLevel(t.level, label) };
