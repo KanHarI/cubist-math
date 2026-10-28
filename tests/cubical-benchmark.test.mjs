@@ -4,6 +4,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalKernel } from "../web/cubical-kernel.mjs";
@@ -14,6 +15,7 @@ import { parse } from "../web/cubist/parser.mjs";
 import { diagnosticCode } from "../web/diagnostics.mjs";
 import { InstructionDriver } from "../web/cubical-instruction-driver.mjs";
 import { budget } from "./timing.mjs";
+import { committedSource, pinnedSources } from "../tools/benchmark-cubical.mjs";
 
 const checkout = fileURLToPath(new URL("../", import.meta.url));
 
@@ -124,35 +126,64 @@ test("benchmark measures an area, the library, the archive or the Cubist tests, 
   await assert.rejects(benchmark({ area: "elsewhere" }), /library, archive or tests, not elsewhere/);
 });
 
-// The benchmark page links each row of a saved report to its declaration's
+// The benchmark page links a row of a saved report to its declaration's
 // source at the revision the report measured (declarationLink), not to
 // today's workspace, where a declaration measured then may be gone or
-// changed: each saved report records its revision and its modules' paths
-// there, and each row's line lies in its file. A run in the browser
-// measures today's sources and opens its rows in the workspace.
-test("every link from a saved benchmark opens its source at the revision it measured", async () => {
+// changed; and only where that source is the one measured: a saved report
+// pins a module (tools/benchmark-cubical.mjs's pinnedSources) with the
+// SHA-256 of the text it measured, which is the file's at the revision, and
+// a report measured on a clean tree pins every module. A row of a module it
+// does not pin has no link. A run in the browser opens its rows in the
+// workspace.
+test("every link from a saved benchmark opens the source it measured, at the revision it measured", async () => {
   for (const area of Object.keys(benchmarkAreas)) {
     const report = JSON.parse(await readFile(new URL(`../web/${savedReport(area)}`, import.meta.url), "utf8"));
-    const paths = [...new Set(report.declarations.map(row => report.sources?.[row.module]))];
-    assert.ok(report.revision && paths.every(Boolean), `${area}: the report records its revision and every module's path`);
-    // Every file at that revision, read in one batch: a header, then its text.
+    assert.ok(report.revision, `${area}: the report records its revision`);
+    const modules = [...new Set(report.declarations.map(row => row.module))];
+    if (!report.dirty) assert.deepEqual(modules.filter(name => !report.sources?.[name]), [], `${area}: a clean report pins every module`);
+    const pinned = Object.entries(report.sources ?? {});
+    // Every pinned file at that revision, read in one batch: a header, then its text.
     const batch = execFileSync("git", ["cat-file", "--batch"], { cwd: checkout, maxBuffer: 1 << 28,
-      input: paths.map(path => `${report.revision}:${path}\n`).join("") });
+      input: pinned.map(([, { path }]) => `${report.revision}:${path}\n`).join("") });
     const lines = new Map();
-    for (let at = 0, i = 0; i < paths.length; i++) {
-      const end = batch.indexOf(10, at), header = batch.subarray(at, end).toString();
+    for (let at = 0, i = 0; i < pinned.length; i++) {
+      const [name, { path, sha256 }] = pinned[i], end = batch.indexOf(10, at), header = batch.subarray(at, end).toString();
       const size = Number(/^\w+ blob (\d+)$/.exec(header)?.[1]);
-      assert.ok(Number.isInteger(size), `${area}: ${paths[i]} at ${report.revision}: ${header}`);
-      lines.set(paths[i], batch.subarray(end + 1, end + 1 + size).toString().split("\n").length);
+      assert.ok(Number.isInteger(size), `${area}: ${path} at ${report.revision}: ${header}`);
+      const text = batch.subarray(end + 1, end + 1 + size);
+      assert.equal(createHash("sha256").update(text).digest("hex"), sha256, `${area}: ${name} is pinned to the text it measured`);
+      lines.set(name, text.toString().split("\n").length);
       at = end + 1 + size + 1;
     }
     for (const row of report.declarations) {
-      const path = report.sources[row.module], label = `${area}: ${row.module}.${row.name}`;
-      assert.equal(declarationLink(report, row), `${repository}/blob/${report.revision}/${path}#L${row.line}`, label);
-      assert.ok(row.line >= 1 && row.line <= lines.get(path), label);
+      const source = report.sources?.[row.module], label = `${area}: ${row.module}.${row.name}`;
+      assert.equal(declarationLink(report, row), source ? `${repository}/blob/${report.revision}/${source.path}#L${row.line}` : null, label);
+      if (source) assert.ok(row.line >= 1 && row.line <= lines.get(row.module), label);
     }
   }
   assert.equal(declarationLink({ declarations: [] }, { module: "nat", name: "nat_add", line: 3 }), "proof.html?proof=nat&name=nat_add");
+});
+
+// A report measured with working changes pins only the modules whose measured
+// text is the committed one: a declaration added in memory to nat, at a line
+// past the committed file's end, gets no link into the committed nat.
+test("a saved benchmark pins no source it did not measure", async () => {
+  const revision = execFileSync("git", ["rev-parse", "HEAD"], { cwd: checkout, encoding: "utf8" }).trim();
+  const committed = path => committedSource(revision, path, checkout);
+  const nat = committed("library/nat.cubist"), lists = committed("library/lists.cubist");
+  const edited = `${nat}\ncomputable def added_in_memory : Nat := 0;\n`;
+  const sources = pinnedSources([
+    { name: "nat", path: "library/nat.cubist", text: edited },
+    { name: "lists", path: "library/lists.cubist", text: lists },
+    { name: "uncommitted", path: "library/uncommitted.cubist", text: "computable def fresh : Unit := tt;\n" },
+  ], committed);
+  assert.deepEqual(Object.keys(sources), ["lists"]);
+  assert.equal(sources.lists.sha256, createHash("sha256").update(lists).digest("hex"));
+  const report = { revision, dirty: true, sources, declarations: [] }, line = edited.split("\n").length - 1;
+  assert.ok(line > nat.split("\n").length - 1, "the added declaration lies past the committed file");
+  assert.equal(declarationLink(report, { module: "nat", name: "added_in_memory", line }), null);
+  assert.equal(declarationLink(report, { module: "uncommitted", name: "fresh", line: 1 }), null);
+  assert.equal(declarationLink(report, { module: "lists", name: "List", line: 4 }), `${repository}/blob/${revision}/library/lists.cubist#L4`);
 });
 
 test("benchmark lists a failure or block its source's comment states as intended, not as one to fix", async () => {

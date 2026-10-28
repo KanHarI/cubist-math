@@ -4,12 +4,29 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { cpus } from "node:os";
-import { pathToFileURL } from "node:url";
+import { pathToFileURL, fileURLToPath } from "node:url";
+import { createHash } from "node:crypto";
 import { benchmark, benchmarkAreas } from "../web/benchmark-runner.mjs";
 import { savedReport } from "../web/benchmark-areas.mjs";
 import { sourceReader } from "./module-sources.mjs";
 import { moduleRoots } from "../web/module-resolution.mjs";
 import { assertFreshBuild } from "./build-stamp.mjs";
+
+// A file's text at a revision, or null where it has none.
+export function committedSource(revision, path, cwd = fileURLToPath(new URL("../", import.meta.url))) {
+  try { return execFileSync("git", ["show", `${revision}:${path}`], { cwd, encoding: "utf8", maxBuffer: 1 << 28, stdio: ["ignore", "pipe", "ignore"] }); }
+  catch { return null; }
+}
+// The sources a saved report's rows link to (web/benchmark-areas.mjs's
+// declarationLink): each measured module whose text is its file's at the
+// recorded revision, with its path and the text's SHA-256. A module measured
+// from working changes, edited or not yet committed, is left out, and its
+// rows are not linked: a link pins the source as it was at the revision,
+// which is not what was measured.
+export function pinnedSources(measured, committed) {
+  return Object.fromEntries(measured.filter(({ path, text }) => committed(path) === text)
+    .map(({ name, path, text }) => [name, { path, sha256: createHash("sha256").update(text).digest("hex") }]));
+}
 
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
@@ -29,9 +46,15 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const verbose = args.includes("--verbose");
   const revision = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
   const dirty = !!execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim();
-  // The benchmark's check imports as a module of the area does.
-  const readSource = sourceReader();
-  readSource.place("benchmark", area);
+  // The benchmark's check imports as a module of the area does. Each text it
+  // reads is kept, to compare with the file at the revision.
+  const reader = sourceReader(), texts = new Map();
+  reader.place("benchmark", area);
+  const readSource = Object.assign(async (name, importer) => {
+    const text = await reader(name, importer);
+    texts.set(name, text);
+    return text;
+  }, reader);
   const report = await benchmark({ area, limitMs, optimizations, ...(selected.length ? { modules: selected } : {}),
     readSource,
     onResult: row => {
@@ -39,10 +62,9 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
         console.log(`${row.category.padEnd(8)} ${row.elapsedMs.toFixed(1)}ms ${row.module}.${row.name}${row.reason ? ` — ${row.reason}` : ""}`);
     },
   });
-  // Each module's source path at this revision, where a saved report's rows
-  // link (web/benchmark-areas.mjs's declarationLink).
-  const sources = Object.fromEntries([...new Set(report.declarations.map(row => row.module))].sort()
-    .map(name => [name, `${moduleRoots[readSource.placeOf(name)]}${name}.cubist`]));
+  const sources = pinnedSources([...new Set(report.declarations.map(row => row.module))].sort()
+    .map(name => ({ name, path: `${moduleRoots[reader.placeOf(name)]}${name}.cubist`, text: texts.get(name) })),
+  path => committedSource(revision, path));
   Object.assign(report, { revision, dirty, sources, runtime: process.version, cpu: cpus()[0]?.model,
     complete: true, method: "One session; source order with imports checked once. Each declaration is elaborated with every check derived by the instruction kernel as it runs, and admitted by Define, within its deadline. Warm dependencies; transient arena terms and judgements compacted between declarations; no normalization request. Deadline polled cooperatively in JS and C." });
   await mkdir(new URL("../build/", import.meta.url), { recursive: true });

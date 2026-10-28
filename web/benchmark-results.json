@@ -92737,377 +92737,1493 @@
     }
   },
   "sources": {
-    "affine_dyadic_limits": "archive/first-library/affine_dyadic_limits.cubist",
-    "affine_integral_constants": "archive/first-library/affine_integral_constants.cubist",
-    "affine_integral_linearity": "archive/first-library/affine_integral_linearity.cubist",
-    "affine_integral_midpoint": "archive/first-library/affine_integral_midpoint.cubist",
-    "affine_integrals": "archive/first-library/affine_integrals.cubist",
-    "affine_partition_refinement": "archive/first-library/affine_partition_refinement.cubist",
-    "affine_refinement": "archive/first-library/affine_refinement.cubist",
-    "affine_variation": "archive/first-library/affine_variation.cubist",
-    "algebraic_base_change": "archive/first-library/algebraic_base_change.cubist",
-    "algebraic_fields": "archive/first-library/algebraic_fields.cubist",
-    "artin_classification": "archive/first-library/artin_classification.cubist",
-    "artin_degree": "archive/first-library/artin_degree.cubist",
-    "artin_embedding_bound": "archive/first-library/artin_embedding_bound.cubist",
-    "artin_equivariance": "archive/first-library/artin_equivariance.cubist",
-    "artin_evaluation": "archive/first-library/artin_evaluation.cubist",
-    "artin_evaluation_basis": "archive/first-library/artin_evaluation_basis.cubist",
-    "artin_evaluation_matrix": "archive/first-library/artin_evaluation_matrix.cubist",
-    "artin_finite_relations": "archive/first-library/artin_finite_relations.cubist",
-    "artin_fixed_embeddings": "archive/first-library/artin_fixed_embeddings.cubist",
-    "artin_fixed_evaluation": "archive/first-library/artin_fixed_evaluation.cubist",
-    "artin_hom_independence": "archive/first-library/artin_hom_independence.cubist",
-    "artin_loop_independence": "archive/first-library/artin_loop_independence.cubist",
-    "basics": "archive/first-library/basics.cubist",
-    "basis_generators": "archive/first-library/basis_generators.cubist",
-    "bijection_equality": "archive/first-library/bijection_equality.cubist",
-    "bijective_field_embeddings": "archive/first-library/bijective_field_embeddings.cubist",
-    "binary_arithmetic": "archive/first-library/binary_arithmetic.cubist",
-    "binary_arithmetic_correct": "archive/first-library/binary_arithmetic_correct.cubist",
-    "binary_equivalence": "archive/first-library/binary_equivalence.cubist",
-    "binary_induction": "archive/first-library/binary_induction.cubist",
-    "binary_naturals": "archive/first-library/binary_naturals.cubist",
-    "binary_univalence_transfer": "archive/first-library/binary_univalence_transfer.cubist",
-    "binomial": "archive/first-library/binomial.cubist",
-    "binomial_counting": "archive/first-library/binomial_counting.cubist",
-    "binomial_pascal": "archive/first-library/binomial_pascal.cubist",
-    "binomial_types": "archive/first-library/binomial_types.cubist",
-    "boolean_cuts": "archive/first-library/boolean_cuts.cubist",
-    "bouquet_actions": "archive/first-library/bouquet_actions.cubist",
-    "bouquet_cover": "archive/first-library/bouquet_cover.cubist",
-    "bouquet_generation": "archive/first-library/bouquet_generation.cubist",
-    "bouquet_invariants": "archive/first-library/bouquet_invariants.cubist",
-    "bourbaki_tower": "archive/first-library/bourbaki_tower.cubist",
-    "bourbaki_witt": "archive/first-library/bourbaki_witt.cubist",
-    "cauchy_ordered": "archive/first-library/cauchy_ordered.cubist",
-    "cauchy_quotient": "archive/first-library/cauchy_quotient.cubist",
-    "chain_complete_orders": "archive/first-library/chain_complete_orders.cubist",
-    "circle": "archive/first-library/circle.cubist",
-    "circle_degree": "archive/first-library/circle_degree.cubist",
-    "circle_group_identity": "archive/first-library/circle_group_identity.cubist",
-    "classical": "archive/first-library/classical.cubist",
-    "classical_complex_inverses": "archive/first-library/classical_complex_inverses.cubist",
-    "complete_fields": "archive/first-library/complete_fields.cubist",
-    "complex_affine": "archive/first-library/complex_affine.cubist",
-    "complex_algebra": "archive/first-library/complex_algebra.cubist",
-    "complex_contour_bounds": "archive/first-library/complex_contour_bounds.cubist",
-    "complex_contour_samples": "archive/first-library/complex_contour_samples.cubist",
-    "complex_contour_sums": "archive/first-library/complex_contour_sums.cubist",
-    "complex_contour_tag_limits": "archive/first-library/complex_contour_tag_limits.cubist",
-    "complex_convergence": "archive/first-library/complex_convergence.cubist",
-    "complex_coordinates": "archive/first-library/complex_coordinates.cubist",
-    "complex_curve_variation": "archive/first-library/complex_curve_variation.cubist",
-    "complex_curves": "archive/first-library/complex_curves.cubist",
-    "complex_deformation": "archive/first-library/complex_deformation.cubist",
-    "complex_inverses": "archive/first-library/complex_inverses.cubist",
-    "complex_limit_periods": "archive/first-library/complex_limit_periods.cubist",
-    "complex_limits": "archive/first-library/complex_limits.cubist",
-    "complex_magnitude": "archive/first-library/complex_magnitude.cubist",
-    "complex_norm_coordinates": "archive/first-library/complex_norm_coordinates.cubist",
-    "complex_numbers": "archive/first-library/complex_numbers.cubist",
-    "complex_periods": "archive/first-library/complex_periods.cubist",
-    "complex_perturbations": "archive/first-library/complex_perturbations.cubist",
-    "complex_polynomials": "archive/first-library/complex_polynomials.cubist",
-    "complex_refinement_cauchy": "archive/first-library/complex_refinement_cauchy.cubist",
-    "complex_scalar_continuity": "archive/first-library/complex_scalar_continuity.cubist",
-    "complex_subdivision_estimates": "archive/first-library/complex_subdivision_estimates.cubist",
-    "complex_uniform_operations": "archive/first-library/complex_uniform_operations.cubist",
-    "compositum_embeddings": "archive/first-library/compositum_embeddings.cubist",
-    "contour_error_bounds": "archive/first-library/contour_error_bounds.cubist",
-    "contour_examples": "archive/first-library/contour_examples.cubist",
-    "contour_refinement": "archive/first-library/contour_refinement.cubist",
-    "contour_samples": "archive/first-library/contour_samples.cubist",
-    "contour_sums": "archive/first-library/contour_sums.cubist",
-    "contour_tag_limits": "archive/first-library/contour_tag_limits.cubist",
-    "coordinate_elimination": "archive/first-library/coordinate_elimination.cubist",
-    "coordinate_splitting": "archive/first-library/coordinate_splitting.cubist",
-    "cubical_paths": "archive/first-library/cubical_paths.cubist",
-    "curve_contour_estimates": "archive/first-library/curve_contour_estimates.cubist",
-    "curve_contour_limits": "archive/first-library/curve_contour_limits.cubist",
-    "curve_integrand_sums": "archive/first-library/curve_integrand_sums.cubist",
-    "curve_refinement_estimates": "archive/first-library/curve_refinement_estimates.cubist",
-    "curve_sample_sums": "archive/first-library/curve_sample_sums.cubist",
-    "curve_tag_stability": "archive/first-library/curve_tag_stability.cubist",
-    "decidable_subobjects": "archive/first-library/decidable_subobjects.cubist",
-    "dedekind_cuts": "archive/first-library/dedekind_cuts.cubist",
-    "descent_loop_laws": "archive/first-library/descent_loop_laws.cubist",
-    "dimension": "archive/first-library/dimension.cubist",
-    "distinguished_extensions": "archive/first-library/distinguished_extensions.cubist",
-    "dyadic_contour_estimates": "archive/first-library/dyadic_contour_estimates.cubist",
-    "dyadic_convergence": "archive/first-library/dyadic_convergence.cubist",
-    "dyadic_data": "archive/first-library/dyadic_data.cubist",
-    "dyadic_decay": "archive/first-library/dyadic_decay.cubist",
-    "dyadic_mesh": "archive/first-library/dyadic_mesh.cubist",
-    "dyadic_refinement": "archive/first-library/dyadic_refinement.cubist",
-    "dyadic_refinement_mesh": "archive/first-library/dyadic_refinement_mesh.cubist",
-    "dyadic_sampling": "archive/first-library/dyadic_sampling.cubist",
-    "dyadic_tails": "archive/first-library/dyadic_tails.cubist",
-    "dyadic_width_bounds": "archive/first-library/dyadic_width_bounds.cubist",
-    "embedded_composita": "archive/first-library/embedded_composita.cubist",
-    "embedding_counts": "archive/first-library/embedding_counts.cubist",
-    "embedding_tower_types": "archive/first-library/embedding_tower_types.cubist",
-    "embedding_transport": "archive/first-library/embedding_transport.cubist",
-    "equivalence_from_inverse": "archive/first-library/equivalence_from_inverse.cubist",
-    "equivalences": "archive/first-library/equivalences.cubist",
-    "euclid": "archive/first-library/euclid.cubist",
-    "extension_degree": "archive/first-library/extension_degree.cubist",
-    "f4_embedded_composita": "archive/first-library/f4_embedded_composita.cubist",
-    "f4_embedding_images": "archive/first-library/f4_embedding_images.cubist",
-    "f4_fixed_field": "archive/first-library/f4_fixed_field.cubist",
-    "f4_formal_polynomial": "archive/first-library/f4_formal_polynomial.cubist",
-    "f4_galois": "archive/first-library/f4_galois.cubist",
-    "f4_galois_connection": "archive/first-library/f4_galois_connection.cubist",
-    "f4_galois_correspondence": "archive/first-library/f4_galois_correspondence.cubist",
-    "f4_galois_group": "archive/first-library/f4_galois_group.cubist",
-    "f4_generated_subfields": "archive/first-library/f4_generated_subfields.cubist",
-    "f4_intermediate_fields": "archive/first-library/f4_intermediate_fields.cubist",
-    "f4_normal_subgroups": "archive/first-library/f4_normal_subgroups.cubist",
-    "field_affine": "archive/first-library/field_affine.cubist",
-    "field_arithmetic": "archive/first-library/field_arithmetic.cubist",
-    "field_asymptotics": "archive/first-library/field_asymptotics.cubist",
-    "field_closeness": "archive/first-library/field_closeness.cubist",
-    "field_embedding_factorization": "archive/first-library/field_embedding_factorization.cubist",
-    "field_embedding_image": "archive/first-library/field_embedding_image.cubist",
-    "field_embedding_spaces": "archive/first-library/field_embedding_spaces.cubist",
-    "field_embeddings": "archive/first-library/field_embeddings.cubist",
-    "field_extensionality": "archive/first-library/field_extensionality.cubist",
-    "field_extensions": "archive/first-library/field_extensions.cubist",
-    "field_homomorphisms": "archive/first-library/field_homomorphisms.cubist",
-    "field_interval": "archive/first-library/field_interval.cubist",
-    "field_limits": "archive/first-library/field_limits.cubist",
-    "field_logic": "archive/first-library/field_logic.cubist",
-    "field_magnitude": "archive/first-library/field_magnitude.cubist",
-    "field_magnitude_close": "archive/first-library/field_magnitude_close.cubist",
-    "field_products": "archive/first-library/field_products.cubist",
-    "field_scale_limits": "archive/first-library/field_scale_limits.cubist",
-    "field_uniform_radii": "archive/first-library/field_uniform_radii.cubist",
-    "field_vector_spaces": "archive/first-library/field_vector_spaces.cubist",
-    "fine_interval_samples": "archive/first-library/fine_interval_samples.cubist",
-    "fine_interval_tails": "archive/first-library/fine_interval_tails.cubist",
-    "finite": "archive/first-library/finite.cubist",
-    "finite_algebraic_extensions": "archive/first-library/finite_algebraic_extensions.cubist",
-    "finite_bases": "archive/first-library/finite_bases.cubist",
-    "finite_basis_search": "archive/first-library/finite_basis_search.cubist",
-    "finite_cancellation": "archive/first-library/finite_cancellation.cubist",
-    "finite_cardinalities": "archive/first-library/finite_cardinalities.cubist",
-    "finite_combinations": "archive/first-library/finite_combinations.cubist",
-    "finite_decidable_subtypes": "archive/first-library/finite_decidable_subtypes.cubist",
-    "finite_decisions": "archive/first-library/finite_decisions.cubist",
-    "finite_dependent_counts": "archive/first-library/finite_dependent_counts.cubist",
-    "finite_dimension": "archive/first-library/finite_dimension.cubist",
-    "finite_embedding_extensions": "archive/first-library/finite_embedding_extensions.cubist",
-    "finite_equal_dimension": "archive/first-library/finite_equal_dimension.cubist",
-    "finite_family_images": "archive/first-library/finite_family_images.cubist",
-    "finite_field_generators": "archive/first-library/finite_field_generators.cubist",
-    "finite_fields": "archive/first-library/finite_fields.cubist",
-    "finite_linear_lifts": "archive/first-library/finite_linear_lifts.cubist",
-    "finite_omission": "archive/first-library/finite_omission.cubist",
-    "finite_remainders": "archive/first-library/finite_remainders.cubist",
-    "finite_spanning": "archive/first-library/finite_spanning.cubist",
-    "finite_splitting_extensions": "archive/first-library/finite_splitting_extensions.cubist",
-    "finite_sums": "archive/first-library/finite_sums.cubist",
-    "finite_towers": "archive/first-library/finite_towers.cubist",
-    "finitely_generated_algebraic": "archive/first-library/finitely_generated_algebraic.cubist",
-    "formal_series": "archive/first-library/formal_series.cubist",
-    "function_counting": "archive/first-library/function_counting.cubist",
-    "function_linear_isos": "archive/first-library/function_linear_isos.cubist",
-    "fundamental_groups": "archive/first-library/fundamental_groups.cubist",
-    "galois_fixed_fields": "archive/first-library/galois_fixed_fields.cubist",
-    "galois_fixed_points": "archive/first-library/galois_fixed_points.cubist",
-    "galois_fixing_subgroups": "archive/first-library/galois_fixing_subgroups.cubist",
-    "galois_intermediate_roundtrip": "archive/first-library/galois_intermediate_roundtrip.cubist",
-    "galois_normal_bridge": "archive/first-library/galois_normal_bridge.cubist",
-    "galois_normal_target": "archive/first-library/galois_normal_target.cubist",
-    "galois_orders": "archive/first-library/galois_orders.cubist",
-    "galois_paths": "archive/first-library/galois_paths.cubist",
-    "generated_field_carriers": "archive/first-library/generated_field_carriers.cubist",
-    "generated_subfields": "archive/first-library/generated_subfields.cubist",
-    "group_cosets": "archive/first-library/group_cosets.cubist",
-    "group_first_isomorphism": "archive/first-library/group_first_isomorphism.cubist",
-    "group_hom_universes": "archive/first-library/group_hom_universes.cubist",
-    "group_homomorphisms": "archive/first-library/group_homomorphisms.cubist",
-    "group_identity": "archive/first-library/group_identity.cubist",
-    "group_isomorphisms": "archive/first-library/group_isomorphisms.cubist",
-    "group_operations": "archive/first-library/group_operations.cubist",
-    "group_quotient_maps": "archive/first-library/group_quotient_maps.cubist",
-    "group_total_identity": "archive/first-library/group_total_identity.cubist",
-    "group_univalence": "archive/first-library/group_univalence.cubist",
-    "group_universes": "archive/first-library/group_universes.cubist",
-    "groups": "archive/first-library/groups.cubist",
-    "hlevels": "library/hlevels.cubist",
-    "homotopy_limits": "archive/first-library/homotopy_limits.cubist",
-    "homotopy_paths": "archive/first-library/homotopy_paths.cubist",
-    "identity_systems": "archive/first-library/identity_systems.cubist",
-    "independent_extension": "archive/first-library/independent_extension.cubist",
-    "independent_order": "archive/first-library/independent_order.cubist",
-    "independent_unions": "archive/first-library/independent_unions.cubist",
-    "integer_multiples": "archive/first-library/integer_multiples.cubist",
-    "intermediate_fields": "archive/first-library/intermediate_fields.cubist",
-    "intermediate_towers": "archive/first-library/intermediate_towers.cubist",
-    "interval_bisection": "archive/first-library/interval_bisection.cubist",
-    "interval_midpoint_data": "archive/first-library/interval_midpoint_data.cubist",
-    "interval_refinement": "archive/first-library/interval_refinement.cubist",
-    "interval_sampling": "archive/first-library/interval_sampling.cubist",
-    "interval_subdivisions": "archive/first-library/interval_subdivisions.cubist",
-    "interval_tag_bounds": "archive/first-library/interval_tag_bounds.cubist",
-    "interval_weights": "archive/first-library/interval_weights.cubist",
-    "kernel_quotient_image": "archive/first-library/kernel_quotient_image.cubist",
-    "lexemes": "library/lexemes.cubist",
-    "limit_periods": "archive/first-library/limit_periods.cubist",
-    "linear_bijections": "archive/first-library/linear_bijections.cubist",
-    "linear_constructions": "archive/first-library/linear_constructions.cubist",
-    "linear_maps": "archive/first-library/linear_maps.cubist",
-    "linear_span": "archive/first-library/linear_span.cubist",
-    "lists": "library/lists.cubist",
-    "loop_words": "archive/first-library/loop_words.cubist",
-    "maps": "archive/first-library/maps.cubist",
-    "minimal_polynomials": "archive/first-library/minimal_polynomials.cubist",
-    "nat": "library/nat.cubist",
-    "natural_minimum": "archive/first-library/natural_minimum.cubist",
-    "non_normal_subgroup": "archive/first-library/non_normal_subgroup.cubist",
-    "normal_extensions": "archive/first-library/normal_extensions.cubist",
-    "normal_subgroups": "archive/first-library/normal_subgroups.cubist",
-    "order_maps": "archive/first-library/order_maps.cubist",
-    "ordered_bounds": "archive/first-library/ordered_bounds.cubist",
-    "ordered_fields": "archive/first-library/ordered_fields.cubist",
-    "ordered_halves": "archive/first-library/ordered_halves.cubist",
-    "ordered_squares": "archive/first-library/ordered_squares.cubist",
-    "parameter_contour_bounds": "archive/first-library/parameter_contour_bounds.cubist",
-    "parameter_contour_estimates": "archive/first-library/parameter_contour_estimates.cubist",
-    "parameter_contour_limits": "archive/first-library/parameter_contour_limits.cubist",
-    "parameter_contours": "archive/first-library/parameter_contours.cubist",
-    "parameter_increment_bounds": "archive/first-library/parameter_increment_bounds.cubist",
-    "parameter_refinement": "archive/first-library/parameter_refinement.cubist",
-    "parameter_tag_sampling": "archive/first-library/parameter_tag_sampling.cubist",
-    "path_actions": "archive/first-library/path_actions.cubist",
-    "paths_": "archive/first-library/paths_.cubist",
-    "permutation_groups": "archive/first-library/permutation_groups.cubist",
-    "permutations": "archive/first-library/permutations.cubist",
-    "polynomial_adjoin": "archive/first-library/polynomial_adjoin.cubist",
-    "polynomial_adjoin_universal": "archive/first-library/polynomial_adjoin_universal.cubist",
-    "polynomial_annihilator": "archive/first-library/polynomial_annihilator.cubist",
-    "polynomial_arithmetic": "archive/first-library/polynomial_arithmetic.cubist",
-    "polynomial_bezout": "archive/first-library/polynomial_bezout.cubist",
-    "polynomial_cancellation": "archive/first-library/polynomial_cancellation.cubist",
-    "polynomial_constants": "archive/first-library/polynomial_constants.cubist",
-    "polynomial_coordinate_maps": "archive/first-library/polynomial_coordinate_maps.cubist",
-    "polynomial_coordinates": "archive/first-library/polynomial_coordinates.cubist",
-    "polynomial_degree": "archive/first-library/polynomial_degree.cubist",
-    "polynomial_difference": "archive/first-library/polynomial_difference.cubist",
-    "polynomial_division": "archive/first-library/polynomial_division.cubist",
-    "polynomial_division_unique": "archive/first-library/polynomial_division_unique.cubist",
-    "polynomial_eval_characterization": "archive/first-library/polynomial_eval_characterization.cubist",
-    "polynomial_eval_embeddings": "archive/first-library/polynomial_eval_embeddings.cubist",
-    "polynomial_evaluation": "archive/first-library/polynomial_evaluation.cubist",
-    "polynomial_extension_roots": "archive/first-library/polynomial_extension_roots.cubist",
-    "polynomial_factor_omission": "archive/first-library/polynomial_factor_omission.cubist",
-    "polynomial_ideals": "archive/first-library/polynomial_ideals.cubist",
-    "polynomial_irreducible": "archive/first-library/polynomial_irreducible.cubist",
-    "polynomial_irreducible_factors": "archive/first-library/polynomial_irreducible_factors.cubist",
-    "polynomial_leading": "archive/first-library/polynomial_leading.cubist",
-    "polynomial_maps": "archive/first-library/polynomial_maps.cubist",
-    "polynomial_monic": "archive/first-library/polynomial_monic.cubist",
-    "polynomial_remainders": "archive/first-library/polynomial_remainders.cubist",
-    "polynomial_residue_basis": "archive/first-library/polynomial_residue_basis.cubist",
-    "polynomial_residue_field": "archive/first-library/polynomial_residue_field.cubist",
-    "polynomial_residue_ring": "archive/first-library/polynomial_residue_ring.cubist",
-    "polynomial_ring": "archive/first-library/polynomial_ring.cubist",
-    "polynomial_root_bound": "archive/first-library/polynomial_root_bound.cubist",
-    "polynomial_root_embeddings": "archive/first-library/polynomial_root_embeddings.cubist",
-    "polynomial_root_enumeration": "archive/first-library/polynomial_root_enumeration.cubist",
-    "polynomial_root_evaluation": "archive/first-library/polynomial_root_evaluation.cubist",
-    "polynomial_root_existence": "archive/first-library/polynomial_root_existence.cubist",
-    "polynomial_roots": "archive/first-library/polynomial_roots.cubist",
-    "polynomial_splitting": "archive/first-library/polynomial_splitting.cubist",
-    "polynomial_splitting_leading": "archive/first-library/polynomial_splitting_leading.cubist",
-    "polynomial_support": "archive/first-library/polynomial_support.cubist",
-    "predicate_chains": "archive/first-library/predicate_chains.cubist",
-    "primes": "archive/first-library/primes.cubist",
-    "puncture_graph": "archive/first-library/puncture_graph.cubist",
-    "puncture_noncommutative": "archive/first-library/puncture_noncommutative.cubist",
-    "puncture_period_examples": "archive/first-library/puncture_period_examples.cubist",
-    "puncture_periods": "archive/first-library/puncture_periods.cubist",
-    "puncture_winding": "archive/first-library/puncture_winding.cubist",
-    "pushout": "archive/first-library/pushout.cubist",
-    "quadratic_identities": "archive/first-library/quadratic_identities.cubist",
-    "quotient_descent": "archive/first-library/quotient_descent.cubist",
-    "quotient_group_universal": "archive/first-library/quotient_group_universal.cubist",
-    "quotient_groups": "archive/first-library/quotient_groups.cubist",
-    "quotient_operations": "archive/first-library/quotient_operations.cubist",
-    "quotient_sets": "archive/first-library/quotient_sets.cubist",
-    "radix_arithmetic": "archive/first-library/radix_arithmetic.cubist",
-    "radix_arithmetic_correct": "archive/first-library/radix_arithmetic_correct.cubist",
-    "radix_binary_equivalence": "archive/first-library/radix_binary_equivalence.cubist",
-    "radix_decode": "archive/first-library/radix_decode.cubist",
-    "radix_digit_laws": "archive/first-library/radix_digit_laws.cubist",
-    "radix_equivalence": "archive/first-library/radix_equivalence.cubist",
-    "radix_factorial": "archive/first-library/radix_factorial.cubist",
-    "radix_induction": "archive/first-library/radix_induction.cubist",
-    "radix_naturals": "archive/first-library/radix_naturals.cubist",
-    "radix_uniqueness": "archive/first-library/radix_uniqueness.cubist",
-    "radix_univalence_transfer": "archive/first-library/radix_univalence_transfer.cubist",
-    "ring_laws": "archive/first-library/ring_laws.cubist",
-    "root_generated_fields": "archive/first-library/root_generated_fields.cubist",
-    "sample_chains": "archive/first-library/sample_chains.cubist",
-    "sample_condition_maps": "archive/first-library/sample_condition_maps.cubist",
-    "sample_error_bounds": "archive/first-library/sample_error_bounds.cubist",
-    "sample_join_conditions": "archive/first-library/sample_join_conditions.cubist",
-    "sample_magnitude": "archive/first-library/sample_magnitude.cubist",
-    "sample_magnitude_bounds": "archive/first-library/sample_magnitude_bounds.cubist",
-    "sample_maps": "archive/first-library/sample_maps.cubist",
-    "sample_refinement_tags": "archive/first-library/sample_refinement_tags.cubist",
-    "sample_relations": "archive/first-library/sample_relations.cubist",
-    "sample_subdivision_conditions": "archive/first-library/sample_subdivision_conditions.cubist",
-    "sample_subdivisions": "archive/first-library/sample_subdivisions.cubist",
-    "sample_sum_laws": "archive/first-library/sample_sum_laws.cubist",
-    "sample_tagged": "archive/first-library/sample_tagged.cubist",
-    "scalar_extension_finiteness": "archive/first-library/scalar_extension_finiteness.cubist",
-    "scalar_restriction": "archive/first-library/scalar_restriction.cubist",
-    "schroeder_bernstein": "archive/first-library/schroeder_bernstein.cubist",
-    "separability_base_change": "archive/first-library/separability_base_change.cubist",
-    "separable_closed_targets": "archive/first-library/separable_closed_targets.cubist",
-    "separable_divisors": "archive/first-library/separable_divisors.cubist",
-    "separable_polynomials": "archive/first-library/separable_polynomials.cubist",
-    "set_quotients": "archive/first-library/set_quotients.cubist",
-    "signed_integers": "archive/first-library/signed_integers.cubist",
-    "simple_algebraic_extensions": "archive/first-library/simple_algebraic_extensions.cubist",
-    "simple_extension_embeddings": "archive/first-library/simple_extension_embeddings.cubist",
-    "span_exchange": "archive/first-library/span_exchange.cubist",
-    "span_subspace": "archive/first-library/span_subspace.cubist",
-    "spanning_subfamilies": "archive/first-library/spanning_subfamilies.cubist",
-    "splitting_fields": "archive/first-library/splitting_fields.cubist",
-    "structured_sets": "archive/first-library/structured_sets.cubist",
-    "subdivision_join": "archive/first-library/subdivision_join.cubist",
-    "subdivision_join_conditions": "archive/first-library/subdivision_join_conditions.cubist",
-    "subdivision_refinement": "archive/first-library/subdivision_refinement.cubist",
-    "subdivision_tagged_zip": "archive/first-library/subdivision_tagged_zip.cubist",
-    "subdivision_transport": "archive/first-library/subdivision_transport.cubist",
-    "subfield_carriers": "archive/first-library/subfield_carriers.cubist",
-    "subfield_composita": "archive/first-library/subfield_composita.cubist",
-    "subfield_generation_steps": "archive/first-library/subfield_generation_steps.cubist",
-    "subfield_image_orders": "archive/first-library/subfield_image_orders.cubist",
-    "subfield_images": "archive/first-library/subfield_images.cubist",
-    "subfield_intersections": "archive/first-library/subfield_intersections.cubist",
-    "subfield_preimages": "archive/first-library/subfield_preimages.cubist",
-    "subfield_transport": "archive/first-library/subfield_transport.cubist",
-    "subfields": "archive/first-library/subfields.cubist",
-    "subgroup_carriers": "archive/first-library/subgroup_carriers.cubist",
-    "subgroup_constructions": "archive/first-library/subgroup_constructions.cubist",
-    "subgroup_images": "archive/first-library/subgroup_images.cubist",
-    "subgroups": "archive/first-library/subgroups.cubist",
-    "subspace_carriers": "archive/first-library/subspace_carriers.cubist",
-    "surjections": "archive/first-library/surjections.cubist",
-    "surjective_descent": "archive/first-library/surjective_descent.cubist",
-    "suspension": "archive/first-library/suspension.cubist",
-    "suspension_types": "archive/first-library/suspension_types.cubist",
-    "truncation": "archive/first-library/truncation.cubist",
-    "uniform_curve_tags": "archive/first-library/uniform_curve_tags.cubist",
-    "vector_arithmetic": "archive/first-library/vector_arithmetic.cubist",
-    "vector_basis_existence": "archive/first-library/vector_basis_existence.cubist",
-    "vector_spaces": "archive/first-library/vector_spaces.cubist",
-    "vector_subspaces": "archive/first-library/vector_subspaces.cubist",
-    "w": "archive/first-library/w.cubist",
-    "zorn_chain_complete": "archive/first-library/zorn_chain_complete.cubist"
+    "affine_dyadic_limits": {
+      "path": "archive/first-library/affine_dyadic_limits.cubist",
+      "sha256": "fbe0dc46f844d552928e97f7a4160c53de4fb34a093210031a8d9148ece88a00"
+    },
+    "affine_integral_constants": {
+      "path": "archive/first-library/affine_integral_constants.cubist",
+      "sha256": "0475c65f9270aa55fa39948e0838b496f4b8a2f4b8939ecb68b8400d3dca6c05"
+    },
+    "affine_integral_linearity": {
+      "path": "archive/first-library/affine_integral_linearity.cubist",
+      "sha256": "afd59b386d8144a1f376fcf8a8b5575c30c397f2487e29485a14b254400066bd"
+    },
+    "affine_integral_midpoint": {
+      "path": "archive/first-library/affine_integral_midpoint.cubist",
+      "sha256": "40f02d621e6d395767e3fb2bc98bbde1cef1a49cf78490c65f0ed49ffba9e019"
+    },
+    "affine_integrals": {
+      "path": "archive/first-library/affine_integrals.cubist",
+      "sha256": "d3fea1c19af3a85b7880d6b97b2daa32ef00363244b1c96d05680436fa30925d"
+    },
+    "affine_partition_refinement": {
+      "path": "archive/first-library/affine_partition_refinement.cubist",
+      "sha256": "0e67ef063dd4ba4859dca3974db514c69f2d3b0aa44bc5a0cac76dbfcfb8aa07"
+    },
+    "affine_refinement": {
+      "path": "archive/first-library/affine_refinement.cubist",
+      "sha256": "ae8c834241f3a284a51908baf72c9e4fb4475723cb4da79805561521837424ca"
+    },
+    "affine_variation": {
+      "path": "archive/first-library/affine_variation.cubist",
+      "sha256": "74295724d51cb6d353b77aae436956aef5c9fadc359a9c2f26af4fb7cb6ed0db"
+    },
+    "algebraic_base_change": {
+      "path": "archive/first-library/algebraic_base_change.cubist",
+      "sha256": "6187b760f4c9df1e0b3d17cfe429b1d6c3b02ed54c56f6d0aa53517fd9cee421"
+    },
+    "algebraic_fields": {
+      "path": "archive/first-library/algebraic_fields.cubist",
+      "sha256": "eaeb19139d371fb23a3f0d04c5508e19995ab374085d31c23d27af9de3b8e934"
+    },
+    "artin_classification": {
+      "path": "archive/first-library/artin_classification.cubist",
+      "sha256": "12fa2fb9de4089983d116151edd9337facbfd4b9731b17126f34efbd4dd467eb"
+    },
+    "artin_degree": {
+      "path": "archive/first-library/artin_degree.cubist",
+      "sha256": "2a3a2c608ba3afd3bd519c975aab3be287ddc2b369f161ec1c474dd7a42ecef8"
+    },
+    "artin_embedding_bound": {
+      "path": "archive/first-library/artin_embedding_bound.cubist",
+      "sha256": "c372ac3f867feaaa9eb33a7e868043f9e67d8b73f5a52be69976dbd9e87f8949"
+    },
+    "artin_equivariance": {
+      "path": "archive/first-library/artin_equivariance.cubist",
+      "sha256": "78e00f427db812c4c061c3f7804fdd86464c30b936bb2573080076c887a2b43b"
+    },
+    "artin_evaluation": {
+      "path": "archive/first-library/artin_evaluation.cubist",
+      "sha256": "37710b1ff9099658caa4b7052ec65e84d09cb7d3179f7e557cee6b7ecbb55bd3"
+    },
+    "artin_evaluation_basis": {
+      "path": "archive/first-library/artin_evaluation_basis.cubist",
+      "sha256": "f0f5054246c94991bffbee015e1193e6e8e82670cd51b170106830be2e96d490"
+    },
+    "artin_evaluation_matrix": {
+      "path": "archive/first-library/artin_evaluation_matrix.cubist",
+      "sha256": "f095a524d446b62ab4d0675be54d19b5b367a0536aa3b34147b6f8bd74cc8a3e"
+    },
+    "artin_finite_relations": {
+      "path": "archive/first-library/artin_finite_relations.cubist",
+      "sha256": "520c8b901145979f973f921726516590434f0b05af5b7ef1e62c2562d50771ed"
+    },
+    "artin_fixed_embeddings": {
+      "path": "archive/first-library/artin_fixed_embeddings.cubist",
+      "sha256": "0dc693f80f7ac3f9b90f5d11f768d2c9f889e82e419fcd6ef57551ae4c65fe48"
+    },
+    "artin_fixed_evaluation": {
+      "path": "archive/first-library/artin_fixed_evaluation.cubist",
+      "sha256": "90a0af3b4ad2b3e9da8375d668cd2dab8f640131c783c829937f5a68cc38cb09"
+    },
+    "artin_hom_independence": {
+      "path": "archive/first-library/artin_hom_independence.cubist",
+      "sha256": "5f1a254e7cc957964ba72f688faa670d3bd6a523c08ddb69d70d9185ea856260"
+    },
+    "artin_loop_independence": {
+      "path": "archive/first-library/artin_loop_independence.cubist",
+      "sha256": "2ece3d79b702885b44856087a7b6d26f7b6cd828a0dba5861fc8fe4fb22c9008"
+    },
+    "basics": {
+      "path": "archive/first-library/basics.cubist",
+      "sha256": "ff76939c6b57a443ed138eef003bf6ec2eed672108714968744d8ca25d4be828"
+    },
+    "basis_generators": {
+      "path": "archive/first-library/basis_generators.cubist",
+      "sha256": "4a53abcd748ebe5da21316b71c076bf96c7db565120f961f86dce025d98b0f30"
+    },
+    "bijection_equality": {
+      "path": "archive/first-library/bijection_equality.cubist",
+      "sha256": "e77c9868728856385b8d5dc3a1a9c8d43b6afe866eaa3df8577ae6df9c2deb7b"
+    },
+    "bijective_field_embeddings": {
+      "path": "archive/first-library/bijective_field_embeddings.cubist",
+      "sha256": "4401541985f077b4132fdb022570f045a5b7aec2163e8dbd2b1b3a0d78e2d8d8"
+    },
+    "binary_arithmetic": {
+      "path": "archive/first-library/binary_arithmetic.cubist",
+      "sha256": "b5906657ace349594c01d27a6bc0be97a47fff8964c4e68b02c4a0edb91a19a4"
+    },
+    "binary_arithmetic_correct": {
+      "path": "archive/first-library/binary_arithmetic_correct.cubist",
+      "sha256": "a2bcb406717f908e81dc80b0816e268ab0e3a760dd4fea164576def1f3783ae1"
+    },
+    "binary_equivalence": {
+      "path": "archive/first-library/binary_equivalence.cubist",
+      "sha256": "f8cf31b2b8e5ace8ce583a6db37d35e073b736355bfb4efc5bae6dac91b898df"
+    },
+    "binary_induction": {
+      "path": "archive/first-library/binary_induction.cubist",
+      "sha256": "439b7b52b72612e6d6b5956fdcc01792b1eade85846ca949a49bdc4d0b8110f6"
+    },
+    "binary_naturals": {
+      "path": "archive/first-library/binary_naturals.cubist",
+      "sha256": "178767f836281970b4d57b8fe6a5488db91b5f29c5f8e54854dc74a92b05cc44"
+    },
+    "binary_univalence_transfer": {
+      "path": "archive/first-library/binary_univalence_transfer.cubist",
+      "sha256": "7f09087bb12452b303d254dfd6dd579e0e42d3e4ab803aa18c9678c5fcb54baa"
+    },
+    "binomial": {
+      "path": "archive/first-library/binomial.cubist",
+      "sha256": "87b26167e0ccce2c8afe4ff24da033237086019c5cb405c7dbbcfc1ff60018e9"
+    },
+    "binomial_counting": {
+      "path": "archive/first-library/binomial_counting.cubist",
+      "sha256": "d40b00882d9cf5cb841266db547ae2997ec81b73ccc9bcd44564932d64500ff5"
+    },
+    "binomial_pascal": {
+      "path": "archive/first-library/binomial_pascal.cubist",
+      "sha256": "030f6ff065c8d48b91fc48324ad9672c6e804d824941a24a91c47217d35c591f"
+    },
+    "binomial_types": {
+      "path": "archive/first-library/binomial_types.cubist",
+      "sha256": "c8e0410e8c9afacf60d26a4ce57f2995d11167250e66a2c22150129cb33863ac"
+    },
+    "boolean_cuts": {
+      "path": "archive/first-library/boolean_cuts.cubist",
+      "sha256": "10004f0cb91e38ad82b539810301ca1fc21900b6e00301e2d0e030df81e482b6"
+    },
+    "bouquet_actions": {
+      "path": "archive/first-library/bouquet_actions.cubist",
+      "sha256": "8b2a4bdc99bd81f46913c8432eb313cb080961c308ef057950e1942149319430"
+    },
+    "bouquet_cover": {
+      "path": "archive/first-library/bouquet_cover.cubist",
+      "sha256": "9fe2f6d0a16d131a67e371f5042ddeea682483907633dc96e06057f17bb20165"
+    },
+    "bouquet_generation": {
+      "path": "archive/first-library/bouquet_generation.cubist",
+      "sha256": "4555efc401163b9ad6e27a170f63b9a006700ecea13460c037d34340fc6a9aa5"
+    },
+    "bouquet_invariants": {
+      "path": "archive/first-library/bouquet_invariants.cubist",
+      "sha256": "e6e8d76d11d3c2dee16ea6eac8ec6e21060472efc30eae663d5bc5417e3ee395"
+    },
+    "bourbaki_tower": {
+      "path": "archive/first-library/bourbaki_tower.cubist",
+      "sha256": "e66b6469217f74b3d8344c9137a549538cc16d6cb5bf9ec84c0c6ffa2752ada4"
+    },
+    "bourbaki_witt": {
+      "path": "archive/first-library/bourbaki_witt.cubist",
+      "sha256": "b7755d0fb585048fadcd9b1aec883381b6915abaa3194f22715b1c39b6a8fba4"
+    },
+    "cauchy_ordered": {
+      "path": "archive/first-library/cauchy_ordered.cubist",
+      "sha256": "495fa0781dee88e69260d38e834eca0f1407f258c0d41d78370ab7839b6747a1"
+    },
+    "cauchy_quotient": {
+      "path": "archive/first-library/cauchy_quotient.cubist",
+      "sha256": "62dc20c361ee2bba4e446f8a5e439c2a635aa199e18274a57e651713bca7c809"
+    },
+    "chain_complete_orders": {
+      "path": "archive/first-library/chain_complete_orders.cubist",
+      "sha256": "b3d69054d3c285684142945f196eabb77b6cb1854f84e7c353290db0549cd3fe"
+    },
+    "circle": {
+      "path": "archive/first-library/circle.cubist",
+      "sha256": "7852ad5ac6bace0ef778ab9efd629ba040aaa1379cefde3f6760ef6536bb2581"
+    },
+    "circle_degree": {
+      "path": "archive/first-library/circle_degree.cubist",
+      "sha256": "ed889c58b991c25b0eab5416d90a649f35ed2843569a3a04385e4184d34ed569"
+    },
+    "circle_group_identity": {
+      "path": "archive/first-library/circle_group_identity.cubist",
+      "sha256": "0eb555d2b8c5eae9d4bda1cf20f908363c54d9f74b9d06dc4747aa1170c78b7d"
+    },
+    "classical": {
+      "path": "archive/first-library/classical.cubist",
+      "sha256": "746e370676113ea36d105192c0964d809a9cec56b00e0ad1b6fb509ac449056d"
+    },
+    "classical_complex_inverses": {
+      "path": "archive/first-library/classical_complex_inverses.cubist",
+      "sha256": "315fcf5da69a830abc212ee9743cee2c257f1e457bd79405d1d071c33e49d55b"
+    },
+    "complete_fields": {
+      "path": "archive/first-library/complete_fields.cubist",
+      "sha256": "2dec4cabd1fd5c257aff6d3506bb4418d4e6700013d250c4e4735307ec63741f"
+    },
+    "complex_affine": {
+      "path": "archive/first-library/complex_affine.cubist",
+      "sha256": "1f79dadccf7f2dc366d37324f83decc94835a2cfc9587acfc94890c7de8cfd89"
+    },
+    "complex_algebra": {
+      "path": "archive/first-library/complex_algebra.cubist",
+      "sha256": "9acd5562fec7e09738d2a965a8051800d81c5af7b6efa0c2ff203d75b25a979c"
+    },
+    "complex_contour_bounds": {
+      "path": "archive/first-library/complex_contour_bounds.cubist",
+      "sha256": "f51d40a05f88dd6e2edb1cfdaf58150eb21017493cd1d2f119edde78e3fcd1b5"
+    },
+    "complex_contour_samples": {
+      "path": "archive/first-library/complex_contour_samples.cubist",
+      "sha256": "ec85e017bf9e542c86ca5f4cfb6b2811c7201bbab806cc0fd33787ceefae036f"
+    },
+    "complex_contour_sums": {
+      "path": "archive/first-library/complex_contour_sums.cubist",
+      "sha256": "b5db1eaf0ed06a3818cde4b31cb9a819dab2904896b4ac5129d2e1a10507159b"
+    },
+    "complex_contour_tag_limits": {
+      "path": "archive/first-library/complex_contour_tag_limits.cubist",
+      "sha256": "74d8f96f2c51a86ac7c5b04655d3289776f0af698a47f0eae02f61019681465e"
+    },
+    "complex_convergence": {
+      "path": "archive/first-library/complex_convergence.cubist",
+      "sha256": "dd0097fd00b32d461f9985e4d32f18f1fd3b8e4f4502ea9a8d3566699ed11164"
+    },
+    "complex_coordinates": {
+      "path": "archive/first-library/complex_coordinates.cubist",
+      "sha256": "ad6e6acde46a792adcb11a04ba80d72df3009896dc95d0914b38d0a2de63b2dd"
+    },
+    "complex_curve_variation": {
+      "path": "archive/first-library/complex_curve_variation.cubist",
+      "sha256": "287411197879d8728d7088ef884a5a44da42fca8faecc13cf3d9d741a66acc94"
+    },
+    "complex_curves": {
+      "path": "archive/first-library/complex_curves.cubist",
+      "sha256": "3764e8b1006892a4aede9b0e0119eca79a138b7d22c2c40975c7bd5332f5d3a1"
+    },
+    "complex_deformation": {
+      "path": "archive/first-library/complex_deformation.cubist",
+      "sha256": "c66bd14bbb6e3d10a6b5e5badcf96eca0bba908dca359011d04e7d954cd7296f"
+    },
+    "complex_inverses": {
+      "path": "archive/first-library/complex_inverses.cubist",
+      "sha256": "40611d7a92fdf923d5d2a3449f21c101b8fa7ac1ec2aa41748aa551e52a03692"
+    },
+    "complex_limit_periods": {
+      "path": "archive/first-library/complex_limit_periods.cubist",
+      "sha256": "99f52a5ff2abee71445e17fd82a2436d0ebab61b71037ea586cf3870cb931afc"
+    },
+    "complex_limits": {
+      "path": "archive/first-library/complex_limits.cubist",
+      "sha256": "b3102de67110e4ae50a97310e9d4a69474cd00bf7ba985410192475d0ef02831"
+    },
+    "complex_magnitude": {
+      "path": "archive/first-library/complex_magnitude.cubist",
+      "sha256": "f20822dab7fa9ab1793e3b4d8ae4acb3d44bd39e6c827c96b86867aed2efb2da"
+    },
+    "complex_norm_coordinates": {
+      "path": "archive/first-library/complex_norm_coordinates.cubist",
+      "sha256": "6ef73f4a47911975e8a8e329136b3946d1d4f05f039ccd4cfb387cbc02c5fa8b"
+    },
+    "complex_numbers": {
+      "path": "archive/first-library/complex_numbers.cubist",
+      "sha256": "a8996002dc511dcb9f1f892afb05906d73f4522aa3fa073d2281557145c2c045"
+    },
+    "complex_periods": {
+      "path": "archive/first-library/complex_periods.cubist",
+      "sha256": "b9576bd2721ce986fdae6adf1455b396caf5b708faaff06d0ff84aa8b2821b3d"
+    },
+    "complex_perturbations": {
+      "path": "archive/first-library/complex_perturbations.cubist",
+      "sha256": "dc3fd47ac33f79dab29f18a4ebedda4544e0f63e376b37e4db966039acd065bb"
+    },
+    "complex_polynomials": {
+      "path": "archive/first-library/complex_polynomials.cubist",
+      "sha256": "a9b1e94d94b68fe3ea9a0cde58afddd926355c1cb5344e6a4df8a3d4a4c0993a"
+    },
+    "complex_refinement_cauchy": {
+      "path": "archive/first-library/complex_refinement_cauchy.cubist",
+      "sha256": "47e31a3631442546b96a121b154324843579a2f5cece276a023ed09d50741944"
+    },
+    "complex_scalar_continuity": {
+      "path": "archive/first-library/complex_scalar_continuity.cubist",
+      "sha256": "34c285bfc203f99611beadea28740cf8c30c5213e20473950832583a0ef15127"
+    },
+    "complex_subdivision_estimates": {
+      "path": "archive/first-library/complex_subdivision_estimates.cubist",
+      "sha256": "2bad88e1e5f358a2a2313797df3f649c345b7868ea5762654a51aaa27ad7099c"
+    },
+    "complex_uniform_operations": {
+      "path": "archive/first-library/complex_uniform_operations.cubist",
+      "sha256": "54ba0954fd0117f1e900e4b9568068cc76b737bd6ae672abb20052b1687bfc3a"
+    },
+    "compositum_embeddings": {
+      "path": "archive/first-library/compositum_embeddings.cubist",
+      "sha256": "8abc8fccecb6eb4e3688ffa1d625c46cfefd5cc683a79591a09377fc06276a7d"
+    },
+    "contour_error_bounds": {
+      "path": "archive/first-library/contour_error_bounds.cubist",
+      "sha256": "f459b683ab04066a5784f45e76915eb01ee88b3ed5a3a6a5b79c6fa5c674ba36"
+    },
+    "contour_examples": {
+      "path": "archive/first-library/contour_examples.cubist",
+      "sha256": "5c866ab0f8296326c59be37b317af13abf62a0603b85e6ee4d552138a36c45f7"
+    },
+    "contour_refinement": {
+      "path": "archive/first-library/contour_refinement.cubist",
+      "sha256": "1cf6b843e38ebc61010b062f4904d7033d268a80430be04b4c714f8014ea3139"
+    },
+    "contour_samples": {
+      "path": "archive/first-library/contour_samples.cubist",
+      "sha256": "681f38e2778d52d912a49c08a035e89cf63738d3463cac903e48f4359af3d148"
+    },
+    "contour_sums": {
+      "path": "archive/first-library/contour_sums.cubist",
+      "sha256": "c46213bce7b7b8eab660f5a1c43b6f269ca355889c91786b3ecdc5180676b819"
+    },
+    "contour_tag_limits": {
+      "path": "archive/first-library/contour_tag_limits.cubist",
+      "sha256": "bc849cb2bb40ce095973cf5bd765976dba5450a0c031111d06422f1ea02dffac"
+    },
+    "coordinate_elimination": {
+      "path": "archive/first-library/coordinate_elimination.cubist",
+      "sha256": "16df3513d8e53b1f2b7840ed7adfef26b3290c918f4b3aaa2367f560402a52ee"
+    },
+    "coordinate_splitting": {
+      "path": "archive/first-library/coordinate_splitting.cubist",
+      "sha256": "2fa5f01381335a81d6473400ba81eef1646f5c49f8c325f83f403874fa81b8bc"
+    },
+    "cubical_paths": {
+      "path": "archive/first-library/cubical_paths.cubist",
+      "sha256": "bb2277b5fc8a1a23b5fb632335f10fc15571d9f3480cf13fbe6a5eb71cdf68fc"
+    },
+    "curve_contour_estimates": {
+      "path": "archive/first-library/curve_contour_estimates.cubist",
+      "sha256": "3e46c40db7fd6800c23924647cab888b2c328cad59aa675c587eb99ba458464a"
+    },
+    "curve_contour_limits": {
+      "path": "archive/first-library/curve_contour_limits.cubist",
+      "sha256": "9d3027f10d862a73991bfe37b8bf1fc9253132ff06dd0c2753f349b9e9b093b5"
+    },
+    "curve_integrand_sums": {
+      "path": "archive/first-library/curve_integrand_sums.cubist",
+      "sha256": "fa39e61627dfe3f73a2049f40b0506ec87f096b395d0332db93f58ab6253c255"
+    },
+    "curve_refinement_estimates": {
+      "path": "archive/first-library/curve_refinement_estimates.cubist",
+      "sha256": "492be8fe300656564c235e1a7c1d29ed16841c5627dfa6a64eafd84495136f5b"
+    },
+    "curve_sample_sums": {
+      "path": "archive/first-library/curve_sample_sums.cubist",
+      "sha256": "c99319bb1d0b70fccf19af35fa86b554720e9e45420a533d2ceabf0ec1c32a8f"
+    },
+    "curve_tag_stability": {
+      "path": "archive/first-library/curve_tag_stability.cubist",
+      "sha256": "bd0cd2344267516a5752377f9f0f3e8adb89dc2d860c8017d16efa303cad501c"
+    },
+    "decidable_subobjects": {
+      "path": "archive/first-library/decidable_subobjects.cubist",
+      "sha256": "4dc3d4c69baee9ac1384a2b3f70983b3c6e0d8f8056c051411b3b897e2ab0656"
+    },
+    "dedekind_cuts": {
+      "path": "archive/first-library/dedekind_cuts.cubist",
+      "sha256": "2093ec00b593098221809d53050a2c9a2cdddb4c84e61260835f2b40acc30195"
+    },
+    "descent_loop_laws": {
+      "path": "archive/first-library/descent_loop_laws.cubist",
+      "sha256": "ec5be383b5bac87c62d0f0010fdec9428d68ca6dc1ca5e265a8478b71284d4c1"
+    },
+    "dimension": {
+      "path": "archive/first-library/dimension.cubist",
+      "sha256": "3b1bc06523e916bb585a944d1ff4f9865c5701b3e8867057b3a2da5170752386"
+    },
+    "distinguished_extensions": {
+      "path": "archive/first-library/distinguished_extensions.cubist",
+      "sha256": "bcd9bed26e5c924ba409093621bb227f44f51403790ff9ebce25d5776a821c8f"
+    },
+    "dyadic_contour_estimates": {
+      "path": "archive/first-library/dyadic_contour_estimates.cubist",
+      "sha256": "cdf62e23c2fbd733df90f10c82bd351d7dcab1ac32ea6ca26f11461845dc1950"
+    },
+    "dyadic_convergence": {
+      "path": "archive/first-library/dyadic_convergence.cubist",
+      "sha256": "4a96e43cb2e7a5ce17183639e39cc432bdee80684d05e9169cde0e6d7a648dc2"
+    },
+    "dyadic_data": {
+      "path": "archive/first-library/dyadic_data.cubist",
+      "sha256": "57348651c2620fe2477e3d38867373d4a650fed35fe55d146171f895cfe35aeb"
+    },
+    "dyadic_decay": {
+      "path": "archive/first-library/dyadic_decay.cubist",
+      "sha256": "b06168b21a267c84c0649525458f5cd809c813bd1915f48fedf7de0d2564dc4c"
+    },
+    "dyadic_mesh": {
+      "path": "archive/first-library/dyadic_mesh.cubist",
+      "sha256": "9e23a3cbfc1c1a42d2d0cf89d6692c53684672d37a45a2656406fbf698fd01f8"
+    },
+    "dyadic_refinement": {
+      "path": "archive/first-library/dyadic_refinement.cubist",
+      "sha256": "6e5cd9084478580ac541527b68e52c850723c67c07ef0844c2b2396834ec1376"
+    },
+    "dyadic_refinement_mesh": {
+      "path": "archive/first-library/dyadic_refinement_mesh.cubist",
+      "sha256": "c166819307c0aedef7bf06f513723c579ae287b90757d764b0bef7eebfb5980b"
+    },
+    "dyadic_sampling": {
+      "path": "archive/first-library/dyadic_sampling.cubist",
+      "sha256": "8bd0169588b7565506e9aa08c466a1c351b6e47b302e167caa074a35924d516b"
+    },
+    "dyadic_tails": {
+      "path": "archive/first-library/dyadic_tails.cubist",
+      "sha256": "ba8a33824c07e264428eb20ab68cd127c937560c29a0edbbe1f1f00787797083"
+    },
+    "dyadic_width_bounds": {
+      "path": "archive/first-library/dyadic_width_bounds.cubist",
+      "sha256": "dc196d37f8f03f00bb9e16e1d7e7ef6f28bf682d4f11842b2419a7b9353b6e58"
+    },
+    "embedded_composita": {
+      "path": "archive/first-library/embedded_composita.cubist",
+      "sha256": "30debc83c1408b23fe704af291b6c9300f1da45c1271b2bdf72af04fb0e406fe"
+    },
+    "embedding_counts": {
+      "path": "archive/first-library/embedding_counts.cubist",
+      "sha256": "d521d10c02b479648048d14d291d56f7c415ad7d95ca43654384bda3f8e16f87"
+    },
+    "embedding_tower_types": {
+      "path": "archive/first-library/embedding_tower_types.cubist",
+      "sha256": "d46aa3500d896dceed55c53b703d014b15b2794f7688a15683e8d32d23a26f59"
+    },
+    "embedding_transport": {
+      "path": "archive/first-library/embedding_transport.cubist",
+      "sha256": "699454be8f6ad5a0d872c6727aa1b820b183caac05cc0d67e939b8c193ff63b7"
+    },
+    "equivalence_from_inverse": {
+      "path": "archive/first-library/equivalence_from_inverse.cubist",
+      "sha256": "0cbfa0e50fbfb3b3523abbf0bc40332983462e8e09d490e011f21e7d4a3aaa1d"
+    },
+    "equivalences": {
+      "path": "archive/first-library/equivalences.cubist",
+      "sha256": "556c5075a1891e72cf91fec41818b7c7c4de8925bab73096b33d33538952da25"
+    },
+    "euclid": {
+      "path": "archive/first-library/euclid.cubist",
+      "sha256": "dfee852a707813af02a75d2a01738ff52744af984d7a62296804ad59a0056333"
+    },
+    "extension_degree": {
+      "path": "archive/first-library/extension_degree.cubist",
+      "sha256": "b3f6c15eaef1a25959957d4697b697ebd409c33d01059ce59b3307ad6e5c6b56"
+    },
+    "f4_embedded_composita": {
+      "path": "archive/first-library/f4_embedded_composita.cubist",
+      "sha256": "e01b6539a06982722d052bf57bfea4bdcae897c20fd31d2f215761d395fc807c"
+    },
+    "f4_embedding_images": {
+      "path": "archive/first-library/f4_embedding_images.cubist",
+      "sha256": "d02c52b1411766187ab2f3203c2f7dd838d86abba8d6578e59f843197b19f93c"
+    },
+    "f4_fixed_field": {
+      "path": "archive/first-library/f4_fixed_field.cubist",
+      "sha256": "0467cc4c96d0d4bd24a015a07deaecca7914c6397c9d030a345c70db2b1fdabd"
+    },
+    "f4_formal_polynomial": {
+      "path": "archive/first-library/f4_formal_polynomial.cubist",
+      "sha256": "395f7bdca8b9f7756dc28427657c17655f30c8d2a868d8fa1145712fba9d13f6"
+    },
+    "f4_galois": {
+      "path": "archive/first-library/f4_galois.cubist",
+      "sha256": "a44771e48f3be12185aab750092187ecb426cc327dc8dddc832ddd27d680e83c"
+    },
+    "f4_galois_connection": {
+      "path": "archive/first-library/f4_galois_connection.cubist",
+      "sha256": "cb415c6483a12f972e803b7091cb1254878bb75e26e6ff20195e9623fff4635e"
+    },
+    "f4_galois_correspondence": {
+      "path": "archive/first-library/f4_galois_correspondence.cubist",
+      "sha256": "cf94ba305dce6493b5c5408d895257a196069d2c247887645b960b418cd786f5"
+    },
+    "f4_galois_group": {
+      "path": "archive/first-library/f4_galois_group.cubist",
+      "sha256": "38b823965ad9fdad47860515037ff4e015519ba7c0391e0ddf3e6ed54a3f7007"
+    },
+    "f4_generated_subfields": {
+      "path": "archive/first-library/f4_generated_subfields.cubist",
+      "sha256": "74472f04bfa4f204f96e7f7b77cade0dd4b37e583932b55a5d583c3d3247ce0f"
+    },
+    "f4_intermediate_fields": {
+      "path": "archive/first-library/f4_intermediate_fields.cubist",
+      "sha256": "01710b1d509b1e9ab5482659ef206a1bae503e24026a01b54be1d3677d239b22"
+    },
+    "f4_normal_subgroups": {
+      "path": "archive/first-library/f4_normal_subgroups.cubist",
+      "sha256": "0caaddba0236db27332ff805d07e7b54859f033e2a14c8893c9a205a2829f2b9"
+    },
+    "field_affine": {
+      "path": "archive/first-library/field_affine.cubist",
+      "sha256": "d86bf0f801879f786a1895a217ab2b8b119383ad384e659d4ce5c337d90b68f2"
+    },
+    "field_arithmetic": {
+      "path": "archive/first-library/field_arithmetic.cubist",
+      "sha256": "bb9a431000a05de4150fa9286e74a5b34834e1cbb181010924b0feaca69db21b"
+    },
+    "field_asymptotics": {
+      "path": "archive/first-library/field_asymptotics.cubist",
+      "sha256": "69f58fd3bcceda57891c1dd8a8924aa88aebfb05f56bbe57100ad1328562c208"
+    },
+    "field_closeness": {
+      "path": "archive/first-library/field_closeness.cubist",
+      "sha256": "b243a8b9234b0295a2eaa3475032b56f476a2ce2231b6752338090e63cd882e0"
+    },
+    "field_embedding_factorization": {
+      "path": "archive/first-library/field_embedding_factorization.cubist",
+      "sha256": "5050398f3b3a00fd1dbb0297cc01c71376f7a58f35f7e147a2b7207509194057"
+    },
+    "field_embedding_image": {
+      "path": "archive/first-library/field_embedding_image.cubist",
+      "sha256": "076b51f679184ce582dc50d3d012634a8d54aac5a0004d076dfd3d7af4a69f4e"
+    },
+    "field_embedding_spaces": {
+      "path": "archive/first-library/field_embedding_spaces.cubist",
+      "sha256": "e789b0ca16680b6a372f69163207a497ae03ed837ddcf15fab78ece434aaff30"
+    },
+    "field_embeddings": {
+      "path": "archive/first-library/field_embeddings.cubist",
+      "sha256": "8a6047886f4091fbbf2006dbec2c82f3023d10750701e0eccf07c3d7985f9d86"
+    },
+    "field_extensionality": {
+      "path": "archive/first-library/field_extensionality.cubist",
+      "sha256": "385d99c0862aab76ba848ee26ffbf5669b983b10171307523f2c26c0be35010d"
+    },
+    "field_extensions": {
+      "path": "archive/first-library/field_extensions.cubist",
+      "sha256": "2a2232cf5fcec1e1251dbf2b6060694c485a122f0fa750e561a44b852e4dd828"
+    },
+    "field_homomorphisms": {
+      "path": "archive/first-library/field_homomorphisms.cubist",
+      "sha256": "c9c6acd017d071247e2a52794f2eed7a89a82d7afbf6c1bef3cd71c755d40937"
+    },
+    "field_interval": {
+      "path": "archive/first-library/field_interval.cubist",
+      "sha256": "2a92d25a49c558b0afd6eba64433ead8146db6ceffeef497f8c4259501c9746e"
+    },
+    "field_limits": {
+      "path": "archive/first-library/field_limits.cubist",
+      "sha256": "5d2cd96f3372c00b2a9d5f7bf0b549a5f103e8af0dfd593d251145418823ec12"
+    },
+    "field_logic": {
+      "path": "archive/first-library/field_logic.cubist",
+      "sha256": "f4243c35dbd0c002af85de5b7ffefea9c2feabac3234c5ed9ba3e4576e122fca"
+    },
+    "field_magnitude": {
+      "path": "archive/first-library/field_magnitude.cubist",
+      "sha256": "9d581e9e2eb8fa65fa9d94d28235b8eb180974673b62d958784a80112f0e4ee3"
+    },
+    "field_magnitude_close": {
+      "path": "archive/first-library/field_magnitude_close.cubist",
+      "sha256": "0eb617693cd692d6871d5a053d57450a17facc75e4841b550a5739e7d70beab8"
+    },
+    "field_products": {
+      "path": "archive/first-library/field_products.cubist",
+      "sha256": "f436075ce6b35d8229efabf2a11f92ddbb778cff001a97586e250c20b0b93d07"
+    },
+    "field_scale_limits": {
+      "path": "archive/first-library/field_scale_limits.cubist",
+      "sha256": "07773259754379765df94807b56e9568d682ab5c3f671210d845103b8941c5af"
+    },
+    "field_uniform_radii": {
+      "path": "archive/first-library/field_uniform_radii.cubist",
+      "sha256": "3f5f091bda2f74ec0ac6cbb9b634b56bbd1fe25f067b19303933036e3de31542"
+    },
+    "field_vector_spaces": {
+      "path": "archive/first-library/field_vector_spaces.cubist",
+      "sha256": "c560734ad3509d4f4d9e00497a1712d10d9ee987c216757537e1eedb62134ee3"
+    },
+    "fine_interval_samples": {
+      "path": "archive/first-library/fine_interval_samples.cubist",
+      "sha256": "082450c21bd0681d50cbcdc4991703b6eb6be9af154a2664df50ccfecc9bd7ea"
+    },
+    "fine_interval_tails": {
+      "path": "archive/first-library/fine_interval_tails.cubist",
+      "sha256": "57984f8e1f768412dc763f444c087aff3a29fc048998551df99e9ee12d7299cc"
+    },
+    "finite": {
+      "path": "archive/first-library/finite.cubist",
+      "sha256": "e29054acad1b3e4acce49e105ca44c56f29d5b3d5689ee2f80becff4c16012c8"
+    },
+    "finite_algebraic_extensions": {
+      "path": "archive/first-library/finite_algebraic_extensions.cubist",
+      "sha256": "7378c9c3a8ea99d0cb91ca9ae974e3ded57d2e513ed2e174c3f00f381538d148"
+    },
+    "finite_bases": {
+      "path": "archive/first-library/finite_bases.cubist",
+      "sha256": "dfca4c57e61df077a67d4c0e1071798dae78c6606fb7441b623975f3f7c28af3"
+    },
+    "finite_basis_search": {
+      "path": "archive/first-library/finite_basis_search.cubist",
+      "sha256": "51ae8c9f27f2cdc480a73da853a20d426318a7222242dca6c7578be5fe9673b4"
+    },
+    "finite_cancellation": {
+      "path": "archive/first-library/finite_cancellation.cubist",
+      "sha256": "32084ad19f884b88aa84725ee52c1193110121d3d3719a7c3dae6782ea71a515"
+    },
+    "finite_cardinalities": {
+      "path": "archive/first-library/finite_cardinalities.cubist",
+      "sha256": "1cea087533cf882500ffbe8a89fefbdbdc6434421bc21b71e0f242926e30d1ca"
+    },
+    "finite_combinations": {
+      "path": "archive/first-library/finite_combinations.cubist",
+      "sha256": "5a1a26c8c9126bf907da6b2dccb1d764f418422b758313d20c4083d763dd2150"
+    },
+    "finite_decidable_subtypes": {
+      "path": "archive/first-library/finite_decidable_subtypes.cubist",
+      "sha256": "22510d8e389c7df8f1c2867e07be6983fdee11aa9fc3a5f45c087650173c6f5d"
+    },
+    "finite_decisions": {
+      "path": "archive/first-library/finite_decisions.cubist",
+      "sha256": "eae0c21da191ef1c901bb127c04ecdd6e344a8ccc55a52cd86a029aaa0d29056"
+    },
+    "finite_dependent_counts": {
+      "path": "archive/first-library/finite_dependent_counts.cubist",
+      "sha256": "959c8e5df1a4a63b7dd929eea9bb9263a1f6922ee466c8c569003f398280baa0"
+    },
+    "finite_dimension": {
+      "path": "archive/first-library/finite_dimension.cubist",
+      "sha256": "be36e1713c82c75b8e65e811b0e4f077cbf35c640399699b203ad1dcf868c17b"
+    },
+    "finite_embedding_extensions": {
+      "path": "archive/first-library/finite_embedding_extensions.cubist",
+      "sha256": "d59b02b832ff7ee5f036d6ff26ccc5eea44bf25f3fd8a2326b143da2e38d79dc"
+    },
+    "finite_equal_dimension": {
+      "path": "archive/first-library/finite_equal_dimension.cubist",
+      "sha256": "f974cc12d353de41db55f3e7b3ff0268cab211bbb0d821f83eacb6d4fdb45018"
+    },
+    "finite_family_images": {
+      "path": "archive/first-library/finite_family_images.cubist",
+      "sha256": "cc8768567309e9c35d3fc345ae42d553ce11f13cf6e3b20a6866fc50dea0aa99"
+    },
+    "finite_field_generators": {
+      "path": "archive/first-library/finite_field_generators.cubist",
+      "sha256": "25f62df54c60a55ab530022fca87360526e06d91310a9a6bca1076a73c470820"
+    },
+    "finite_fields": {
+      "path": "archive/first-library/finite_fields.cubist",
+      "sha256": "f973b7dee19e366f7869d2a7814ba1676685d1678a6eab26712c6bd6892294d2"
+    },
+    "finite_linear_lifts": {
+      "path": "archive/first-library/finite_linear_lifts.cubist",
+      "sha256": "f7040f348927d8e1c54be711a96304d89643e931516108be0d31c6f5065de5ec"
+    },
+    "finite_omission": {
+      "path": "archive/first-library/finite_omission.cubist",
+      "sha256": "0a4510f721fe83cb0b80b55d1f2921638db05aa5cff2c31707a0edce3ff6c14a"
+    },
+    "finite_remainders": {
+      "path": "archive/first-library/finite_remainders.cubist",
+      "sha256": "a3ed0c142b4c5cc9b58809354ea441d0b02b893337295389cfb0680b1231018d"
+    },
+    "finite_spanning": {
+      "path": "archive/first-library/finite_spanning.cubist",
+      "sha256": "2d106b62e6b7943f3899a59920593e11ce3e59a0a63ed8fe36dfd90338222d22"
+    },
+    "finite_splitting_extensions": {
+      "path": "archive/first-library/finite_splitting_extensions.cubist",
+      "sha256": "a2ee051ab2860e0416db092137f421d5cf3eae670cb772ded7925fc538505f3f"
+    },
+    "finite_sums": {
+      "path": "archive/first-library/finite_sums.cubist",
+      "sha256": "bb95c25af674e42fe7a844712a0ea0984407128826c4b58beac612c22f09b204"
+    },
+    "finite_towers": {
+      "path": "archive/first-library/finite_towers.cubist",
+      "sha256": "9a91650edb74602acb7aab34d116b19fc70a38317848f90042fdf2d9786b3b21"
+    },
+    "finitely_generated_algebraic": {
+      "path": "archive/first-library/finitely_generated_algebraic.cubist",
+      "sha256": "0f6b3d9d4c1d2a2c7b8db8df2369eb58027a246ea2ef0c8e50d1bc9d0d81f4bb"
+    },
+    "formal_series": {
+      "path": "archive/first-library/formal_series.cubist",
+      "sha256": "8784ce0fd6e79400eeff03bb5979230a6b06dd63a11998903b81caaf47fe8b22"
+    },
+    "function_counting": {
+      "path": "archive/first-library/function_counting.cubist",
+      "sha256": "fe6f81e6f56cdc34acd431da26c861f8168e3d5fd15c367589376ff8bbe10b15"
+    },
+    "function_linear_isos": {
+      "path": "archive/first-library/function_linear_isos.cubist",
+      "sha256": "f47026d5b1ce1da80dfbf898a93243fea12c7ade205c49ed25b2ab745af5a383"
+    },
+    "fundamental_groups": {
+      "path": "archive/first-library/fundamental_groups.cubist",
+      "sha256": "9135ab93e0a7b476501f40223a1ac25636d1944c01e25363a0989bac5746f840"
+    },
+    "galois_fixed_fields": {
+      "path": "archive/first-library/galois_fixed_fields.cubist",
+      "sha256": "c5069c22bc714c37e4193322565e38b952e112cbc2385f0bafd5f7ec64daff78"
+    },
+    "galois_fixed_points": {
+      "path": "archive/first-library/galois_fixed_points.cubist",
+      "sha256": "54786144ef95c8310b1cfebff2d44a10650f9a06299b5b3468f596afafb74818"
+    },
+    "galois_fixing_subgroups": {
+      "path": "archive/first-library/galois_fixing_subgroups.cubist",
+      "sha256": "49c723643f70ddd7df4453bdec122b9d98da75dff121cf959add429e4661ac6c"
+    },
+    "galois_intermediate_roundtrip": {
+      "path": "archive/first-library/galois_intermediate_roundtrip.cubist",
+      "sha256": "f7a0f563bfd72119e9964d783ce629f8e748305dbcd74b4ed99d8f1de5e5d35f"
+    },
+    "galois_normal_bridge": {
+      "path": "archive/first-library/galois_normal_bridge.cubist",
+      "sha256": "a9d3f0ab95565c56a0769f7b85505c87fbade9790b4ebb4338394506f58d188b"
+    },
+    "galois_normal_target": {
+      "path": "archive/first-library/galois_normal_target.cubist",
+      "sha256": "caa8427812466f21c9026ea0e62dd9d23647a8154ce2c70d18c73e56ac3f3dcc"
+    },
+    "galois_orders": {
+      "path": "archive/first-library/galois_orders.cubist",
+      "sha256": "4e7ca0007c68f0ae97e593b1da4765849750a23246f0a79de8831c5e05e23b6b"
+    },
+    "galois_paths": {
+      "path": "archive/first-library/galois_paths.cubist",
+      "sha256": "27914827aa44fe817e07201a4a20c381e169b0c388d539a154bbfd56abc5d504"
+    },
+    "generated_field_carriers": {
+      "path": "archive/first-library/generated_field_carriers.cubist",
+      "sha256": "226e95039b0a68e387a384689cce413f63b484c70b0e9d60a415b0ed257e04d4"
+    },
+    "generated_subfields": {
+      "path": "archive/first-library/generated_subfields.cubist",
+      "sha256": "0fb0cc28671cd7f4ae999fdb437da9e446119c9299f785af2ca31eddc5d3be1f"
+    },
+    "group_cosets": {
+      "path": "archive/first-library/group_cosets.cubist",
+      "sha256": "567132cfe773ab9d2b69120a6f71a09ef464f3c77552c260f9665eb1afeb6484"
+    },
+    "group_first_isomorphism": {
+      "path": "archive/first-library/group_first_isomorphism.cubist",
+      "sha256": "1e3d51556b2cc682f4a961096fd5f739d6035548da26fbd1600cc78cd55c53e6"
+    },
+    "group_hom_universes": {
+      "path": "archive/first-library/group_hom_universes.cubist",
+      "sha256": "de61f68200f7592b68aa8537870f0839c9116682fa01a95843881aebbd8b9d43"
+    },
+    "group_homomorphisms": {
+      "path": "archive/first-library/group_homomorphisms.cubist",
+      "sha256": "52cd53fccdf154aeed17c4b9eccc114c84a5c42b3dd583f147f68646c41fedad"
+    },
+    "group_identity": {
+      "path": "archive/first-library/group_identity.cubist",
+      "sha256": "284310fc0193c0989459890d5e31d2cffae776b53bf187ef378283d44691b2ad"
+    },
+    "group_isomorphisms": {
+      "path": "archive/first-library/group_isomorphisms.cubist",
+      "sha256": "5f35b52d73574adcf6078f2d175394612e1ee23075199a6b7102c88e908b84f8"
+    },
+    "group_operations": {
+      "path": "archive/first-library/group_operations.cubist",
+      "sha256": "540b2f9b56a67b776d30d5061c05577993753698ba170a99de25cf8b93f35eb7"
+    },
+    "group_quotient_maps": {
+      "path": "archive/first-library/group_quotient_maps.cubist",
+      "sha256": "5b68cd514dc31e531d5afb596ed9b7215c16b12b1f83aac50783415861677a89"
+    },
+    "group_total_identity": {
+      "path": "archive/first-library/group_total_identity.cubist",
+      "sha256": "35493ad95bdf1eae43f9b589f34af7eab433d019807891a03a98de8fff672090"
+    },
+    "group_univalence": {
+      "path": "archive/first-library/group_univalence.cubist",
+      "sha256": "7d163c44518af5cc803fe05a60563264039e49a8070cea59fc80724fa88867c2"
+    },
+    "group_universes": {
+      "path": "archive/first-library/group_universes.cubist",
+      "sha256": "08fbd545c9ecb3b2936885c0feb776871770fce30936dc1cdc046e7f0e578bb4"
+    },
+    "groups": {
+      "path": "archive/first-library/groups.cubist",
+      "sha256": "fe3f1c213656e6ec3fb89d673300418d7d690cb28a165e54873b6ae0cd7066ef"
+    },
+    "hlevels": {
+      "path": "library/hlevels.cubist",
+      "sha256": "83e5a28029a8d52916e65bb259c7cb315c43643d2ade27243fd334b4eb7c8018"
+    },
+    "homotopy_limits": {
+      "path": "archive/first-library/homotopy_limits.cubist",
+      "sha256": "4f092b6eadf1f1bff4484a60eeb2d5d72876e968c0c4456d85e81382b3f2486a"
+    },
+    "homotopy_paths": {
+      "path": "archive/first-library/homotopy_paths.cubist",
+      "sha256": "0a3a3a810413131363fca7b78d52eb6fd3dbef58df843f7b23384311b22f234e"
+    },
+    "identity_systems": {
+      "path": "archive/first-library/identity_systems.cubist",
+      "sha256": "27a1db79edc02e5625b1834674e6433f29d9d5909a2c48073d4bfea635d1670e"
+    },
+    "independent_extension": {
+      "path": "archive/first-library/independent_extension.cubist",
+      "sha256": "e77bb31d2fb0047f58a0358d3661506195f59b21c59bb5cb78b0bd9c35456651"
+    },
+    "independent_order": {
+      "path": "archive/first-library/independent_order.cubist",
+      "sha256": "d50ee54697d454c8914171f840cb713b74817640f3ebad6f2ab69efc8cad976a"
+    },
+    "independent_unions": {
+      "path": "archive/first-library/independent_unions.cubist",
+      "sha256": "f6536ac578c95b1bd11f8b4139df7db3d4844f927fbe68b6e3dc31ce9f207ab5"
+    },
+    "integer_multiples": {
+      "path": "archive/first-library/integer_multiples.cubist",
+      "sha256": "b9e1bbea953c50a02110e884b538a81f827849a7435e3d20ab2442591f06193e"
+    },
+    "intermediate_fields": {
+      "path": "archive/first-library/intermediate_fields.cubist",
+      "sha256": "8443c5eae8a0d34cef19df319a5095055ab79f00a0f4cbd3f99e9b00c75ebd52"
+    },
+    "intermediate_towers": {
+      "path": "archive/first-library/intermediate_towers.cubist",
+      "sha256": "e9b9584ee21a9240d25311e1af92eee4d5f86d14bfb9391bba30816444518977"
+    },
+    "interval_bisection": {
+      "path": "archive/first-library/interval_bisection.cubist",
+      "sha256": "9aa5f33af5e6b0d58437b14786b2c9fd697e75af94aee0c71a4c0bf9cf38ac5c"
+    },
+    "interval_midpoint_data": {
+      "path": "archive/first-library/interval_midpoint_data.cubist",
+      "sha256": "2056e256c32b7634d566f07153a2013ab9e152a45213809258a62b1bd8b97216"
+    },
+    "interval_refinement": {
+      "path": "archive/first-library/interval_refinement.cubist",
+      "sha256": "7554376af1be18cb2cb2deeff9a19d506eccd6b1a86373b8c53d0c1ad1527522"
+    },
+    "interval_sampling": {
+      "path": "archive/first-library/interval_sampling.cubist",
+      "sha256": "8c92081faac496383759c74e5d74d40833b17558ec3af4d97b66b8d96dcb1317"
+    },
+    "interval_subdivisions": {
+      "path": "archive/first-library/interval_subdivisions.cubist",
+      "sha256": "6182650e9d6120860bcbab75b988aaa00065d70d4f702faa076e54e6cf80108c"
+    },
+    "interval_tag_bounds": {
+      "path": "archive/first-library/interval_tag_bounds.cubist",
+      "sha256": "87c443fcc866a1d63de049b7391f492965bcaaa56ca69ddcf6e372ed0c387294"
+    },
+    "interval_weights": {
+      "path": "archive/first-library/interval_weights.cubist",
+      "sha256": "fe3abd06515879818126aa3cc3f92abf2bd676952baf6cba061e2ea71e76132b"
+    },
+    "kernel_quotient_image": {
+      "path": "archive/first-library/kernel_quotient_image.cubist",
+      "sha256": "6c3613430789eb2790aac4fec087eeb4c4fcf64ebd8417f56481a6382e248f24"
+    },
+    "lexemes": {
+      "path": "library/lexemes.cubist",
+      "sha256": "1be5d50febf41fb4a0065573f335a74ffdfe53d13ccdf4f5d2dd0f862fb34ca7"
+    },
+    "limit_periods": {
+      "path": "archive/first-library/limit_periods.cubist",
+      "sha256": "51f0acf156949188493ffd0aec56383206e1bcba0898e23d20661b32f3601d5e"
+    },
+    "linear_bijections": {
+      "path": "archive/first-library/linear_bijections.cubist",
+      "sha256": "d0abff7bb41e0f4ef61eebf7393fb3fab822865ab89690657ca560426ceb7ee1"
+    },
+    "linear_constructions": {
+      "path": "archive/first-library/linear_constructions.cubist",
+      "sha256": "38429ca71fdcb5af849851989348afaeb1a90c5632b0be0f0c1576fa15433978"
+    },
+    "linear_maps": {
+      "path": "archive/first-library/linear_maps.cubist",
+      "sha256": "f2ff28982d47e8595d0ea37b29ad626e919930a1f92b49f7e04d4ba73de77836"
+    },
+    "linear_span": {
+      "path": "archive/first-library/linear_span.cubist",
+      "sha256": "225afdfc51a280bad2636f7680552e00770222bd0080e079965bdf595b50f016"
+    },
+    "lists": {
+      "path": "library/lists.cubist",
+      "sha256": "ed5cb45952974e002c8c89c1d90b3774e858fcdc761c6e2c22e3bf775e0a9620"
+    },
+    "loop_words": {
+      "path": "archive/first-library/loop_words.cubist",
+      "sha256": "0ddfda1f2e5c08d6d76b497402ee3bc875f65039ff7d07fafe14606f1fbfe845"
+    },
+    "maps": {
+      "path": "archive/first-library/maps.cubist",
+      "sha256": "5a601965954d762497683d0bbcb978a13d937fd00a4a1236f0bace5d6a9461c9"
+    },
+    "minimal_polynomials": {
+      "path": "archive/first-library/minimal_polynomials.cubist",
+      "sha256": "5a38127b1c04cc82e117271eb8c7a13510d06430bb3c82f151e387733ccb1700"
+    },
+    "nat": {
+      "path": "library/nat.cubist",
+      "sha256": "851defd0700f51dee51ab074b4eb06d7eadd945222822df443cb280c1a991e1f"
+    },
+    "natural_minimum": {
+      "path": "archive/first-library/natural_minimum.cubist",
+      "sha256": "8df17b90de50655ac4708d925ee98cf22a8e5d9b84460ecedbfdd407e8313b2f"
+    },
+    "non_normal_subgroup": {
+      "path": "archive/first-library/non_normal_subgroup.cubist",
+      "sha256": "06e2f947f5fd44a7f849d3a2e6235128f111ccdb4583319a463ec30a1918e59a"
+    },
+    "normal_extensions": {
+      "path": "archive/first-library/normal_extensions.cubist",
+      "sha256": "d031ec3a71d150ff51b602f1be8d411d766f1a7d9a84227d2f3e9aac450173be"
+    },
+    "normal_subgroups": {
+      "path": "archive/first-library/normal_subgroups.cubist",
+      "sha256": "e7c6fb576aac92a61323deec6d4c4be05ef12e500f4e1e75f5f39e2034b96161"
+    },
+    "order_maps": {
+      "path": "archive/first-library/order_maps.cubist",
+      "sha256": "f4d6575ae52cd60b05b04e76099607a3c0af5f456ba1a121af5a3a8a3683d813"
+    },
+    "ordered_bounds": {
+      "path": "archive/first-library/ordered_bounds.cubist",
+      "sha256": "6565dab6950184f27fda0ef025cb8d12b9960c46377bb79f596fdfc4df5104f7"
+    },
+    "ordered_fields": {
+      "path": "archive/first-library/ordered_fields.cubist",
+      "sha256": "b4b29f7b4992f3e498802da9928d8cdd077660bd42fce02c384b79aa9063a14d"
+    },
+    "ordered_halves": {
+      "path": "archive/first-library/ordered_halves.cubist",
+      "sha256": "3a325851256dca09df5334cbc8287c9136fa2236b8caa2a4f1eb18b8b229d98c"
+    },
+    "ordered_squares": {
+      "path": "archive/first-library/ordered_squares.cubist",
+      "sha256": "2be7954da15b609f771e3bbda9e67f0ad98fa2a4cfc28f9b3058812e317c8714"
+    },
+    "parameter_contour_bounds": {
+      "path": "archive/first-library/parameter_contour_bounds.cubist",
+      "sha256": "8e672a0ef42acc364780f4e3d82582745bcdd1a5c85eb39beb4c167a41b1e9c1"
+    },
+    "parameter_contour_estimates": {
+      "path": "archive/first-library/parameter_contour_estimates.cubist",
+      "sha256": "a179ea15322ba3d89e39ff980b1e6720ba9ddc5dc9eabfc51c917e1050d0b6e0"
+    },
+    "parameter_contour_limits": {
+      "path": "archive/first-library/parameter_contour_limits.cubist",
+      "sha256": "7ad877acb760bd061023e4b7cd12698bbd774a7fbe5471e7aab839e503ad84e0"
+    },
+    "parameter_contours": {
+      "path": "archive/first-library/parameter_contours.cubist",
+      "sha256": "cb17f23c5b6a2e2f47f5ff9607a0a39f627edd51fb562985f517da99af3e2444"
+    },
+    "parameter_increment_bounds": {
+      "path": "archive/first-library/parameter_increment_bounds.cubist",
+      "sha256": "6a31ef73ba2f32582434b538384e9ae103dd87d56764b1c42aa38486ebd32aee"
+    },
+    "parameter_refinement": {
+      "path": "archive/first-library/parameter_refinement.cubist",
+      "sha256": "acf9b024fd6b4629bdc6fa1a6ae60e0c661e3bd5fa21bdc1633a8598785f90be"
+    },
+    "parameter_tag_sampling": {
+      "path": "archive/first-library/parameter_tag_sampling.cubist",
+      "sha256": "cdbc7fa49f20fbb4f510cfdac918736e1f1aab2e5c211668fb66f91dbdd87e6c"
+    },
+    "path_actions": {
+      "path": "archive/first-library/path_actions.cubist",
+      "sha256": "f5752ff8cc42dfff24857900f22ba18f3ffdf2c59a318e386c9e50d9259cd65f"
+    },
+    "paths_": {
+      "path": "archive/first-library/paths_.cubist",
+      "sha256": "d720036a538ab9331575230276dc3bf02fb7fb98623ca1fd01b0e175667f991c"
+    },
+    "permutation_groups": {
+      "path": "archive/first-library/permutation_groups.cubist",
+      "sha256": "b1c3556165aa19724c064ff9057351f72bcf3f5e33d93c72622b275d09beb1b7"
+    },
+    "permutations": {
+      "path": "archive/first-library/permutations.cubist",
+      "sha256": "150c89bea0e1801988474d603d596a19167aa53564b6e6738dbf79348a875a88"
+    },
+    "polynomial_adjoin": {
+      "path": "archive/first-library/polynomial_adjoin.cubist",
+      "sha256": "0a203094d89e1c00c9605df62df9d2eff3f2ea0c418007b43f6179c097f48337"
+    },
+    "polynomial_adjoin_universal": {
+      "path": "archive/first-library/polynomial_adjoin_universal.cubist",
+      "sha256": "14d02bc2cab89fcf5009e9120a47b3dcfb756383848eb00c6dfd3951a6f13663"
+    },
+    "polynomial_annihilator": {
+      "path": "archive/first-library/polynomial_annihilator.cubist",
+      "sha256": "eaca5f1b8c35291ee7a6dd60e8d0ba1e9632fadb1484a94d51b49cf98beb2298"
+    },
+    "polynomial_arithmetic": {
+      "path": "archive/first-library/polynomial_arithmetic.cubist",
+      "sha256": "f307ed1caf9d47ab8ba3ad9f0c63fc763a5a980a86947b508eb811e65c549108"
+    },
+    "polynomial_bezout": {
+      "path": "archive/first-library/polynomial_bezout.cubist",
+      "sha256": "88da0389c9dff2b1940cc15e88a0a615203850b00cd839cfa95345da71995808"
+    },
+    "polynomial_cancellation": {
+      "path": "archive/first-library/polynomial_cancellation.cubist",
+      "sha256": "78f14b7fd3a7dcc82c712b79e211975a87b0fc8b1cd788c4f20f339d70e4073e"
+    },
+    "polynomial_constants": {
+      "path": "archive/first-library/polynomial_constants.cubist",
+      "sha256": "72fc783b960e81299cb4ed4ab244095d5be4c5fe5379616a2d88bab5e10d0949"
+    },
+    "polynomial_coordinate_maps": {
+      "path": "archive/first-library/polynomial_coordinate_maps.cubist",
+      "sha256": "daf36395d9d10dfe383349a923f5420f4910d5c492c9539ba82dc52a92949f7c"
+    },
+    "polynomial_coordinates": {
+      "path": "archive/first-library/polynomial_coordinates.cubist",
+      "sha256": "d38c33d428f4cf309645878a780df9b4163376da114e37b067323b531dcd4ed9"
+    },
+    "polynomial_degree": {
+      "path": "archive/first-library/polynomial_degree.cubist",
+      "sha256": "556ebb71c9e9cd0219774aed56e1139f7834860f7cf4c69ddd05e7cf9ac50de3"
+    },
+    "polynomial_difference": {
+      "path": "archive/first-library/polynomial_difference.cubist",
+      "sha256": "7ee24f7a9508af42beb68d1e6f4870da20774acffe7e98e6a9723e18db77f8f6"
+    },
+    "polynomial_division": {
+      "path": "archive/first-library/polynomial_division.cubist",
+      "sha256": "c06e50a0a2829958e7ba5b2123985d0d874fb598f82afcd89f65c78d82bab9ee"
+    },
+    "polynomial_division_unique": {
+      "path": "archive/first-library/polynomial_division_unique.cubist",
+      "sha256": "dae8687ae74a147da61c6a0e678c0a8a3727794ca8a2be942a60319ba4b2ffb6"
+    },
+    "polynomial_eval_characterization": {
+      "path": "archive/first-library/polynomial_eval_characterization.cubist",
+      "sha256": "604990613d45fdc8e7ddbff12bb9b57f3994dc29f05abc56f9a21b4e596e012e"
+    },
+    "polynomial_eval_embeddings": {
+      "path": "archive/first-library/polynomial_eval_embeddings.cubist",
+      "sha256": "838ad1c2f1591883db322577981e94a873976c107d03ea2fe9c37766e4bfc6af"
+    },
+    "polynomial_evaluation": {
+      "path": "archive/first-library/polynomial_evaluation.cubist",
+      "sha256": "36157a6706cc3dd3ae78170e6273fdb02fe3ccf0f9a66c2f787b6d23f2c69541"
+    },
+    "polynomial_extension_roots": {
+      "path": "archive/first-library/polynomial_extension_roots.cubist",
+      "sha256": "22f38479f218eeeb2d2d48c56889bfb0f2281a7f943fcd76a95e59f084e9ba4f"
+    },
+    "polynomial_factor_omission": {
+      "path": "archive/first-library/polynomial_factor_omission.cubist",
+      "sha256": "05af64347b872582b2ad793f8ef1042071a997947df7871acdc1b6074af29494"
+    },
+    "polynomial_ideals": {
+      "path": "archive/first-library/polynomial_ideals.cubist",
+      "sha256": "20cbfae3bf396b6cd518210740cfab4226a5c944096c1dac84956938500422c5"
+    },
+    "polynomial_irreducible": {
+      "path": "archive/first-library/polynomial_irreducible.cubist",
+      "sha256": "51445986a40b0eea92e7847c8b502d2f2ac0bada601d2755b2dc7b8e55a35f93"
+    },
+    "polynomial_irreducible_factors": {
+      "path": "archive/first-library/polynomial_irreducible_factors.cubist",
+      "sha256": "34b0b63ded77224754fb46db2403cad27e07b2415ba7b739b42bdd2ce99e0aa7"
+    },
+    "polynomial_leading": {
+      "path": "archive/first-library/polynomial_leading.cubist",
+      "sha256": "45766d966fbbd0d41bd7fa76c87b353365753bc8547832e078450e86bf760d27"
+    },
+    "polynomial_maps": {
+      "path": "archive/first-library/polynomial_maps.cubist",
+      "sha256": "6837f227a0fcc8c7045a272791b09a75d098564cf0c5b2875978958795fefdf8"
+    },
+    "polynomial_monic": {
+      "path": "archive/first-library/polynomial_monic.cubist",
+      "sha256": "0c8e7d04f615e8f3c6ae8f4cc2c952ef3d85dcc3c8c20b86be89268850f07e06"
+    },
+    "polynomial_remainders": {
+      "path": "archive/first-library/polynomial_remainders.cubist",
+      "sha256": "a8bd7d3136dc2af9f1511bf08f58c404e53b442d1c72cc6cdde24de22b943023"
+    },
+    "polynomial_residue_basis": {
+      "path": "archive/first-library/polynomial_residue_basis.cubist",
+      "sha256": "b9d7d7ab5472929bd4182e4ce1b2ce6d6d98e1773c4a478e0012287739f94e12"
+    },
+    "polynomial_residue_field": {
+      "path": "archive/first-library/polynomial_residue_field.cubist",
+      "sha256": "0ca4f5445b3a61ceef8a66db7bcd9c2904e852afbdeeb846a763857ddb0927a1"
+    },
+    "polynomial_residue_ring": {
+      "path": "archive/first-library/polynomial_residue_ring.cubist",
+      "sha256": "72a83d8b5aa64f40683491791fc2e62122f713dc9f742acfc22ead8aa7295d48"
+    },
+    "polynomial_ring": {
+      "path": "archive/first-library/polynomial_ring.cubist",
+      "sha256": "42742fb190f2557749da727aa8b4e4d69208d2a345e1e09913551fc02464851e"
+    },
+    "polynomial_root_bound": {
+      "path": "archive/first-library/polynomial_root_bound.cubist",
+      "sha256": "c1d909ccbd53d9ffe7e3b5e0eaa04e98180e36265661511e14d2a83d5970cc95"
+    },
+    "polynomial_root_embeddings": {
+      "path": "archive/first-library/polynomial_root_embeddings.cubist",
+      "sha256": "31b2cc8e5506aa7f2b4c9b60e0d1dcd1e38109ff17e611113d1aac729d24f582"
+    },
+    "polynomial_root_enumeration": {
+      "path": "archive/first-library/polynomial_root_enumeration.cubist",
+      "sha256": "6b4eede3f2e250feafaabbc691e173afe7fea53b15bbda151aa974f3420d9b65"
+    },
+    "polynomial_root_evaluation": {
+      "path": "archive/first-library/polynomial_root_evaluation.cubist",
+      "sha256": "4fb2a74da03eee96ad441047ba6ca6141f9c2b904c5063403cf01dc279cca838"
+    },
+    "polynomial_root_existence": {
+      "path": "archive/first-library/polynomial_root_existence.cubist",
+      "sha256": "5b25269701300ea864f16bc9288611b7ccb754a080c3b56bd014f5a476f640a6"
+    },
+    "polynomial_roots": {
+      "path": "archive/first-library/polynomial_roots.cubist",
+      "sha256": "39ef1690088a95d380dc041fb20deb546b4ca478c4323f948b4cee8542a47274"
+    },
+    "polynomial_splitting": {
+      "path": "archive/first-library/polynomial_splitting.cubist",
+      "sha256": "8ad26cb3c1d8e13cf9f743437baba4658a3413a8fa39ffb605e33070629149bf"
+    },
+    "polynomial_splitting_leading": {
+      "path": "archive/first-library/polynomial_splitting_leading.cubist",
+      "sha256": "54a5be8c7ad8ce7fc15c9e9f838b25bfa951f2b79bc9eecc2701d0b8ce9ccf77"
+    },
+    "polynomial_support": {
+      "path": "archive/first-library/polynomial_support.cubist",
+      "sha256": "6953f881efd35a4ace6f82e7268ef53ed96dc6001a6ebb5d8b24ea3868585701"
+    },
+    "predicate_chains": {
+      "path": "archive/first-library/predicate_chains.cubist",
+      "sha256": "04e1dbaff79c4c9060998c3c0b82cd13973aa6cb4ce401537d3f4c914bb6d987"
+    },
+    "primes": {
+      "path": "archive/first-library/primes.cubist",
+      "sha256": "c14f27fb52d31595d780c7d7520764cbfe959419a5bd79bb3338fd4ab7c32124"
+    },
+    "puncture_graph": {
+      "path": "archive/first-library/puncture_graph.cubist",
+      "sha256": "e1b30a9c96483aaa7adba02e268b39bd97204559c781b829d3725d87724ce12c"
+    },
+    "puncture_noncommutative": {
+      "path": "archive/first-library/puncture_noncommutative.cubist",
+      "sha256": "dd739fbb2c774bac8a62799dc72334a12eedae74e076ce37da1c78ffaf0cb517"
+    },
+    "puncture_period_examples": {
+      "path": "archive/first-library/puncture_period_examples.cubist",
+      "sha256": "f810b5ec7897b6c838c6ce5c84f2f546e4a94097fcc2a0845ea2f99e4b83494b"
+    },
+    "puncture_periods": {
+      "path": "archive/first-library/puncture_periods.cubist",
+      "sha256": "a6e32c1f3728ddcb76e1a671cf5417dbed2b4f8f354af4b4080890d60e4a0662"
+    },
+    "puncture_winding": {
+      "path": "archive/first-library/puncture_winding.cubist",
+      "sha256": "770b0fceab5678257366bcfc2d50ebef38685216e8d5997cebe0256d494159cf"
+    },
+    "pushout": {
+      "path": "archive/first-library/pushout.cubist",
+      "sha256": "57c4acac77dd8009db3822f8666d2b17542bb80b2f4755114d12829b397025cf"
+    },
+    "quadratic_identities": {
+      "path": "archive/first-library/quadratic_identities.cubist",
+      "sha256": "3798390f22b31123955479fb02ec00c79538997bbc1f1d2dd115a481c54d613e"
+    },
+    "quotient_descent": {
+      "path": "archive/first-library/quotient_descent.cubist",
+      "sha256": "71a5c9d1223e683db5b6a7fe1f622fb6dc5977e924a79a52265076b5797b6f9e"
+    },
+    "quotient_group_universal": {
+      "path": "archive/first-library/quotient_group_universal.cubist",
+      "sha256": "1d2931e25ae2ea3fcffbf9d7efd6c5c7c3454a067c70f04b05e6321b2e5321ba"
+    },
+    "quotient_groups": {
+      "path": "archive/first-library/quotient_groups.cubist",
+      "sha256": "a9a5c68c5ad78082071975cd36a44260ba0775e5c46b354daa0b669e427259ec"
+    },
+    "quotient_operations": {
+      "path": "archive/first-library/quotient_operations.cubist",
+      "sha256": "b706390a56756df61ad2965a0a4df53f60e95563227c73fa5cdf19d9f1782af1"
+    },
+    "quotient_sets": {
+      "path": "archive/first-library/quotient_sets.cubist",
+      "sha256": "89424d6d0ce880b229a795a30e0cb9c0acbd596a04590ff6734abf26fa644d83"
+    },
+    "radix_arithmetic": {
+      "path": "archive/first-library/radix_arithmetic.cubist",
+      "sha256": "3a1493abe492698822fcae0593f145fa82a77f17afd0f4301f3d94d05d2afd85"
+    },
+    "radix_arithmetic_correct": {
+      "path": "archive/first-library/radix_arithmetic_correct.cubist",
+      "sha256": "0bbe1e60506f0f63a0cefe514cb4a23c164b690f4113f751e645d95d4ea37677"
+    },
+    "radix_binary_equivalence": {
+      "path": "archive/first-library/radix_binary_equivalence.cubist",
+      "sha256": "e762453b10e1022120fc53dc650d7be8bb2a76bf48df5cae09f4387d316d2aac"
+    },
+    "radix_decode": {
+      "path": "archive/first-library/radix_decode.cubist",
+      "sha256": "c4cc9a4641d07778646be2166e39bd6b5f9cba62fdedeede0274fe39809c4b36"
+    },
+    "radix_digit_laws": {
+      "path": "archive/first-library/radix_digit_laws.cubist",
+      "sha256": "422c283eb1474bee0657317627c7e3efe8c4ea7760109c8d3f8221543e918df3"
+    },
+    "radix_equivalence": {
+      "path": "archive/first-library/radix_equivalence.cubist",
+      "sha256": "3037348953b3865c08c9107e82fe9c75f5f80a70d740fbb85fb71dce6c4a5cba"
+    },
+    "radix_factorial": {
+      "path": "archive/first-library/radix_factorial.cubist",
+      "sha256": "a168f1cd7cf334a03fd4a22324e06c8f58c81dcb8761a41adcc28e7ff079e56c"
+    },
+    "radix_induction": {
+      "path": "archive/first-library/radix_induction.cubist",
+      "sha256": "cf98019639b42875091e2318a27847732f6055324c8360fc70437e3bcdb51849"
+    },
+    "radix_naturals": {
+      "path": "archive/first-library/radix_naturals.cubist",
+      "sha256": "0860a32fab6929bca2dc09e1b222f57e2c98297aa935490dd6432977191cb80f"
+    },
+    "radix_uniqueness": {
+      "path": "archive/first-library/radix_uniqueness.cubist",
+      "sha256": "49fd8facbbb4b18e79ac5c5cf23e67ba7305c1a4c4a834868f50cb64df64a9bb"
+    },
+    "radix_univalence_transfer": {
+      "path": "archive/first-library/radix_univalence_transfer.cubist",
+      "sha256": "08fc91635d9df6bc3817fa0bd3b5e067a195c4475a1b80601134aaaa95aa8480"
+    },
+    "ring_laws": {
+      "path": "archive/first-library/ring_laws.cubist",
+      "sha256": "8c971b3c425b7c7ec5b28ad630d78f6998da2327ef0cc07f3071fdc6ffb396d9"
+    },
+    "root_generated_fields": {
+      "path": "archive/first-library/root_generated_fields.cubist",
+      "sha256": "984b8c417e40a7657b0ef7be0ed3405628c5d20376e26bf9b7d5d3a54b0bcba8"
+    },
+    "sample_chains": {
+      "path": "archive/first-library/sample_chains.cubist",
+      "sha256": "e48cb4e1158b652cc7f2233a9af763dd7ef3414fd6ca7d5bca9d437aff25f68c"
+    },
+    "sample_condition_maps": {
+      "path": "archive/first-library/sample_condition_maps.cubist",
+      "sha256": "b929dadbb622d88325a1bce84a838b1e6b688d0b66fab3069d86276389066a50"
+    },
+    "sample_error_bounds": {
+      "path": "archive/first-library/sample_error_bounds.cubist",
+      "sha256": "ee34aff75b00059fd17cf5a6da51161335751ba64156dac63605c58f0fd5ae41"
+    },
+    "sample_join_conditions": {
+      "path": "archive/first-library/sample_join_conditions.cubist",
+      "sha256": "3c052400947272337acb5b6d043099e76ce3d5f7be9c121cb5f7c6824cfe9fe0"
+    },
+    "sample_magnitude": {
+      "path": "archive/first-library/sample_magnitude.cubist",
+      "sha256": "d5d4c2a635a23b3cb6fa9d7bff7f88333f78cafbcc93648cce914f436e6ab4c7"
+    },
+    "sample_magnitude_bounds": {
+      "path": "archive/first-library/sample_magnitude_bounds.cubist",
+      "sha256": "a49ac397d9bf7c0bf1880992237d936b2d0b428a4f422e01f74e6e0bcaf25937"
+    },
+    "sample_maps": {
+      "path": "archive/first-library/sample_maps.cubist",
+      "sha256": "996ac44f448e3ba2e706c4c0dd7884bbfc7521e5e36256b756cf246541000a3e"
+    },
+    "sample_refinement_tags": {
+      "path": "archive/first-library/sample_refinement_tags.cubist",
+      "sha256": "88db431ad58cb1c4c8bc1083425ddeddd73d6a4fb0daa09c906b236387884432"
+    },
+    "sample_relations": {
+      "path": "archive/first-library/sample_relations.cubist",
+      "sha256": "992f63d57cdd8078065c5c98acff54206fdb6367aa4fb5d75e4a2ab7fcd0a892"
+    },
+    "sample_subdivision_conditions": {
+      "path": "archive/first-library/sample_subdivision_conditions.cubist",
+      "sha256": "3741bfe79c8fdb3409af66fc7c9293f9ea1e3b2c3b3f73d168ffb8ffecbb2750"
+    },
+    "sample_subdivisions": {
+      "path": "archive/first-library/sample_subdivisions.cubist",
+      "sha256": "454c77caf9e40c64614e5ff92e7796dc86158ee10eb4ff3f5a259d8a72422fd4"
+    },
+    "sample_sum_laws": {
+      "path": "archive/first-library/sample_sum_laws.cubist",
+      "sha256": "5f0e47a4e603e5e0914cae65fd9cbb5702e3d1d952d7d16e80bdf7970539137b"
+    },
+    "sample_tagged": {
+      "path": "archive/first-library/sample_tagged.cubist",
+      "sha256": "ff1cb8dea4a28f9c9e45711430bd5e3a042678e94617c9a5a6a4d635024f8642"
+    },
+    "scalar_extension_finiteness": {
+      "path": "archive/first-library/scalar_extension_finiteness.cubist",
+      "sha256": "3e0bd9794f1123836f918c7a9e4231a2d440208405ae24e49fe87a9e0aebcf48"
+    },
+    "scalar_restriction": {
+      "path": "archive/first-library/scalar_restriction.cubist",
+      "sha256": "aba2a1e8846ba82b28ff670c47e9db2e660a21036dc81222c609493b82a265f5"
+    },
+    "schroeder_bernstein": {
+      "path": "archive/first-library/schroeder_bernstein.cubist",
+      "sha256": "32f6fe52244ce4f78dd9a283a4884188ad59e16f01b65618fb55c5cfdbff93a5"
+    },
+    "separability_base_change": {
+      "path": "archive/first-library/separability_base_change.cubist",
+      "sha256": "2a29272e38270d6599c74627dd7f76dd51b7085a5b1b1cf267f853d2d385c54e"
+    },
+    "separable_closed_targets": {
+      "path": "archive/first-library/separable_closed_targets.cubist",
+      "sha256": "985dedc4e9aaccadc6ba948e7cdd26c84e88dd6366f315b1ca96f7bc93e2572f"
+    },
+    "separable_divisors": {
+      "path": "archive/first-library/separable_divisors.cubist",
+      "sha256": "866be3a6ca87a178ccf67801452b8b03637f8b1444e51522c1c6fae65bdbda1e"
+    },
+    "separable_polynomials": {
+      "path": "archive/first-library/separable_polynomials.cubist",
+      "sha256": "e5bd046509296bf167f81a5b971012d687b40147e3e779daa91a9ece48464cb4"
+    },
+    "set_quotients": {
+      "path": "archive/first-library/set_quotients.cubist",
+      "sha256": "889c16ee23843b2ca5d64696c5191cee302f757bf7b9343d1d19495957a848a6"
+    },
+    "signed_integers": {
+      "path": "archive/first-library/signed_integers.cubist",
+      "sha256": "7f452d851eb2c5626ad6a6370072c92989343194698ba66929c9bb923ed31127"
+    },
+    "simple_algebraic_extensions": {
+      "path": "archive/first-library/simple_algebraic_extensions.cubist",
+      "sha256": "1e0df91f855f6e2561d3a8e073531fd5785d6d6786e87b88fe9ab29c66ad27c3"
+    },
+    "simple_extension_embeddings": {
+      "path": "archive/first-library/simple_extension_embeddings.cubist",
+      "sha256": "e2840c01803dbe1ad8145c9d2bd5863a569e6fcca166ce86ba11098bd9014013"
+    },
+    "span_exchange": {
+      "path": "archive/first-library/span_exchange.cubist",
+      "sha256": "fb0e580958c722a1b3d97a911c74ee811c1c9d81e461ffdbc497f0412ea4a288"
+    },
+    "span_subspace": {
+      "path": "archive/first-library/span_subspace.cubist",
+      "sha256": "69344ad4e0abb2a8964f5712f1f51b6c0148752531599cbfce56ab7848129cf7"
+    },
+    "spanning_subfamilies": {
+      "path": "archive/first-library/spanning_subfamilies.cubist",
+      "sha256": "d998264a060e607e08c9aa0f8ad8a39b0bb85170781351c17251397c65c2c9a3"
+    },
+    "splitting_fields": {
+      "path": "archive/first-library/splitting_fields.cubist",
+      "sha256": "c1ac6c1474743bd0a999fa185820e91f201a023955fa5ad232158c8ac10cb12f"
+    },
+    "structured_sets": {
+      "path": "archive/first-library/structured_sets.cubist",
+      "sha256": "77059fa64650906e069360cc09f9a6546c038b06b5aeb2d77e5440af04ba78d3"
+    },
+    "subdivision_join": {
+      "path": "archive/first-library/subdivision_join.cubist",
+      "sha256": "f51f68e052dcf86684d3525418f5b1bdbca541d14bf9e344bfd1ebbce411de1a"
+    },
+    "subdivision_join_conditions": {
+      "path": "archive/first-library/subdivision_join_conditions.cubist",
+      "sha256": "2cfc3f39c66656b9170be5b3e0278bd2840d507db0caf05887bc10317e2e4f34"
+    },
+    "subdivision_refinement": {
+      "path": "archive/first-library/subdivision_refinement.cubist",
+      "sha256": "0ebf70ef638e5b967c844c7c5ba6be14a8129fd55f3fa19a3356508a55470a94"
+    },
+    "subdivision_tagged_zip": {
+      "path": "archive/first-library/subdivision_tagged_zip.cubist",
+      "sha256": "15b643059de9d571b8f1675c9597a5bb49447e35db9710a26311948e14b2ce3e"
+    },
+    "subdivision_transport": {
+      "path": "archive/first-library/subdivision_transport.cubist",
+      "sha256": "ff281fbca1a9953190d54cf2ba1c469e04f4cbead81334ef1d6cda5aa9504faf"
+    },
+    "subfield_carriers": {
+      "path": "archive/first-library/subfield_carriers.cubist",
+      "sha256": "20240946e8e0e0b54d5f31f69f97f3945747f5ea0e9af5a146960d697d9c18e0"
+    },
+    "subfield_composita": {
+      "path": "archive/first-library/subfield_composita.cubist",
+      "sha256": "4b87ab0d5bf43a7ba05a0990d43ca2e053bfe429e920991a48488ee3dd6282c7"
+    },
+    "subfield_generation_steps": {
+      "path": "archive/first-library/subfield_generation_steps.cubist",
+      "sha256": "114bf80e0e424ae7d5207446eae994d79092f6f02bfdddb610fdac8e5d2d232e"
+    },
+    "subfield_image_orders": {
+      "path": "archive/first-library/subfield_image_orders.cubist",
+      "sha256": "42cf14c141d40f622e9c8ef6ad204284e92c16afefd45fba7432c8dd098180c6"
+    },
+    "subfield_images": {
+      "path": "archive/first-library/subfield_images.cubist",
+      "sha256": "b75da0e0b7297bca50a0b1e5261d73adebd8d0ce1ab807acc3640d3a576f0302"
+    },
+    "subfield_intersections": {
+      "path": "archive/first-library/subfield_intersections.cubist",
+      "sha256": "169daeb43a9c709b00d3837e086d54e5914d6ccb7e853b662244460d3130636e"
+    },
+    "subfield_preimages": {
+      "path": "archive/first-library/subfield_preimages.cubist",
+      "sha256": "f67f6ab7bcf8ae5cad88525403613bc5befec52fb8cfc56ae401287f4de442b9"
+    },
+    "subfield_transport": {
+      "path": "archive/first-library/subfield_transport.cubist",
+      "sha256": "f35f8b44a2a6eab6624e39f6fc800e23b75cba6b88dd293bbf0e841a56d6514c"
+    },
+    "subfields": {
+      "path": "archive/first-library/subfields.cubist",
+      "sha256": "32c3bdf9ff1c4330cb414bc72ba2dbb174437bece4e44e9107637bb458e9e2a6"
+    },
+    "subgroup_carriers": {
+      "path": "archive/first-library/subgroup_carriers.cubist",
+      "sha256": "e47befabf26a1ad18dc2318d61ed7c5025449315e454b677b5e46794cc020a13"
+    },
+    "subgroup_constructions": {
+      "path": "archive/first-library/subgroup_constructions.cubist",
+      "sha256": "6d4cde63325eb87547c4caff2f5122e883e092acdfd31441411da9b4cdd70871"
+    },
+    "subgroup_images": {
+      "path": "archive/first-library/subgroup_images.cubist",
+      "sha256": "fe1454c75beaa82540e7806a15da6513ea9955733690503446e3d7e75fed54c8"
+    },
+    "subgroups": {
+      "path": "archive/first-library/subgroups.cubist",
+      "sha256": "662d4e036f46e15d2c9d84075476483d5451ede221cd83ce8d67d17cdb745506"
+    },
+    "subspace_carriers": {
+      "path": "archive/first-library/subspace_carriers.cubist",
+      "sha256": "ce960b43d5703acca7a63eff2c87ae950fc2fe82c5144e29693ddfc853a4297c"
+    },
+    "surjections": {
+      "path": "archive/first-library/surjections.cubist",
+      "sha256": "73e830d3824ffec3e0ccd8f384842607e334e57218e660ce3188767d50542aa7"
+    },
+    "surjective_descent": {
+      "path": "archive/first-library/surjective_descent.cubist",
+      "sha256": "102b422175f67036e8e7a7e927a8b75228a69c101c475be2500d6aed758df2d5"
+    },
+    "suspension": {
+      "path": "archive/first-library/suspension.cubist",
+      "sha256": "653a3ca40a575b1cd224d14cad736e203408b6b195996c08580c1101dd4f3fc2"
+    },
+    "suspension_types": {
+      "path": "archive/first-library/suspension_types.cubist",
+      "sha256": "65425cd7fa6b863e3a736f54c59f971b05a9cc02ec59cf62d0fa69aff8863ac6"
+    },
+    "truncation": {
+      "path": "archive/first-library/truncation.cubist",
+      "sha256": "27648c9b19f0754dd7cf718446db9dfda2a37c6f2ca166f36cf9125d08dfa47d"
+    },
+    "uniform_curve_tags": {
+      "path": "archive/first-library/uniform_curve_tags.cubist",
+      "sha256": "c6a6624a02bd2b4601864d787c31cbfae56efa15329ad46db715a26baf3c617c"
+    },
+    "vector_arithmetic": {
+      "path": "archive/first-library/vector_arithmetic.cubist",
+      "sha256": "1d671365e132205457c2eff39693d490d04af0487c6164e41e9e61b29f563666"
+    },
+    "vector_basis_existence": {
+      "path": "archive/first-library/vector_basis_existence.cubist",
+      "sha256": "ba8b3661e7371c8bcc54af07a4ca662382193679b482c066529f4218cdcb2694"
+    },
+    "vector_spaces": {
+      "path": "archive/first-library/vector_spaces.cubist",
+      "sha256": "bd14797a23108523ad8073ca4342b845b7e50c6271242cd18bab09fa61118df6"
+    },
+    "vector_subspaces": {
+      "path": "archive/first-library/vector_subspaces.cubist",
+      "sha256": "ffd8ae1f9a42c88b1861a8c0d22de460c4cb84bc04947bdb2c61839068213d95"
+    },
+    "w": {
+      "path": "archive/first-library/w.cubist",
+      "sha256": "c5fd0c220a3049d0cfc3521e4dee8e8f3a0273df34fe267e09cbed147bba1c9b"
+    },
+    "zorn_chain_complete": {
+      "path": "archive/first-library/zorn_chain_complete.cubist",
+      "sha256": "74206c4d8c09f5697acd69d4ca113f8d2c0a035da32147b27a2b66dcaf445532"
+    }
   }
 }
