@@ -172,7 +172,7 @@ def close_tails_compose(
   obtain (leftBound, leftClose) := first;
   obtain (rightBound, rightClose) := second;
   let boundLeft :=
-    transport nat_le_add(rightBound, leftBound) along unat_add_comm(rightBound, leftBound) in (
+    transport unat_le_add(rightBound, leftBound) along unat_add_comm(rightBound, leftBound) in (
       (fun (n : UNat) => IndexLE(leftBound, n))
     );
   exact (
@@ -180,11 +180,11 @@ def close_tails_compose(
     (
       fun (n : UNat, large : IndexLE(leftBound + rightBound, n)) => composeClose(
         x(n), y(n), z(n),
-        leftClose(n, nat_le_trans(leftBound, leftBound + rightBound, n, boundLeft, large)),
+        leftClose(n, unat_le_trans(leftBound, leftBound + rightBound, n, boundLeft, large)),
         rightClose(
           n,
-          nat_le_trans(
-            rightBound, leftBound + rightBound, n, nat_le_add(leftBound, rightBound), large
+          unat_le_trans(
+            rightBound, leftBound + rightBound, n, unat_le_add(leftBound, rightBound), large
           )
         )
       )

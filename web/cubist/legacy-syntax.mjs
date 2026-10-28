@@ -125,12 +125,15 @@ export const reservedBindingRenaming = (sources, preferred = historicalRenaming,
 // The unary foundation's fixed relocation. Historical source keeps its
 // checked structure; only these declaration/module spellings move. The NUM0
 // alias module is bypassed by historicalModulePaths, not rewritten as itself.
+// The order lemmas from le_zero on were primes' until NT1 moved them to unat
+// (docs/roadmaps/archive-retirement.md).
 export const unaryNaturalRenaming = Object.freeze({nat:"unat",Nat:"UNat",
   ...Object.fromEntries([
     "zero_add","add_zero","add_succ","succ_injective","zero_ne_succ","is_zero",
     "add_assoc","add_comm","add_left_comm","add_interchange","add_cancel",
     "mul_zero","mul_succ","one_mul","mul_one","mul_comm","add_mul","mul_add",
     "mul_assoc","mul_cancel","trichotomy","le_refl","decide","is_set",
+    "le_zero","le_step","le_trans","le_total","le_succ_split","le_add","add_positive",
   ].map(name=>[`nat_${name}`,`unat_${name}`]))});
 
 // Used by the source migration as well as by the historical source reader.

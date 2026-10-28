@@ -97,10 +97,10 @@ def complex_converges_coordinates(
           ComplexClose(F, addF, lt, sequence(n), limit, epsilon),
           (
             realClose(
-              n, nat_le_trans(realBound, bound, n, index_sum_left(realBound, imagBound), large)
+              n, unat_le_trans(realBound, bound, n, index_sum_left(realBound, imagBound), large)
             ),
             imagClose(
-              n, nat_le_trans(imagBound, bound, n, index_sum_right(realBound, imagBound), large)
+              n, unat_le_trans(imagBound, bound, n, index_sum_right(realBound, imagBound), large)
             )
           )
         )
@@ -187,13 +187,14 @@ def complex_cauchy_coordinates(
           ComplexClose(F, addF, lt, sequence(m), sequence(n), epsilon),
           (
             realClose(
-              m, n, nat_le_trans(realBound, bound, m, index_sum_left(realBound, imagBound), largeM),
-              nat_le_trans(realBound, bound, n, index_sum_left(realBound, imagBound), largeN)
+              m, n,
+              unat_le_trans(realBound, bound, m, index_sum_left(realBound, imagBound), largeM),
+              unat_le_trans(realBound, bound, n, index_sum_left(realBound, imagBound), largeN)
             ),
             imagClose(
               m, n,
-              nat_le_trans(imagBound, bound, m, index_sum_right(realBound, imagBound), largeM),
-              nat_le_trans(imagBound, bound, n, index_sum_right(realBound, imagBound), largeN)
+              unat_le_trans(imagBound, bound, m, index_sum_right(realBound, imagBound), largeM),
+              unat_le_trans(imagBound, bound, n, index_sum_right(realBound, imagBound), largeN)
             )
           )
         )

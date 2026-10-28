@@ -43,9 +43,11 @@ test("the first proof and unat, trans included, derive in instruction mode, at t
   assert.deepEqual(derived, ["unat__add", "unat__mul", "unat__le", "unat__isLt", "unat__unat_zero_add",
     "unat__unat_add_zero", "unat__unat_add_succ", "unat__unat_add_assoc", "unat__unat_add_comm", "unat__unat_add_left_comm",
     "unat__unat_add_interchange", "unat__pred", "unat__unat_succ_injective", "unat__unat_is_zero", "unat__unat_zero_ne_succ",
-    "unat__unat_add_cancel", "unat__unat_mul_zero", "unat__unat_mul_succ", "unat__unat_one_mul", "unat__unat_mul_one",
-    "unat__unat_mul_comm", "unat__unat_add_mul", "unat__unat_mul_add", "unat__unat_mul_assoc", "unat__unat_mul_cancel",
-    "unat__Trichotomy", "unat__unat_trichotomy", "unat__unat_le_refl",
+    "unat__unat_decide", "unat__unat_add_cancel", "unat__unat_mul_zero", "unat__unat_mul_succ", "unat__unat_one_mul",
+    "unat__unat_mul_one", "unat__unat_mul_comm", "unat__unat_add_mul", "unat__unat_mul_add", "unat__unat_mul_assoc",
+    "unat__unat_mul_cancel", "unat__Trichotomy", "unat__unat_trichotomy", "unat__unat_le_refl", "unat__unat_le_zero",
+    "unat__unat_le_step", "unat__unat_le_trans", "unat__unat_le_total", "unat__unat_le_succ_split", "unat__unat_le_add",
+    "unat__unat_add_positive",
     "driver_first_proof__lt", "driver_first_proof__lt_succ", "driver_first_proof__exists_greater_number"]);
 });
 

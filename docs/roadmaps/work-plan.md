@@ -1019,7 +1019,7 @@ Each step lands in focused PRs under the review rule above.
       fallback in mid-computation can then go through the runtime.
    5. **The archive's number theory in the library**
       ([NT1–NT5](archive-retirement.md#number-theory-in-the-library)):
-      1. NT1: the unary order lemmas move to `unat`.
+      1. NT1: the unary order lemmas move to `unat`. **Done** on 2026-10-28.
       2. NT2 is EVAL7: primality, divisibility and Euclid over binary `Nat`.
          Every consumer of the archive's `euclid` moves to it, and the
          evaluator workloads and their acceptance move to the library Euclid.

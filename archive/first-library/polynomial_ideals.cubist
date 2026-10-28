@@ -98,7 +98,7 @@ def ideal_minimal_divides(
   let zero : r = polynomial_zero(K) {
     let impossible : PolynomialNonzero(K, r) -> Void {
       intro nr;
-      let below := nat_le_trans(
+      let below := unat_le_trans(
         polynomial_cutoff(K, g), polynomial_cutoff(K, r), d, minimal(r, memberR, nr),
         polynomial_cutoff_least(K, r, d, support)
       );
