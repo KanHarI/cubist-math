@@ -1,13 +1,14 @@
 // From tests/cubical-program.test.mjs: logical assumptions remain explicit,
-// minimal, and inspectable after native closure: introduction uses Truncate
-// and TruncateIntro, and innocent none.
+// minimal, and inspectable after native closure: excluded_and_choice uses LEM
+// and Choice, excluded LEM alone, and innocent none.
 
 import unat;
+import classical_axioms;
 use unat;
 
-def Mere(A : U1) := Truncate(U1, A);
+def excluded(A : U0, nn : (A -> Void) -> Void) : Trunc(U0, A) := LEM(U0, A, nn);
 
-def introduction(A : U1, a : A) := TruncateIntro(U1, A, a);
+def excluded_and_choice : ExcludedMiddle(U0) and AxiomOfChoice(U0) := (LEM(U0), Choice(U0));
 
 computable def innocent : 0 = 0 {
   exact refl(0);

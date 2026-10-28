@@ -36,8 +36,9 @@ test("a goal under a universe binder shows the variable by its bound", async () 
 });
 test("D6: a generic assumption is named once, whatever universes it is used at", async () => {
   const { program } = await generic();
-  assert.deepEqual(labels(program, "universe_generic__both"), ["LEM[Truncate]", "Truncate"]);
-  assert.ok(program.checker.assumptions.has("__assumption_LEM#"));
+  assert.deepEqual(labels(program, "universe_generic__both"), ["LEM"]);
+  assert.deepEqual(program.symbols.universe_generic__both.axioms, [program.checker.axioms.get("classical_axioms__LEM")]);
+  assert.ok(program.checker.assumptions.has(program.checker.axioms.get("classical_axioms__LEM")));
   assert.equal([...program.checker.assumptions.keys()].some(name => /_U\d+$/.test(name)), false);
 });
 test("univalence is one generic definition, used at U0 and U1", async () => {

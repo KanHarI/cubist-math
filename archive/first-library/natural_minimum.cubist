@@ -52,7 +52,7 @@ def natural_minimum_from_witness(
   );
   let least : forall k : UNat. P(k) -> le(m, k) {
     intro k, pk;
-    exact match nat_le_total(m, k) return le(m, k) {
+    exact match unat_le_total(m, k) return le(m, k) {
       left yes => yes;
       right smaller => absurd(noLess(k, smaller, pk));
     };

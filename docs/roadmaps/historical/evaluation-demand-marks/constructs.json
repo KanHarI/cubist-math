@@ -1,5 +1,5 @@
 {
- "description": "One closed example of each Cubist construct with a term to evaluate, for the evaluation demand marks note: its weak head on main 0b914137, and E324 where evaluation refuses an assumption. Run with probe.mjs constructs.",
+ "description": "One closed example of each Cubist construct with a term to evaluate, for the evaluation demand marks note: its weak head on main 0b914137, and E324 where evaluation refuses an assumption. Run with probe.mjs constructs. K2.5 restated the four assumption examples, B95 to B98, over the library’s axioms and an axiom of their own, in place of the legacy builtins over Truncate (2026-10-26 and 2026-10-28); a definition is abstracted over its assumptions, so each has a lambda for its weak head.",
  "setups": {
   "s1": "import unat;\nuse unat;\ndef seven := 7;",
   "s2": "import unat;\nuse unat;\ndef double_(n : UNat) := n + n;",
@@ -76,7 +76,8 @@
   "s73": "import unat;\nuse unat;\ndef simpa_example(n, m : UNat, h : n + 0 = m) : n = m + 0 {\n  simpa only [unat_add_zero] using h;\n}",
   "s74": "import hlevels;\ndef functions_into_nat(A : U0) : IsSet(U0, A -> UNat) {\n  hlevel;\n}",
   "s75": "import unat;\nuse unat;\ndef pointwise_path(A, B : U0, f, g : A -> B, h : (forall x : A. f(x) = g(x))) : f = g {\n  ext x;\n  exact h(x);\n}",
-  "s76": "import h1_truncation;\nimport paths_;\nuse unat;\ndef swap(p : Unit and UNat) := unpack p as (u, n) return UNat and Unit { typed(UNat and Unit, (n, u)); };\ndef swap_back(p : UNat and Unit) := unpack p as (n, u) return Unit and UNat { typed(Unit and UNat, (u, n)); };\ncomputable def swap_equivalence : Equiv(U0, Unit and UNat, UNat and Unit) {\n  exact (swap, swap_back, fun (p : Unit and UNat) => refl(p), fun (q : UNat and Unit) => refl(q),\n    fun (p : Unit and UNat) => refl(refl(swap(p))));\n}\ncomputable def swapped : (Unit and UNat) = (UNat and Unit) {\n  exact ua(U0, Unit and UNat, UNat and Unit, swap_equivalence);\n}"
+  "s76": "import h1_truncation;\nimport paths_;\nuse unat;\ndef swap(p : Unit and UNat) := unpack p as (u, n) return UNat and Unit { typed(UNat and Unit, (n, u)); };\ndef swap_back(p : UNat and Unit) := unpack p as (n, u) return Unit and UNat { typed(Unit and UNat, (u, n)); };\ncomputable def swap_equivalence : Equiv(U0, Unit and UNat, UNat and Unit) {\n  exact (swap, swap_back, fun (p : Unit and UNat) => refl(p), fun (q : UNat and Unit) => refl(q),\n    fun (p : Unit and UNat) => refl(refl(swap(p))));\n}\ncomputable def swapped : (Unit and UNat) = (UNat and Unit) {\n  exact ua(U0, Unit and UNat, UNat and Unit, swap_equivalence);\n}",
+  "s77": "def Former := axiom forall A : U0. U0;"
  },
  "constructs": [
   {
@@ -1188,23 +1189,23 @@
   {
    "id": "B95-assumption-intro",
    "group": "term",
-   "setup": "s11",
-   "term": "TruncateIntro(U0, UNat, 3)",
+   "setup": "s51",
+   "term": "LEM(U0, Unit, fun (no : Unit -> Void) => no(tt))",
    "whnf": "Lam",
    "refused": "E324"
   },
   {
    "id": "B96-assumption-former",
    "group": "term",
-   "setup": "s11",
-   "term": "Truncate(U0, UNat)",
+   "setup": "s77",
+   "term": "Former(Unit)",
    "whnf": "Lam",
    "refused": "E324"
   },
   {
    "id": "B97-assumption-lem",
    "group": "term",
-   "setup": "s40",
+   "setup": "s51",
    "term": "LEM(U0)",
    "whnf": "Lam",
    "refused": "E324"
@@ -1214,7 +1215,7 @@
    "group": "term",
    "setup": "s51",
    "term": "LEM(U0) = LEM(U0)",
-   "whnf": "Path",
+   "whnf": "Lam",
    "refused": "E324"
   },
   {
