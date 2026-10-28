@@ -3,7 +3,7 @@ import semirings;
 
 // The ring of differences of an additively cancellative commutative semiring
 // with decidable equality.
-// Its laws are proved once; unary and binary integers instantiate this construction.
+// Its laws are proved once; the binary integers instantiate this construction.
 section {{U < UU0}}(
   N : CommSemiring(U), decide : (forall a, b : N.R. Decidable(U, a = b)),
   cancel : (forall a, b, c : N.R. N.add(a, b) = N.add(a, c) -> b = c)

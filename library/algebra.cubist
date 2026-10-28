@@ -1,4 +1,5 @@
 import unat;
+import bnat;
 import hlevels;
 import h1_truncation;
 use unat;
@@ -120,11 +121,23 @@ theory Ring(U < UU0) extends additive_ : AbelianGroup(
   law mul_add(x, y, z : R) : x * (y + z) = x * y + x * z;
   law distrib_right(x, y, z : R) : (x + y) * z = x * z + y * z;
   def sub(x, y : R) : R := x + -y notation x - y;
-  // A natural number in the ring, which reads plain numerals in its
-  // notation: one added to itself n times (L2.10c).
-  def of_nat(n : UNat) : R := match n {
+  // A unary natural number in the ring: one added to itself n times.
+  def of_unat(n : UNat) : R := match n {
     zero => zero;
-    succ(k) => one + of_nat(k);
+    succ(k) => one + of_unat(k);
+  };
+  // A binary natural number in the ring, by doubling from its leading bit,
+  // which reads plain numerals in its notation (L2.10c). Its work and size
+  // grow with the number of bits; ring_numerals proves that it agrees with
+  // of_unat.
+  def of_bpositive(p : BPositive) : R := match p {
+    bp_one => one;
+    bp_even(q) => (one + one) * of_bpositive(q);
+    bp_odd(q) => one + (one + one) * of_bpositive(q);
+  };
+  def of_nat(n : BNat) : R := match n {
+    b_zero => zero;
+    b_positive(p) => of_bpositive(p);
   }
   notation numeral;
 }

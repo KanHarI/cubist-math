@@ -103,6 +103,29 @@ test("disposed WASM sessions cannot accidentally access a new session", t => {
   assert.throws(() => old.term("Unit"), /disposed/);
 });
 
+// The bridge's handle generation (cb_generation) moves on at every rollback
+// and commit, whether either had anything to move, and at nothing else; a
+// freed or unknown session has none.
+test("a session's handle generation moves on at each rollback and commit", t => {
+  const kernel = session(t), token = kernel.handle, generation = () => module._cb_generation(token);
+  const start = generation();
+  assert.ok(start > 0);
+  kernel.term("Unit");
+  module._cb_checkpoint(token);
+  kernel.term("Point");
+  assert.equal(generation(), start, "opening a checkpoint and making syntax move no handle");
+  module._cb_rollback(token);
+  assert.equal(generation(), start + 1);
+  module._cb_rollback(token);
+  assert.equal(generation(), start + 2, "a rollback with no checkpoint open counts too");
+  module._cb_checkpoint(token);
+  assert.equal(module._cb_commit_checkpoint(token), 1);
+  assert.equal(generation(), start + 3);
+  assert.equal(module._cb_generation(0), 0);
+  kernel.dispose();
+  assert.equal(generation(), 0);
+});
+
 test("named syntax preserves path binders and sharing across checks", t => {
   const k = session(t), syntax = new CubicalSyntax(k);
   const pt = T.path("i", two, left, left), p = T.variable("p");

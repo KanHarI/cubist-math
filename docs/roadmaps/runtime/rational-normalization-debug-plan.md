@@ -35,6 +35,19 @@ The targets gate neither the binary-rational API nor, by the same day's
 decision, the default `Z`/`Q` switch, both of which check folded normal
 forms. D2, and D3 for B2, are undecided.
 
+**Public rationals binary (2026-10-26).** NUM2's default switch made main's
+public `Z` and `Q` the binary `BInt` and `BQ`, and by the user's decision of
+the same day the unary integers and rationals were removed rather than
+kept. Every measurement of main's rationals and integers before that date
+is of the unary construction and stays as history. T6 is re-pointed to the
+public numbers they are now, and the probe's `unary` fixture became
+`public`, over the binary modules, since the unary rationals it measured no
+longer exist and their cost was a property of that construction. Measured
+with the re-pointed fixture on 2026-10-26: `rationals.(2/3)` normalizes in
+3,497,083 ticks to 97,457 nodes and `rationals.(0.5)` in 3,499,973 to
+97,459, as a binary value does (T3); `integers.additive_` in 84,076,155
+ticks to 2,083,046 nodes.
+
 Every measurement below was taken with the retained
 [probe](rational-normalization-debug-plan/probe.mjs): a fresh checked program
 per query, main's library only, a fixed query budget, a 600-second deadline,
@@ -42,8 +55,9 @@ no automatic budget increase, and graph metrics of the completed normal form
 (reachable handles including annotations, exact sharing preserved). Numbers
 from different queries are separate measurements, never an additive
 breakdown. The probe's two fixtures are inline, `binary` (the demand marks'
-`rational` source with this plan's further queries) and `unary` (main's
-public rationals and integers); a query checks the whole fixture that
+`rational` source with this plan's further queries) and `public` (main's
+public rationals and integers; named `unary` and over `UNat` until
+2026-10-26, as above); a query checks the whole fixture that
 defines its name. Every record of 2026-10-23 is in
 [`results.jsonl`](rational-normalization-debug-plan/results.jsonl) with its
 kernel and fixture hashes. Run the probe from the repository root after
@@ -352,7 +366,7 @@ waits on it.
 | T3 rational value, `bint_mul`, `bint_add`, the field's `one` | 3.5M ticks, 97k nodes | provisional: under 1M ticks and 20k nodes each, to be re-based from B2's first measurement; alpha-equal output wherever only the kernel changed |
 | T4 evaluator gates `moved_setness`, `moved_path` | 10M exhausted | unchanged from the roadmap; a library fix does not claim them |
 | T5 host | historical 309 s against a 30 s deadline | either reproduced and attributed, or recorded as not reproducible on `6d1bd75b` with the evidence in 1.1 |
-| T6 main's rationals: `rationals.(2/3)`, `rationals.(0.5)`, `integers.additive_` | 11.5M ticks, 265k nodes for a literal since B8, 70M and 1.12M before; 73M, 1.8M for the group | each full normal form under the fixed 10M diagnostic budget, `rationals.one` no larger than today; the group waits on its laws (1.7) |
+| T6 main's rationals: `rationals.(2/3)`, `rationals.(0.5)`, `integers.additive_` | binary since 2026-10-26: 3.5M ticks, 97k nodes for a literal, within this gate, its cost now T3's; 84M, 2.08M for the group. Unary before: 11.5M ticks, 265k nodes for a literal since B8, 70M and 1.12M before; 73M, 1.8M for the group | each full normal form under the fixed 10M diagnostic budget, `rationals.one` no larger than today; the group waits on its laws (1.7) |
 
 Since D1 (section 4) these are the targets of the full normal form, which
 `!!!` computes. The folded normal form of `!!` meets T1, T2 and T6 in D1's

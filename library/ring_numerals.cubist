@@ -1,0 +1,109 @@
+import algebra;
+import bnat_unary;
+
+// A ring reads numerals in binary (Ring.of_nat, by doubling) and keeps its
+// unary of_unat. They agree, so a numeral's element does not depend on its
+// representation; and any map from the binary naturals that preserves
+// zero, one, addition and multiplication sends n to the ring's numeral.
+section {{U < UU0}}(A : Ring(U)) {
+  computable def of_unat_add(m, n : UNat) :
+    of_unat(unat.(m + n)) = of_unat(m) + of_unat(n) := match m {
+      zero => sym(zero_add(of_unat(n)));
+      succ(k) => trans(
+        cong(fun (w : R) => one + w, of_unat_add(k, n)), sym(add_assoc(one, of_unat(k), of_unat(n)))
+      );
+    };
+
+  // Doubling is adding an element to itself.
+  computable def double_add(x : R) : (one + one) * x = x + x := trans(
+    distrib_right(one, one, x),
+    trans(cong(fun (w : R) => w + one * x, one_mul(x)), cong(fun (w : R) => x + w, one_mul(x)))
+  );
+
+  computable def of_bpositive_double(
+    q : BPositive, half : of_bpositive(q) = of_unat(bpositive_to_unat(q))
+  ) :
+    (one + one) * of_bpositive(q) = of_unat(unat.(bpositive_to_unat(q) + bpositive_to_unat(q))) := trans(
+      cong(fun (w : R) => (one + one) * w, half),
+      trans(
+        double_add(of_unat(bpositive_to_unat(q))),
+        sym(of_unat_add(bpositive_to_unat(q), bpositive_to_unat(q)))
+      )
+    );
+
+  computable def of_bpositive_unary(p : BPositive) :
+    of_bpositive(p) = of_unat(bpositive_to_unat(p)) := match p {
+      bp_one => sym(add_zero(one));
+      bp_even(q) => of_bpositive_double(q, of_bpositive_unary(q));
+      bp_odd(q) => cong(fun (w : R) => one + w, of_bpositive_double(q, of_bpositive_unary(q)));
+    };
+
+  computable def of_nat_unary(n : BNat) : of_nat(n) = of_unat(bnat_to_unat(n)) := match n {
+      b_zero => refl(zero);
+      b_positive(p) => of_bpositive_unary(p);
+    };
+
+  computable def of_unat_binary(n : UNat) : of_nat(bnat_of_unat(n)) = of_unat(n) := trans(
+    of_nat_unary(bnat_of_unat(n)), cong(of_unat, bnat_unat_roundtrip(n))
+  );
+
+  // Two is 1 + 1, and an even or odd binary number is 2 * m or 1 + 2 * m,
+  // by computation; so a map that preserves the operations doubles as
+  // of_nat does, and agrees with it.
+  computable def map_two(
+    g : BNat -> R, g_one : g(b_positive(bp_one)) = one,
+    g_add : (forall a, b : BNat. g(bnat_add(a, b)) = g(a) + g(b))
+  ) :
+    g(b_positive(bp_even(bp_one))) = one + one := trans(
+      g_add(b_positive(bp_one), b_positive(bp_one)),
+      trans(
+        cong(fun (w : R) => w + g(b_positive(bp_one)), g_one), cong(fun (w : R) => one + w, g_one)
+      )
+    );
+
+  computable def map_double(
+    g : BNat -> R, g_one : g(b_positive(bp_one)) = one,
+    g_add : (forall a, b : BNat. g(bnat_add(a, b)) = g(a) + g(b)),
+    g_mul : (forall a, b : BNat. g(bnat_mul(a, b)) = g(a) * g(b)), q : BPositive,
+    half : g(b_positive(q)) = of_bpositive(q)
+  ) :
+    g(b_positive(bp_even(q))) = (one + one) * of_bpositive(q) := trans(
+      g_mul(b_positive(bp_even(bp_one)), b_positive(q)),
+      trans(
+        cong(fun (w : R) => w * g(b_positive(q)), map_two(g, g_one, g_add)),
+        cong(fun (w : R) => (one + one) * w, half)
+      )
+    );
+
+  computable def of_bpositive_map(
+    g : BNat -> R, g_one : g(b_positive(bp_one)) = one,
+    g_add : (forall a, b : BNat. g(bnat_add(a, b)) = g(a) + g(b)),
+    g_mul : (forall a, b : BNat. g(bnat_mul(a, b)) = g(a) * g(b)), p : BPositive
+  ) :
+    g(b_positive(p)) = of_bpositive(p) := match p {
+      bp_one => g_one;
+      bp_even(q) => map_double(
+        g, g_one, g_add, g_mul, q, of_bpositive_map(g, g_one, g_add, g_mul, q)
+      );
+      bp_odd(q) => trans(
+        g_add(b_positive(bp_one), b_positive(bp_even(q))),
+        trans(
+          cong(fun (w : R) => w + g(b_positive(bp_even(q))), g_one),
+          cong(
+            fun (w : R) => one + w,
+            map_double(g, g_one, g_add, g_mul, q, of_bpositive_map(g, g_one, g_add, g_mul, q))
+          )
+        )
+      );
+    };
+
+  computable def of_nat_map(
+    g : BNat -> R, g_zero : g(b_zero) = zero, g_one : g(b_positive(bp_one)) = one,
+    g_add : (forall a, b : BNat. g(bnat_add(a, b)) = g(a) + g(b)),
+    g_mul : (forall a, b : BNat. g(bnat_mul(a, b)) = g(a) * g(b)), n : BNat
+  ) :
+    g(n) = of_nat(n) := match n {
+      b_zero => g_zero;
+      b_positive(p) => of_bpositive_map(g, g_one, g_add, g_mul, p);
+    };
+}

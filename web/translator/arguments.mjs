@@ -521,9 +521,11 @@ class ArgumentSolver {
     this.ambiguous.delete(slot.variable);
     return "done";
   }
-  // Why a constraint failed, in words.
-  mismatch({smaller, larger, origin}) {
-    const [found, wanted] = this.t.shownTogether([this.display(this.zonk(smaller)), this.display(this.zonk(larger))], this.scope);
+  // Why a constraint failed, in words: its own display, or a part of a
+  // message's whose `show` it is given.
+  mismatch({smaller, larger, origin}, show = null) {
+    const [found, wanted] = show ? [show(this.display(this.zonk(smaller))), show(this.display(this.zonk(larger)))]
+      : this.t.shownTogether([this.display(this.zonk(smaller)), this.display(this.zonk(larger))], this.scope);
     return origin.expected ? `the call has type ${found}, where ${wanted} is expected`
       : `${this.source(origin.slot.node)} has type ${found}, where its ${this.describe(origin.slot)} has type ${wanted}`;
   }
@@ -562,16 +564,18 @@ class ArgumentSolver {
   undetermined(slot) {
     if (slot.universe)
       return this.scope.unit.locate(Error(`Nothing determines the universe ${slot.parameter ?? "argument"} of ${this.called}: no argument's type bounds it, and the call's type depends on it. Give it explicitly.`), slot.node ?? this.call.fn);
-    const type = this.t.shown(this.display(this.zonk(slot.domain)), this.scope);
+    // The message's terms, its clash's too, are one display.
+    const message = this.t.message(this.scope), show = message.show;
+    const type = show(this.display(this.zonk(slot.domain)));
     const candidate = this.ambiguous.get(slot.variable), {called} = this, parameter = this.describe(slot);
     const escaping = this.escaping.get(slot.variable);
-    const clash = this.clashes.length ? ` (${this.mismatch(this.clashes[0])})` : "";
+    const clash = this.clashes.length ? ` (${this.mismatch(this.clashes[0], show)})` : "";
     const error = slot.kind === "argument"
       ? Error(`The argument ${this.source(slot.node)} of ${called} needs the type of its ${parameter}, ${type}, which mentions a hole nothing determines${clash}. Give the hole explicitly.`)
-      : candidate ? Error(`The ${parameter} of ${called} is not determined: ${this.t.shown(candidate.lower[0] ?? candidate.upper[0], this.scope)} fits, and so would ${candidate.lower.length ? "a larger" : "a smaller"} universe${clash}. Give it explicitly.`)
-      : escaping ? Error(`The ${parameter} of ${called} would be ${this.t.shown(this.display(escaping), this.scope)}, which mentions a variable bound inside an argument, out of its scope${clash}. Give it explicitly.`)
+      : candidate ? Error(`The ${parameter} of ${called} is not determined: ${show(candidate.lower[0] ?? candidate.upper[0])} fits, and so would ${candidate.lower.length ? "a larger" : "a smaller"} universe${clash}. Give it explicitly.`)
+      : escaping ? Error(`The ${parameter} of ${called} would be ${show(this.display(escaping))}, which mentions a variable bound inside an argument, out of its scope${clash}. Give it explicitly.`)
       : Error(`Nothing determines the ${parameter} of ${called}, of type ${type}: not the other arguments' types, nor the type expected of the call${clash}. Give it explicitly.`);
-    return this.scope.unit.locate(error, slot.node ?? this.call.fn);
+    return this.scope.unit.locate(message.resolve(error), slot.node ?? this.call.fn);
   }
   describe(slot) {return slot.parameter ? `parameter ${slot.parameter}` : `argument ${slot.index + 1}`;}
   source(node) {return this.scope.unit.source.slice(node.start, node.end).trim();}
@@ -586,21 +590,23 @@ class ArgumentSolver {
   // The inspector shows what each hole and omitted parameter became.
   record(n, term) {
     const {t, scope} = this;
-    const omitted = [];
+    // The omitted parameters, A := …, are one display, which writes their
+    // names.
+    const omitted = [], message = t.message(scope);
     for (const slot of this.slots) {
       if (!slot.variable || slot.kind === "argument") continue;
       // A universe is shown as the universe it is.
       const value = slot.universe ? T.universe(this.solution.get(slot.variable)) : this.zonk(T.variable(slot.variable));
-      const shown = slot.universe ? universeText(this.solution.get(slot.variable)) : t.shown(value, scope);
       if (slot.kind === "hole")
         t.reference(scope, {...slot.node, name: "_", expressionSite: true, role: "inferred argument",
-          description: `The ${slot.universe ? `universe ${slot.parameter ?? "argument"}` : this.describe(slot)} of ${this.called}, inferred: ${shown}.`}, value);
-      else omitted.push(`${slot.parameter} := ${shown}`);
+          description: `The ${slot.universe ? `universe ${slot.parameter ?? "argument"}` : this.describe(slot)} of ${this.called}, inferred: ${
+            slot.universe ? universeText(this.solution.get(slot.variable)) : t.shown(value, scope)}.`}, value);
+      else omitted.push(`${message.bind(slot.parameter)} := ${slot.universe ? universeText(this.solution.get(slot.variable)) : message.show(value)}`);
     }
     if (omitted.length && Number.isInteger(n.end))
       t.reference(scope, {name: ")", start: n.end - 1, end: n.end,
         ...(n.origin?{origin:n.origin}:{}),...(n.synthetic?{synthetic:true}:{}), expressionSite: true, role: "inferred arguments",
-        description: `Arguments of ${this.called} inferred: ${omitted.join(", ")}.`}, term);
+        description: message.text(`Arguments of ${this.called} inferred: ${omitted.join(", ")}.`)}, term);
   }
 }
 

@@ -190,7 +190,7 @@ test("the instruction kernel admits each declaration the benchmark counts", asyn
 test("benchmark shares source contracts without hiding invalid contracts or unrelated failures",async()=>{
   const sources={valid:"# test(refusal) # expect_error(E606) def bad : Void := tt;",
     invalid:"# test(wrong_contract) # expect_error(E343) def bad : Void := tt;",
-    assumption:"# test(assumption) # expect_axioms([]) def x := Truncate(U0,Unit);",
+    assumption:"# test(assumption) # expect_axioms([]) def x := axiom Unit;",
     unrelated:"def bad : Void := tt;"};
   const report=await benchmark({area:"tests",modules:Object.keys(sources),limitMs:budget(10000),readSource:async name=>sources[name]});
   assert.deepEqual(report.declarations.map(row=>[row.module,row.category]),

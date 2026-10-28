@@ -8,8 +8,11 @@ archive's retirement, as [Removing the legacy assumptions](#removing-the-legacy-
 plans. On 2026-10-26 its [steps](#steps) 1–4 were scheduled alongside the
 runtime phase, starting with `axiom` definitions. Step 1 is implemented
 (2026-10-26): excluded middle and choice are the library's axioms, and the
-legacy builtins are labelled `LEM[Truncate]` and `Choice[Truncate]`. Steps 2–4
-are not implemented yet, and step 5 waits for the archive's deletion. The
+legacy builtins are labelled `LEM[Truncate]` and `Choice[Truncate]`. Steps 2
+and 3 are implemented (2026-10-28): no fixture outside the archive invokes the
+legacy builtins itself, and the reference and guides teach `Trunc` and the
+library's axioms, keeping the legacy builtins to notes on the archive. Step 4
+is not implemented yet, and step 5 waits for the archive's deletion. The
 [ledger](h1-truncation-ledger.json) pins 12 checked public changes against
 `f4d1961`, rebased from `cc6b50f` on 2026-10-05, and records 5 more of two
 comparisons that step 1 retired, with the revision at which they last
@@ -489,6 +492,51 @@ transition land together.
    that construct legacy baselines run them as archive sources, or retire
    before confinement. Cost baselines invalidated by either transition are
    regenerated or marked historical in that transition.
+
+   **Done on 2026-10-28.** No fixture outside the archive invokes a legacy
+   builtin itself. Each is restated, keeping what it tests, or, where a
+   legacy builtin is its subject, reaches it through an archive source:
+   - `universe_generic_builtins` imports `classical_axioms`. `D4`'s
+     `LEM(UU0, …)` is refused as any generic definition's universe argument
+     is (E518), where the builtin's own check gave E407, and `D4_small`'s
+     `LEM(U1, …)` is accepted. `universe_generic`'s D6 case uses the
+     library's `LEM` at `U0` and `U1`, one assumption.
+   - `inductive_assumptions`' E507 cases put a path between two uses of
+     `LEM` or `Choice` where they put `Truncate`: in a parameter, a generic
+     parameter, a constructor's argument and a constructor's type.
+   - `program_assumptions` relies on `LEM` and `Choice` for its explicit and
+     minimal lists; its replay of the export asks which sources are the
+     library's, as the workbench does, so their labels survive the replay.
+     `assembly_generic_assumptions` lists the library's `Choice`, one kernel
+     entry at two levels, and prints `Trunc(U1, U0) : U1`, where the
+     archive's `Truncate` resized into `U0`. `inspection_axiom_labels`
+     inspects the library's `LEM`, and the legacy `‖A‖` notation hook is
+     checked on the archive's own `truncation.Mere`.
+   - The computability fixtures, `computability` and
+     `computability_evaluation`, and the command line's and the REPL's E324
+     probes import `h1_classical` in place of the archive's `classical`; they
+     depend on `LEM`, by `double_negation (h1_classical) → LEM`.
+   - Cases that used a legacy builtin as a convenient assumption use the
+     library's axioms, or an axiom of their own where a test's reader has no
+     library: the contract expectations of type dependencies and of an
+     imported or benchmarked `expect_axioms([])`, the nonempty and empty
+     contracts' assumptions in a type and in evidence, delta reduction over
+     an assumption, and the demand-marks ordering test. The demand-marks
+     corpus restates B95–B97 so, and records B98's weak head as its probe
+     finds it, a lambda, as for the others.
+   - Where a legacy builtin is the subject, an archive source invokes it:
+     the declarations tests of a builtin without a definition site and of
+     the assumption mark import the archive's `truncation`, and the label
+     check of `tests/test-contracts.test.mjs` its `classical`, as
+     `truncation_rebuilt_classical` does. The ledger tests that construct
+     legacy baselines read them from the archive (`legacyBaseline` in
+     `tests/proof-migration.test.mjs`), as step 1's replacement test does;
+     their pins and assumption lists are unchanged, and none retires.
+   - Expectations over archive modules keep the legacy labels: the six
+     `*_invalid_*` goldens and the mathematical tests.
+   - No cost baseline changes: none measures a migrated fixture, and step 1
+     marked the capture-bindings baselines' labels historical. The saved
+     benchmark reports (`web/benchmark-results*.json`) are dated snapshots.
 3. **Remaining reference and guides.** Complete the documentation migration
    after the signature, label and checked-example updates of step 1. The
    assumptions chapter sends truncation to the cubical chapter's declaration
@@ -497,6 +545,25 @@ transition land together.
    quick-reference example to import `classical_axioms` and use `Trunc`
    and `merely` before step 4 confines its old builtin calls. The guide lists
    `Trunc` and the two library axioms among its principles.
+
+   **Done on 2026-10-28** (`web/proof.html`'s example moved in step 1). The
+   cubical chapter declares the library's truncation (`#trunc`): `Trunc`'s
+   declaration quoted from `h1_truncation`, its point, `Trunc.squash` and
+   `mere_eliminate`, with a checked example. The assumptions chapter's
+   truncation section sends there and keeps the archive's `Truncate`, its
+   four assumptions and the `LEM[Truncate]` and `Choice[Truncate]` labels
+   to one note, for the archive's modules only; its universes section
+   states the axioms' universes, and that `Trunc` keeps its universe, with
+   library examples. The legacy builtins' accepted examples are gone. E406
+   and E407 are explained as the archive's legacy assumptions' errors, each
+   shown by one refused example in that note, and E403 by `ua` given one
+   argument too many. Step 4's refusal outside the archive will answer those
+   two examples first, so E406 and E407 then join E404, which only the
+   legacy builtins raise, in the code list without a shown example. `docs/guides/cubist.md` lists `Trunc`, `merely`,
+   `Trunc.squash` and `mere_eliminate` with `LEM` and `Choice` among the
+   library's principles, states `Trunc`'s universe, and keeps the archive's
+   truncation to one paragraph. The keyword and regression-contract guides
+   already name the legacy builtins only as the archive's.
 4. **Confinement.** `Truncate`, `TruncateIntro`, `TruncateProp`,
    `TruncateElim` and the builtin `LEM(U, …)` and `Choice(U, …)` are
    accepted only in archive modules, which the module reader distinguishes by
