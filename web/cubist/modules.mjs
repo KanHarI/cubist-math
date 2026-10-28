@@ -383,14 +383,14 @@ export const archiveModules = [
 export const libraryModules = ["nat", "unat", "bnat", "bnat_equality", "bnat_notation", "bnat_unary", "bnat_arithmetic", "bnat_order", "semirings", "unat_models", "bnat_semiring", "bnat_models", "bnat_transport", "bnat_peano", "bnat_recursion", "classical_axioms", "universe_automorphisms", "hlevels",
   "h1_truncation", "h1_classical", "contractible_maps", "univalence", "universe_smallness", "propositions",
   "finite_sets", "binary", "powersets", "continuum_hypothesis",
-  "lists", "lexemes", "quotients", "algebra", "ordered_algebra", "differences", "integers", "binary_integers", "fractions", "rationals", "binary_rationals", "squares"];
+  "lists", "lexemes", "quotients", "algebra", "ring_numerals", "ordered_algebra", "differences", "integers", "binary_integers", "fractions", "rationals", "binary_rationals", "squares"];
 
 // The Cubist sources the test suite checks (cubist-tests/), each a module the
 // workspace opens as proof.html?proof=NAME. tests/module-resolution.test.mjs
 // checks that every file is listed.
 export const cubistTestModules = [
   "arguments", "implicit_parameters", "patterns", "sum_match", "glue_", "face_restriction", "declared_match", "declared_induction", "automatic_clauses",
-  "automatic_clauses_groupoid", "automatic_clauses_without_hlevels", "quotient_effectiveness", "theories", "theories_without_hlevels", "theory_morphisms", "theory_sections", "theory_headers", "theory_variance", "theory_families", "theory_independent", "theory_use", "initial_models", "notation_views", "notation_operators", "notation_literals", "notation_printing", "notation_pilots", "algebra_models", "binary_natural_foundation", "default_naturals", "binary_semiring", "binary_transport", "binary_equality", "binary_recursion", "integer_examples", "binary_integer_ring", "rational_examples", "hlevel_lemmas", "hlevel_tactic", "hlevel_rules",
+  "automatic_clauses_groupoid", "automatic_clauses_without_hlevels", "quotient_effectiveness", "theories", "theories_without_hlevels", "theory_morphisms", "theory_sections", "theory_headers", "theory_variance", "theory_families", "theory_independent", "theory_use", "initial_models", "notation_views", "notation_operators", "notation_literals", "notation_printing", "notation_pilots", "algebra_models", "binary_natural_foundation", "default_naturals", "binary_semiring", "binary_transport", "binary_equality", "binary_recursion", "integer_examples", "binary_integer_ring", "ring_numeral_display", "numeral_display_scopes", "rational_examples", "hlevel_lemmas", "hlevel_tactic", "hlevel_rules",
   "hlevel_without_import", "h1_acceptance_levels", "h1_acceptance_formers", "h1_acceptance_instances",
   "h1_acceptance_paths", "program_types", "program_types_nat_as_name", "program_types_constructor_shadowing",
   "projections", "projections_archive_helpers", "let_statements", "path_operators", "universe_generic",

@@ -6,6 +6,11 @@ import {resolveBindingSyntax} from "./binding-syntax.mjs";
 import {retainOperandRecipe} from "./retained-notation.mjs";
 
 export const lexemeBindings=["cons","nil","digit","lower","upper","period","slash","underscore","plus","minus","parsed_value","parse_answer","UNat"];
+// A numeral rule reads a unary natural number, or a binary one where its
+// parameter is declared a BNat: the translator then builds the numeral's
+// bits (translate.mjs, rawNumeral).
+export const naturalReaders=["UNat","BNat"];
+const numeralReader=rule=>rule.type?.kind==="name"&&rule.type.name==="BNat"?"BNat":"UNat";
 
 export function retainNamedNotation(declaration,options) {
   if(declaration.kind!=="notation")throw new TypeError("Named notation retention needs a source notation declaration.");
@@ -23,10 +28,11 @@ export function retainNamedNotation(declaration,options) {
       ...(rule.type?{type:rule.type}:{}),start:rule.start,end:rule.end},{...options,owner:ruleOwner});
     const recipe=retainOperandRecipe({left:rule.leftView??null,right:rule.rightView??null},options.context,
       {...options,owner:[...ruleOwner,"recipes"],theory:name});
-    const readers=(key==="literal"?lexemeBindings:key==="numeral"?["UNat"]:[]).map(label=>{
+    const readers=(key==="literal"?lexemeBindings:key==="numeral"?[numeralReader(rule)]:[]).map(label=>{
       if(options.context.lookup(label).tag==="missing")throw Object.assign(key==="literal"
         ?Error(`A literal rule reads a Lexeme: import lexemes, which defines ${label}.`)
-        :Error("A numeral rule reads a unary natural number: import unat."),{offset:rule.start,sourceEnd:rule.end});
+        :Error(`A numeral rule reads a ${label==="BNat"?"binary":"unary"} natural number: import ${label==="BNat"?"bnat":"unat"}.`),
+      {offset:rule.start,sourceEnd:rule.end});
       return Object.freeze([label,resolveBindingSyntax({kind:"name",name:label,start:rule.start,end:rule.start},
         {...options,owner:[...ruleOwner,"reader",label]})]);
     });

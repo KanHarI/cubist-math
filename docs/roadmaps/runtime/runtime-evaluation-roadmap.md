@@ -402,7 +402,7 @@ scope, as in the work plan.
 | EVAL1 | One-pass REPL evaluation; implemented in #266 | EVAL0 | S |
 | NUM0 | Explicit UNat and canonical BNat with direct binary arithmetic; implemented | Current inductive declarations; archive evidence | M |
 | NUM1 | Natural semiring isomorphism, U0 path/transport, bitwise setness, comparison correctness, H1 binary Peano view, coherent strong recursion and factorial; implemented | NUM0; semiring and order laws; H1 dependent elimination; computational univalence | L |
-| NUM2 | New binary-backed Z and Q, ring/domain/field laws and default APIs. In progress: generic fractions (#279), binary integers (#280, #281) and the binary-rational API, released on folded normal forms (#283); the default `Z`/`Q` migration, generic numerals and rendering remain | NUM1; current quotients, rings and fractions | L |
+| NUM2 | New binary-backed Z and Q, ring/domain/field laws and default APIs. In progress: generic fractions (#279), binary integers (#280, #281) and the binary-rational API, released on folded normal forms (#283), and binary generic ring numerals; the default `Z`/`Q` migration and rendering remain | NUM1; current quotients, rings and fractions | L |
 | EVAL2 | Memoized full normalization; implemented | EVAL0; independent of EVAL1 | M |
 | EVAL3 | Closure evaluator for a specified data fragment. A first internal query for ordinary data (#289), which computes REPL and print value forms (REPL integration); higher sorts, patterns and typed readback remain | EVAL0 and semantic contract | L |
 | EVAL4 | Explicit evaluation stack and bounded runtime. #289's machine loop and a synchronous observation for the checker; a responsive snapshot for asynchronous use, memory calibration, closed-environment pruning and sharing of repeated calls remain | EVAL3 design; implement alongside it | M |
@@ -817,9 +817,9 @@ the kernel's normal-form depth (`K337`) after about 127M query ticks, and of
 `bq_decide(1/2, 2/3)`, whose certificate is negative, at its syntax depth
 (`K344`) after about 82M; their folded normal forms take 689,608 and 89,617.
 The new API is released on these folded normal forms (2026-10-26). Public
-`Z`/`Q`, generic ring numeral interpretation and numerical rendering still
-require their migration; no
-canonical signed or lowest-terms presentation is claimed.
+`Z`/`Q` and numerical rendering still require their migration; generic ring
+numerals are binary (below). No canonical signed or lowest-terms
+presentation is claimed.
 
 The original bounded follow-up probes localized the growth to full normalization of the
 open integer multiplication function within the quotient's cross-multiplication
@@ -829,6 +829,89 @@ deadline, reaching roughly 5.3 million terms. The `bint_mul` probe reproduced
 on merged main after #280, before these domain changes. Closed large integer
 products still normalize. These timings are diagnostic observations on one
 machine, not benchmark thresholds or a change to normal evaluation limits.
+
+**Generic ring numerals (2026-10-26).** `Ring.of_nat`, the derived
+operation marked `notation numeral`, now takes a `BNat` and doubles from the
+leading bit: `bp_even(q)` is `(one + one) * of_bpositive(q)` and `bp_odd(q)`
+is one more. The unary operation is kept as `of_unat`. When a theory's
+numeral operation takes the canonical `BNat`, the translator builds the
+numeral's bits directly (`binaryNatural` in `web/translator/translate.mjs`),
+so its size is the number of bits and the unary limit of 256 does not apply.
+[ring_numerals.cubist](../../../library/ring_numerals.cubist) proves, in any
+ring, that `of_nat` agrees with `of_unat` through the explicit conversions,
+and that a map from `BNat` preserving zero, one, addition and multiplication
+agrees with `of_nat`, as `bint_of_nat` does. A 128-bit numeral in a section
+over an arbitrary commutative ring computes at `binary_integers`. At
+`binary_rationals` each doubling also composes a nonzero-denominator
+certificate: a 64-bit numeral's folded normal form computes, and a 128-bit
+one stops at the syntax depth (`K344`). The rationals' own literal rule
+builds the value directly and is unaffected.
+A named notation's numeral rule over `BNat`, `numeral(n : BNat) := e`, reads
+the bits the same way. `bnat_numerals` in the import-free `bnat` module is
+one, so where `bnat_notation`'s literal reader is not imported, a binary
+value prints as `bnat_numerals.(n)`, which reads back as the same bits. A
+generic numeral, `CommRing.of_nat(A, n)` for a numeral `n`, prints as `A.(n)`
+when `A` reads numerals by its theory: a model variable, or a model whose
+module added no numeral or literal rule. It prints bare only where the
+selected model is that declared model. A model with rules of its own would
+read the text otherwise, so its numeral prints as the call (`theoryNumeral`
+in `web/cubical-source-text.mjs`). Before, a unary numeral printed as
+`CommRing.of_nat{{U}}(A, unat.(2))`.
+Every numeral or literal abbreviation, bare or `name.(n)`, now prints only
+where the scope it is printed for establishes that it reads back.
+`notationContext` (`web/translator/notation-context.mjs`) asks the scope
+what `name.(…)` selects there, through the elaborator's own resolution:
+`selectionTarget`, which `selected` (`web/translator/theories.mjs`) calls to
+decide the same question, on the scope's environment, where a model's
+opening is an alias of each name it opens; or, in a scope with a retained
+lexical context, `LexicalContext.selector`, deciding a slot or an opening by
+the scope's outcomes. A lookup costs a few map reads, never a walk of the
+environment. `selects`, `qualifies` and `readBack` in `sourceText` require a
+positive answer; where the scope cannot give one, or a context has no
+lookups, the term prints as written, a call or constructors. Every context
+that shows text is given a real scope: a declaration's own, the module's
+final one for terms shown after checking (the scope a definition appended
+to it reads, its uses applied), and contextual queries. A declaration's
+messages print before its scope is entered, in the selection its file-level
+uses make (`notationForUses`); after a use that opens a model, whose fields
+may hide any name but a named notation's, only named notations are trusted.
+Generated-Cubist displays read no environment and print explicit forms. A
+shadowed `unat` or `bnat_numerals` prints a value as its constructors, and
+a model variable whose name a named notation takes prints its numeral as
+the call; this also covers `unat.(n)` and the literal readers' qualifiers,
+which main printed by name alone. A model's name is no qualifier where the
+display writes that name for a variable, a binder or a dimension:
+`sourceTexts` (`web/cubical-source-text.mjs`) prints a display's texts, a
+proof step's locals, goal and term or a mismatch's two types together,
+recording each name as the printer writes it, and where a model qualifier
+it wrote is a name the texts also write for something else, prints them
+again with that name known, until none is. So a binder it leaves out, as an
+equality's coordinate, takes no name, and one inside a literal it prints
+as its parse does. A message that shows several terms, or whose prose binds
+a name, as hlevel's "for every m : Unit", is composed as one display
+(`message` in `web/translator/translate.mjs`): its terms and its prose's
+names are printed together. `tests/cubist-tests-inlined.mjs` numbers each
+display while it checks the Cubist test modules and refuses a message
+printed from two. Operators and a model's bare operators
+keep the name-only check
+([pr-318-todo](../../reports/pr-318-todo.md)).
+`tests/numeral-readback.test.mjs` combines each way of shadowing a reader's
+name (a named notation, a binder, `use`, an import, a section opening) with
+each numeral kind, and reads every printed text back on each surface: a
+print, a type mismatch, a `use` message, the elaboration view, a REPL and a
+contextual `typeof`. It also counts a printing scope's environment reads, so
+displays stay linear in the number of terms shown, classifies every form the
+printer handles or the core has by the binders it prints, checks that each
+display's names are exactly the variable, binder and dimension names its
+texts show, classifies every place the printer writes an abbreviation, and
+reads back a numeral under a path dimension of its reader's name, a proof
+step's goal under its locals, a literal in an equality, and a numeral in
+the success proof of a literal printed as its parse.
+[ring_numeral_display.cubist](../../../cubist-tests/ring_numeral_display.cubist)
+and [numeral_display_scopes.cubist](../../../cubist-tests/numeral_display_scopes.cubist)
+check these displays with only the algebra and the number modules imported,
+each read back, and the contracts check mixed bit patterns against the
+binary integers' literal reader.
 
 Construct `Z` from pairs of `BNat`, using the existing same-difference
 relation and quotient approach with binary addition and multiplication.
