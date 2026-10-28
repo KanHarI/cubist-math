@@ -1,0 +1,123 @@
+// Divisibility of public binary naturals, decided by division with
+// remainder (bnat_division): one division per decision, with no search
+// over quotients.
+import bnat_division;
+import nat;
+use nat;
+
+// d divides n when some q has q * d = n.
+computable def Divides(d, n : Nat) : U0 := exists q : Nat. q * d = n;
+
+// A positive divisor: the remainder is zero exactly when d divides n. A zero
+// remainder gives the quotient as the witness; any other refutes every
+// multiple (bnat_remainder_zero).
+computable def bpositive_divides_decide(d : BPositive, n : Nat) :
+  Decidable(U0, Divides(b_positive(d), n)) := match bnat_decide(bnat_divmod(n, d).2, b_zero) return Decidable(
+    U0, Divides(b_positive(d), n)
+  ) {
+    left no_remainder => left(
+      (
+        bnat_divmod(n, d).1,
+        trans(
+          sym(bnat_add_zero(bnat_mul(bnat_divmod(n, d).1, b_positive(d)))),
+          trans(
+            cong(bnat_add(bnat_mul(bnat_divmod(n, d).1, b_positive(d))), sym(no_remainder)),
+            bnat_divmod_correct(n, d).1
+          )
+        )
+      )
+    );
+    right remainder => right(
+      fun (multiple : Divides(b_positive(d), n)) => remainder(
+        bnat_remainder_zero(
+          d, multiple.1, bnat_divmod(n, d).1, bnat_divmod(n, d).2, bnat_divmod_correct(n, d).2,
+          trans(multiple.2, sym(bnat_divmod_correct(n, d).1))
+        )
+      )
+    );
+  };
+
+// Zero divides only zero.
+computable def divides_decide(d, n : Nat) : Decidable(U0, Divides(d, n)) := match d {
+    b_zero => match nat_decide(n, 0) return Decidable(U0, Divides(b_zero, n)) {
+      left zero_ => left((0, sym(zero_)));
+      right nonzero => right(
+        fun (multiple : Divides(b_zero, n)) => nonzero(
+          trans(sym(multiple.2), nat_mul_zero(multiple.1))
+        )
+      );
+    };
+    b_positive(p) => bpositive_divides_decide(p, n);
+  };
+
+computable def divides_refl(n : Nat) : Divides(n, n) := (1, nat_one_mul(n));
+
+computable def divides_transitive(d, m, n : Nat, dm : Divides(d, m), mn : Divides(m, n)) :
+  Divides(d, n) := (
+    mn.1 * dm.1,
+    trans(nat_mul_assoc(mn.1, dm.1, d), trans(cong(fun (x : Nat) => mn.1 * x, dm.2), mn.2))
+  );
+
+computable def divides_mul_left(k, d, n : Nat, dn : Divides(d, n)) : Divides(d, k * n) := (
+  k * dn.1, trans(nat_mul_assoc(k, dn.1, d), cong(fun (x : Nat) => k * x, dn.2))
+);
+
+// Divisibility of equal numbers, with the same witness.
+computable def divides_along(d, a, b : Nat, da : Divides(d, a), same : a = b) :
+  Divides(d, b) := (da.1, trans(da.2, same));
+
+computable def DividesFactorial(n : Nat) :
+  U0 := forall d : Nat. (d = 0 -> Void) -> d < succ(n) -> Divides(d, factorial(n));
+
+computable def divides_factorial_zero :
+  DividesFactorial(0) := fun (d : Nat, nonzero : d = 0 -> Void, small : d < 1) => match bnat_lt_succ_cases(
+    d, 0, small
+  ) return Divides(d, factorial(0)) {
+    left negative => absurd(bnat_lt_zero(d, negative));
+    right zero_ => absurd(nonzero(zero_));
+  };
+
+// (n + 1)! = (n + 1) * n!: a smaller d divides n!, and n + 1 itself.
+computable def divides_factorial_succ(n : Nat, below : DividesFactorial(n)) :
+  DividesFactorial(succ(n)) := fun (d : Nat, nonzero : d = 0 -> Void, small : d < succ(succ(n))) => divides_along(
+    d, succ(n) * factorial(n), factorial(succ(n)),
+    match bnat_lt_succ_cases(d, succ(n), small) return Divides(d, succ(n) * factorial(n)) {
+      left smaller => divides_mul_left(succ(n), d, factorial(n), below(d, nonzero, smaller));
+      right same => (
+        factorial(n),
+        trans(cong(fun (x : Nat) => factorial(n) * x, same), nat_mul_comm(factorial(n), succ(n)))
+      );
+    }, sym(nat_factorial_succ(n))
+  );
+
+// Every number from one to n divides n!.
+computable def divides_factorial(d, n : Nat, nonzero : d = 0 -> Void, bounded : d <= n) :
+  Divides(d, factorial(n)) := nat_peano(
+    U0, DividesFactorial, divides_factorial_zero, divides_factorial_succ, n, d, nonzero,
+    bnat_lt_succ_of_le(d, n, bounded)
+  );
+
+computable def factorial_positive(n : Nat) : 0 < factorial(n) := nat_peano(
+  U0, fun (k : Nat) => 0 < factorial(k),
+  comp(fun (i : Interval) => 0 < (nat_factorial_zero @ ~i), tt),
+  fun (k : Nat, positive : 0 < factorial(k)) => comp(
+    fun (i : Interval) => 0 < (nat_factorial_succ(k) @ ~i),
+    bnat_mul_positive(succ(k), factorial(k), bnat_zero_lt_succ(k), positive)
+  ), n
+);
+
+// No number above one divides both n and n + 1: n + 1 leaves remainder one.
+computable def divisor_not_consecutive(
+  d, n : Nat, above : 1 < d, dn : Divides(d, n), dsn : Divides(d, succ(n))
+) :
+  Void := match d {
+    b_zero => above;
+    b_positive(p) => bnat_zero_ne_one(
+      sym(
+        bnat_remainder_zero(
+          p, dsn.1, dn.1, 1, above,
+          trans(dsn.2, trans(bnat_succ_offset(n), cong(fun (x : Nat) => x + 1, sym(dn.2))))
+        )
+      )
+    );
+  };

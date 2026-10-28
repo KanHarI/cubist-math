@@ -2127,6 +2127,10 @@
    "summary": "Formal division, uniqueness, root bounds and Bezout are checked without extra axioms."
   },
   {
+   "path": "cubist-tests/prime_witnesses.cubist",
+   "summary": "The library's binary Euclid as values: the witnesses 2, 2, 3, 7, 5 and 11 for 0 through 5, a value form, the folded normal form with the search's certificate named, a prime found past its square root, and a divisibility decision carrying its quotient. Exact values are also checked in the binary Euclid source contracts."
+  },
+  {
    "path": "cubist-tests/printer_lint.cubist",
    "summary": "The printer's values and types of matches, inductions, binders and declared types, which `tests/printer-lint.test.mjs` lints: eliminators print as the match or induction that builds them."
   },
@@ -2419,6 +2423,10 @@
    "summary": "The algebraic hierarchy as [theories](../web/reference/theories.html): `Magma`, `UnitalMagma`, `Semigroup`, `Quasigroup`, `Loop`, `AssociativeQuasigroup`, `Monoid`, `CommMonoid`, `Group` (one inverse implements both quasigroup divisions), `AbelianGroup` (a group and a commutative monoid, sharing their monoid), `Ring` (an abelian group for addition and a monoid for multiplication on one set, with both distributive laws), `CommRing` (a ring with commutative multiplication, deriving right distributivity) and `Field` (a commutative ring with inverses of all but zero, and zero not one), each with its models, homomorphisms and isomorphisms. The natural numbers as a commutative monoid for addition and for multiplication. In any quasigroup, cancellation holds on both sides; in any commutative monoid, products regroup (`mul_left_comm`, `mul_right_comm`, `mul_interchange`); in any group, cancellation on both sides and the uniqueness of inverses; in any commutative ring, `x * zero = zero`, right distributivity and `neg(x) * y = neg(x * y)`."
   },
   {
+   "path": "library/binary_euclid.cubist",
+   "summary": "Euclid's theorem over binary `Nat`, `euclid : InfinitelyManyPrimes`: the least divisor of n! + 1 above one, with `nat`'s factorial, is a prime above n. Its witnesses for 0 through 5 are 2, 2, 3, 7, 5 and 11."
+  },
+  {
    "path": "library/binary_integers.cubist",
    "summary": "Binary integers `BInt` instantiate `differences` at the binary semiring, as the same-difference quotient of `BNat` pairs, with negation, addition, multiplication, the `binary_integers` commutative-ring model, decidable equality, zero not one, and an injective natural embedding preserving zero, one, addition and multiplication. Decimal and `0b` literals enter binary magnitudes directly. The shared no-zero-divisor proof is instantiated as `bint_mul_nonzero`; `bint_decide_zero` supplies compact nonzero certificates. Computed values remain quotient representatives; the public `Z` migration follows in NUM2."
   },
@@ -2435,6 +2443,10 @@
    "summary": "Decoding binary addition and multiplication agrees with unary arithmetic, by induction over the bits."
   },
   {
+   "path": "library/bnat_division.cubist",
+   "summary": "Division with remainder by a positive divisor, high bits first, with one comparison and at most one subtraction a bit (`bnat_divmod`), and its certificate: `q * d + r = n` and `r < d` (`bnat_divmod_correct`). A multiple of the divisor leaves remainder zero (`bnat_remainder_zero`). The bitwise difference with a borrow that it subtracts with, `bnat_sub`, is `a - b` for `b <= a`."
+  },
+  {
    "path": "library/bnat_equality.cubist",
    "summary": "Computed equality agrees with paths; bitwise equality decisions and setness through Hedberg, without unary magnitude conversion."
   },
@@ -2445,6 +2457,10 @@
   {
    "path": "library/bnat_notation.cubist",
    "summary": "Decimal and `0b` literal parsing and the `bnat` notation for arithmetic and order. Parsing builds the binary magnitude directly; unary glyph digits and character offsets never hold the magnitude."
+  },
+  {
+   "path": "library/bnat_order_laws.cubist",
+   "summary": "Order laws of binary naturals: a comparison reversed, what is not below is at or above, irreflexivity, positive products, the successor's place in the order, cancellation of a strict sum, monotone products, and the non-strict decision. Positive results keep the binary comparison's evidence; unary order refutes only impossible branches."
   },
   {
    "path": "library/bnat_order.cubist",
@@ -2491,6 +2507,10 @@
    "summary": "The ring of differences of any additively cancellative commutative semiring with decidable equality: the same-difference quotient, its ring operations and laws, decidable equality, an injective semiring embedding, compact zero-decision certificates, and no-zero-divisor laws from multiplicative cancellation and additive trichotomy. Unary and binary integers instantiate this shared construction."
   },
   {
+   "path": "library/divisibility.cubist",
+   "summary": "`Divides(d, n)` over public `Nat`, decided by one division with remainder (`divides_decide`): a zero remainder gives the quotient as the witness, and any other refutes every multiple. Reflexivity, transitivity and multiples; every number from one to n divides n! (`divides_factorial`), factorials are positive, and no number above one divides both n and n + 1 (`divisor_not_consecutive`)."
+  },
+  {
    "path": "library/finite_sets.cubist",
    "summary": "`Fin(n)`, the natural numbers strictly below `n`, with checked setness. Uses public binary `Nat`."
   },
@@ -2533,6 +2553,10 @@
   {
    "path": "library/powersets.cubist",
    "summary": "Generic proposition-valued `PowerSet(U, A) : next(U)` and binary `DecidablePowerSet(U, A) : U`, using `Binary` for characteristic functions, with checked setness of both. No identification between full and decidable powersets is assumed."
+  },
+  {
+   "path": "library/prime_numbers.cubist",
+   "summary": "`Prime(p)`, and the least divisor above one of a number above one, by trial division (`least_divisor`): candidates rise from 2 by `nat`'s strong recursion on their distance to the number, the first divisor ends the search, and past the square root the number is its own least divisor, with that bound's proof (`no_divisor_past_square`). A least divisor is prime (`least_divisor_prime`), so every number above one has a prime divisor (`prime_divisor`)."
   },
   {
    "path": "library/propositions.cubist",

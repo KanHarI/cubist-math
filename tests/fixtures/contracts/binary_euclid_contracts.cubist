@@ -1,0 +1,83 @@
+// EVAL7's binary division, divisibility, least divisor search and Euclid's
+// theorem, over public binary Nat.
+// Authority: docs/roadmaps/runtime/runtime-evaluation-roadmap.md#eval7-reduce-the-algorithms-work
+import binary_euclid;
+use nat;
+
+# test(binary_euclid.theorem)
+# expect_axioms([])
+computable def binary_euclid_theorem : InfinitelyManyPrimes := euclid;
+
+# test(prime_numbers.least_divisor)
+# expect_axioms([])
+computable def binary_least_divisor(m : Nat, above : 1 < m) :
+  LeastDivisor(m) := least_divisor(m, above);
+
+# test(divisibility.decide)
+# expect_axioms([])
+computable def binary_divides_decide(d, n : Nat) :
+  Decidable(U0, Divides(d, n)) := divides_decide(d, n);
+
+// The source algorithm's witnesses: the least divisor of n! + 1 above one.
+# test(binary_euclid.witness_0)
+evaluate euclid(0).1 expecting 2;
+# test(binary_euclid.witness_1)
+evaluate euclid(1).1 expecting 2;
+# test(binary_euclid.witness_2)
+evaluate euclid(2).1 expecting 3;
+# test(binary_euclid.witness_3)
+evaluate euclid(3).1 expecting 7;
+# test(binary_euclid.witness_4)
+evaluate euclid(4).1 expecting 5;
+# test(binary_euclid.witness_5)
+evaluate euclid(5).1 expecting 11;
+
+// The folded normal form (!!_) computes each witness's data in full and
+// keeps its certificates named (docs/roadmaps/historical/folded-normal-forms.md).
+# test(binary_euclid.normalize_3)
+evaluate euclid(3) expecting !!_;
+# test(binary_euclid.normalize_5)
+evaluate euclid(5) expecting (11, !!_);
+
+// Divisors by bits: a test helper reads a positive literal as BPositive.
+computable def positive_bits(n : Nat) : BPositive := match n {
+    b_zero => bp_one;
+    b_positive(p) => p;
+  };
+
+# test(bnat_division.exact)
+evaluate bnat_divmod(121, positive_bits(11)) expecting typed(Nat and Nat, (11, 0));
+# test(bnat_division.remainder)
+evaluate bnat_divmod(121, positive_bits(7)) expecting typed(Nat and Nat, (17, 2));
+# test(bnat_division.small_dividend)
+evaluate bnat_divmod(5, positive_bits(7)) expecting typed(Nat and Nat, (0, 5));
+# test(bnat_division.wide)
+evaluate bnat_divmod(12345678901234567890, positive_bits(27)) expecting typed(
+  Nat and Nat, (457247366712391403, 9)
+);
+# test(bnat_division.certificate)
+evaluate bnat_divmod_correct(121, positive_bits(11)) expecting !!_;
+# test(bnat_division.difference)
+evaluate bnat_sub(64, 37) expecting 27;
+
+// A decision is observed by its branch; a positive one carries the quotient.
+# test(divisibility.divides)
+evaluate divides_decide(11, 121) expecting left((11, _));
+# test(divisibility.not_divides)
+evaluate divides_decide(7, 121) expecting right(_);
+# test(divisibility.zero_divides_zero)
+evaluate divides_decide(0, 0) expecting left((0, _));
+# test(divisibility.zero_divides_only_zero)
+evaluate divides_decide(0, 5) expecting right(_);
+
+// The search stops at the first divisor, or past the square root.
+# test(prime_numbers.composite)
+evaluate least_divisor(91, tt).1 expecting 7;
+# test(prime_numbers.prime)
+evaluate least_divisor(97, tt).1 expecting 97;
+# test(prime_numbers.even)
+evaluate least_divisor(1024, tt).1 expecting 2;
+// The divisor's certificate is the division's quotient; the minimality
+// certificate is a function, observed here by its weak head.
+# test(prime_numbers.square)
+evaluate least_divisor(121, tt) expecting (11, tt, !!_, !_);
