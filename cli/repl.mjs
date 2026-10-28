@@ -145,10 +145,14 @@ async function execute(line) {
     const file = value.endsWith(".cubist"), imports = checkedReader({ file, value });
     const source = file ? await readFile(resolve(value), "utf8") : await imports(value);
     const main = file ? moduleOfFile(value) : value;
-    program?.dispose(); view = null; binding = null; checked = null;
-    program = new CubicalProgram(module, imports, { optimizations });
-    const result = await program.check(source, main);
-    checked = { file, value, source, main };
+    // The new program is installed once its check returns: a check that
+    // throws, or whose instance fails, leaves the last one as it was.
+    const next = new CubicalProgram(module, imports, { optimizations });
+    let result;
+    try { result = await next.check(source, main); }
+    catch (error) { next.dispose(); throw error; }
+    program?.dispose(); view = null; binding = null;
+    program = next; checked = { file, value, source, main };
     // Each failure on a line of its own, with its code (web/diagnostics.mjs).
     if (!result.complete) throw Object.assign(Error(result.gaps.map(gap => diagnosticLine({ code: gap.code, message: gap.reason,
       declaration: gap.name && (gap.module === main ? gap.name : `${gap.module}.${gap.name}`) })).join("\n") || `${main} did not check.`), { lines: true });

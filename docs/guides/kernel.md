@@ -1078,10 +1078,16 @@ instance ends at its next declaration, and a runtime query on it
 the proof again, and replay the REPL session's entries on the new one, each
 as the entry it was. The reply to the request that failed says what was
 restored and what was not: a proof that no longer checks completely, and
-entries that could not be replayed. The worker keeps the proof's contextual
-scopes as revoked as they were, and clones each reply before sending it, so
-that a part read lazily, as a check's steps, reads the kernel where a failure
-is caught. The workbench's worker reports the failure as fatal and closes, as
-for a trap.
+entries that could not be replayed. Nothing is installed before it has
+succeeded: a check's program only once it answers, and a session rebased
+onto a checked-again proof only once its replay ends, which a failed instance
+stops, so that the whole session is replayed on the new one. The worker keeps
+the proof's contextual scopes as revoked as they were, and clones each reply
+before sending it, so that a part read lazily, as a check's steps, reads the
+kernel where a failure is caught. Before it replaces an instance it says so
+to the request that failed, with the progress of checking the proof again;
+the proof page then watches that request as a check, and reads its contexts
+again from the new instance once it answers. The workbench's worker reports
+the failure as fatal and closes, as for a trap.
 
 Full cubical canonicity for every implemented constructor is not claimed by this project.

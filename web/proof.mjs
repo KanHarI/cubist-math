@@ -129,6 +129,9 @@ const history = [];
 let sourceMode = restoring?.sourceMode ?? "read", generationSerial = 0;
 const generatedSources = new Map();
 let contextual=null;
+// Whether the last check collected contextual scopes, for the contexts read
+// again after the worker replaces its kernel instance.
+let checkedCollect = false;
 $("editor").value = example;
 // The source is readable at once, before the kernel loads and checks it;
 // the check replaces this view with one whose names are inspectable.
@@ -275,12 +278,38 @@ function request(command, args = {}) {
     contextual?.invalidate("The checking worker stopped. Reload and check the source to open a new context.");
     refreshStatus();
   });
+  let restarted = null;
   const result = currentWorker.request(command, args, progress => {
     watchdog.progress(progress);
     checkingProgress(progress);
+  }, () => {
+    // The worker replaces a failed kernel instance and checks the proof again
+    // before it answers: the request is watched as a check from here on.
+    watchdog.recovering();
+    restarted = kernelRestarting();
   });
   refreshStatus();
-  return result.finally(() => { watchdog.stop(); refreshStatus(); });
+  return result.finally(() => {
+    watchdog.stop(); refreshStatus();
+    if (restarted !== null && worker === currentWorker) kernelRestarted(command, restarted);
+  });
+}
+// A replaced kernel instance's contexts, scope IDs and generated declarations
+// are the old instance's: the page drops what it holds of them when the worker
+// says it is replacing the instance, and reads them again from the new one
+// once it answers. A check that failed so is reported by check itself.
+function kernelRestarting() {
+  const token = contextual?.invalidate("The kernel was restarted. Select a context again when it is ready.");
+  generatedSources.clear();
+  if (checkedKernelView) checkedKernelView = { ...checkedKernelView, contextEntry: null };
+  $("open-context-repl").hidden = true;
+  return token;
+}
+function kernelRestarted(command, token) {
+  if (command === "check" || !last) return;
+  contextual?.checked(last, token, checkedCollect);
+  renderSource();
+  if (sourceMode === "generated") showGeneration();
 }
 
 let focusOffset = query.has("offset") && Number.isSafeInteger(Number(query.get("offset"))) ? Number(query.get("offset")) : null, queuedExample = null;
@@ -313,6 +342,7 @@ async function check({keepInspection=false}={}) {
     const result = await request("check", { source, module: proofId, place, optimizations: compilerOptimizations(),collectScopes });
     last = result;
     contextual?.checked(result,contextVersion,collectScopes);
+    checkedCollect = collectScopes;
     generationSerial++;
     generatedSources.clear();
     $("generated-source").replaceChildren();

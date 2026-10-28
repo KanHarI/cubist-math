@@ -82,3 +82,17 @@ test("a message that cannot be posted releases its pending request", async () =>
   await assert.rejects(client.request("check"), /cannot clone/);
   assert.equal(client.pendingCount, 0);
 });
+
+// The worker says it is replacing a failed kernel instance before it answers
+// the request that failed; the announcement is no answer.
+test("a recovery announcement reaches its request and settles nothing", async () => {
+  const native = worker(), client = new WorkerRequests(native), announced = [];
+  const pending = client.request("inspect", { binding: "x" }, undefined, () => announced.push("recovering"));
+  native.receive({ ready: true });
+  await client.ready;
+  native.receive({ id: 1, recovering: true });
+  assert.deepEqual(announced, ["recovering"]);
+  assert.equal(client.pendingCount, 1);
+  native.receive({ id: 1, error: { message: "failed, and restarted" } });
+  await assert.rejects(pending, /failed, and restarted/);
+});

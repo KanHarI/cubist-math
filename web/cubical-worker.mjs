@@ -76,13 +76,14 @@ async function checkProof(args, onProgress = () => {}) {
 // cubical-kernel.mjs): what was built on it is dropped, and built again on a
 // new instance. The proof is checked again, unless its own check failed, and
 // a REPL session replays the entries that extended it, each as the entry it
-// was (ReplSession.rebase). The contexts open on the old program close.
+// was (ReplSession.rebase), the check reporting its progress to
+// `onProgress`. The contexts open on the old program close.
 // Contextual scopes stay as they were: revoked ones stay revoked, and a
 // revocation during the rebuild holds, as during a check; the rebuild is no
 // edit, so it revokes nothing itself, not even a check queued behind it. If
 // the new instance fails too, nothing is built on it. Returns what was
 // restored, and what not, to say (restartNote).
-async function recover() {
+async function recover(onProgress) {
   const scopes = program?.scopeReady === true;
   closeContexts();
   const epoch = contextEpoch, source = checked ? "The proof" : null;
@@ -91,7 +92,7 @@ async function recover() {
   module = await createCubical();
   let rechecked = null;
   try {
-    if (checked) ({ next: program, result: rechecked } = await checkProof(checked));
+    if (checked) ({ next: program, result: rechecked } = await checkProof(checked, onProgress));
     if (replayed && fresh) session = await replayed.rebase(sessionProgram = freshProgram());
     else if (replayed && program) session = await replayed.rebase(program, programMain);
   } catch { /* a failure here is the new instance's, read below */ }
@@ -102,13 +103,20 @@ async function recover() {
   if (program) program.scopeReady &&= scopes && epoch === contextEpoch;
   return restartNote({ source, rechecked, replayed: replayed !== null, session });
 }
+// A check's program is installed only once its reply is made (handle): a
+// check that fails, or whose reply cannot be made, leaves the proof as it
+// was, as the page does.
+let staged = null;
+function install({ next, args, epoch }) {
+  program?.dispose(); program = next; programMain = args.module ?? "current"; checked = args;
+  // An edit or a newer submitted check invalidates these contexts even
+  // when it arrived while this check was loading an import.
+  if (epoch !== contextEpoch) program.scopeReady = false;
+}
 async function run({ data: { id, command, args } }, epoch) {
   if (command === "check") {
     const { next, result } = await checkProof(args, progress => self.postMessage({ id, progress }));
-    program?.dispose(); program = next; programMain = args.module ?? "current"; checked = args;
-    // An edit or a newer submitted check invalidates these contexts even
-    // when it arrived while this check was loading an import.
-    if (epoch !== contextEpoch) program.scopeReady = false;
+    staged = { next, args, epoch };
     return result;
   }
   if (command === "elaborate") {
@@ -157,10 +165,15 @@ async function handle(event, epoch) {
     try { reply = { id, error: structuredClone({ message: error.message, offset: error.offset, diagnostic: error.diagnostic }) }; }
     catch { reply = { id, error: { message: String(error?.message ?? error) } }; }
   }
-  const fault = moduleFault(instance);
+  const fault = moduleFault(instance), next = staged;
+  staged = null;
+  if (next && !fault && reply.result) install(next);
+  else next?.next.dispose();
   if (fault) {
-    if (command === "check") checked = null;
-    const note = await recover();
+    // The caller learns first that the instance is being replaced, and then
+    // how checking the proof again goes, as for a check.
+    self.postMessage({ id, recovering: true });
+    const note = await recover(progress => self.postMessage({ id, progress }));
     // A REPL entry's results end at the statement that failed, which says
     // so; any other command's result is dropped for the failure. Either way
     // the reply says what the replacement restored.

@@ -16,6 +16,8 @@ export class WorkerRequests {
       const waiting = this.#pending.get(data.id);
       if (!waiting) return;
       if (data.progress) { waiting.progress?.(data.progress); return; }
+      // The worker is replacing a failed kernel instance before it answers.
+      if (data.recovering) { waiting.recovering?.(); return; }
       this.#pending.delete(data.id);
       if (data.error) waiting.reject(Object.assign(new Error(data.error.message), data.error));
       else waiting.resolve(data.result);
@@ -28,11 +30,11 @@ export class WorkerRequests {
     };
   }
   get pendingCount() { return this.#pending.size; }
-  request(command, args = {}, progress) {
+  request(command, args = {}, progress, recovering) {
     if (this.#stopped) return Promise.reject(this.#stopped);
     const id = ++this.#serial;
     return new Promise((resolve, reject) => {
-      this.#pending.set(id, { resolve, reject, progress });
+      this.#pending.set(id, { resolve, reject, progress, recovering });
       this.ready.then(() => {
         if (!this.#pending.has(id)) return;
         try { this.worker.postMessage({ id, command, args }); }

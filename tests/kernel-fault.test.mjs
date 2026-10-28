@@ -230,3 +230,50 @@ test("a runtime query publishes nothing after its kernel instance fails", async 
   assert.throws(() => query.observeNow(), KernelFault);
   query.dispose();
 });
+
+// A rebase onto a program whose instance fails is no refusal of what it
+// replays: it throws, and returns no partial session, so that the session
+// it was asked of, whole, is what its owner replays on a new instance.
+test("a rebase stops at a failed instance, and the session it came from replays whole", async () => {
+  const module = await createCubical();
+  let failing = false;
+  for (const name of Object.keys(module).filter(name => name.startsWith("_cb_"))) {
+    const call = module[name];
+    module[name] = (...args) => {
+      if (failing) throw new RangeError("Maximum call stack size exceeded");
+      return call(...args);
+    };
+  }
+  const session = new ReplSession(new CubicalProgram(await createCubical(), sourceReader(), { collectReferences: false }));
+  await session.run("let saved := tt; let other := tt;");
+  const target = new CubicalProgram(module, sourceReader(), { collectReferences: false });
+  failing = true;
+  await assert.rejects(session.rebase(target), KernelFault);
+  assert.deepEqual(session.accepted.map(({ text }) => text), ["let saved := tt;", "let other := tt;"]);
+  const rebased = await session.rebase(new CubicalProgram(await createCubical(), sourceReader(), { collectReferences: false }));
+  assert.deepEqual(await rebased.run("typeof saved; typeof other;"), [{ kind: "type", text: "Unit" }, { kind: "type", text: "Unit" }]);
+});
+
+// A check is installed only once it returns: one whose instance fails, here
+// by overflowing the engine's stack while it checks, leaves the source
+// checked before, which the new instance checks again.
+test("a check whose instance fails leaves the command line's last source in place", async t => {
+  const directory = await mkdtemp(join(tmpdir(), "cubist-fault-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const lamps = `import unat;
+use unat;
+inductive Lamp { dark; lit; }
+def toggle(f : Lamp) : Lamp := match f { dark => lit; lit => dark; };
+def parity(n : UNat) : Lamp := match n { zero => dark; succ(m) => toggle(parity(m)); };
+`;
+  await writeFile(join(directory, "lamps.cubist"), `${lamps}def bright : Lamp := toggle(dark);\n`);
+  await writeFile(join(directory, "deeper.cubist"), `${lamps}def dim : Lamp := dark;\ndef deep : parity(2 * 200 + 100) = dark := refl(dark);\n`);
+  const cli = fileURLToPath(new URL("../cli/repl.mjs", import.meta.url));
+  const input = ["check lamps.cubist", "check deeper.cubist", "typeof bright;", "typeof dim;", "quit"].join("\n") + "\n";
+  const run = spawnSync(process.execPath, ["--stack-size=350", cli], { cwd: directory, input, encoding: "utf8", timeout: 120000 });
+  assert.equal(run.status, 0, run.stderr);
+  assert.match(run.stderr, /^E668: /m);
+  assert.match(run.stderr, /^The kernel was restarted\. The last source checked was checked again\.$/m);
+  assert.match(run.stdout, /^Lamp$/m);
+  assert.match(run.stderr, /^E343: Untranslated name: dim$/m);
+});

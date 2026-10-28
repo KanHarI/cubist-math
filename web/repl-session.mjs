@@ -145,13 +145,18 @@ export class ReplSession {
   // new kernel instance: what extended it is replayed, each statement as the
   // entry it was, repl_N, so that a later entry naming repl_N::x still finds
   // x though the queries between them are not run again. What no longer
-  // checks is dropped, and listed in `lost`.
+  // checks is dropped, and listed in `lost`. A failed kernel instance
+  // (KernelFault) is no refusal: the replay stops and throws it, so that no
+  // part of the session is installed, and this one, whole, is replayed on a
+  // new instance.
   async rebase(program, base = this.base) {
     const session = new ReplSession(program, { base, modules: this.modules });
     for (const { text, entry } of this.accepted) {
       const before = session.accepted.length;
       session.count = entry - 1;
       await session.statement(text);
+      const fault = moduleFault(program.kernel?.module);
+      if (fault) throw fault;
       if (session.accepted.length === before) session.lost.push(text);
     }
     session.count = this.count;
