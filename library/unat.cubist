@@ -106,6 +106,19 @@ computable def unat_is_zero(n : UNat) : U0 := match n {
 computable def unat_zero_ne_succ(n : UNat, p : 0 = succ(n)) :
   Void := comp(fun (i : Interval) => unat_is_zero(p @ i), tt);
 
+// Equality is decidable, by recursion on both numbers: 0 is no successor,
+// and a successor determines its predecessor.
+computable def unat_decide(m, n : UNat) : (m = n) or ((m = n) -> Void) := match m, n {
+    zero, zero => left(refl(0));
+    zero, succ(j) => right(unat_zero_ne_succ(j));
+    succ(i), zero => right(fun (p : succ(i) = 0) => unat_zero_ne_succ(i, sym(p)));
+    succ(i),
+    succ(j) => match unat_decide(i, j) return ((succ(i) = succ(j)) or ((succ(i) = succ(j)) -> Void)) {
+      left p => left(cong(succ, p));
+      right no => right(fun (p : succ(i) = succ(j)) => no(unat_succ_injective(i, j, p)));
+    };
+  };
+
 // Addition cancels: k + x = k + y gives x = y.
 computable def unat_add_cancel(k, x, y : UNat, p : k + x = k + y) : x = y := match k {
     zero => p;
@@ -232,4 +245,75 @@ computable def unat_trichotomy(a, b : UNat) : Trichotomy(a, b) := match a, b {
 computable def unat_le_refl(n : UNat) : n <= n := match n {
     zero => tt;
     succ(k) => unat_le_refl(k);
+  };
+
+// Only 0 is at most 0.
+computable def unat_le_zero(n : UNat, h : n <= 0) : n = 0 {
+  match n {
+    zero => {
+      rfl;
+    }
+    succ(k) => {
+      exact absurd(h);
+    }
+  }
+}
+
+// A bound can be raised by one.
+computable def unat_le_step(a, b : UNat, h : a <= b) : a <= succ(b) := match a, b {
+    zero, _ => tt;
+    succ(i), zero => absurd(h);
+    succ(i), succ(j) => unat_le_step(i, j, h);
+  };
+
+// Order is transitive.
+computable def unat_le_trans(a, b, c : UNat, ab : a <= b, bc : b <= c) : a <= c {
+  match a, b, c {
+    zero, _, _ => {
+      exact tt;
+    }
+    succ(i), zero, _ => {
+      exact absurd(ab);
+    }
+    succ(i), succ(j), zero => {
+      exact absurd(bc);
+    }
+    succ(i), succ(j), succ(k) => {
+      exact unat_le_trans(i, j, k, ab, bc);
+    }
+  }
+}
+
+// Order is total: of two naturals, the first is at most the second or
+// exceeds it.
+computable def unat_le_total(a, b : UNat) : (a <= b) or (b < a) := match a, b {
+    zero, _ => left(tt);
+    succ(i), zero => right(tt);
+    succ(i), succ(j) => unat_le_total(i, j);
+  };
+
+// A natural at most succ(b) is at most b or is succ(b).
+computable def unat_le_succ_split(a, b : UNat, h : a <= succ(b)) :
+  (a <= b) or (a = succ(b)) := match a, b {
+    zero, _ => left(tt);
+    succ(i), zero => right(cong(succ, unat_le_zero(i, h)));
+    succ(i),
+    succ(j) => match unat_le_succ_split(i, j, h) return (
+      (succ(i) <= succ(j)) or (succ(i) = succ(succ(j)))
+    ) {
+      left below => left(below);
+      right same => right(cong(succ, same));
+    };
+  };
+
+// Adding on the left does not decrease: b <= a + b.
+computable def unat_le_add(a, b : UNat) : b <= a + b := match a {
+    zero => unat_le_refl(b);
+    succ(k) => unat_le_step(b, k + b, unat_le_add(k, b));
+  };
+
+// A sum whose first summand is positive is positive.
+computable def unat_add_positive(a, b : UNat, h : 1 <= a) : 1 <= a + b := match a {
+    zero => absurd(h);
+    succ(k) => tt;
   };

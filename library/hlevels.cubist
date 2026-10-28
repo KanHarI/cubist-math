@@ -292,6 +292,14 @@ computable def subtype_has_level(
     U, n, A, B, hA, fun (a : A) => prop_has_level(U, n, B(a), hB(a))
   );
 
+// Elements of a subtype with equal first components are equal: their
+// second components lie in propositions along the path.
+computable def subtype_injective(
+  U < UU0, A : U, B : A -> U, hB : forall a : A. IsProp(U, B(a)), u, v : exists a : A. B(a),
+  p : u.1 = v.1
+) :
+  u = v := path i => (p @ i, prop_over(U, A, B, hB, u.1, v.1, p, u.2, v.2) @ i);
+
 // Being contractible is a proposition: given one contraction, A is a
 // proposition, so its centers and their contractions are.
 computable def is_contr_is_prop(U < UU0, A : U) : IsProp(U, IsContr(U, A)) {
@@ -396,38 +404,6 @@ computable def hedberg(U < UU0, A : U, decide : forall x, y : A. Decidable(U, x 
     }
   );
 
-// Natural numbers form a set, by Hedberg's theorem: equality is decided by
-// recursion on both numbers, since 0 is no successor and a successor
-// determines its predecessor (unat's unat_succ_injective).
-computable def unat_decide(m : UNat) :=
-  induction m as k return (forall n : UNat. (k = n) or ((k = n) -> Void)) {
-    zero => (fun (n : UNat) => induction n as j return ((0 = j) or ((0 = j) -> Void)) {
-        zero => typed((0 = 0) or ((0 = 0) -> Void), left(refl(0)));
-        succ unused => typed(
-          (0 = succ(j)) or ((0 = succ(j)) -> Void),
-          right(fun (p : 0 = succ(j)) => transport tt along p in unat_is_zero)
-        );
-      });
-    succ previous => (
-      fun (n : UNat) => induction n as j return ((succ(k) = j) or ((succ(k) = j) -> Void)) {
-        zero => typed(
-          (succ(k) = 0) or ((succ(k) = 0) -> Void),
-          right(fun (p : succ(k) = 0) => transport tt along sym(p) in unat_is_zero)
-        );
-        succ unused => match previous(j) return (
-          (succ(k) = succ(j)) or ((succ(k) = succ(j)) -> Void)
-        ) {
-          left p => typed(
-            (succ(k) = succ(j)) or ((succ(k) = succ(j)) -> Void),
-            left(cong(succ, typed((k = j), p)))
-          );
-          right no => typed(
-            (succ(k) = succ(j)) or ((succ(k) = succ(j)) -> Void),
-            right(fun (p : succ(k) = succ(j)) => no(unat_succ_injective(k, j, p)))
-          );
-        };
-      }
-    );
-  };
-
+// Natural numbers form a set, by Hedberg's theorem, since unat decides
+// their equality (unat_decide).
 computable def unat_is_set : IsSet(U0, UNat) := hedberg(U0, UNat, unat_decide);

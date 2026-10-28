@@ -7,27 +7,28 @@
 // parameter, in a constructor's argument, or in a definition one of them
 // uses, naming it, and nothing is admitted.
 // Each refusal names the assumption by its label, and the parameter or
-// argument that uses it, where the source writes it.
+// argument that uses it, where the source writes it. Each such type here is
+// a path between two uses of the library's excluded middle or choice.
 
 import unat;
 import classical_axioms;
 
-// Error: E507: InParameter's parameter t uses the assumption Truncate: a declared type's parameters
-//   and constructors cannot use assumptions, since its signature is closed.
-inductive InParameter(t : Truncate(U0, UNat)) {
+// Error: E507: InParameter's parameter t uses the assumption LEM: a declared type's parameters and
+//   constructors cannot use assumptions, since its signature is closed.
+inductive InParameter(t : LEM(U0) = LEM(U0)) {
   p;
 }
 
-// Error: E507: InGeneric's parameter t uses the assumption Truncate: a declared type's parameters
-//   and constructors cannot use assumptions, since its signature is closed.
-inductive InGeneric(U < UU0, A : U, t : Truncate(U, A)) {
+// Error: E507: InGeneric's parameter t uses the assumption LEM: a declared type's parameters and
+//   constructors cannot use assumptions, since its signature is closed.
+inductive InGeneric(U < UU0, t : LEM(U) = LEM(U)) {
   g;
 }
 
-// Error: E507: a's argument t uses the assumption Truncate: a declared type's parameters and
+// Error: E507: a's argument t uses the assumption Choice: a declared type's parameters and
 //   constructors cannot use assumptions, since its signature is closed.
 inductive InArgument {
-  a(t : Truncate(U0, UNat));
+  a(t : Choice(U0) = Choice(U0));
 }
 
 // Two uses of excluded middle, which are equal.
@@ -39,10 +40,10 @@ inductive InDefinition {
   d(t : Settled(Unit, fun (k : Unit -> Void) => k(tt)));
 }
 
-// Error: E507: r's type uses the assumption Truncate: a declared type's parameters and constructors
+// Error: E507: r's type uses the assumption LEM: a declared type's parameters and constructors
 //   cannot use assumptions, since its signature is closed.
 inductive InResult {
-  r : Truncate(U0, UNat) -> InResult;
+  r : (LEM(U0) = LEM(U0)) -> InResult;
 }
 
 inductive Clear {

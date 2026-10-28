@@ -247,7 +247,9 @@ def coordinate_injection_bound(K : AlgebraicField, n : UNat) :=
 
 def dimension_order_antisymmetric(m : UNat) :=
   induction m as k return (forall n : UNat. le(k, n) -> le(n, k) -> k = n) {
-    zero => fun (n : UNat, forward : le(0, n), backward : le(n, 0)) => sym(nat_le_zero(n, backward));
+    zero => fun (n : UNat, forward : le(0, n), backward : le(n, 0)) => sym(
+      unat_le_zero(n, backward)
+    );
     succ previous => fun (n : UNat) => induction n as j return (
       le(succ(k), j) -> le(j, succ(k)) -> succ(k) = j
     ) {

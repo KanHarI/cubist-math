@@ -14,6 +14,7 @@ import {lowerBindingDeclaration} from "./binding-module.mjs";
 import {retainedRuleOperation,appliedRetainedRule} from "./named-notation.mjs";
 import {tacticSite,expressionSite} from "../cubist/link-sites.mjs";
 import {sourceText} from "../cubical-source-text.mjs";
+import {betaReduce,contextDimensions} from "../display-naming.mjs";
 import {binaryLiteralSyntax} from "../cubist/binary-literals.mjs";
 import {T,substituteTerm,substituteDimension} from "./core.mjs";
 import {interval as I,face as F,latticeBudget} from "./lattice.mjs";
@@ -38,10 +39,10 @@ import {bareHole,fullInsideFolded,fullUnderFolded,isPattern,markInExpression,obs
 import {RuntimeError} from "../cubical-runtime.mjs";
 import {initialDeclarations,initialRefusal} from "./initial-models.mjs";
 import {unboundOperator,unselectedOperator,unselectedNegation,unboundNegation,literalUnread,literalRefused,literalUnevaluated,unselectedLiteral} from "./notations.mjs";
-import {lexemeKey,notationForScope} from "./notation-context.mjs";
+import {lexemeKey,notationForScope,notationForUses} from "./notation-context.mjs";
 import {notationOperand} from "./model-notation.mjs";
 import {enterExpressionScope} from "./expression-scopes.mjs";
-import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,sectionScope,selected,usesScope,sourceItemScope,qualifiedOperator,notationDeclaration,SELECTION,selectionName} from "./theories.mjs";
+import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,sectionScope,selected,usesScope,sourceItemScope,qualifiedOperator,notationDeclaration,SELECTION} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
 import {availablePrefix,bindQualifiedNames,constructorText,declaredIn,identityCollision,qualifiedNamesIn,unknownQualifiedName} from "./qualified-names.mjs";
 
@@ -340,13 +341,13 @@ export class Translator {
       if(selection.numeral.model) {
         const natural=selection.numeral.natural;
         const reads={kind:"name",name:operatorBinding("numeral"),...at};
-        const node=natural?{kind:"call",fn:reads,args:[{kind:"rawNumeral",value:Number(n.text),natural,...at}],...at}:reads;
+        const node=natural?{kind:"call",fn:reads,args:[{kind:"rawNumeral",value:Number(n.text),text:n.text,natural,...at}],...at}:reads;
         return this.term(node,scope,expected);
       }
       let natural=scope.alias(SELECTION,null);
       for(const [key,value] of selection.numeral.aliases)natural=natural.alias(key,value);
       const applied=appliedRetainedRule(this,natural,selection.numeral,
-        {kind:"rawNumeral",value:Number(n.text),natural:selection.numeral.aliases.get(selection.numeral.natural),
+        {kind:"rawNumeral",value:Number(n.text),text:n.text,natural:selection.numeral.aliases.get(selection.numeral.natural),
           ...at},null,n);
       return this.term(applied.node,applied.scope,expected);
     }
@@ -416,21 +417,23 @@ export class Translator {
     // as far as it was computed.
     if(isPattern(expected)) {
       const {shown,failed}=observe(expected,result.expression,()=>result.type,scope,this.demandQueries(scope,source));
-      const text=this.shownIn(shown,scope);
-      // A part's type is shown as it is, reducing nothing for display: its
-      // parameters may be large unreduced, as no comparison computed them.
-      if(failed?.type)throw typedMismatch(text,source(expected),this.shownIn(failed.type,scope,{reduce:0}),source(failed.pattern));
-      if(failed)throw valueMismatch(text,source(expected),this.shownIn(failed.shown,scope),source(failed.pattern));
-      return text;
+      if(!failed)return this.shownIn(shown,scope);
+      // The value and its failing part, as one display. A part's type is
+      // shown as it is, reducing nothing for display: its parameters may be
+      // large unreduced, as no comparison computed them.
+      const message=this.messageIn(scope);
+      if(failed.type)throw message.resolve(typedMismatch(message.show(shown),source(expected),message.show(failed.type,{reduce:0}),source(failed.pattern)));
+      throw message.resolve(valueMismatch(message.show(shown),source(expected),message.show(failed.shown),source(failed.pattern)));
     }
     // An expected value without either is an expression: both normal forms
     // are computed, stuck definitions folded, and compared by conversion.
     scope.spend("queries");
     const value=this.checker.verify(this.term(d.expected,scope));
+    const options={width:1000,limit:printedNodes,notation:notationForScope(scope)};
     if(!scope.equal(result.type,value.type))
-      throw Error(`The evaluated term has type ${this.shownIn(result.type,scope)}, but the expected value has type ${this.shownIn(value.type,scope)}.`);
+      throw Error(this.composed(scope,show=>`The evaluated term has type ${show(result.type)}, but the expected value has type ${show(value.type)}.`,options));
     if(!scope.equal(normal,value.normal))
-      throw Error(`The term evaluates to ${this.shownIn(normal,scope)}, not ${this.shownIn(value.normal,scope)}.`);
+      throw Error(this.composed(scope,show=>`The term evaluates to ${show(normal)}, not ${show(value.normal)}.`,options));
     return this.shownIn(normal,scope);
   }
   // The kernel queries a pattern's demands ask (evaluation.mjs's observe):
@@ -558,8 +561,11 @@ export class Translator {
       }
       // print(witness(t)); reads the witness off a closed truncation's
       // normal form, with its type (evaluation.mjs, L2.9b).
-      const {witness,type}=witnessOf(normal,result.type,scope,term=>this.shownIn(term,scope));
-      return {text:`${this.shownIn(witness,scope)} : ${this.shownIn(type,scope)}`,axioms:[]};
+      const message=this.messageIn(scope);
+      let found;
+      try {found=witnessOf(normal,result.type,scope,message.show);}
+      catch(error) {throw message.resolve(error);}
+      return {text:message.text(`${message.show(found.witness)} : ${message.show(found.type)}`),axioms:[]};
     }
     const result=scope.infer(this.term(d.value,scope)),axioms=result.native?.axioms??[];
     if(d.show==="typeof")return {text:this.shownIn(result.type,scope),axioms};
@@ -584,9 +590,8 @@ export class Translator {
   inNotation(scope,run) {
     // Messages and signature inspection use the actual retained selection,
     // including in captured operands, then return to the caller's context.
-    const previous=this.checker.notation,selected=scope.env.get(SELECTION);
-    if(previous?.selection!==(selected?.name??null)||previous?.selectionIdentity!==(selected?.identity??null))
-      this.checker.notation=notationForScope(scope);
+    const previous=this.checker.notation;
+    this.checker.notation=notationForScope(scope);
     try {return run();}
     finally {this.checker.notation=previous;}
   }
@@ -599,6 +604,42 @@ export class Translator {
   // reads alike in each, apart from every label any of them prints. Closed
   // terms share no variable, and are shown alone.
   shownTogether(terms,scope) {return this.checker.displayTexts?.(terms,scope?.dimensions,{width:1000})??terms.map(term=>sourceText(term));}
+  // A message that shows terms, as one display (sourceTexts): it stands for
+  // each term by `show(term)`, and writes each name its prose binds, as
+  // "for every m : Unit" or "A := …", by `bind(variable, name)`, which the
+  // terms then show by that name; `text` prints the terms the message holds,
+  // together, in its place, once the message is composed. A message that
+  // shows more than one term, or binds a name in prose, is composed so:
+  // printed apart, one term's text could read a name another writes
+  // (tests/numeral-readback.test.mjs). A search that refuses in words, as
+  // hlevel's, is given `show` and its refusals are printed with the message
+  // that reports them. `options` are displayTexts': shownIn's, by
+  // messageIn.
+  message(scope,{width=1000,limit=4000,notation,reduce=256}={}) {
+    const terms=[],names=new Map();
+    const show=(term,{reduce:own=reduce}={})=>`\u0001${terms.push({term,reduce:own})-1}\u0002`;
+    const bind=(variable,name=variable)=>{names.set(variable,name);return name;};
+    // Several parts of one message, as a list's rows, each its text: all
+    // their terms are printed at once.
+    const texts=templates=>{
+      const placeholders=/\u0001(\d+)\u0002/g,parts=templates.map(template=>typeof template==="string"?template:null);
+      const used=[...new Set(parts.flatMap(part=>part===null?[]:Array.from(part.matchAll(placeholders),match=>Number(match[1]))))];
+      if(!used.length)return templates;
+      const shown=used.map(k=>terms[k]);
+      const printed=this.checker.displayTexts?this.checker.displayTexts(shown.map(({term,reduce})=>reduce?betaReduce(term,reduce):term),
+        scope?.dimensions,{width,limit,reduce:0,names,locals:[...new Set(names.values())],...(notation?{notation}:{})})
+        :shown.map(({term})=>sourceText(term));
+      const at=new Map(used.map((k,index)=>[k,printed[index]]));
+      return templates.map((template,index)=>parts[index]===null?template:parts[index].replace(placeholders,(_,k)=>at.get(Number(k))));
+    };
+    const text=template=>texts([template])[0];
+    // An error whose message the parts hold, its terms printed.
+    const resolve=error=>{if(typeof error?.message==="string")error.message=text(error.message);return error;};
+    return {show,bind,text,texts,resolve};
+  }
+  messageIn(scope,{width=1000}={}) {return this.message(scope,{width,limit:printedNodes,notation:notationForScope(scope)});}
+  // A message composed at once: `compose(show, bind)` writes it.
+  composed(scope,compose,options) {const message=this.message(scope,options);return message.text(compose(message.show,message.bind));}
   translate(source, imported=new Map()) {
     const ast=qualifySource(parse(source),{revision:this.sourceRevision,module:this.moduleName});
     return this.translateSyntax(ast,source,imported);
@@ -633,9 +674,16 @@ export class Translator {
   // no printing or second source-resolution pass occurs at this boundary.
   translateSyntax(ast,source,imported=new Map()) {
     requireTestMode(ast,this.testMode);
+    // Modules are translated one after another, imports first. After one,
+    // terms shown later (inspection, a program's callers) print in its final
+    // scope (translateModule), with no notation selected.
     const notation=this.checker.notation;
-    try { return this.translateModule(ast,source,imported); }
-    finally { this.checker.notation=notation; }
+    let result;
+    try { return result=this.translateModule(ast,source,imported); }
+    finally {
+      this.checker.notation=result?{...this.moduleNotation,selection:null,selectionIdentity:null,selectionReceiver:null}:notation;
+      this.moduleNotation=null;
+    }
   }
   translateModule(ast,source,imported) {
     const module=this.unit({source});
@@ -741,7 +789,7 @@ export class Translator {
         if(conflict) { rejectDuplicate(d,conflict); continue; }
       }
       // Its messages print in what a file-level use selects for it (L2.10j).
-      if(this.checker)this.checker.notation={selection:selectionName(d.uses),selectionIdentity:null};
+      if(this.checker)this.checker.notation=notationForUses(env,this.checker,d.uses);
       // A theory, or an initial or free model (L2.6), is checked as the
       // declarations it expands to: the ones beyond its own are declarations
       // to count too.
@@ -874,8 +922,8 @@ export class Translator {
           const scope=new Scope(unit.with({references:null}),new Map(),env);
           const term=this.term({kind:"name",name:d.rule.text,start:d.rule.start,end:d.rule.end},scope,null);
           const type=scope.infer(term).type;
-          const shape=ruleShape(type,t=>this.shown(t,scope));
-          if(shape.refusal)throw unit.locate(noRule(d.rule.text,shape.refusal),d.rule);
+          const message=this.message(scope),shape=ruleShape(type,message.show,message.bind);
+          if(shape.refusal)throw unit.locate(message.resolve(noRule(d.rule.text,shape.refusal)),d.rule);
           // The rule's declaration, by its identity, not its spelling: a
           // definition, applied to any assumptions it uses, or an axiom.
           let head=term;
@@ -1004,6 +1052,20 @@ export class Translator {
       }
       settle(queue);
     }
+    // The module's final scope: the one a definition appended to it would
+    // read, its environment with all its file-level uses applied as an
+    // item's are, which opens the models they name. It is entered with no
+    // observer, so it records nothing. Where the uses cannot be applied (one
+    // was refused), only named notations, which no opening hides, are known.
+    const uses=(ast.items??[]).filter(item=>item.kind==="use").map(item=>item.model);
+    this.moduleNotation=null;
+    if(uses.length&&!uses.some(model=>refusedUses.has(model))) {
+      const unit=this.unit({source,references:null,steps:null,scopePoints:null}).declaration(this.declarationFuel);
+      try { this.moduleNotation=notationForScope(sourceItemScope(this,new Scope(unit,new Map(),env),{kind:"def",uses})); }
+      catch(error) {propagateElaborationStop(error);}
+      finally {unit.fuel.close();}
+    }
+    this.moduleNotation??=notationForUses(env,this.checker,uses,{select:false});
     return {declarations,env,directives,
       ...(this.collectGeneration?{generation:publications.map(group=>({id:group.id,declarations:group.members.map(({theory,generated,...syntax})=>syntax)}))}:{}),
       publications:publications.map(group=>({id:group.id,owner:group.owner,family:group.family,
@@ -1336,6 +1398,24 @@ export class Translator {
       throw Error("Numerals and induction require an imported UNat with zero and succ constructors. For binary Nat, use nat_peano.");
     return {type,zero:T.constructor(zero,type,"zero"),succ:T.constructor(succ,type,"succ")};
   }
+  // The library's canonical binary naturals (bnat), when `type` is theirs: a
+  // function from a nonnegative BigInt to its constructors, the least
+  // significant bit outermost, as bnat.cubist declares them. Otherwise null.
+  binaryNatural(scope,type) {
+    type=scope.nf(type);
+    const natural=type.tag==="Sort"&&type.signature==="bnat__BNat"?this.checker.inductives?.get(type.signature):null;
+    const positive=natural&&this.checker.inductives?.get("bnat__BPositive");
+    if(!positive)return null;
+    const positiveSort=T.sort("bnat__BPositive");
+    const constructor=(record,sort,name)=>T.constructor(record.constructors.findIndex(c=>c.source===name),sort,name);
+    return value=>{
+      if(value===0n)return constructor(natural,type,"b_zero");
+      let bits=constructor(positive,positiveSort,"bp_one");
+      for(const bit of value.toString(2).slice(1))
+        bits=T.app(constructor(positive,positiveSort,bit==="0"?"bp_even":"bp_odd"),bits);
+      return T.app(constructor(natural,type,"b_positive"),bits);
+    };
+  }
   // Both a source binding and a closed notation capture supply an elaboration
   // value. Resolve descriptors through the same path, without looking their
   // public label up again in the destination environment.
@@ -1474,10 +1554,17 @@ export class Translator {
         // A reader's input is lazy data over its own checked Nat. Building it
         // only when used preserves ignored-operand and refused-rule behavior.
         // No source/destination name is consulted, even under a binding adapter.
-        if(n.value>256)throw Error("Unary numerals are limited to 256. Import nat and use nat for binary naturals.");
         if(!n.natural)throw new TypeError("A numeral reader requires its captured natural-number type.");
         // The implicit type is not another authored occurrence at the token.
         const type=this.valueTerm({kind:"name",name:n.natural.source??"UNat"},n.natural,scope);
+        // A binary reader's numeral is built from its bits, so its size is
+        // their number and a large numeral never passes through UNat.
+        const bits=this.binaryNatural(scope,type);
+        if(bits) {
+          const value=bits(BigInt(n.text??n.value));
+          this.reference(scope,{...n,name:n.text??String(n.value)},value);return value;
+        }
+        if(n.value>256)throw Error("Unary numerals are limited to 256. Import nat and use nat for binary naturals.");
         const natural=this.naturalSignature(scope,type);
         let value=natural.zero;for(let i=0;i<n.value;i++)value=T.app(natural.succ,value);
         this.reference(scope,{...n,name:String(n.value)},value);return value;
@@ -1884,33 +1971,39 @@ export class Translator {
     const hints=first.hints.map(node=>{
       const term=this.term(node,scope,null),type=scope.infer(term).type;
       if(hlevelStatement(type))return {term,type};
+      const message=this.message(scope);
       if(!["Pi","LPi"].includes(scope.nf(type).tag))
-        throw Error(`The hint ${this.shown(term,scope)} has type ${this.shown(type,scope)}, which states no h-level.`);
-      const shape=ruleShape(type,t=>this.shown(t,scope));
-      if(shape.refusal)throw noRule(`The hint ${this.shown(term,scope)}`,shape.refusal);
+        throw Error(message.text(`The hint ${message.show(term)} has type ${message.show(type)}, which states no h-level.`));
+      const shape=ruleShape(type,message.show,message.bind);
+      if(shape.refusal)throw message.resolve(noRule(`The hint ${message.show(term)}`,shape.refusal));
       return {term,type};
     });
     const locals=this.hlevelLocals(scope);
     const proof=this.search(scope,"hlevel",at=>{
-      const search=new HLevelSearch(at,hints,term=>this.shown(term,at),locals,{rules:orderedHLevelRules(this.simpRegistry)});
+      // The search's refusals are printed with the message that reports
+      // them, as one display.
+      const message=this.message(at);
+      const search=new HLevelSearch(at,hints,message.show,locals,{rules:orderedHLevelRules(this.simpRegistry)});
       const stated=hlevelStatement(goal.target);
       try {
         if(stated)return search.prove(stated.level,stated.universe,stated.type);
         const path=goal.equality();
-        if(!path)throw Error(`hlevel proves IsContr, IsProp, IsSet or HasLevel, or an equality in a proposition; the goal is ${this.shown(goal.target,at)}.`);
+        if(!path)throw Error(message.text(`hlevel proves IsContr, IsProp, IsSet or HasLevel, or an equality in a proposition; the goal is ${message.show(goal.target)}.`));
         const sort=at.nf(at.infer(path.family).type);
         if(sort.tag!=="U")throw Error("hlevel needs the type of the equality's sides to be in a universe.");
         return T.app(T.app(search.prove(0,sort.level,path.family),path.left),path.right);
       } catch(error) {
         propagateElaborationStop(error);
-        if(!(error instanceof HLevelUnproved))throw error;
+        if(!(error instanceof HLevelUnproved))throw message.resolve(error);
         // Each variable the search introduced for a binder is shown by that
-        // binder's name.
-        const shown=(term,names)=>this.shown([...names].reduce((renamed,[name,binder])=>
-          substituteTerm(renamed,name,T.variable(stem(binder))),term),at);
-        const needs=error.chain.slice(1).map(step=>`${shown(step.type,step.names)} to be ${levelName(step.level)}`
-          +(step.binder?` for every ${stem(step.binder.name)} : ${shown(step.binder.domain,step.names)}`:""));
-        throw Error(`hlevel could not prove ${this.shown(goal.target,at)}${needs.length?`: it needs ${needs.join(", which needs ")}`:""}; ${error.reason}.`);
+        // binder's name, which the message's prose binds ("for every m").
+        const shown=(term,names)=>message.show([...names].reduce((renamed,[name,binder])=>
+          substituteTerm(renamed,name,T.variable(stem(binder))),term));
+        // A step under a binder states its body, whose variable is the
+        // binder's own: it is shown by the name the prose binds too.
+        const needs=error.chain.slice(1).map(step=>`${shown(step.type,step.binder?[...step.names,[step.binder.name,step.binder.name]]:step.names)} to be ${levelName(step.level)}`
+          +(step.binder?` for every ${message.bind(stem(step.binder.name))} : ${shown(step.binder.domain,step.names)}`:""));
+        throw Error(message.text(`hlevel could not prove ${message.show(goal.target)}${needs.length?`: it needs ${needs.join(", which needs ")}`:""}; ${error.reason}.`));
       }
     });
     return this.conclude(first,new Transition(goal),proof,()=>({
@@ -1938,7 +2031,7 @@ export class Translator {
     const locals=this.hlevelLocals(scope);
     try {
       return scope.check(this.search(scope,"hlevel",at=>
-        new HLevelSearch(at,[],term=>this.shown(term,at),locals,{rules:orderedHLevelRules(this.simpRegistry)})
+        new HLevelSearch(at,[],this.message(at).show,locals,{rules:orderedHLevelRules(this.simpRegistry)})
           .prove(stated.level,stated.universe,stated.type)),type);
     } catch(error) {
       propagateElaborationStop(error);
@@ -1994,16 +2087,22 @@ export class Translator {
   // in length.
   goalText(goal,width=160) {
     try {return this.checker.displayGoal?.(goal.scope.shownContext([goal.target]),goal.scope.dimensions,goal.target,null,
-      {width,notation:notationForScope(goal.scope)}).goal??sourceText(goal.target);}
+      {width,notation:notationForScope(goal.scope),telescope:false}).goal??sourceText(goal.target);}
     catch (control) {propagateElaborationStop(control);return "(too large to show)";}
   }
-  // Two goals one diagnostic shows, named together when they share a scope,
-  // as displayGoal names a goal and the term built for it.
+  // Two goals one diagnostic shows, as one display, named together as
+  // displayGoal names a goal and the term built for it: in both scopes'
+  // contexts where they differ.
   goalTexts(goal,other,width=160) {
-    if(goal.scope!==other.scope||!this.checker.displayGoal)return [this.goalText(goal,width),this.goalText(other,width)];
+    if(!this.checker.displayGoal)return [this.goalText(goal,width),this.goalText(other,width)];
     try {
-      const shown=this.checker.displayGoal(goal.scope.shownContext([goal.target,other.target]),goal.scope.dimensions,goal.target,other.target,
-        {width,notation:notationForScope(goal.scope)});
+      const same=goal.scope===other.scope;
+      const context=same?goal.scope.shownContext([goal.target,other.target])
+        :new Map([...goal.scope.shownContext([goal.target]),...other.scope.shownContext([other.target])]);
+      const dimensions=same?goal.scope.dimensions
+        :[...new Set([...contextDimensions(goal.scope.dimensions),...contextDimensions(other.scope.dimensions)])];
+      const shown=this.checker.displayGoal(context,dimensions,goal.target,other.target,
+        {width,notation:notationForScope(goal.scope),telescope:false});
       return [shown.goal,shown.built];
     } catch (control) {propagateElaborationStop(control);return ["(too large to show)","(too large to show)"];}
   }

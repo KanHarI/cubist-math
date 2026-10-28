@@ -1,0 +1,681 @@
+import "./fresh-build.mjs";
+import test from "node:test";
+import assert from "node:assert/strict";
+import create from "../web/dist/cubical.mjs";
+import { CubicalProgram } from "../web/cubical-program.mjs";
+import { ContextualSession } from "../web/contextual-session.mjs";
+import { ReplSession } from "../web/repl-session.mjs";
+import { elaboration } from "../web/cubical-elaboration.mjs";
+import { sourceReader } from "../tools/module-sources.mjs";
+
+// Every printed text reads back as the same term where it is printed, or is
+// the explicit form, which reads back anywhere: a numeral abbreviation, bare
+// or name.(n), is printed only where the scope establishes the notation that
+// reads it (notationContext in web/translator/notation-context.mjs). Each
+// program combines a way of shadowing a reader's name with each kind of
+// numeral, and each printed text is read back on every surface that shows
+// one: a print, a declaration's type mismatch, the message of a use before
+// its declaration's scope, the elaboration view, a REPL typeof, and a
+// contextual typeof.
+const module = await create();
+const imports = "import unat;\nimport bnat;\n";
+const header = `theory Counted(U < UU0) {
+  M : U;
+  inj(n : BNat) : M;
+  def of_nat(n : BNat) : M := inj(n) notation numeral;
+}
+theory Holder(U < UU0) {
+  m : Unit;
+}
+def counted : Counted(U0) := Counted.make(M := BNat, inj := fun (n : BNat) => n);
+def m : Counted(U0) := Counted.make(M := BNat, inj := fun (n : BNat) => n);
+notation m {
+  numeral(n : BNat) := n;
+}
+`;
+// The numeral kinds, written without any notation: a unary two, a binary
+// three (which m's rule and bnat_numerals both read), and a theory numeral
+// six of a declared model.
+const kinds = {
+  unary: "succ(succ(zero))",
+  binary: "b_positive(bp_odd(bp_one))",
+  theory: "counted.of_nat(b_positive(bp_even(bp_odd(bp_one))))",
+};
+// Each shadowing: declarations after the header, and how a value's proof is
+// wrapped, as a binder of the printed text would take a reader's name.
+// Named notations that take the library readers' names, alone and under
+// the other shadowings: then m's rule is the only other reader of a binary
+// three.
+const named = "notation bnat_numerals {\n  numeral(n : BNat) := b_zero;\n}\nnotation unat {\n  numeral(n : UNat) := succ(n);\n}\n";
+const shadowings = {
+  none: { declarations: "", proofs: value => [`refl(${value})`] },
+  named: { declarations: named, proofs: value => [`refl(${value})`] },
+  // A binder named counted cannot enclose a written reference to the model
+  // counted; shift supplies it from outside.
+  binder: {
+    declarations: `${named}def shift(c : Counted(U0), n : BNat) : Unit -> c.M := fun (counted : Unit) => c.of_nat(n);\n`,
+    // Each binder is used, so that the printed type binds its name.
+    proofs: value => [`fun (m : Unit) => typed(m = m and ${value} = ${value}, (refl(m), refl(${value})))`,
+      `fun (unat : Unit) => typed(unat = unat and ${value} = ${value}, (refl(unat), refl(${value})))`,
+      "refl(shift(counted, b_positive(bp_odd(bp_one))))"],
+  },
+  use: {
+    declarations: "use counted;\n",
+    proofs: value => [`refl(${value})`, `fun (counted : Counted(U0)) => refl(counted.of_nat(b_positive(bp_odd(bp_one))))`],
+  },
+  import: { imports: "import shadows;\n", declarations: "", proofs: value => [`refl(${value})`] },
+  opening: { declarations: named, proofs: value => [`refl(${value})`], section: true },
+};
+const fallback = sourceReader();
+const reader = async (name, ...rest) => name === "shadows"
+  ? "import bnat;\nnotation bnat_numerals {\n  numeral(n : BNat) := b_zero;\n}\n" : fallback(name, ...rest);
+// A program checked, used and disposed at once: the WASM module holds a
+// bounded number of kernel sessions.
+const withChecked = async (source, use, options = {}) => {
+  const program = new CubicalProgram(module, reader, options);
+  try { return await use(program, await program.check(source, "main")); }
+  finally { program.dispose(); }
+};
+const typeOfMismatch = reason => /found (.*), expected Unit\./.exec(reason)?.[1];
+const typeOfUse = reason => /this is a value of type (.*)\.$/.exec(reason.replace(/ at \d+:\d+$/, ""))?.[1];
+
+for (const [shadowing, { imports: shadowingImports = "", declarations, proofs, section }] of Object.entries(shadowings)) test(`printed numerals read back where they are printed: ${shadowing}`, async t => {
+  const cases = Object.entries(kinds).flatMap(([kind, value]) => proofs(value).map((proof, k) => ({ name: `${kind}_${k}`, proof })));
+  const body = section ? "" : cases.map(({ name, proof }) => `print(typeof(${proof}));\ndef shown_${name} := ${proof};\ndef diag_${name} : Unit := ${proof};\n`).join("");
+  const anchor = section ? "section (H : Holder(U0)) {\n  def anchor : Unit := tt;\n}\n" : "def anchor : Unit := tt;\n";
+  const prefix = imports + shadowingImports + header + declarations;
+  const source = `${prefix}${body}${anchor}`;
+  await withChecked(source, async (program, result) => {
+  const texts = [];
+  if (!section) {
+    // A print, a mismatch's found type, and the elaboration view's type.
+    assert.equal(result.prints.length, cases.length);
+    const views = elaboration(program, "main");
+    cases.forEach(({ name, proof }, k) => {
+      texts.push({ surface: "print", proof, text: result.prints[k].text });
+      const gap = result.gaps.find(gap => gap.name === `diag_${name}`);
+      texts.push({ surface: "diagnostic", proof, text: typeOfMismatch(gap?.reason ?? "") });
+      texts.push({ surface: "elaboration", proof, text: views.find(view => view.name === `shown_${name}`)?.type });
+    });
+    // A use before its declaration's scope reports the used value's type.
+    for (const { proof } of cases)
+      texts.push({ surface: "use", proof, text: await withChecked(`${prefix}def used := ${proof};\nuse used;\ndef after_use : Unit := tt;\n`,
+        (_, used) => typeOfUse(used.gaps.find(gap => gap.name === "after_use")?.reason ?? "")) });
+    // A REPL entry after the module.
+    const repl = new ReplSession(program, { base: "main" });
+    for (const { proof } of cases) texts.push({ surface: "repl", proof, text: (await repl.run(`typeof ${proof};`))[0]?.text });
+    for (const { surface, proof, text } of texts) assert.ok(text, `${surface}: ${proof}`);
+    // Every file-level text reads back in the module.
+    const readback = texts.filter(({ surface }) => surface !== "repl")
+      .map(({ proof, text }, k) => `def readback_${k} : ${text} := ${proof};\n`).join("");
+    await withChecked(`${prefix}${readback}`, (_, again) => {
+      for (const output of again.outputs.filter(output => output.name.startsWith("readback_")))
+        assert.equal(output.verified, true, `${texts[Number(output.name.slice(9))].surface}: ${output.reason}`);
+    });
+    for (const { proof, text } of texts.filter(({ surface }) => surface === "repl")) {
+      const answers = await repl.run(`def repl_readback : ${text} := ${proof};`);
+      assert.ok(answers.every(answer => answer.kind !== "error"), `repl: ${text}: ${JSON.stringify(answers)}`);
+    }
+  }
+  // A contextual query at the anchor, in its scope (inside the section, where
+  // H's field m is opened).
+  const at = source.lastIndexOf("tt;");
+  const point = [...program.scopePoints.values()].find(point => point.origin.module === "main"
+    && point.origin.start === at && point.phase === "expression" && point.available);
+  assert.ok(point);
+  for (const { proof } of cases) {
+    const session = new ContextualSession(program, point.id);
+    try {
+      const [shown] = await session.run(`typeof ${proof}`);
+      assert.equal(shown.kind, "type", JSON.stringify(shown));
+      const [read] = await session.run(`typed(${shown.text}, ${proof})`);
+      assert.notEqual(read.kind, "error", `contextual: ${shown.text}: ${JSON.stringify(read)}`);
+    } finally { session.dispose(); }
+  }
+  }, { collectScopes: true });
+});
+
+// Every kind of printing entry a notation registers carries what the
+// printer's checks read: a reader's notation identity, `attached` exactly
+// for a rule a model's module added (which a binder of the model's name
+// shadows), and an operator's view identities. A new kind fails here until
+// it is classified.
+test("every kind of notation printing entry carries the metadata the read-back checks need", async () => {
+  const source = `import unat;
+import bnat;
+import lexemes;
+use unat;
+theory Counted(U < UU0) {
+  M : U;
+  inj(n : BNat) : M;
+  op(x, y : M) : M notation x + y;
+  def of_nat(n : BNat) : M := inj(n) notation numeral;
+}
+def bits_model : Counted(U0) := Counted.make(M := BNat, inj := fun (n : BNat) => n, op := fun (x, y : BNat) => x);
+notation bits_model {
+  numeral(n : BNat) := n;
+}
+def literal_model : Counted(U0) := Counted.make(M := UNat, inj := fun (n : BNat) => 0, op := add);
+notation literal_model {
+  literal(s : Lexeme) := natural_literal(s);
+}
+def tagged(a, b : UNat) : UNat := a;
+def numeral_model : Counted(U0) := Counted.make(M := UNat, inj := fun (n : BNat) => 0, op := add);
+notation numeral_model {
+  numeral(n : UNat) := tagged(n, 0);
+}
+notation fixed {
+  numeral(n : UNat) := tagged(n, 0);
+}
+notation unary_view {
+  numeral(n : UNat) := n;
+}
+notation reader {
+  literal(s : Lexeme) := natural_literal(s);
+}
+def pow(x, n : UNat) : UNat := x;
+notation powers {
+  x ^ unat.(n) := pow(x, n);
+}
+`;
+  await withChecked(source, (program, result) => {
+    assert.deepEqual(result.gaps, [], JSON.stringify(result.gaps));
+    const attachedNotations = new Set(["bits_model", "literal_model", "numeral_model"]);
+    const kind = entry => entry.identityNumeral ? "identityNumeral" : entry.literal ? "literal" : Array.isArray(entry.numeral) ? "numeral"
+      : entry.operator && entry.model ? "modelOperator" : entry.operator ? "operator" : entry.theoryNumeral ? "theoryNumeral"
+      : entry.modelRules ? "modelRules" : "unknown";
+    const seen = new Map();
+    for (const [binding, entries] of program.checker.notationPrinting) for (const entry of entries) {
+      const k = kind(entry);
+      assert.notEqual(k, "unknown", `${binding}: ${JSON.stringify(entry)}`);
+      if (!seen.has(k)) seen.set(k, new Set());
+      seen.get(k).add(entry.notation ?? binding);
+      if (["identityNumeral", "literal", "numeral", "operator"].includes(k)) {
+        assert.equal(typeof entry.identity, "string", `${binding}: ${JSON.stringify(entry)}`);
+        assert.equal(entry.attached === true, attachedNotations.has(entry.notation), `${binding}: ${JSON.stringify(entry)}`);
+      }
+      if (["operator", "modelOperator"].includes(k)) {
+        assert.deepEqual(Object.keys(entry.views ?? {}).sort(), ["left", "right"], `${binding}: ${JSON.stringify(entry)}`);
+        for (const side of ["left", "right"]) if (entry.recipe[side]) assert.equal(typeof entry.views[side], "string");
+      }
+    }
+    assert.deepEqual([...seen.keys()].sort(),
+      ["identityNumeral", "literal", "modelOperator", "modelRules", "numeral", "operator", "theoryNumeral"]);
+    // Each fixture's rule is among them, attached or not.
+    for (const name of ["bits_model", "unary_view"]) assert.ok(seen.get("identityNumeral").has(name), name);
+    for (const name of ["literal_model", "reader"]) assert.ok(seen.get("literal").has(name), name);
+    for (const name of ["numeral_model", "fixed"]) assert.ok(seen.get("numeral").has(name), name);
+    assert.ok(seen.get("operator").has("powers"));
+  });
+});
+
+// Terms shown after checking, as an inspector shows them, print in the last
+// module's scope, whose transitively imported readers it resolves.
+test("terms shown after checking print in the checked module's scope", async () => {
+  await withChecked("import nat;\ndef big : Nat := nat.(18446744073709551616);\n", async (program, result) => {
+    assert.ok(result.complete, JSON.stringify(result.gaps));
+    const { checker } = program;
+    const { expression } = checker.checkSyntax({ tag: "DefRef", name: "main__big" }, null, new Map(), new Map());
+    const text = checker.displayText(checker.normalForm(expression), []);
+    assert.equal(text, "bnat.(18446744073709551616)");
+    const again = await withChecked(`import nat;\ndef big_again : Nat := ${text};\ndef same : big_again = nat.(18446744073709551616) := refl(big_again);\n`,
+      (_, read) => read.outputs.every(output => output.verified));
+    assert.ok(again);
+  });
+});
+
+// A model's opening hides names that the module's environment still binds:
+// where a use opens one before the selection a message prints in, the
+// selected receiver and every name but a named notation's are unknown, and
+// a numeral prints as written. (The explicit form names the declared model
+// m, which the opening also hides; display naming does not qualify it.)
+const opened = `import unat;
+import bnat;
+theory Counted(U < UU0) {
+  M : U;
+  inj(n : BNat) : M;
+  def of_nat(n : BNat) : M := inj(n) notation numeral;
+}
+def m : Counted(U0) := Counted.make(M := BNat, inj := fun (n : BNat) => n);
+def other : Counted(U0) := Counted.make(M := BNat, inj := fun (n : BNat) => b_zero);
+theory Holder(U < UU0) {
+  m : Counted(U0);
+}
+def holder : Holder(U0) := Holder.make(m := other);
+`;
+test("a use before a declaration's scope trusts no name an earlier opening may hide", async () => {
+  await withChecked(`${opened}def p := refl(m.of_nat(b_positive(bp_odd(bp_one))));\nuse holder;\nuse m;\nuse p;\ndef after : Unit := tt;\n`, (_, result) => {
+    const text = typeOfUse(result.gaps.find(gap => gap.name === "after")?.reason ?? "");
+    assert.equal(text, "Counted.of_nat{{U0}}(m, bnat_numerals.(3)) = Counted.of_nat{{U0}}(m, bnat_numerals.(3))");
+  });
+});
+
+// After checking, a term prints in the module's final scope, the one a
+// definition appended to it reads: its uses applied, openings included.
+// holder's field m hides m's attached rule, however many items follow the
+// use, and a notation declared after it is in scope; m's own opening leaves
+// m's name, and its rule, in place.
+test("terms shown after checking keep the openings of the module's uses", async () => {
+  const declarations = `${opened}notation m {\n  numeral(n : BNat) := n;\n}\nnotation bnat_numerals {\n  numeral(n : BNat) := b_zero;\n}\ndef three : BNat := b_positive(bp_odd(bp_one));\n`;
+  const explicit = "b_positive(bp_odd(bp_one))";
+  for (const [tail, expected] of [["use holder;\n", explicit], ["use holder;\ndef later : Unit := tt;\n", explicit],
+    ["use holder;\nnotation later {\n  numeral(n : BNat) := n;\n}\n", "later.(3)"], ["use m;\n", "m.(3)"]])
+    await withChecked(declarations + tail, async (program, result) => {
+      assert.deepEqual(result.gaps, [], JSON.stringify(result.gaps));
+      const { checker } = program;
+      const { expression } = checker.checkSyntax({ tag: "DefRef", name: "main__three" }, null, new Map(), new Map());
+      const text = checker.displayText(checker.normalForm(expression), []);
+      assert.equal(text, expected, tail);
+      assert.ok(await withChecked(`${declarations}${tail}def three_again : three = ${text} := refl(three);\n`,
+        (_, again) => again.outputs.every(output => output.verified)), tail);
+    });
+});
+
+// A display's lookups cost a few reads of the scope's environment, whatever
+// its size: no lookup walks the environment (the review measured a
+// quadratic rebuild of it per display), so displays scale linearly with the
+// number of terms shown. The checker is a real one, whose compilation
+// bindings a rebuild would read.
+test("a printing scope's lookups read the environment without walking it", async () => {
+  const { notationContext, notationForUses, notationBinding } = await import("../web/translator/notation-context.mjs");
+  class CountingMap extends Map {
+    reads = 0;
+    walks = 0;
+    get(key) { this.reads++; return super.get(key); }
+    entries() { this.walks++; return super.entries(); }
+    [Symbol.iterator]() { return this.entries(); }
+    keys() { this.walks++; return super.keys(); }
+    values() { this.walks++; return super.values(); }
+    forEach(...rest) { this.walks++; return super.forEach(...rest); }
+  }
+  await withChecked("import unat;\n", ({ checker }) => {
+    assert.ok(checker.compilationBindings);
+    const costs = [];
+    for (const size of [100, 10000]) {
+      const env = new CountingMap([...Array(size)].map((_, k) => [`name_${k}`, { tag: "DefRef", name: `main__name_${k}` }]));
+      env.set(notationBinding("unat"), { tag: "Notation", bindingId: "unat-id" });
+      env.reads = 0;
+      for (let k = 0; k < 100; k++) {
+        const context = k % 2 ? notationContext({ env, checker }, null) : notationForUses(env, checker, [{ kind: "name", name: "unat" }]);
+        const found = [context.reads("unat"), context.reads("name_1"), context.opens("name_1", { tag: "DefRef", name: "main__name_1" }, false)];
+        assert.equal(env.walks, 0, `size ${size}: a lookup walked the environment`);
+        assert.deepEqual(found, ["unat-id", null, true]);
+      }
+      costs.push(env.reads);
+    }
+    assert.equal(costs[0], costs[1], `reads at 100 and 10000 names: ${costs}`);
+    assert.ok(costs[0] <= 100 * 12, `${costs[0]} reads for 100 displays`);
+  });
+});
+
+// A model's name is no qualifier where the display writes it for a
+// variable, a binder or a dimension: the names the printer writes, as it
+// writes them (printedNames in web/cubical-source-text.mjs). Every form the
+// printer handles, or the core has, is classified here: one that can print
+// a binder builds a term binding `name` over `inner`, printed where the
+// binder scopes, and, where the printer can leave the binder out, a term
+// whose binder it does not print; one that binds nothing is null; one the
+// printer leaves to kernel notation, which writes no qualifier, is
+// "kernel". A new form fails until it is classified. For every term, the
+// names collected are the variable, binder and dimension names its text
+// shows.
+const identifiers = (text, labels) => new Set([...text.replace(/[A-Za-z_][A-Za-z0-9_]*\.\(/g, "(")
+  .matchAll(/[A-Za-z_][A-Za-z0-9_]*/g)].map(match => match[0]).filter(name => !labels.has(name)));
+const keywords = ["forall", "exists", "fun", "path", "match", "induction", "return", "as", "with", "compose", "in", "from", "on",
+  "and", "or", "zero", "succ", "left", "right", "refl", "PathP", "Interval", "Unit", "U0", "UU0", "tt", "b_positive", "bp_odd", "bp_one"];
+test("the names a display writes are the printed variables, binders and dimensions, and take a model's qualifier", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { sourceText, printedNames } = await import("../web/cubical-source-text.mjs");
+  const { termChildren } = await import("../web/translator/term-shape.mjs");
+  const v = name => ({ tag: "Var", name }), app = (fn, ...args) => args.reduce((f, arg) => ({ tag: "App", fn: f, arg }), fn);
+  const at = (path, dim) => ({ tag: "PApp", path, arg: [[`${dim}:1`]] });
+  const lam = (name, body, domain = { tag: "Unit" }) => ({ tag: "Lam", name, domain, body });
+  const con = (type, index, name) => ({ tag: "Con", index, name, sort: { tag: "Sort", signature: `bnat__${type}` } });
+  const three = app(con("BNat", 1, "b_positive"), app(con("BPositive", 2, "bp_odd"), con("BPositive", 0, "bp_one")));
+  const motive = lam("z", { tag: "Unit" });
+  const loop = body => ({ tag: "PLam", dim: "j", family: null, body: app(v("h"), at(v("q"), "j"), body) });
+  // [binding forms, forms whose binder the printer leaves out]
+  const forms = {
+    U: null, LBound: null, Unit: null, Void: null, Point: null, Marker: null, Var: null, DefRef: null, Sum: null,
+    App: null, LApp: null, Pair: null, PApp: null, Inl: null, Inr: null, Abort: null, Fst: null, Snd: null,
+    Sort: null, Con: null, Glue: null, GlueTerm: null, Unglue: null,
+    UnitRec: "kernel", HComp: "kernel", Trans: "kernel",
+    Pi: [[(name, inner) => ({ tag: "Pi", name, domain: { tag: "Unit" }, body: app(v("P"), v(name), inner) })],
+      [(name, inner) => ({ tag: "Pi", name, domain: { tag: "Unit" }, body: app(v("P"), inner) })]],
+    Sigma: [[(name, inner) => ({ tag: "Sigma", name, domain: { tag: "Unit" }, body: app(v("P"), v(name), inner) })],
+      [(name, inner) => ({ tag: "Sigma", name, domain: { tag: "Unit" }, body: app(v("P"), inner) })]],
+    Lam: [[(name, inner) => lam(name, app(v("h"), v(name), inner)), (name, inner) => lam(name, app(v("h"), v(name), inner), null)], []],
+    LPi: [[(name, inner) => ({ tag: "LPi", name, body: app(v("P"), inner) })], []],
+    LLam: [[(name, inner) => ({ tag: "LLam", name, body: app(v("h"), inner) })], []],
+    NatInduction: [[(name, inner) => ({ tag: "NatInduction", value: v("n"), motive: lam("k", { tag: "Unit" }, null), zero: { tag: "Point" },
+      step: lam("k", lam(name, app(v("h"), v(name), inner), null), null) })],
+    [(name, inner) => ({ tag: "NatInduction", value: v("n"), motive: lam(name, { tag: "Unit" }, null), zero: { tag: "Point" },
+      step: lam(name, lam("ih", app(v("h"), v("ih"), inner), null), null) })]],
+    SumRec: [[(name, inner) => ({ tag: "SumRec", value: v("s"), motive, left: lam(name, app(v("h"), v(name), inner)), right: lam("b", v("b")) })],
+      [(name, inner) => ({ tag: "SumRec", value: v("s"), motive: lam(name, { tag: "Unit" }), left: lam("a", app(v("h"), v("a"), inner)), right: lam("b", v("b")) })]],
+    // A declared type's eliminator, applied, prints as a match whose clauses
+    // bind a constructor's data and a path constructor's dimensions; its
+    // motive's binder shows only where the return type uses it.
+    Elim: [[(name, inner) => app({ tag: "Elim", signature: "shape", motive, clauses: [lam(name, app(v("h"), v(name), inner)), loop(v("y"))] }, v("s")),
+      (name, inner) => app({ tag: "Elim", signature: "shape", motive, clauses: [lam("x", v("x")),
+        { tag: "PLam", dim: name, family: null, body: app(v("h"), at(v("q"), name), inner) }] }, v("s"))],
+      [(name, inner) => app({ tag: "Elim", signature: "shape", motive: lam(name, { tag: "Unit" }), clauses: [lam("x", app(v("h"), v("x"), inner)), loop(v("y"))] }, v("s"))]],
+    // An equality's coordinate and a constant path's are not printed.
+    Path: [[(name, inner) => ({ tag: "Path", dim: name, family: app(v("F"), at(v("q"), name), inner), left: v("a"), right: v("b") })],
+      [(name, inner) => ({ tag: "Path", dim: name, family: v("A"), left: inner, right: inner })]],
+    PLam: [[(name, inner) => ({ tag: "PLam", dim: name, family: null, body: app(v("h"), at(v("p"), name), inner) })],
+      [(name, inner) => ({ tag: "PLam", dim: name, family: null, body: app(v("h"), inner) })]],
+    Comp: [[(name, inner) => ({ tag: "Comp", dim: name, family: v("A"), base: v("a"),
+      system: [{ face: [["j:1"]], term: app(v("h"), at(v("p"), name), inner) }] })], []],
+  };
+  const printer = readFileSync(new URL("../web/cubical-source-text.mjs", import.meta.url), "utf8");
+  const cases = new Set([...printer.matchAll(/case "([A-Za-z]+)":/g)].map(match => match[1]));
+  const all = new Set([...cases, ...Object.keys(termChildren)]);
+  assert.deepEqual([...all].filter(tag => !(tag in forms)), [], "unclassified forms");
+  assert.deepEqual(Object.keys(forms).filter(tag => !all.has(tag)), [], "forms neither printed nor in the core");
+  for (const [tag, kind] of Object.entries(forms)) if (kind === "kernel") assert.ok(!cases.has(tag), `${tag} has a source form`);
+  // Two readings by m's name: m's attached identity rule over BNat, and a
+  // theory numeral of the declared model m.
+  const symbols = {
+    bnat__BNat: { printing: [{ identityNumeral: true, notation: "m", identity: "m-id", attached: true }] },
+    main__Counted__of_nat: { printing: [{ theoryNumeral: true }] },
+    shape: { constructors: [{ name: "c", data: 1, positions: 0, dimensions: 0 }, { name: "loop", data: 0, positions: 0, dimensions: 1 }] },
+  };
+  const context = { reads: name => name === "m" ? "m-id" : null, opens: name => name === "m" };
+  const inners = { attached: three, theory: app({ tag: "DefRef", name: "main__Counted__of_nat" }, { tag: "DefRef", name: "main__m" }, three) };
+  const labels = new Set([...keywords, "c", "loop", "Counted__of_nat"]);
+  for (const [tag, builders] of Object.entries(forms)) if (Array.isArray(builders)) {
+    const [binding, omitting] = builders;
+    for (const [kind, list] of [["binding", binding], ["omitting", omitting]]) for (const [k, build] of list.entries())
+      for (const [reading, inner] of Object.entries(inners)) for (const name of ["m", "k"]) {
+        const term = build(name, inner), text = sourceText(term, symbols, 4000, context), names = printedNames(term, symbols, 4000, context);
+        const where = `${tag} ${kind} ${k} ${reading} ${name}: ${text}`;
+        if (reading === "attached") assert.deepEqual([...names.keys()].sort(), [...identifiers(text, labels)].sort(), where);
+        const qualified = text.includes("m.(3)");
+        assert.equal(qualified, name !== "m" || kind === "omitting", where);
+        assert.equal(names.has("m"), name === "m" && kind === "binding", where);
+      }
+  }
+});
+
+// The review's case: a path's dimension i, under which m's rule's
+// qualifier i.(3) would read i as the coordinate. A named notation i is
+// read before the dimension, so its qualifier stays.
+test("a numeral under a dimension of its reader's name reads back", async () => {
+  const three = "b_positive(bp_odd(bp_one))";
+  const type = `forall h : Unit -> BNat -> Unit. forall x : Unit. forall p : x = x. h(x, ${three}) = h(x, ${three})`;
+  for (const [reader, expected] of [["def i : Counted(U0) := Counted.make(M := BNat, inj := fun (n : BNat) => n);\n", three], ["", "i.(3)"]]) {
+    const source = `import unat;
+import bnat;
+theory Counted(U < UU0) {
+  M : U;
+  inj(n : BNat) : M;
+  def of_nat(n : BNat) : M := inj(n) notation numeral;
+}
+${reader}notation i {
+  numeral(n : BNat) := n;
+}
+notation bnat_numerals {
+  numeral(n : BNat) := b_zero;
+}
+def f : ${type} := fun (h : Unit -> BNat -> Unit, x : Unit, p : x = x) => path i => h(p @ i, ${three});
+`;
+    await withChecked(source, async (program, result) => {
+      assert.deepEqual(result.gaps, [], JSON.stringify(result.gaps));
+      const { checker } = program;
+      const { expression } = checker.checkSyntax({ tag: "DefRef", name: "main__f" }, null, new Map(), new Map());
+      const text = checker.displayText(checker.normalForm(expression), []);
+      assert.equal(text, `fun (h : Unit -> BNat -> Unit, x : Unit, p : x = x) => path i => h(p @ i, ${expected})`);
+      await withChecked(`${source}def again : ${type} := ${text};\n`, (_, again) =>
+        assert.deepEqual(again.outputs.filter(output => output.name === "again").map(output => [output.verified, output.reason ?? null]), [[true, null]]));
+    });
+  }
+});
+
+// Displays of several texts, as one: a proof step's locals, goal and term,
+// a mismatch's two types, a declared type's inspected signature. Each
+// reads the names the whole display writes, and these are exactly the
+// variable, binder and dimension names its texts and its locals show
+// (#318's sixth review: a local the naming renamed to the model's name,
+// m1, and an equality's coordinate, which no text shows).
+const unitHeader = `import unat;
+import bnat;
+theory Counted(U < UU0) {
+  M : U;
+  inj(n : BNat) : M;
+  def of_nat(n : BNat) : M := inj(n) notation numeral;
+}
+def m1 : Counted(U0) := Counted.make(M := BNat, inj := fun (n : BNat) => n);
+notation m1 {
+  numeral(n : BNat) := n;
+}
+notation bnat_numerals {
+  numeral(n : BNat) := b_zero;
+}
+`;
+// The texts each display prints through the checker, with the names they
+// write (printedTogether), one entry for each display.
+const displayed = program => {
+  const { checker } = program, together = checker.printedTogether, units = [];
+  checker.printedTogether = function (...args) {
+    const result = together.apply(this, args);
+    units.push(result);
+    return result;
+  };
+  return units;
+};
+test("a proof step's locals, goal and term are one display, and its goal reads back under its locals", async () => {
+  const three = "b_positive(bp_odd(bp_one))";
+  const source = `${unitHeader}def g(m : Unit, p : m = m) : forall m : Unit. ${three} = ${three} {\n  intro m;\n  rfl;\n}\n`;
+  await withChecked(source, async (program, result) => {
+    assert.deepEqual(result.gaps, [], JSON.stringify(result.gaps));
+    const units = displayed(program);
+    const steps = program.steps("main", "g"), last = steps.at(-1);
+    assert.deepEqual(last.locals.map(local => local.name), ["m", "p", "m1"]);
+    assert.equal(last.goal, `${three} = ${three}`);
+    for (const step of steps) {
+      const texts = [...step.locals.map(local => local.type), step.goal, step.built];
+      const unit = units.find(({ texts: shown }) => shown.length === texts.length && shown.every((text, k) => text === texts[k]));
+      assert.ok(unit, JSON.stringify(step));
+      const { names } = unit;
+      const shown = new Set([...step.locals.map(local => local.name), ...texts.flatMap(text => [...identifiers(text, new Set(keywords))])]);
+      // The proof's rest shows as the hole ?, which is no name.
+      assert.deepEqual([...names.keys()].filter(name => name !== "?").sort(), [...shown].sort(), JSON.stringify(step));
+    }
+    const locals = last.locals.map(local => `${local.name} : ${local.type}`).join(", ");
+    await withChecked(`${source}def again(${locals}) : ${last.goal} := ${last.built};\n`, (_, again) =>
+      assert.deepEqual(again.outputs.filter(output => output.name === "again").map(output => [output.verified, output.reason ?? null]), [[true, null]]));
+  });
+});
+
+test("a mismatch's types and an inspected signature are one display each", async () => {
+  const three = "b_positive(bp_odd(bp_one))";
+  for (const [body, labels] of [
+    [`def bad(m : Unit, f : forall k : Unit. k = k -> m = m) : forall m : Unit. Unit := fun (m : Unit) => typed(m = m -> ${three} = ${three}, f(m));\n`, []],
+    [`inductive Box(m1 : Unit) : U0 { box(p : m1 = m1, q : ${three} = ${three}); }\nprint(inspect(Box));\n`, ["Box", "box"]],
+  ]) {
+    const program = new CubicalProgram(module, reader, {});
+    try {
+      const units = displayed(program);
+      await program.check(unitHeader + body, "main");
+      assert.ok(units.length, body);
+      // The displays of this program's own declarations: the imported
+      // modules' are checked in it too.
+      const own = units.filter(({ texts }) => texts.length > 1 && texts.some(text => text.includes("bp_odd(bp_one)") || text.includes("m1.(")));
+      assert.ok(own.length, body);
+      for (const { names, texts } of own)
+        assert.deepEqual([...names.keys()].sort(), [...new Set(texts.flatMap(text => [...identifiers(text, new Set([...keywords, ...labels]))]))].sort(),
+          JSON.stringify(texts));
+    } finally { program.dispose(); }
+  }
+});
+
+// An equality's coordinate is not printed, so it does not take the name of
+// a literal's reader: the literal prints as written and reads back.
+test("an equality's unprinted coordinate leaves a literal's qualifier in place", async () => {
+  const source = `import bnat_notation;
+import lexemes;
+${unitHeader}def wrap(s : Lexeme) : Parsed(U0, BNat) := bnat_literal(s);
+def i : Counted(U0) := Counted.make(M := BNat, inj := fun (n : BNat) => n);
+notation i {
+  literal(s : Lexeme) := wrap(s);
+}
+print(typeof(refl(i.(18446744073709551617))));
+`;
+  await withChecked(source, async (_, result) => {
+    assert.deepEqual(result.gaps, [], JSON.stringify(result.gaps));
+    const text = result.prints[0].text;
+    assert.equal(text, "i.(18446744073709551617) = i.(18446744073709551617)");
+    await withChecked(`${source}def again : ${text} := refl(i.(18446744073709551617));\n`, (_, again) =>
+      assert.deepEqual(again.outputs.filter(output => output.name === "again").map(output => [output.verified, output.reason ?? null]), [[true, null]]));
+  });
+});
+
+// Every place the printer writes an abbreviation (`abbreviated` in
+// web/cubical-source-text.mjs), classified: a bare form reads no name; a
+// named notation's qualifier is read before any value or dimension; a
+// model's qualifier is checked against the names the whole display writes,
+// as printed, and printed again where one takes it (sourceTexts). The
+// printed text is the only form any site contributes, so the names checked
+// are the text's, whichever form each site chose. A new site, or a
+// qualifier written elsewhere, fails until it is classified.
+test("every abbreviation the printer writes is classified, and a model's qualifier is checked against the printed names", async () => {
+  const { readFileSync } = await import("node:fs");
+  const printer = readFileSync(new URL("../web/cubical-source-text.mjs", import.meta.url), "utf8");
+  const sites = {
+    "selected reading": "bare", "selected numeral rule": "bare", "selected theory numeral": "bare",
+    "selected operator": "bare", "selected model operator": "bare",
+    "named operator": "named", "qualified reading": "model", "qualified theory numeral": "model",
+  };
+  const found = [...printer.matchAll(/abbreviated\("([^"]+)"/g)];
+  assert.deepEqual([...new Set(found.map(match => match[1]))].sort(), Object.keys(sites).sort(), "unclassified or stale sites");
+  // A model's qualifier is passed with it, to be checked.
+  for (const match of found) if (sites[match[1]] === "model")
+    assert.match(printer.slice(match.index, match.index + 200), /\{ name[,:]/, `${match[1]} passes its qualifier`);
+  // A qualifier is written only by an abbreviation site.
+  for (const line of printer.split("\n")) if (line.includes(".(${")) assert.ok(line.includes("abbreviated("), line);
+});
+
+// The review's case: a literal whose reader is shadowed prints as its
+// parse, whose success proof binds m; m's numeral there is no m.(3).
+test("a literal printed as its parse keeps a model's qualifier from the binders of its proof", async () => {
+  const wrapping = "import bnat;\nimport bnat_notation;\nimport lexemes;\ndef wrap(s : Lexeme) : Parsed(U0, BNat) := bnat_literal(s);\n"
+    + "notation w {\n  literal(s : Lexeme) := wrap(s);\n}\n";
+  const literalReader = async (name, ...rest) => name === "wrapping" ? wrapping : reader(name, ...rest);
+  const three = "b_positive(bp_odd(bp_one))";
+  const literal = `parsed_value(wrap(cons(digit(unat.(5)), nil)), eat(fun (m : Unit) => ${three}))`;
+  const source = `import unat;
+import bnat;
+import bnat_notation;
+import lexemes;
+import wrapping;
+theory Counted(U < UU0) {
+  M : U;
+  inj(n : BNat) : M;
+  def of_nat(n : BNat) : M := inj(n) notation numeral;
+}
+def m : Counted(U0) := Counted.make(M := BNat, inj := fun (n : BNat) => n);
+notation m {
+  numeral(n : BNat) := n;
+}
+notation bnat_numerals {
+  numeral(n : BNat) := b_zero;
+}
+notation bnat {
+  numeral(n : BNat) := b_zero;
+}
+notation w {
+  numeral(n : BNat) := b_zero;
+}
+def eat(f : Unit -> BNat) : Unit := tt;
+def p : ${literal} = ${literal} := refl(${literal});
+print(typeof(p));
+`;
+  const program = new CubicalProgram(module, literalReader, {});
+  try {
+    const result = await program.check(source, "main");
+    assert.deepEqual(result.gaps, [], JSON.stringify(result.gaps));
+    const text = result.prints[0].text;
+    assert.ok(text.includes(`eat(fun (m : Unit) => ${three})`) && !text.includes("m.("), text);
+    const again = new CubicalProgram(module, literalReader, {});
+    try {
+      const read = await again.check(`${source}def again : ${text} := refl(${literal});\n`, "main");
+      assert.deepEqual(read.outputs.filter(output => output.name === "again").map(output => [output.verified, output.reason ?? null]), [[true, null]]);
+    } finally { again.dispose(); }
+  } finally { program.dispose(); }
+});
+
+// The review's case: hlevel's chain of obligations binds m in its prose,
+// "for every m : Unit", so the obligation after it reads m as that Unit:
+// a model m's qualifier there is no m.(3). The goal and every obligation
+// are one display, and each reads back where the prose puts it.
+test("an hlevel failure's goal and obligations are one display, and its obligations read back under its prose binders", async () => {
+  const three = "b_positive(bp_odd(bp_one))";
+  const source = `${unitHeader.replace("def m1 :", "def m :").replace("notation m1 {", "notation m {")}import hlevels;
+def bad(F : BNat -> U0) : IsProp(U0, forall m : Unit. m = m and F(${three})) {
+  hlevel;
+}
+`.replace("import hlevels;\n", "").replace("import bnat;\n", "import bnat;\nimport hlevels;\n");
+  await withChecked(source, async (_, result) => {
+    const reason = result.outputs.find(output => output.name === "bad")?.reason ?? "";
+    const match = /^hlevel could not prove IsProp\(U0, (.*)\): it needs (.*) to be a proposition for every m : Unit, which needs (.*) to be a proposition;/.exec(reason);
+    assert.ok(match, reason);
+    const [, goal, body, needed] = match;
+    assert.ok(!reason.includes("m.("), reason);
+    assert.equal(needed, `F(${three})`);
+    await withChecked(`${source}def goal_again(F : BNat -> U0) : U0 := ${goal};\ndef body_again(F : BNat -> U0, m : Unit) : U0 := ${body};\n`
+      + `def needed_again(F : BNat -> U0, m : Unit) : U0 := ${needed};\n`, (_, again) => {
+      for (const name of ["goal_again", "body_again", "needed_again"])
+        assert.deepEqual(again.outputs.filter(output => output.name === name).map(output => [output.verified, output.reason ?? null]), [[true, null]], name);
+    });
+  });
+});
+
+// The contextual console's outputs that show several terms, a goal and its
+// expected type, a proof and its goal, a scratch binding and its type, the
+// locals listing, are each one display (the diagnostics are checked so in
+// tests/cubist-tests-inlined.mjs).
+test("contextual outputs that show several terms are each one display", async () => {
+  const { NativeCubicalElaborator } = await import("../web/cubical-elaborator.mjs");
+  const printedTogether = NativeCubicalElaborator.prototype.printedTogether;
+  let displays = 0;
+  NativeCubicalElaborator.prototype.printedTogether = function (...args) {
+    const printed = printedTogether.apply(this, args), display = displays++;
+    return { ...printed, texts: printed.texts.map(text => `⁣${display}⁤${text}`) };
+  };
+  try {
+    const three = "b_positive(bp_odd(bp_one))";
+    const source = `${unitHeader}def g(m : Unit, p : m = m) : ${three} = ${three} {\n  exact refl(${three});\n}\n`;
+    await withChecked(source, async program => {
+      const at = source.indexOf("exact");
+      const point = [...program.scopePoints.values()].find(point => point.origin.module === "main"
+        && point.origin.start <= at && point.available && point.phase !== "expression") ?? [...program.scopePoints.values()]
+        .filter(point => point.origin.module === "main" && point.available).at(-1);
+      assert.ok(point);
+      const session = new ContextualSession(program, point.id);
+      try {
+        for (const entry of ["/locals", "/goal", `/prove { exact refl(${three}); }`, `let k := ${three};`]) {
+          const [answer] = await session.run(entry);
+          const fields = [answer.text, answer.goal, answer.expected, answer.proof, ...(answer.bindings ?? []).flatMap(row => [row.type, row.value])]
+            .filter(field => typeof field === "string");
+          const shown = new Set(fields.flatMap(field => Array.from(field.matchAll(/⁣(\d+)⁤/g), match => match[1])));
+          assert.ok(shown.size <= 1, `${entry}: ${JSON.stringify(answer)}`);
+        }
+      } finally { session.dispose(); }
+    }, { collectScopes: true });
+  } finally { NativeCubicalElaborator.prototype.printedTogether = printedTogether; }
+});
+
+// An axiom's assumption prints by its label (#317) beside a numeral printed
+// by its reader, and the text reads back.
+test("a printed type that mentions an axiom and a numeral reads back", async () => {
+  const three = "b_positive(bp_odd(bp_one))";
+  const source = `import unat;\nimport bnat;\ndef Pick := axiom (BNat -> BNat);\n`
+    + `def p : Pick(${three}) = Pick(${three}) := refl(Pick(${three}));\nprint(typeof(p));\n`;
+  await withChecked(source, async (_, result) => {
+    const text = result.prints[0].text;
+    assert.equal(text, "main::Pick(bnat_numerals.(3)) = main::Pick(bnat_numerals.(3))");
+    await withChecked(`${source}def again : ${text} := refl(Pick(${three}));\n`, (_, again) =>
+      assert.deepEqual(again.outputs.filter(output => output.name === "again").map(output => [output.verified, output.reason ?? null]), [[true, null]]));
+  });
+});

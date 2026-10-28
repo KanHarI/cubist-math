@@ -1,0 +1,235 @@
+import bnat_recursion;
+use unat;
+
+// Order laws of binary naturals. A positive result is the binary
+// comparison's own evidence. Laws about the bits are proved on the bits;
+// the others pass through bnat_order's unary correspondence, which then
+// refutes only an impossible branch of a binary decision.
+
+// A comparison read the other way round.
+computable def bordering_flip(order : BOrdering) : BOrdering := match order {
+    b_less => b_greater;
+    b_equal => b_equal;
+    b_greater => b_less;
+  };
+
+computable def bordering_flip_even_odd(order : BOrdering) :
+  bnat_odd_even_order(bordering_flip(order)) = bordering_flip(bnat_even_odd_order(order)) := match order {
+    b_less => refl(b_greater);
+    b_equal => refl(b_greater);
+    b_greater => refl(b_less);
+  };
+
+computable def bordering_flip_odd_even(order : BOrdering) :
+  bnat_even_odd_order(bordering_flip(order)) = bordering_flip(bnat_odd_even_order(order)) := match order {
+    b_less => refl(b_greater);
+    b_equal => refl(b_less);
+    b_greater => refl(b_less);
+  };
+
+computable def bpositive_compare_flip(a, b : BPositive) :
+  bpositive_compare(b, a) = bordering_flip(bpositive_compare(a, b)) := match a {
+    bp_one => match b {
+      bp_one => refl(b_equal);
+      bp_even(q) => refl(b_greater);
+      bp_odd(q) => refl(b_greater);
+    };
+    bp_even(p) => match b {
+      bp_one => refl(b_less);
+      bp_even(q) => bpositive_compare_flip(p, q);
+      bp_odd(q) => trans(
+        cong(bnat_odd_even_order, bpositive_compare_flip(p, q)),
+        bordering_flip_even_odd(bpositive_compare(p, q))
+      );
+    };
+    bp_odd(p) => match b {
+      bp_one => refl(b_less);
+      bp_even(q) => trans(
+        cong(bnat_even_odd_order, bpositive_compare_flip(p, q)),
+        bordering_flip_odd_even(bpositive_compare(p, q))
+      );
+      bp_odd(q) => bpositive_compare_flip(p, q);
+    };
+  };
+
+computable def bnat_compare_flip(a, b : BNat) :
+  bnat_compare(b, a) = bordering_flip(bnat_compare(a, b)) := match a, b {
+    b_zero, b_zero => refl(b_equal);
+    b_zero, b_positive(q) => refl(b_greater);
+    b_positive(p), b_zero => refl(b_less);
+    b_positive(p), b_positive(q) => bpositive_compare_flip(p, q);
+  };
+
+computable def bordering_le_flip(order : BOrdering, not_less : BOrderingLt(order) -> Void) :
+  BOrderingLe(bordering_flip(order)) := match order {
+    b_less => absurd(not_less(tt));
+    b_equal => tt;
+    b_greater => tt;
+  };
+
+// What is not below is at or above.
+computable def bnat_le_of_not_lt(a, b : BNat, not_less : bnat_lt(a, b) -> Void) :
+  bnat_le(b, a) := comp(
+    fun (i : Interval) => BOrderingLe(bnat_compare_flip(a, b) @ ~i),
+    bordering_le_flip(bnat_compare(a, b), not_less)
+  );
+
+computable def bpositive_lt_irrefl(p : BPositive, smaller : BOrderingLt(bpositive_compare(p, p))) :
+  Void := match p {
+    bp_one => smaller;
+    bp_even(q) => bpositive_lt_irrefl(q, smaller);
+    bp_odd(q) => bpositive_lt_irrefl(q, smaller);
+  };
+
+computable def bnat_lt_irrefl(n : BNat, smaller : bnat_lt(n, n)) : Void := match n {
+    b_zero => smaller;
+    b_positive(p) => bpositive_lt_irrefl(p, smaller);
+  };
+
+computable def bnat_zero_lt_succ(n : BNat) : bnat_lt(b_zero, bnat_succ(n)) := match n {
+    b_zero => tt;
+    b_positive(p) => tt;
+  };
+
+computable def bnat_mul_positive(a, b : BNat) :
+  bnat_lt(b_zero, a) -> bnat_lt(b_zero, b) -> bnat_lt(b_zero, bnat_mul(a, b)) := match a, b {
+    b_zero, _ => fun (first : Void, second : bnat_lt(b_zero, b)) => absurd(first);
+    b_positive(p), b_zero => fun (first : Unit, second : Void) => absurd(second);
+    b_positive(p), b_positive(q) => fun (first : Unit, second : Unit) => tt;
+  };
+
+computable def bordering_le_decide(order : BOrdering) :
+  Decidable(U0, BOrderingLe(order)) := match order {
+    b_less => left(tt);
+    b_equal => left(tt);
+    b_greater => right(fun (v : Void) => v);
+  };
+
+computable def bnat_le_decide(m, n : BNat) :
+  Decidable(U0, bnat_le(m, n)) := bordering_le_decide(bnat_compare(m, n));
+
+// As bnat_lt_from_decoding: the positive decision returns its binary
+// witness, and the unary order refutes only the negative one.
+computable def bnat_le_from_decoding(m, n : BNat, p : bnat_to_unat(m) <= bnat_to_unat(n)) :
+  bnat_le(m, n) := match bnat_le_decide(m, n) return bnat_le(m, n) {
+    left yes => yes;
+    right no => absurd(no(comp(fun (i : Interval) => bnat_le_correct(m, n) @ ~i, p)));
+  };
+
+computable def bnat_le_decode(m, n : BNat, below : bnat_le(m, n)) :
+  bnat_to_unat(m) <= bnat_to_unat(n) := comp(fun (i : Interval) => bnat_le_correct(m, n) @ i, below);
+
+computable def bnat_lt_decode(m, n : BNat, smaller : bnat_lt(m, n)) :
+  bnat_to_unat(m) < bnat_to_unat(n) := comp(
+    fun (i : Interval) => bnat_lt_correct(m, n) @ i, smaller
+  );
+
+// Unary order lemmas, for the refutations.
+computable def unat_le_succ_right(a, b : UNat, below : a <= b) : a <= succ(b) := match a, b {
+    zero, _ => tt;
+    succ(x), zero => absurd(below);
+    succ(x), succ(y) => unat_le_succ_right(x, y, below);
+  };
+
+computable def unat_lt_le_absurd(a, b : UNat) : a < b -> b <= a -> Void := match a, b {
+    zero, zero => fun (smaller : 0 < 0, below : 0 <= 0) => smaller;
+    zero, succ(y) => fun (smaller : 0 < succ(y), below : succ(y) <= 0) => below;
+    succ(x), zero => fun (smaller : succ(x) < 0, below : 0 <= succ(x)) => smaller;
+    succ(x), succ(y) => unat_lt_le_absurd(x, y);
+  };
+
+computable def unat_lt_add_cancel(k, a, b : UNat, smaller : k + a < k + b) : a < b := match k {
+    zero => smaller;
+    succ(j) => unat_lt_add_cancel(j, a, b, smaller);
+  };
+
+computable def unat_le_add_right(a, b : UNat) : a <= a + b := match a {
+    zero => tt;
+    succ(k) => unat_le_add_right(k, b);
+  };
+
+computable def unat_le_add_left(b, c, d : UNat, cd : c <= d) : c <= b + d := match b {
+    zero => cd;
+    succ(k) => unat_le_succ_right(c, k + d, unat_le_add_left(k, c, d, cd));
+  };
+
+computable def unat_le_add(a, b, c, d : UNat, ab : a <= b, cd : c <= d) :
+  a + c <= b + d := match a, b {
+    zero, _ => unat_le_add_left(b, c, d, cd);
+    succ(x), zero => absurd(ab);
+    succ(x), succ(y) => unat_le_add(x, y, c, d, ab, cd);
+  };
+
+computable def unat_le_mul(a, b, c, d : UNat, ab : a <= b, cd : c <= d) :
+  a * c <= b * d := match a, b {
+    zero, _ => tt;
+    succ(x), zero => absurd(ab);
+    succ(x), succ(y) => unat_le_add(c, d, x * c, y * d, cd, unat_le_mul(x, y, c, d, ab, cd));
+  };
+
+// Strict order and the successor: a < b exactly when succ(a) <= b, and
+// a <= b exactly when a < succ(b).
+computable def bnat_le_succ_of_lt(a, b : BNat, smaller : bnat_lt(a, b)) :
+  bnat_le(bnat_succ(a), b) := bnat_le_from_decoding(
+    bnat_succ(a), b,
+    comp(
+      fun (i : Interval) => (bnat_decode_succ(a) @ ~i) <= bnat_to_unat(b),
+      bnat_lt_decode(a, b, smaller)
+    )
+  );
+
+computable def bnat_lt_succ_of_le(a, b : BNat, below : bnat_le(a, b)) :
+  bnat_lt(a, bnat_succ(b)) := bnat_lt_from_decoding(
+    a, bnat_succ(b),
+    comp(
+      fun (i : Interval) => bnat_to_unat(a) < (bnat_decode_succ(b) @ ~i),
+      bnat_le_decode(a, b, below)
+    )
+  );
+
+computable def bnat_lt_succ_right(a, b : BNat, smaller : bnat_lt(a, b)) :
+  bnat_lt(a, bnat_succ(b)) := bnat_lt_from_decoding(
+    a, bnat_succ(b),
+    comp(
+      fun (i : Interval) => bnat_to_unat(a) < (bnat_decode_succ(b) @ ~i),
+      unat_le_succ_right(succ(bnat_to_unat(a)), bnat_to_unat(b), bnat_lt_decode(a, b, smaller))
+    )
+  );
+
+computable def bnat_succ_lt_succ(a, b : BNat, smaller : bnat_lt(a, b)) :
+  bnat_lt(bnat_succ(a), bnat_succ(b)) := bnat_lt_from_decoding(
+    bnat_succ(a), bnat_succ(b),
+    comp(
+      fun (i : Interval) => (bnat_decode_succ(a) @ ~i) < (bnat_decode_succ(b) @ ~i),
+      bnat_lt_decode(a, b, smaller)
+    )
+  );
+
+computable def bnat_lt_le_absurd(a, b : BNat, smaller : bnat_lt(a, b), below : bnat_le(b, a)) :
+  Void := unat_lt_le_absurd(
+    bnat_to_unat(a), bnat_to_unat(b), bnat_lt_decode(a, b, smaller), bnat_le_decode(b, a, below)
+  );
+
+computable def bnat_lt_add_cancel(k, a, b : BNat, smaller : bnat_lt(bnat_add(k, a), bnat_add(k, b))) :
+  bnat_lt(a, b) := bnat_lt_from_decoding(
+    a, b,
+    unat_lt_add_cancel(
+      bnat_to_unat(k), bnat_to_unat(a), bnat_to_unat(b),
+      comp(
+        fun (i : Interval) => (bnat_decode_add(k, a) @ i) < (bnat_decode_add(k, b) @ i),
+        bnat_lt_decode(bnat_add(k, a), bnat_add(k, b), smaller)
+      )
+    )
+  );
+
+computable def bnat_le_mul(a, b, c, d : BNat, ab : bnat_le(a, b), cd : bnat_le(c, d)) :
+  bnat_le(bnat_mul(a, c), bnat_mul(b, d)) := bnat_le_from_decoding(
+    bnat_mul(a, c), bnat_mul(b, d),
+    comp(
+      fun (i : Interval) => (bnat_decode_mul(a, c) @ ~i) <= (bnat_decode_mul(b, d) @ ~i),
+      unat_le_mul(
+        bnat_to_unat(a), bnat_to_unat(b), bnat_to_unat(c), bnat_to_unat(d),
+        bnat_le_decode(a, b, ab), bnat_le_decode(c, d, cd)
+      )
+    )
+  );

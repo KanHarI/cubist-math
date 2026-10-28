@@ -3,8 +3,9 @@ import {sourceOrigin} from "../cubist/bindings.mjs";
 import {bindingSyntaxAdapter} from "./binding-module.mjs";
 import {retainNamedNotation} from "../cubist/named-notation.mjs";
 import {enterSourceItem} from "./retained-source-context.mjs";
-import {notationPrintingRecipe} from "./model-notation.mjs";
+import {notationPrintingRecipe,notationPrintingViews} from "./model-notation.mjs";
 import {SELECTION,notationContextKey,NUMERAL_NAT,lexemeKey} from "./notation-context.mjs";
+import {naturalReaders} from "../cubist/named-notation.mjs";
 
 // The source producer owns model attachment and ordered file activation.
 // A later destination only consumes the resulting artifact and explicit
@@ -29,12 +30,19 @@ export function retainSourceNotation(t,module,declaration,env,{declared=new Set(
 // elaboration. Labels here describe the selected notation only; they never
 // resolve the function again in a later module.
 export function registerRetainedNotationPrinting(t,artifact,env) {
+  // A model whose module adds a numeral or a literal rule reads numerals by
+  // it, not by its theory's numeral operation, which then prints as a call.
+  const model=artifact.model?env.get(t.identityAdapter.key(artifact.model)):null;
+  if(model?.tag==="DefRef") {
+    const printing=t.checker.notationPrinting??=new Map();
+    printing.set(model.name,[...(printing.get(model.name)??[]),{modelRules:true}]);
+  }
   for(const rule of artifact.rules) {
     const adapter=bindingSyntaxAdapter(rule.syntax,t.compilationBindings.table);
     const tree=lowerBindingSyntax(rule.syntax,adapter),v=tree.value;
     const operands=tree.operands.map(token=>adapter.key(token.bindingId));
     if(rule.key==="numeral"&&v.kind==="name"&&v.name===operands[0]) {
-      const reader=rule.readers.find(([label])=>label==="UNat")?.[1];
+      const reader=rule.readers.find(([label])=>naturalReaders.includes(label))?.[1];
       const readerAdapter=reader&&bindingSyntaxAdapter(reader,t.compilationBindings.table);
       const input=reader&&lowerBindingSyntax(reader,readerAdapter);
       const type=input?.kind==="name"?env.get(input.name):null;
@@ -43,7 +51,8 @@ export function registerRetainedNotationPrinting(t,artifact,env) {
       if(signature) {
         const printing=t.checker.notationPrinting??=new Map();
         printing.set(signature,[...(printing.get(signature)??[]),
-          {notation:artifact.binding.label,identity:artifact.binding.id,identityNumeral:true}]);
+          {notation:artifact.binding.label,identity:artifact.binding.id,identityNumeral:true,
+            ...(artifact.model?{attached:true}:{})}]);
       }
       continue;
     }
@@ -56,10 +65,11 @@ export function registerRetainedNotationPrinting(t,artifact,env) {
       &&v.args.every(arg=>arg.name===operands[0]||arg.kind==="number"))
       entry={numeral:v.args.map(arg=>arg.kind==="number"?arg.value:null)};
     else if(operands.length===2&&v.args.length===2&&v.args.every((arg,i)=>arg.name===operands[i]))
-      entry={operator:rule.key,recipe:notationPrintingRecipe(rule.recipe)};
+      entry={operator:rule.key,recipe:notationPrintingRecipe(rule.recipe),views:notationPrintingViews(rule.recipe)};
     if(entry) {
       const printing=t.checker.notationPrinting??=new Map();
-      printing.set(f.name,[...(printing.get(f.name)??[]),{notation:artifact.binding.label,identity:artifact.binding.id,...entry}]);
+      printing.set(f.name,[...(printing.get(f.name)??[]),{notation:artifact.binding.label,identity:artifact.binding.id,
+        ...(artifact.model?{attached:true}:{}),...entry}]);
     }
   }
 }

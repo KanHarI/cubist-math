@@ -1,6 +1,7 @@
 // From tests/universe-generic.test.mjs.
 
 import unat;
+import classical_axioms;
 use unat;
 
 // A generic definition checks once and is instantiated at universes of tier
@@ -86,7 +87,7 @@ def moved(U < UU0, A : U, C : A -> U, x, y : A, p : x = y, c : C(x)) : C(y) {
 
 // D6: a generic assumption is named once, whatever universes it is used at.
 def both(nn0 : (UNat -> Void) -> Void, nn1 : (U0 -> Void) -> Void) :
-  Truncate(U0, UNat) and Truncate(U1, U0) := (LEM(U0, UNat, nn0), LEM(U1, U0, nn1));
+  Trunc(U0, UNat) and Trunc(U1, U0) := (LEM(U0, UNat, nn0), LEM(U1, U0, nn1));
 
 // Inspection names universe variables by their source names.
 def lifted(V < UU0) := identity(next(V), V);
