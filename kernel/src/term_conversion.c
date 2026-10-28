@@ -356,15 +356,13 @@ complete:
 }
 
 static bool alpha(cc_kernel *k, cc_term a, cc_term b) {
-    if (++k->recursion > 512) {
-        --k->recursion;
-        return ck_fail_as(k, CC_ERROR_RESOURCE, "Native conversion recursion depth exceeded.");
-    }
+    if (!ck_enter(k, "Native conversion recursion depth exceeded."))
+        return false;
     alpha_frame root = {.a = a, .b = b};
     bool equal = false;
     if (alpha_ready(k, &root, NULL, &equal)) equal = alpha_traverse(k, root);
     else alpha_completed(k, &root, equal);
-    --k->recursion;
+    ck_leave(k);
     return !k->error[0] && equal;
 }
 
