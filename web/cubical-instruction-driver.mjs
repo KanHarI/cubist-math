@@ -197,6 +197,7 @@ export class InstructionDriver {
     this.scopes = new Map();
     this.scopeKeys = new WeakMap();
     this.mentions = new WeakMap();
+    this.dimensionedIn = new WeakMap();
     this.pins = new Map();
     this.derived = new Map();
     // The scopes derivations read (narrow), by content, and the dimensions
@@ -218,6 +219,7 @@ export class InstructionDriver {
     this.chainNumbers = new Map();
     this.freeDims = new Map();
     this.freeSymbols = new Map();
+    this.binding = new Map();
     this.pruned = new Map();
   }
 
@@ -302,11 +304,24 @@ export class InstructionDriver {
   mentionedIn(scope) {
     let mask = this.mentions.get(scope);
     if (mask === undefined) {
-      mask = scope.get(MENTIONED) ?? 0n;
-      for (const [symbol, entry] of scope) if (typeof symbol === "number") mask |= this.entryDimensions(entry);
+      mask = this.dimensioned(scope).reduce((mask, [, dimensions]) => mask | dimensions, scope.get(MENTIONED) ?? 0n);
       this.mentions.set(scope, mask);
     }
     return mask;
+  }
+  // The variables in scope whose types mention a dimension, each [symbol,
+  // those dimensions as a mask]: few, as most types mention none.
+  dimensioned(scope) {
+    let variables = this.dimensionedIn.get(scope);
+    if (!variables) {
+      variables = [];
+      for (const [symbol, entry] of scope) {
+        const dimensions = typeof symbol === "number" ? this.entryDimensions(entry) : 0n;
+        if (dimensions) variables.push([symbol, dimensions]);
+      }
+      this.dimensionedIn.set(scope, variables);
+    }
+    return variables;
   }
   // The dimensions a context entry's type mentions: those in its context.
   entryDimensions(entry) {
@@ -400,6 +415,9 @@ export class InstructionDriver {
   // apart from it; the faces, which restrict a variable whose type mentions
   // them; and the dimensions the types of the variables in scope mention
   // (MENTIONED), as a path binder's renaming asks of them (typesMention).
+  // Of those, a variable the term binds again is kept whole: under that
+  // binder its entry is replaced and its type's dimensions no longer count,
+  // as in the whole scope, which a summary could not undo.
   // A variable bound inside the term is bound by the term's own binders, at
   // the entry its name and type give it, whatever else is in scope. So the
   // derivation in the narrowed scope is the one the whole scope would give,
@@ -408,9 +426,14 @@ export class InstructionDriver {
   // whole. A narrowed scope is made once per content: a memo key, as any
   // scope is (scopeKey).
   narrow(handle, scope) {
-    const live = liveIn(scope), mentioned = this.mentionedIn(scope), symbols = this.freeTermSymbols(handle);
+    const live = liveIn(scope), symbols = this.freeTermSymbols(handle);
+    let mentioned = scope.get(MENTIONED) ?? 0n, kept = symbols;
+    for (const [symbol, dimensions] of this.dimensioned(scope)) {
+      if (!this.binds(handle, symbol)) mentioned |= dimensions;
+      else if (!kept.has(symbol)) (kept = kept === symbols ? new Set(symbols) : kept).add(symbol);
+    }
     let entries = "";
-    for (const symbol of symbols) {
+    for (const symbol of kept) {
       const entry = scope.get(symbol);
       if (entry !== undefined) entries += `,${symbol}:${entry}`;
     }
@@ -419,7 +442,7 @@ export class InstructionDriver {
     let narrowed = this.narrowed.get(key);
     if (!narrowed) {
       narrowed = new Map([[LIVE, live], [MENTIONED, mentioned]]);
-      for (const symbol of symbols) if (scope.has(symbol)) narrowed.set(symbol, scope.get(symbol));
+      for (const symbol of kept) if (scope.has(symbol)) narrowed.set(symbol, scope.get(symbol));
       if (faces) narrowed.set(FACE, faces);
       this.narrowed.set(key, narrowed);
     }
@@ -1634,6 +1657,18 @@ export class InstructionDriver {
     }
     this.freeSymbols.set(term, symbols);
     return symbols;
+  }
+  // Whether a syntax DAG binds a term or level symbol anywhere in it.
+  binds(term, symbol) {
+    if (!term) return false;
+    const key = `${term}|${symbol}`;
+    let found = this.binding.get(key);
+    if (found === undefined) {
+      const n = this.node(term);
+      found = TERM_BINDERS.has(n.kind) && n.payload === symbol || n.children.some(child => this.binds(child, symbol));
+      this.binding.set(key, found);
+    }
+    return found;
   }
   // Retain a binding if either side can look it up. In particular a binding
   // on just one side must stay: it distinguishes a bound name from a free

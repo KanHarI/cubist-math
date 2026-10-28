@@ -161,6 +161,25 @@ test("dimension pruning keeps the renamings a system's faces read", async t => {
   }
 });
 
+// A derivation reads only part of its scope (InstructionDriver.narrow), and
+// summarizes the dimensions the types of the variables it leaves out
+// mention. A variable the term binds again leaves the scope under that
+// binder, its type's dimensions with it, as in the whole scope: here x's
+// type, p @ i, mentions i, and under λ(x : Unit) nothing does, so each of
+// 64 path binders on i keeps its index rather than taking a fresh one, of
+// which there are fewer.
+test("a variable the term binds again no longer mentions its type's dimensions under that binder", async t => {
+  const { kernel, driver, term } = await setup(t);
+  const unit = term("Unit"), point = term("Point"), symbol = name => kernel.symbol(name);
+  const universe = term("U", 0, term("LConst", 0)), i = kernel.formula("interval", [[1n, 0n]]);
+  const context = [[symbol("p"), term("Path", 1, universe, unit, unit)], [symbol("x"), term("PApp", i, term("Var", symbol("p")))]];
+  let body = point, type = unit;
+  for (let level = 0; level < 64; level++) [body, type] = [term("PLam", 0, type, body), term("Path", 0, type, body, body)];
+  const lambda = term("Lam", symbol("x"), unit, body);
+  const judgement = driver.graph.judgement(driver.infer(lambda, context, 1n));
+  assert.ok(driver.alpha(judgement.term, lambda), "each path binder kept its index");
+});
+
 test("term-scope pruning retains level variables and annotation dependencies", async t => {
   const { driver, term } = await setup(t);
   const v = name => term("Var", name), unit = term("Unit"), bound = term("LBound", 1);
