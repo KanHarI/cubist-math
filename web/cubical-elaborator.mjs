@@ -4,7 +4,7 @@ import { CubicalSyntax } from "./cubical-syntax.mjs";
 import { T, withoutEmptyFaces } from "./translator/core.mjs";
 import { interval as I } from "./translator/lattice.mjs";
 import { NameSupply, localName } from "./translator/names.mjs";
-import { printedNames, sourceText, unitNames } from "./cubical-source-text.mjs";
+import { sourceTexts } from "./cubical-source-text.mjs";
 import { contextDimensions, displayTerm, forSource, readableDimensions } from "./display-naming.mjs";
 import { cubicalText } from "./cubical-notation.mjs";
 import { levelNormal } from "./cubical-levels.mjs";
@@ -307,18 +307,21 @@ export class NativeCubicalElaborator {
   // Several terms shown with one naming: a variable they share has one name
   // in all of them, apart from every label any of them prints. `names` gives
   // free variables their names, as displayTerm takes them.
-  // They are one display: a name any of them shows for a variable, a
-  // binder or a dimension is read so in each (unitNames).
+  // They are one display: a name any of them writes for a variable, a
+  // binder or a dimension is read so in each (sourceTexts).
   displayTexts(terms, dimensions, { width = 160, limit = 4000, notation = this.notation ?? {}, names = new Map() } = {}) {
-    const named = forSource(terms, this.displayNaming(dimensions, 256, names));
-    let unit = null;
-    const shown = () => unit ??= unitNames(named.map(term => printedNames(term, this.displayNames, limit, notation)));
-    return named.map(term => this.printed(term, width, limit, { ...notation, shown }));
+    return this.printedTogether(forSource(terms, this.displayNaming(dimensions, 256, names)), width, limit, notation).texts;
   }
   // A term whose names are already settled, as source text within a width.
   printed(term, width = 160, limit = 4000, notation = this.notation ?? {}) {
-    const text = sourceText(term, this.displayNames, limit, notation);
-    return text.length > width ? `${text.slice(0, width - 1)}…` : text;
+    return this.printedTogether([term], width, limit, notation).texts[0];
+  }
+  // Terms whose names are already settled, as the source texts of one
+  // display, each within a width, with the names they write and `locals`,
+  // the names the display writes beside them (sourceTexts).
+  printedTogether(terms, width = 160, limit = 4000, notation = this.notation ?? {}, locals = []) {
+    const { texts, names } = sourceTexts(terms, this.displayNames, limit, notation, { locals });
+    return { texts: texts.map(text => text.length > width ? `${text.slice(0, width - 1)}…` : text), names };
   }
   // A goal, and the term a statement built for it, shown with one renaming,
   // so the context's names, the target and the term agree.
@@ -327,16 +330,14 @@ export class NativeCubicalElaborator {
   // false keeps redexes.
   // `notation.selection` names the notation selected at the goal (L2.10d).
   // The locals, the target and the term are one display, whose names each
-  // reads (unitNames): its locals' where the caller shows them (`telescope`).
+  // reads (sourceTexts): its locals' too where the caller shows them
+  // (`telescope`).
   displayGoal(context, dimensions, target, built = null, { width = 400, kernel = false, reduce = true, notation = {}, telescope = true } = {}) {
     const names = contextDimensions(dimensions);
     // Goals can share large terms; the printer stops after `width` nodes too.
     // Kernel notation is given the context's dimensions, so that a
     // definition named as one shows by its kernel name (cubicalText).
-    let unit = null, parts = [], telescopeNames = [];
-    const unitShown = () => unit ??= unitNames(parts.map(part => printedNames(part, this.displayNames, width, notation)), telescopeNames);
-    const show = term => {
-      if (!kernel) return this.printed(term, width, width, { ...notation, shown: unitShown });
+    const kernelText = term => {
       const text = cubicalText(term, this.displayNames, { dimensions: names });
       return text.length > width ? `${text.slice(0, width - 1)}…` : text;
     };
@@ -350,11 +351,16 @@ export class NativeCubicalElaborator {
       entries.push(shown);
       shown = shown.body;
     }
-    parts = [...telescope ? entries.map(entry => entry.domain) : [], shown.first, ...built ? [shown.second] : []];
-    telescopeNames = telescope ? entries.map(entry => entry.name) : [];
+    // The texts the display shows, together: the locals' types where it
+    // shows them, the target and the term.
+    const shownTypes = telescope ? entries.map(entry => entry.domain) : [];
+    const parts = [...shownTypes, shown.first, ...built ? [shown.second] : []];
+    const texts = kernel ? parts.map(kernelText)
+      : this.printedTogether(parts, width, width, notation, telescope ? entries.map(entry => entry.name) : []).texts;
+    const types = telescope ? texts : entries.map(entry => kernel ? kernelText(entry.domain) : this.printed(entry.domain, width, width, notation));
     // A universe variable's entry is its bound: U < UU0.
-    return { locals: entries.map(entry => ({ name: entry.name, type: show(entry.domain), relation: entry.domain?.tag === "LBound" ? "<" : ":" })),
-      goal: show(shown.first), built: built ? show(shown.second) : null };
+    return { locals: entries.map((entry, k) => ({ name: entry.name, type: types[k], relation: entry.domain?.tag === "LBound" ? "<" : ":" })),
+      goal: texts[shownTypes.length], built: built ? texts[shownTypes.length + 1] : null };
   }
   // Every check and every inference is a derivation by the instruction
   // kernel: the term the elaborator wrote, at the type it expects, over its

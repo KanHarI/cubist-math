@@ -453,14 +453,14 @@ notation bnat_numerals {
   numeral(n : BNat) := b_zero;
 }
 `;
-// The texts each display prints through the checker, with the names it
-// gives them, grouped by display.
+// The texts each display prints through the checker, with the names they
+// write (printedTogether), one entry for each display.
 const displayed = program => {
-  const { checker } = program, printed = checker.printed, units = new Map();
-  checker.printed = function (term, width, limit, notation) {
-    const text = printed.call(this, term, width, limit, notation);
-    if (notation?.shown) units.set(notation.shown, [...units.get(notation.shown) ?? [], text]);
-    return text;
+  const { checker } = program, together = checker.printedTogether, units = [];
+  checker.printedTogether = function (...args) {
+    const result = together.apply(this, args);
+    units.push(result);
+    return result;
   };
   return units;
 };
@@ -475,9 +475,9 @@ test("a proof step's locals, goal and term are one display, and its goal reads b
     assert.equal(last.goal, `${three} = ${three}`);
     for (const step of steps) {
       const texts = [...step.locals.map(local => local.type), step.goal, step.built];
-      const [unit] = [...units].find(([, shown]) => shown.length === texts.length && shown.every((text, k) => text === texts[k])) ?? [];
+      const unit = units.find(({ texts: shown }) => shown.length === texts.length && shown.every((text, k) => text === texts[k]));
       assert.ok(unit, JSON.stringify(step));
-      const names = unit();
+      const { names } = unit;
       const shown = new Set([...step.locals.map(local => local.name), ...texts.flatMap(text => [...identifiers(text, new Set(keywords))])]);
       // The proof's rest shows as the hole ?, which is no name.
       assert.deepEqual([...names.keys()].filter(name => name !== "?").sort(), [...shown].sort(), JSON.stringify(step));
@@ -498,13 +498,13 @@ test("a mismatch's types and an inspected signature are one display each", async
     try {
       const units = displayed(program);
       await program.check(unitHeader + body, "main");
-      assert.ok(units.size, body);
+      assert.ok(units.length, body);
       // The displays of this program's own declarations: the imported
       // modules' are checked in it too.
-      const own = [...units].filter(([, texts]) => texts.some(text => text.includes("bp_odd(bp_one)") || text.includes("m1.(")));
+      const own = units.filter(({ texts }) => texts.length > 1 && texts.some(text => text.includes("bp_odd(bp_one)") || text.includes("m1.(")));
       assert.ok(own.length, body);
-      for (const [unit, texts] of own)
-        assert.deepEqual([...unit().keys()].sort(), [...new Set(texts.flatMap(text => [...identifiers(text, new Set([...keywords, ...labels]))]))].sort(),
+      for (const { names, texts } of own)
+        assert.deepEqual([...names.keys()].sort(), [...new Set(texts.flatMap(text => [...identifiers(text, new Set([...keywords, ...labels]))]))].sort(),
           JSON.stringify(texts));
     } finally { program.dispose(); }
   }
@@ -529,4 +529,78 @@ print(typeof(refl(i.(18446744073709551617))));
     await withChecked(`${source}def again : ${text} := refl(i.(18446744073709551617));\n`, (_, again) =>
       assert.deepEqual(again.outputs.filter(output => output.name === "again").map(output => [output.verified, output.reason ?? null]), [[true, null]]));
   });
+});
+
+// Every place the printer writes an abbreviation (`abbreviated` in
+// web/cubical-source-text.mjs), classified: a bare form reads no name; a
+// named notation's qualifier is read before any value or dimension; a
+// model's qualifier is checked against the names the whole display writes,
+// as printed, and printed again where one takes it (sourceTexts). The
+// printed text is the only form any site contributes, so the names checked
+// are the text's, whichever form each site chose. A new site, or a
+// qualifier written elsewhere, fails until it is classified.
+test("every abbreviation the printer writes is classified, and a model's qualifier is checked against the printed names", async () => {
+  const { readFileSync } = await import("node:fs");
+  const printer = readFileSync(new URL("../web/cubical-source-text.mjs", import.meta.url), "utf8");
+  const sites = {
+    "selected reading": "bare", "selected numeral rule": "bare", "selected theory numeral": "bare",
+    "selected operator": "bare", "selected model operator": "bare",
+    "named operator": "named", "qualified reading": "model", "qualified theory numeral": "model",
+  };
+  const found = [...printer.matchAll(/abbreviated\("([^"]+)"/g)];
+  assert.deepEqual([...new Set(found.map(match => match[1]))].sort(), Object.keys(sites).sort(), "unclassified or stale sites");
+  // A model's qualifier is passed with it, to be checked.
+  for (const match of found) if (sites[match[1]] === "model")
+    assert.match(printer.slice(match.index, match.index + 200), /\{ name[,:]/, `${match[1]} passes its qualifier`);
+  // A qualifier is written only by an abbreviation site.
+  for (const line of printer.split("\n")) if (line.includes(".(${")) assert.ok(line.includes("abbreviated("), line);
+});
+
+// The review's case: a literal whose reader is shadowed prints as its
+// parse, whose success proof binds m; m's numeral there is no m.(3).
+test("a literal printed as its parse keeps a model's qualifier from the binders of its proof", async () => {
+  const wrapping = "import bnat;\nimport bnat_notation;\nimport lexemes;\ndef wrap(s : Lexeme) : Parsed(U0, BNat) := bnat_literal(s);\n"
+    + "notation w {\n  literal(s : Lexeme) := wrap(s);\n}\n";
+  const literalReader = async (name, ...rest) => name === "wrapping" ? wrapping : reader(name, ...rest);
+  const three = "b_positive(bp_odd(bp_one))";
+  const literal = `parsed_value(wrap(cons(digit(unat.(5)), nil)), eat(fun (m : Unit) => ${three}))`;
+  const source = `import unat;
+import bnat;
+import bnat_notation;
+import lexemes;
+import wrapping;
+theory Counted(U < UU0) {
+  M : U;
+  inj(n : BNat) : M;
+  def of_nat(n : BNat) : M := inj(n) notation numeral;
+}
+def m : Counted(U0) := Counted.make(M := BNat, inj := fun (n : BNat) => n);
+notation m {
+  numeral(n : BNat) := n;
+}
+notation bnat_numerals {
+  numeral(n : BNat) := b_zero;
+}
+notation bnat {
+  numeral(n : BNat) := b_zero;
+}
+notation w {
+  numeral(n : BNat) := b_zero;
+}
+def eat(f : Unit -> BNat) : Unit := tt;
+def p : ${literal} = ${literal} := refl(${literal});
+print(typeof(p));
+`;
+  const program = new CubicalProgram(module, literalReader, {});
+  try {
+    const result = await program.check(source, "main");
+    assert.deepEqual(result.gaps, [], JSON.stringify(result.gaps));
+    const text = result.prints[0].text;
+    assert.ok(text.includes(`eat(fun (m : Unit) => ${three})`) && !text.includes("m.("), text);
+    const again = new CubicalProgram(module, literalReader, {});
+    try {
+      const read = await again.check(`${source}def again : ${text} := refl(${literal});\n`, "main");
+      assert.deepEqual(read.outputs.filter(output => output.name === "again").map(output => [output.verified, output.reason ?? null]), [[true, null]]);
+    } finally { again.dispose(); }
+  } finally { program.dispose(); }
 });

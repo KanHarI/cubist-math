@@ -870,12 +870,14 @@ shadowed `unat` or `bnat_numerals` prints a value as its constructors, and
 a model variable whose name a named notation takes prints its numeral as
 the call; this also covers `unat.(n)` and the literal readers' qualifiers,
 which main printed by name alone. A model's name is no qualifier where the
-display writes that name for a variable, a binder or a dimension: the
-printer collects the names as it writes them (`printedNames` in
-`web/cubical-source-text.mjs`), so a binder it leaves out, as an
-equality's coordinate, takes no name, and a display of several texts, as
-a proof step's locals, goal and term or a mismatch's two types, reads the
-names all of them write (`unitNames`). Operators and a model's bare operators
+display writes that name for a variable, a binder or a dimension:
+`sourceTexts` (`web/cubical-source-text.mjs`) prints a display's texts, a
+proof step's locals, goal and term or a mismatch's two types together,
+recording each name as the printer writes it, and where a model qualifier
+it wrote is a name the texts also write for something else, prints them
+again with that name known, until none is. So a binder it leaves out, as an
+equality's coordinate, takes no name, and one inside a literal it prints
+as its parse does. Operators and a model's bare operators
 keep the name-only check
 ([pr-318-todo](../../reports/pr-318-todo.md)).
 `tests/numeral-readback.test.mjs` combines each way of shadowing a reader's
@@ -886,8 +888,10 @@ contextual `typeof`. It also counts a printing scope's environment reads, so
 displays stay linear in the number of terms shown, classifies every form the
 printer handles or the core has by the binders it prints, checks that each
 display's names are exactly the variable, binder and dimension names its
-texts show, and reads back a numeral under a path dimension of its reader's
-name, a proof step's goal under its locals, and a literal in an equality.
+texts show, classifies every place the printer writes an abbreviation, and
+reads back a numeral under a path dimension of its reader's name, a proof
+step's goal under its locals, a literal in an equality, and a numeral in
+the success proof of a literal printed as its parse.
 [ring_numeral_display.cubist](../../../cubist-tests/ring_numeral_display.cubist)
 and [numeral_display_scopes.cubist](../../../cubist-tests/numeral_display_scopes.cubist)
 check these displays with only the algebra and the number modules imported,
