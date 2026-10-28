@@ -181,11 +181,12 @@ test("a saved benchmark pins no source it did not measure", async t => {
   const scratch = await mkdtemp(join(tmpdir(), "cubist-pins-"));
   t.after(() => rm(scratch, { recursive: true, force: true }));
   // The scratch repository ignores the caller's Git: no inherited GIT_*
-  // variable (GIT_DIR or GIT_INDEX_FILE would send writes elsewhere), no
-  // global or system settings, so no commit signing, hooks, templates or
-  // identity of theirs.
+  // variable (GIT_DIR or GIT_INDEX_FILE would send writes elsewhere), and a
+  // home of its own and no system files, so no settings, ignore or attribute
+  // files, commit signing, hooks, templates or identity of theirs.
   const inherited = Object.entries(process.env).filter(([name]) => !name.startsWith("GIT_"));
-  const isolated = { ...Object.fromEntries(inherited), GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1",
+  const isolated = { ...Object.fromEntries(inherited), HOME: scratch, XDG_CONFIG_HOME: scratch,
+    GIT_CONFIG_NOSYSTEM: "1", GIT_ATTR_NOSYSTEM: "1",
     GIT_AUTHOR_NAME: "test", GIT_AUTHOR_EMAIL: "test@example.com",
     GIT_COMMITTER_NAME: "test", GIT_COMMITTER_EMAIL: "test@example.com" };
   const git = args => execFileSync("git", ["-c", "commit.gpgsign=false", "-c", "core.hooksPath=/dev/null", ...args],
