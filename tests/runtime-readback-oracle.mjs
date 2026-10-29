@@ -6,7 +6,9 @@
 //   - By value, with origins off: the full normal form of R(root) is the
 //     kernel's full normal form of the evaluated term (3.6, claim 3).
 //   - Observed heads: each head an observation returned after η, read back,
-//     has the full normal form of the cell it was asked of.
+//     has the full normal form of the cell it was asked of; the query is
+//     made with heads, which keeps them, and otherwise is the one the
+//     runtime would make.
 //   - By origin: a query made with origins walks the same value form, and
 //     the folded normal form of its R(root) is the kernel's folded normal
 //     form of the term (3.4's target).
@@ -18,7 +20,7 @@
 // the kernel's syntax depth (K344, "deep"), is counted, not decided.
 import { Translator } from "../web/translator/translate.mjs";
 import { valueForm } from "../web/translator/evaluation.mjs";
-import { RuntimeQuery, RuntimeError } from "../web/cubical-runtime.mjs";
+import { RuntimeQuery } from "../web/cubical-runtime.mjs";
 import { InstructionDriver } from "../web/cubical-instruction-driver.mjs";
 import { KernelError } from "../web/cubical-kernel.mjs";
 
@@ -48,7 +50,7 @@ export function treeSize(kernel, handle, bound = Infinity) {
 
 // What a readback failure was: a Lift refused, a readback past the
 // kernel's syntax depth (K344), or anything else, a defect.
-const failure = error => error instanceof RuntimeError && error.kind === "unsupported" ? { refused: error.message }
+const failure = error => error?.kind === "unsupported" ? { refused: error.message }
   : deep(error) ? { deep: error.message } : { error: `${error.kind ?? error.name}: ${error.message}` };
 
 // The outcomes some oracle contradicts, or whose readback failed: each
@@ -60,21 +62,25 @@ export const disagreements = outcomes => outcomes.filter(outcome => ![outcome.va
 // Watch the value forms of the program checks made until `restore()`.
 // Each one the runtime computes adds an outcome to `outcomes`: its source,
 // and for each oracle true (agreed), false (differed), "budget" or "deep"
-// (undecided), or the readback's failure. `typing` is the largest tree size
-// of R(root) typed.
-export function watchReadbacks({ steps = 2000000, typing = 0 } = {}) {
+// (undecided), or the readback's failure; the heads' undecided comparisons
+// are counted apart (`undecidedHeads`). `typing` is the largest tree size
+// of R(root) typed. The value form is computed by a query of class `Query`,
+// made, where the runtime would make one, with heads, which only the
+// observed heads' oracle reads.
+export function watchReadbacks({ steps = 2000000, typing = 0, Query = RuntimeQuery } = {}) {
   const outcomes = [], valueFormOf = Translator.prototype.valueFormOf;
   Translator.prototype.valueFormOf = function (result, scope, node, kernel) {
     const checker = this.checker, made = checker.runtimeQuery;
     let query = null;
     const observed = [];
     checker.runtimeQuery = judgement => {
-      query = made.call(checker, judgement);
-      if (query) {
-        const observeNow = query.observeNow;
-        query.observeNow = (handle, options) => { observed.push(handle); return observeNow.call(query, handle, options); };
-        query.dispose = () => {};
-      }
+      const asked = made.call(checker, judgement);
+      if (!asked) return null;
+      asked.dispose();
+      query = new Query(checker.kernel, judgement, { ...checker.runtimeLimits(), heads: true });
+      const observeNow = query.observeNow;
+      query.observeNow = (handle, options) => { observed.push(handle); return observeNow.call(query, handle, options); };
+      query.dispose = () => {};
       return query;
     };
     try {
@@ -88,19 +94,19 @@ export function watchReadbacks({ steps = 2000000, typing = 0 } = {}) {
         for (const name of recorded) delete instance[name];
         try {
           outcomes.push({ source: scope.unit.source.slice(node.start, node.end).trim(),
-            ...oracles(this, checker, query, observed, result, node, kernel, steps, typing) });
+            ...oracles(this, checker, Query, query, observed, result, node, kernel, steps, typing) });
         } finally { Object.assign(instance, Object.fromEntries(recording)); }
       }
       return value;
     } finally {
       delete checker.runtimeQuery;
-      if (query) RuntimeQuery.prototype.dispose.call(query);
+      if (query) Query.prototype.dispose.call(query);
     }
   };
   return { outcomes, restore() { Translator.prototype.valueFormOf = valueFormOf; } };
 }
 
-function oracles(translator, checker, query, observed, result, node, at, steps, typing) {
+function oracles(translator, checker, Query, query, observed, result, node, at, steps, typing) {
   const kernel = checker.kernel, term = result.expression, outcome = {};
   // The two normal forms and their comparison, itself a budgeted query.
   const same = (normalize, a, b) => {
@@ -113,18 +119,26 @@ function oracles(translator, checker, query, observed, result, node, at, steps, 
   try {
     root = query.readback();
     outcome.value = same("normalize", root, term);
+  } catch (error) { outcome.value = failure(error); }
+  // Every observed head is compared: a disagreement fails the oracle
+  // whatever came before it, and an undecided comparison is counted.
+  try {
     outcome.heads = true;
     for (const handle of observed) {
       const agreed = same("normalize", query.readback(handle, { head: true }), query.readback(handle));
-      if (agreed !== true) { outcome.heads = agreed; break; }
+      if (agreed === false) outcome.heads = false;
+      else if (agreed !== true) {
+        outcome.undecidedHeads = (outcome.undecidedHeads ?? 0) + 1;
+        if (outcome.heads === true) outcome.heads = agreed;
+      }
     }
-  } catch (error) { outcome.value = failure(error); }
+  } catch (error) { outcome.heads = failure(error); }
   if (typing && typeof root === "number" && treeSize(kernel, root, typing + 1) <= typing) {
     try { new InstructionDriver(kernel).check(root, result.typeHandle); outcome.typed = true; }
     catch (error) { outcome.typed = failure(error); }
   }
   // The same value form, walked by a query that keeps origins.
-  const folded = new RuntimeQuery(kernel, result.judgement, { ...checker.runtimeLimits(), origins: true });
+  const folded = new Query(kernel, result.judgement, { ...checker.runtimeLimits(), origins: true });
   try {
     valueForm(folded.root, Translator.prototype.runtimeQueries.call(translator, { spend() {} }, folded, at), node);
     outcome.folded = same("normalizeFolded", folded.readback(folded.root, { origins: true }), term);

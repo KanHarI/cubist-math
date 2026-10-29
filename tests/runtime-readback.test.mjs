@@ -11,6 +11,7 @@ import { RuntimeQuery } from "../web/cubical-runtime.mjs";
 import { Translator } from "../web/translator/translate.mjs";
 import { valueForm } from "../web/translator/evaluation.mjs";
 import { checkProgram } from "./check-program.mjs";
+import { watchReadbacks, disagreements } from "./runtime-readback-oracle.mjs";
 
 // Readback, W1 of docs/roadmaps/runtime/typed-readback.md: a runtime value
 // as the closed kernel term it stands for (RuntimeQuery.readback). These
@@ -187,8 +188,9 @@ def boxed := (fun (A : U0) => fun (a : A) => typed(Box(A), box(a)))(Unit, tt);
 });
 
 // η leaves a cell holding its λ, so R(root) never reads back the head an
-// observation computed: that head is read back on its own, and its full
-// normal form is its cell's.
+// observation computed: a query made with heads keeps that head, read back
+// on its own, and its full normal form is its cell's. A query made without
+// them, as a value form's is, keeps none, and reads none back.
 test("the head an observation computed by η reads back to its cell's full normal form", async t => {
   const s = await setup(t, `
 import lists; use unat;
@@ -198,32 +200,74 @@ def prepend := fun (xs : List(U0, UNat)) => cons(1, xs);
 def toggle := fun (f : Flag) => match f return Flag { disabled => enabled; enabled => disabled; };
 `);
   for (const [name, kind] of [["successor", "Con"], ["prepend", "App"], ["toggle", "Elim"]]) {
-    const runtime = s.query(name), observed = s.walk(runtime);
+    const runtime = s.query(name, { heads: true }), observed = s.walk(runtime);
     assert.equal(observed[0], runtime.root, name);
     const head = runtime.readback(runtime.root, { head: true }), cell = runtime.readback();
     assert.deepEqual([s.kernel.node(cell).kind, s.kernel.node(head).kind], ["Lam", kind], name);
     // Each head the walk observed, cons(1)'s argument too.
     for (const handle of observed) assert.ok(s.same(s.normal(runtime.readback(handle, { head: true })), s.normal(runtime.readback(handle))), name);
+    // The kept head is retained, and counted: more objects than a value
+    // form's query holds after the same walk.
+    const plain = s.query(name);
+    s.walk(plain);
+    assert.throws(() => plain.readback(plain.root, { head: true }), fails("input"), name);
+    assert.ok(runtime.retainedObjects().runtimeObjects > plain.retainedObjects().runtimeObjects, name);
   }
+  // For successor, three more: the constructor value, its instance cell and
+  // its argument list.
+  const [kept, plain] = [{ heads: true }, {}].map(options => { const runtime = s.query("successor", options); s.walk(runtime); return runtime; });
+  assert.equal(kept.retainedObjects().runtimeObjects, plain.retainedObjects().runtimeObjects + 3);
+});
+
+// A type value keeps of its environment only the bindings its node uses,
+// so a value form whose result is a type retains nothing of the
+// computation that chose it: traverse(100 * 100) retains what traverse(10
+// * 10) does, the 13 objects the runtime retained before readback.
+test("a type value keeps only the bindings its node uses", async t => {
+  const s = await setup(t, `
+import unat; use unat;
+def traverse(n : UNat) : U0 := match n { zero => Unit; succ(k) => traverse(k); };
+def far := traverse(100 * 100);
+def near := traverse(10 * 10);
+def endo := (fun (A : U0) => fun (n : UNat) => A -> A)(Unit, 100 * 100);
+`);
+  const retained = name => { const runtime = s.query(name); s.walk(runtime); return runtime.retainedObjects().runtimeObjects; };
+  assert.deepEqual([retained("far"), retained("near")], [13, 13]);
+  // A -> A keeps A's binding, which its readback reads, and not n's.
+  const endo = s.query("endo");
+  s.walk(endo);
+  assert.ok(endo.retainedObjects().runtimeObjects < 10);
+  assert.ok(s.same(s.normal(endo.readback()), s.normal(s.term("endo"))));
 });
 
 // With origins, a non-data part is read back as the computation it was
 // forced from, so that folding passes the definition spines the kernel's
-// folded normal form keeps (3.4); read by value, each folds away.
+// folded normal form keeps (3.4); read by value, each folds away. The
+// note's regressions: a closure over cert(x) in a pair; x.1 with x data;
+// a Tag(x) constructor beside (fun y => y.1)(x); x.1(tt); and two more,
+// x itself, data read by value, beside (fun y => y.1)(x), which reads it by
+// origin, so that the memo must not answer one mode with the other's
+// readback; and x.1 inside a constructor's instance and a pair's type,
+// annotations no value form forces, as inside an origin.
 test("read back by origin, each part folds as the kernel's folded normal form does", async t => {
   const s = await setup(t, `
 def cert(x : Unit) : Unit -> Unit := fun (y : Unit) => tt;
 def certPair(u : Unit) : (Unit -> Unit) and Unit := (fun (y : Unit) => tt, tt);
 def certPair2(u : Unit) : (Unit -> Unit -> Unit) and Unit := (fun (a : Unit) => fun (b : Unit) => tt, tt);
 inductive Tag(p : (Unit -> Unit) and Unit) { tag; }
+inductive Marked(f : Unit -> Unit) { mark; }
 def wrapped := (fun (x : Unit) => typed(Unit and (Unit -> Unit), (x, cert(x))))(tt);
 def projected := (fun (x : (Unit -> Unit) and Unit) => typed(Unit and (Unit -> Unit), (tt, x.1)))(certPair(tt));
 def tagged := (fun (x : (Unit -> Unit) and Unit) => typed(Tag(x) and (Unit -> Unit), (tag, (fun (y : (Unit -> Unit) and Unit) => y.1)(x))))(certPair(tt));
 def applied := (fun (x : (Unit -> Unit -> Unit) and Unit) => typed(Unit and (Unit -> Unit), (tt, x.1(tt))))(certPair2(tt));
+def shared := (fun (x : (Unit -> Unit) and Unit) => typed(((Unit -> Unit) and Unit) and (Unit -> Unit), (x, (fun (y : (Unit -> Unit) and Unit) => y.1)(x))))(certPair(tt));
+def annotated := (fun (x : (Unit -> Unit) and Unit) => typed(((Unit -> Unit) and Unit) and Marked(x.1), (x, mark)))(certPair(tt));
 `);
-  // What each keeps folded: cert(tt), certPair(tt).1, certPair(tt).1 and
-  // certPair2(tt).1(tt), each a definition applied or projected.
-  for (const [name, kept] of [["wrapped", "App"], ["projected", "Fst"], ["tagged", "Fst"], ["applied", "App"]]) {
+  // What each keeps folded in its second part: cert(tt), certPair(tt).1,
+  // certPair(tt).1, certPair2(tt).1(tt) and certPair(tt).1, each a
+  // definition applied or projected, and mark, whose instance keeps
+  // certPair(tt).1 as the pair's type does.
+  for (const [name, kept] of [["wrapped", "App"], ["projected", "Fst"], ["tagged", "Fst"], ["applied", "App"], ["shared", "Fst"], ["annotated", "Con"]]) {
     const runtime = s.query(name, { origins: true });
     s.walk(runtime);
     const kernelFolded = s.folded(s.term(name)), second = s.kernel.node(s.kernel.node(kernelFolded).children[2]);
@@ -363,7 +407,7 @@ const mutations = [
   ["a constructor's index", "value", "flag", [["index: n.payload, instance", "index: n.payload ^ 1, instance"]]],
   ["a constructor's signature", "value", "flag", [["signature: instance.payload, index", "signature: instance.payload + 1, index"]]],
   ["a constructor's instance", "value", "boxed", [["instance: delay(c[0]), args", "instance: this.#delay(c[0], null), args"]]],
-  ["a dropped instance", "value", "observed_instance", [["{ tag: \"Type\", node: cell.code, env }", "{ tag: \"Type\" }"]]],
+  ["a dropped instance", "value", "observed_instance", [["{ tag: \"Type\", node: cell.code, env: this.#pruned(cell.code, env) }", "{ tag: \"Type\" }"]]],
   ["a λ's body", "value", "constant", [["body: c[1], env, domain", "body: this.#node(c[1]).kind === \"Point\" ? c[0] : c[1], env, domain"]]],
   ["a λ's symbol", "value", "pairing", [["symbol: n.payload, body: c[1], env, domain",
     "symbol: this.#node(c[1]).kind === \"App\" ? this.#kernel().symbol(\"mutated\") : n.payload, body: c[1], env, domain"]]],
@@ -425,7 +469,7 @@ def captured := (fun (A : U0) => fun (x : A) => fun (u : Unit) => typed(A and A,
     },
   };
   const verdict = (Query, oracle, name) => {
-    const judgement = s.judgement(name), runtime = s.query(judgement, { origins: oracle === "folded" }, Query);
+    const judgement = s.judgement(name), runtime = s.query(judgement, { origins: oracle === "folded", heads: oracle === "heads" }, Query);
     runtime.judgement = judgement;
     const observed = s.walk(runtime);
     if (name === "observed_instance") runtime.observeNow(runtime.observeNow().instance);
@@ -441,5 +485,23 @@ def captured := (fun (A : U0) => fun (x : A) => fun (u : Unit) => typed(A and A,
     if (label === "a function replaced by another of its type") assert.equal(verdict(Mutant, "folded", name), "agrees", label);
     if (label === "an η-produced constructor's index") assert.equal(verdict(Mutant, "value", name), "agrees", label);
     if (label === "domains closed one by one") assert.equal(verdict(Mutant, "value", name), "agrees", label);
+  }
+});
+
+// The differential's observed heads (tests/runtime-readback-oracle.mjs)
+// compare every head the walk observed: an undecided comparison, here the
+// pair's and its first part's, whose full normal forms the kernel cannot
+// build (K344), is counted, and a later disagreement still fails the
+// oracle, as the η-produced index mutation makes successor's.
+test("the differential compares every observed head, past an undecided one", async t => {
+  const indexed = mutations.find(([label]) => label === "an η-produced constructor's index")[3];
+  const source = `import unat; use unat;
+def count_into(n, total : UNat) : UNat := match n { zero => total; succ(k) => count_into(k, succ(total)); };
+print(evaluate(typed((Unit -> UNat) and (UNat -> UNat), (fun (u : Unit) => count_into(2 * 255, 0), fun (n : UNat) => succ(n)))));`;
+  for (const [Query, heads] of [[RuntimeQuery, "deep"], [await mutant(indexed), false]]) {
+    const watched = watchReadbacks({ Query });
+    try { await checkProgram(t, source, { module }); } finally { watched.restore(); }
+    assert.deepEqual(watched.outcomes.map(outcome => [outcome.heads, outcome.undecidedHeads]), [[heads, 2]]);
+    assert.equal(disagreements(watched.outcomes).length, heads === false ? 1 : 0);
   }
 });
