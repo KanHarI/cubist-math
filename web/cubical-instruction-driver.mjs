@@ -82,12 +82,18 @@ const withLive = (scope, dimension) => new Map(scope).set(LIVE, liveIn(scope) | 
 const FACE = "faces";
 const facesIn = scope => scope.get(FACE) ?? [];
 const withFace = (scope, clause) => new Map(scope).set(FACE, [...facesIn(scope), clause]);
+// Under this key, in a scope a derivation narrowed (InstructionDriver.narrow),
+// the dimensions the types of the variables it left out mention: a binder's
+// renaming still reads them (typesMention).
+const MENTIONED = "mentioned";
 // Scopes of several judgements together: their entries, every live
-// dimension, and every face, each once.
+// dimension, every face, each once, and what their types mention.
 const joinScopes = (...scopes) => {
   const faces = [...new Map(scopes.flatMap(facesIn).map(clause => [String(clause), clause])).values()];
+  const mentioned = scopes.reduce((mask, scope) => mask | (scope.get(MENTIONED) ?? 0n), 0n);
   return new Map([...scopes.flatMap(scope => [...scope]),
-    [LIVE, scopes.reduce((mask, scope) => mask | liveIn(scope), 0n)], ...faces.length ? [[FACE, faces]] : []]);
+    [LIVE, scopes.reduce((mask, scope) => mask | liveIn(scope), 0n)], ...faces.length ? [[FACE, faces]] : [],
+    ...mentioned ? [[MENTIONED, mentioned]] : []]);
 };
 // The children of a dimension binder that it binds.
 const underBinder = { Path: [0], PLam: [0, 1], Comp: [0, 1], HComp: [1], Trans: [0] };
@@ -188,9 +194,14 @@ export class InstructionDriver {
     this.statements = new Map();
     this.scopes = new Map();
     this.scopeKeys = new WeakMap();
-    this.mentions = new Map();
+    this.mentions = new WeakMap();
+    this.dimensionedIn = new WeakMap();
     this.pins = new Map();
     this.derived = new Map();
+    // The scopes derivations read (narrow), by content, and the dimensions
+    // each context entry's type mentions.
+    this.narrowed = new Map();
+    this.entryDims = new Map();
     this.stable = new Set();
     // Glue terms the glue move need not try again: no Glue eta redex, even
     // with its side conditions normalized, or one whose side conditions take
@@ -206,6 +217,7 @@ export class InstructionDriver {
     this.chainNumbers = new Map();
     this.freeDims = new Map();
     this.freeSymbols = new Map();
+    this.binding = new Map();
     this.pruned = new Map();
   }
 
@@ -284,15 +296,44 @@ export class InstructionDriver {
     return this.scopes.get(key);
   }
   // Whether the type of a variable in scope mentions a dimension.
-  typesMention(scope, dimension) {
-    const key = `${this.scopeKey(scope)}|${dimension}`;
-    if (!this.mentions.has(key))
-      this.mentions.set(key, [...scope].some(([symbol, entry]) => symbol !== LIVE && symbol !== FACE && this.graph.entry(entry).source &&
-        this.statement(this.graph.entry(entry).source).context.some(other => {
-          const info = this.graph.entry(other);
-          return info.dimension && info.symbol === dimension;
-        })));
-    return this.mentions.get(key);
+  typesMention(scope, dimension) { return !!(this.mentionedIn(scope) >> BigInt(dimension) & 1n); }
+  // The dimensions the types of the variables in scope mention, those a
+  // narrowed scope left out included, as a mask.
+  mentionedIn(scope) {
+    let mask = this.mentions.get(scope);
+    if (mask === undefined) {
+      mask = this.dimensioned(scope).reduce((mask, [, dimensions]) => mask | dimensions, scope.get(MENTIONED) ?? 0n);
+      this.mentions.set(scope, mask);
+    }
+    return mask;
+  }
+  // The variables in scope whose types mention a dimension, each [symbol,
+  // those dimensions as a mask]: few, as most types mention none.
+  dimensioned(scope) {
+    let variables = this.dimensionedIn.get(scope);
+    if (!variables) {
+      variables = [];
+      for (const [symbol, entry] of scope) {
+        const dimensions = typeof symbol === "number" ? this.entryDimensions(entry) : 0n;
+        if (dimensions) variables.push([symbol, dimensions]);
+      }
+      this.dimensionedIn.set(scope, variables);
+    }
+    return variables;
+  }
+  // The dimensions a context entry's type mentions: those in its context.
+  entryDimensions(entry) {
+    let mask = this.entryDims.get(entry);
+    if (mask === undefined) {
+      mask = 0n;
+      const source = this.graph.entry(entry).source;
+      for (const other of source ? this.statement(source).context : []) {
+        const info = this.graph.entry(other);
+        if (info.dimension) mask |= 1n << BigInt(info.symbol);
+      }
+      this.entryDims.set(entry, mask);
+    }
+    return mask;
   }
   scopeKey(scope) {
     if (!this.scopeKeys.has(scope)) this.scopeKeys.set(scope, [...scope].map(([symbol, entry]) => `${symbol}:${entry}`).sort().join(","));
@@ -356,12 +397,54 @@ export class InstructionDriver {
     }
   }
 
-  // A term derived once per scope: the kernel shares repeated instructions,
-  // and this skips walking the term again.
+  // A term derived once per scope it reads: the kernel shares repeated
+  // instructions, and this skips walking the term again. A derivation reads
+  // only the part of its scope that narrow keeps, so a subterm met under
+  // many binders, as the closed parts of a shared normal form are, is
+  // derived once, not once for each path to it.
   derive(handle, scope) {
-    const key = `${this.scopeKey(scope)}|${handle}`;
-    if (!this.derived.has(key)) this.derived.set(key, this.deriveNode(handle, scope));
+    const narrowed = this.narrow(handle, scope), key = `${this.scopeKey(narrowed)}|${handle}`;
+    if (!this.derived.has(key)) this.derived.set(key, this.deriveNode(handle, narrowed));
     return this.derived.get(key);
+  }
+  // The part of a scope a term's derivation reads, and nothing else: the
+  // entries of its free variables, each derived from its own entry; every
+  // live dimension, as a binder inside whose dimension is live is renamed
+  // apart from it; the faces, which restrict a variable whose type mentions
+  // them; and the dimensions the types of the variables in scope mention
+  // (MENTIONED), as a path binder's renaming asks of them (typesMention).
+  // Of those, a variable the term binds again is kept whole: under that
+  // binder its entry is replaced and its type's dimensions no longer count,
+  // as in the whole scope, which a summary could not undo.
+  // A variable bound inside the term is bound by the term's own binders, at
+  // the entry its name and type give it, whatever else is in scope. So the
+  // derivation in the narrowed scope is the one the whole scope would give,
+  // and as each judgement's context is the union of its premises', it
+  // combines with any around it. Faces are rare (onFace's retry), and kept
+  // whole. A narrowed scope is made once per content: a memo key, as any
+  // scope is (scopeKey).
+  narrow(handle, scope) {
+    const live = liveIn(scope), symbols = this.freeTermSymbols(handle);
+    let mentioned = scope.get(MENTIONED) ?? 0n, kept = symbols;
+    for (const [symbol, dimensions] of this.dimensioned(scope)) {
+      if (!this.binds(handle, symbol)) mentioned |= dimensions;
+      else if (!kept.has(symbol)) (kept = kept === symbols ? new Set(symbols) : kept).add(symbol);
+    }
+    let entries = "";
+    for (const symbol of kept) {
+      const entry = scope.get(symbol);
+      if (entry !== undefined) entries += `,${symbol}:${entry}`;
+    }
+    const faces = facesIn(scope).length ? facesIn(scope) : null;
+    const key = `${live}|${mentioned}|${faces ? String(faces) : ""}|${entries}`;
+    let narrowed = this.narrowed.get(key);
+    if (!narrowed) {
+      narrowed = new Map([[LIVE, live], [MENTIONED, mentioned]]);
+      for (const symbol of kept) if (scope.has(symbol)) narrowed.set(symbol, scope.get(symbol));
+      if (faces) narrowed.set(FACE, faces);
+      this.narrowed.set(key, narrowed);
+    }
+    return narrowed;
   }
 
   deriveNode(handle, scope) {
@@ -1007,13 +1090,28 @@ export class InstructionDriver {
       this.settle(a, b, mismatch);
     }
     if (!this.alpha(this.subterm(a), this.subterm(b))) {
-      // Universes and families of universes are cumulative.
+      // Universes and families of universes are cumulative. Lift includes
+      // one type in another only along Π, Σ and level Π binders ending in
+      // universes (ck_syntactic_cumulative), so two types of another shape
+      // are not offered to it: the kernel would first compare them whole,
+      // and refuse them, in time that grows with their normal forms.
+      if (!this.cumulative(this.subterm(a), this.subterm(b))) throw mismatch(null);
       let lifted;
       try { lifted = g.lift(a.ref.id, g.side(b.ref.id, "other")); }
       catch (error) { throw mismatch(error); }
       return g.convert(lifted, g.symmetry(b.ref.id));
     }
     return g.convert(a.ref.id, g.symmetry(b.ref.id));
+  }
+  // Whether Lift could include one type in another that is not
+  // alpha-equal to it: both universes, or both Π, Σ or level Π types of one
+  // kind whose bodies could be. The kernel compares their domains and
+  // levels; this reads only the binders' kinds.
+  cumulative(x, y) {
+    for (let nx = this.node(x), ny = this.node(y); ; nx = this.node(nx.children[1]), ny = this.node(ny.children[1])) {
+      if (nx.kind === "U" && ny.kind === "U") return true;
+      if (nx.kind !== ny.kind || !["Pi", "Sigma", "LPi"].includes(nx.kind)) return false;
+    }
   }
 
   // Whether two subterms are equal: true, false, or null when it cannot tell.
@@ -1567,6 +1665,18 @@ export class InstructionDriver {
     }
     this.freeSymbols.set(term, symbols);
     return symbols;
+  }
+  // Whether a syntax DAG binds a term or level symbol anywhere in it.
+  binds(term, symbol) {
+    if (!term) return false;
+    const key = `${term}|${symbol}`;
+    let found = this.binding.get(key);
+    if (found === undefined) {
+      const n = this.node(term);
+      found = TERM_BINDERS.has(n.kind) && n.payload === symbol || n.children.some(child => this.binds(child, symbol));
+      this.binding.set(key, found);
+    }
+    return found;
   }
   // Retain a binding if either side can look it up. In particular a binding
   // on just one side must stay: it distinguishes a bound name from a free
