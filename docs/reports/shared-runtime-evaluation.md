@@ -205,7 +205,8 @@ these results forces the final prime certificates.
 ## Typed readback (W1)
 
 W1 of [typed readback](../roadmaps/runtime/typed-readback.md), 2026-10-29,
-on main `bfca6cad`. `RuntimeQuery.readback(handle, options)` gives the
+on main `bfca6cad`, with its first review's fixes on 2026-10-30, main
+`b05b4c5d` merged. `RuntimeQuery.readback(handle, options)` gives the
 closed kernel term a value stands for, R of the note's section 3. It is
 internal: no checker, REPL or page calls it, so no value form, observation,
 display or verdict changes, and no verdict will consume it (D1). The term is
@@ -220,37 +221,59 @@ the note more precisely than the note's text.
   (`binder`): a readback telescope binds the frame as that function's
   binder, a term or level λ, at the domain written in that node.
 - Term and level functions and path abstractions keep the node they were
-  made from, and a type value its node and the environment it was made in,
-  where it kept neither before. A constructor's instance is read from its
-  instance cell: unforced, its code and environment; forced, those its type
-  value now keeps. So a constructor value keeps no copy of its own.
+  made from, and a type value its node, where it kept none before, and of
+  the environment it was made in only the bindings the node uses: the
+  frames a readback telescope of the node would bind, copied in order, each
+  the parent of the next (`#pruned`). Lookup there finds what lookup in the
+  whole environment found, since no frame dropped binds a variable nearer
+  than the one kept for it, and a node with no children, such as `Unit`,
+  keeps none. A constructor's instance is read from its instance cell:
+  unforced, its code and environment; forced, those its type value keeps.
+  So a constructor value keeps no copy of its own.
 - A query made with `{ origins: true }` keeps each forced cell's code and
   environment, or an application cell's two cells: its origin (3.4). Value
   forms make no such query.
-- After η, an observation's head is no cell's value: the query keeps it,
-  by the cell asked, for `readback(handle, { head: true })`.
+- After η, an observation's head is no cell's value: a query made with
+  `{ heads: true }` keeps it, by the cell asked, for
+  `readback(handle, { head: true })`, and `retainedObjects` counts it.
+  Only the tests of the observed heads read it, so value forms make no
+  such query.
 
-None of these adds a step or a cell to the machine's counters. The
+A value form keeps main's values, counters and retained objects, except
+where it holds a type value whose node mentions a bound variable: the
+pruning reads the node's syntax and copies the bindings it keeps, in the
+query's work and cells, and the type keeps those bindings. Main's query
+and this one, walking the same value form, give the same value for every
+one of the constructs' 156 runtime value forms, and the same counters and
+retained objects for all but three: the types of two theories' models and
+homomorphisms (A40: 44 steps become 243, and 7 retained objects 9; A49: 98
+steps become 308, and 7 objects 15) and A46b's pair, whose parts hold one
+(4,863 steps become 5,086, and 436 objects 444). They are the same on seven
+workloads the runtime computes, `unary-510` to the wide binary-integer
+product, and on `traverse(100 * 100)`, a recursion down to `Unit`, which
+retains 13 objects, where the environment kept whole retained 71,228. The
 evaluation baseline (`tools/evaluation-baseline.mjs`, one cold sample per
-workload, at `804841d4`'s code) gives every one of its 45 workloads the
-outcome, kernel counters, phases and runtime counters recorded in
-`tests/fixtures/evaluation-baseline.json`, exactly. On seven workloads the
-runtime computes, `unary-510` to the wide binary-integer product, main's
-query and this one walking the same value form give the same value, the
-same counters and the same retained objects. A frame records the applied
-function's node rather than the function value: recording the value, as
-the note's 3.3 words it, kept each applied function's domain cell alive,
-and retained 17 to 36% more runtime objects on those seven.
+workload, at `80577185`, with main's `b05b4c5d` merged) gives every one of
+its 45 workloads the outcome, kernel counters, phases and runtime counters
+recorded in `tests/fixtures/evaluation-baseline.json`, exactly. A frame
+records the applied function's node rather than the function value:
+recording the value, as the note's 3.3 words it, kept each applied
+function's domain cell alive, and retained 17 to 36% more runtime objects
+on those seven workloads.
 
 ### The correspondence as implemented
 
 `R(cell)` reads in one of three modes: by value (origins off); a normal-form
-readback, `{ origins: true }`, which reads data by value outside every
-non-data part and a non-data cell by its origin; and, inside an origin,
-every cell that has an origin by it, data included. A forced cell with no
-origin, an eliminator or lifted hypothesis the eliminate frame made ready,
-is read by value. An unforced cell is its closure, and an application cell
-the application of its two cells.
+readback, `{ origins: true }`, which reads forced data by value outside
+every non-data part and a non-data cell by its origin; and, inside an
+origin, every cell that has an origin by it, data included. A forced cell
+with no origin, an eliminator or lifted hypothesis the eliminate frame made
+ready, is read by value. An unforced cell is its closure, and an
+application cell the application of its two cells. A normal-form readback
+cannot tell an unforced cell's value data, so it reads an unforced cell,
+an annotation such as a pair's type among them, as inside an origin, and
+so too a constructor's instance, a type: data reaches it by value only
+through forced cells.
 
 By value: a constructor from its index and instance cell, rebuilt one level
 into a literal `Sort` that must be of the value's signature, applied to its
@@ -332,6 +355,24 @@ that read one are unstable.
 4. **A frame records the applied function's node**, not the function value
    3.3 names: the node is all a telescope reads, and the value kept its
    domain cell alive (above).
+5. **A type value keeps only the bindings its node uses.** 3.2 asks it to
+   keep the environment it was made in; kept whole, a value form whose
+   result is a type retained the whole computation that chose it. The
+   pruning is 3.5's free-variable sets, which the note names as what
+   EVAL4's closed environments need for retention.
+6. **Unforced cells in a normal-form readback.** 3.4 has data reach the
+   result by value only outside every non-data part, and 3.2 an unforced
+   cell read as its closure; but an unforced cell's value may be no data,
+   as an annotation's is. Read with forced data inside it by value,
+   `Marked(x.1)` in a constructor's instance and a pair's type lost the
+   `certPair(tt).1` that the kernel's folded normal form keeps. So an
+   unforced cell and a constructor's instance are read as inside an
+   origin. The note's own regression of a `Box(x)` constructor whose
+   instance "reads `x` by value first" thus reads it by origin; its memo
+   case, one cell read in both modes, is tested by `x` itself beside
+   `(fun y => y.1)(x)`.
+7. **Observed heads** are kept only by a query made with heads (above),
+   which the note does not say: no value form reads them.
 
 ### Session safety
 
@@ -358,59 +399,72 @@ across one, so this has no diagnostic code.
   `Unit -> Unit`, and of a constructor of `Box(A)` read back from a closure,
   which `kernel.head` eliminates, where the same constructor with its
   instance a redex is refused, as are the domains closed one by one; the
-  heads η computed; the four folding regressions of the note by origin, each
-  folding away by value; expiry after a rollback and after a commit; a
+  heads η computed, kept and counted only by a query made with heads; a
+  type value that keeps only the bindings its node uses, so that
+  `traverse(100 * 100)`, a recursion down to `Unit`, retains 13 objects, as
+  `traverse(10 * 10)` does and as the runtime did before W1, not 71,228;
+  the four folding regressions of the note by origin, and two more, data
+  read in both modes and `Marked(x.1)` in an instance and a pair's type,
+  each folding away by value; expiry after a rollback and after a commit; a
   lifted hypothesis refused and K344 at the 511th successor; readback's
   work and cells counted in the query's, stopping at its limits; the scaling
   test, n closures over n variables for n = 4, 8 and 16, within 3.5's bound
   and growing as n²; and the note's eighteen mutations, each a change to
   `web/cubical-runtime.mjs` at one site, the memo's at two, imported as a
   module of its own, each failing an oracle the unchanged runtime passes
-  while the runtime's own walk completes.
+  while the runtime's own walk completes; and the differential's heads
+  compared past an undecided one, so that the η-produced index mutation is
+  caught after two heads the kernel cannot normalize (K344).
 - The differential (`tests/runtime-readback-oracle.mjs`), run where the
-  value forms are checked: every value form the runtime computes is read
+  value forms are checked, each by a query made with heads and otherwise
+  the one the runtime makes: every value form the runtime computes is read
   back by value, its full normal form compared with the kernel's of the
-  term, as are those of the heads the walk observed; a query made with
-  origins walks it again, and its readback's folded normal form is compared
-  with the kernel's; and a readback of at most 400 nodes as a tree is typed
-  at the term's type. Each normal form, and each comparison, has 2M steps.
+  term, as are those of every head the walk observed, an undecided one
+  counted apart; a query made with origins walks it again, and its
+  readback's folded normal form is compared with the kernel's; and a
+  readback of at most 400 nodes as a tree is typed at the term's type. Each
+  normal form, and each comparison, has 2M steps.
   No comparison disagrees, and no readback is refused:
   - the constructs' 156 runtime value forms
     (`tests/evaluation-demand-marks.test.mjs`): 153 agree by value, and the
     3 whose full normal forms that test already calls slow are undecided;
-    all observed heads agree but 1 undecided; all 156 fold as the kernel's
-    folded normal forms; 144 readbacks are small enough to type, and type;
+    every observed head decided agrees, 13 of A46b's undecided; all 156
+    fold as the kernel's folded normal forms; 144 readbacks are small
+    enough to type, and type;
   - the binary contracts' 40 (`tests/runtime-evaluation.test.mjs`): 36
-    agree by value and the 4 widest are undecided; 39 fold as the kernel's,
+    agree by value and the 4 widest are undecided; every head decided
+    agrees, 4 of the wide inverse's undecided; 39 fold as the kernel's,
     1 undecided; 37 type. The same file reads back its other runtime value
     forms, the points of higher sorts and the binary integers and
     rationals, among them `bint_decide` of a wide integer and `-1`, whose
     full normal form the kernel itself cannot build (K344): undecided;
   - the Cubist test modules' 97 (`tests/cubist-tests-inlined.mjs`): 94
-    agree by value, 3 undecided; all 97 fold as the kernel's; 88 type.
+    agree by value, 3 undecided; every head decided agrees, 1 of
+    `1/2 + 1/3`'s undecided; all 97 fold as the kernel's; 88 type.
 
 ### M1, readback
 
 `node tools/runtime-repl-probe.mjs NAME readback` reads the query's root
 back by value after the value form's walk, before the query is disposed
-of. Each workload ran in a process of its own at `804841d4` with a clean
-tree, Node 24.13.0, macOS arm64, runtime SHA-256 prefix
-`949ed3d6ad7b0c71`. Steps are readback's own work in the query's budget;
+of. Each workload ran in a process of its own at `80577185`, main's
+`b05b4c5d` merged, with a clean tree, Node 24.13.0, macOS arm64, runtime
+SHA-256 prefix `d6831fca4c61f033`. Steps are readback's own work in the
+query's budget;
 writes are its kernel syntax calls, and the arena's growth the nodes they
 added, interning merging the rest; cells, rebuilt nodes and telescope
 bindings are its counters; the DAG and tree sizes are R(root)'s. Each
-readback took at most 6 ms.
+readback took at most 14 ms.
 
 | Workload | Value form | Readback steps | Writes | Arena growth | Memo hits | Cells | Rebuilt | Bindings | DAG | Tree |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | `euclid-3` | falls back (`Comp`) | 926 | 32 | 30 | 13 | 11 | 17 | 5 | 204 | 1,747 |
 | `euclid-4` | falls back (`Comp`) | 1,012 | 37 | 31 | 13 | 18 | 17 | 5 | 223 | 2,413 |
-| `euclid-4-prime` | falls back (`Comp`) | 2,187 | 7 | 7 | 0 | 4 | 7 | 0 | 533 | 3,101 |
-| `euclid-5-prime` | falls back (`Comp`) | 2,190 | 7 | 7 | 0 | 4 | 7 | 0 | 534 | 3,104 |
-| `euclid-6-prime` | falls back (`Comp`) | 2,193 | 7 | 7 | 0 | 4 | 7 | 0 | 535 | 3,107 |
-| `euclid-7-prime` | falls back, then K344 | 2,196 | 7 | 7 | 0 | 4 | 7 | 0 | 536 | 3,110 |
-| `euclid-10-prime` | falls back (`Comp`) | 2,167 | 7 | 7 | 0 | 4 | 7 | 0 | 529 | 3,103 |
-| `binary-factorial-40` | falls back (`Comp`) | 1,785 | 6 | 6 | 0 | 4 | 6 | 0 | 447 | 2,659 |
+| `euclid-4-prime` | falls back (`Comp`) | 2,239 | 7 | 7 | 0 | 4 | 7 | 0 | 544 | 3,137 |
+| `euclid-5-prime` | falls back (`Comp`) | 2,242 | 7 | 7 | 0 | 4 | 7 | 0 | 545 | 3,140 |
+| `euclid-6-prime` | falls back (`Comp`) | 2,245 | 7 | 7 | 0 | 4 | 7 | 0 | 546 | 3,143 |
+| `euclid-7-prime` | falls back, then K344 | 2,248 | 7 | 7 | 0 | 4 | 7 | 0 | 547 | 3,146 |
+| `euclid-10-prime` | falls back (`Comp`) | 2,219 | 7 | 7 | 0 | 4 | 7 | 0 | 540 | 3,139 |
+| `binary-factorial-40` | falls back (`Comp`) | 1,837 | 6 | 6 | 0 | 4 | 6 | 0 | 458 | 2,695 |
 | `binary-rational-equal` | falls back (path constructor) | 17,173 | 731 | 421 | 254 | 330 | 251 | 149 | 2,245 | 12,487,305 |
 | `count-into-510` | runtime | 4,088 | 1,021 | 255 | 0 | 511 | 0 | 0 | 513 | 1,532 |
 | `unary-doubling-8` | runtime | 2,056 | 513 | 248 | 0 | 257 | 0 | 0 | 259 | 770 |
@@ -429,4 +483,7 @@ writes, as the kernel refuses to build the pair. `list-parity-200000` and
 do their readbacks, within two steps. `euclid-3-expecting`,
 `euclid-5-expecting` and `euclid-5-folded` make no runtime query. The
 rationals' terms keep their sharing: about 2,000 nodes as a DAG for 2.5 to
-12.5 million as a tree.
+12.5 million as a tree. At `804841d4`, before main's merge, the Euclid
+prime rows and `binary-factorial-40` read back 11 nodes fewer, in 52
+steps fewer; the readback before the review's fixes gives this table's
+figures on the merged tree, so main's merge, not the fixes, changed them.
