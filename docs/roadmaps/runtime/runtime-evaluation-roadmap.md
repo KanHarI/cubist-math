@@ -1366,6 +1366,12 @@ named, not unfolded. `!!!` names the full normal form, which stage 4 below
 measures. `rationals.(2/3) expecting !!_` falls from 70,301,825 ticks and
 1,116,794 nodes to 43,932 ticks and 936.
 
+The [typed readback note](typed-readback.md) of 2026-10-28 specifies the
+readback, its correspondence and the observations it moves. The user
+accepted every recommendation the same day (D1–D6): readback serves
+displays and a per-node fallback, and no verdict consumes one. Its W1,
+readback and its oracle tests, and W2, the per-node fallback, are next.
+
 Provide typed readback for demanded data and a separately specified way to
 inspect suspended fields. Keep function bodies as closures until application
 or explicit full-normalization demand. Printing must respect its output

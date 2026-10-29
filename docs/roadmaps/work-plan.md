@@ -762,8 +762,9 @@ its inverse contracts by the user's decision of 2026-10-26. The default
 [#289](https://github.com/KanHarI/cubist-math/pull/289) adds a first internal
 EVAL3/EVAL4 runtime query for ordinary data. Since 2026-10-26 the REPLs
 compute value forms through it, falling back once to the kernel's head
-queries on unsupported demand. Its signatures must be untruncated, without
-path constructors, so quotient values such as `BInt`'s and `BQ`'s fall back. EVAL5's observation
+queries on unsupported demand. Since #324 it also executes the point
+constructors of quotients and other higher sorts, so `BInt` and `BQ` value
+forms compute in it; path constructors and compositions fall back. EVAL5's observation
 contract shipped as the demand marks and folded normal forms. The rest of
 EVAL3–EVAL8 remains planned. The ordered-ring/field
 definitions and algebra lattice landed in #267 over #268's inherited operation
@@ -1019,8 +1020,12 @@ Each step lands in focused PRs under the review rule above.
         shares by syntax and the runtime computes twice, is EVAL4 work.
    4. **Typed readback** (EVAL5): read runtime values back into kernel terms
       by their types, with the written readback correspondence and the
-      applicable EVAL8 review. `!!`, `!!!`, exact expected values and a
-      fallback in mid-computation can then go through the runtime.
+      applicable EVAL8 review. Decided on 2026-10-28
+      ([typed readback](runtime/typed-readback.md)): readback serves displays
+      and a fallback per node in mid-computation; no verdict consumes a
+      readback, so patterns, exact expected values, `!!!`, `!` and `witness`
+      stay on the kernel's queries. W1 (readback and its oracle tests) and
+      W2 (the fallback per node) are next.
    5. **The archive's number theory in the library**
       ([NT1–NT5](archive-retirement.md#number-theory-in-the-library)):
       1. NT1: the unary order lemmas move to `unat`. **Done** on 2026-10-28.
