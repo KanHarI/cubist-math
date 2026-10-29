@@ -231,7 +231,9 @@ H1's replacement of primitive types needs an explicit representation map:
 primitive syntax and generic signature applications are not automatically
 convertible. K2.4 must specify comparison fixtures before retiring anything.
 G2's deliberate universe/assumption changes have a separate reviewed ledger;
-weakening the ordinary migration verifier is not an acceptance strategy.
+weakening the ordinary migration verifier is not an acceptance strategy. The
+archive's in-place migration (2026-10-29) is recorded instead, by the user's
+decision ([record](hott/h1-truncation-migration.md#migration-in-place-2026-10-29)).
 
 **I1.2a, instruction isolation (M). Done on 2026-09-28.** The audit of
 that day (finding 1) found the separation from the old conversion checker

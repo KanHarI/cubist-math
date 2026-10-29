@@ -294,6 +294,22 @@ remedy, double negation at `U1` through `LEM(U1, …)` as `h1_zorn_step`
 does, would take `PropResizing` from `no_maximal_strict_successor` alone:
 `zorn_chain_complete` reaches the resized tower through `bourbaki_witt`.
 
+The migration verifier compares the whole archive against main
+(`bfca6cad`, whose archive and library are `6f0cc3a4`'s):
+`node --max-old-space-size=14336 tools/verify-proof-migration.mjs --base origin/main`.
+The heap flag is needed because Node's default heap of about 4 GB runs
+out after about 83 seconds. It compares 315 modules, 14 changed and 301
+dependents, and reports 1,266 failures, every one an assumption-list
+change, and nothing else differs: 800 declarations lose legacy labels, 446
+lose them with `LEM[Truncate]` and `Choice[Truncate]` replaced by `LEM` and
+`Choice`, and the 20 above gain `PropResizing`. Against main those 20 read
+as "Untranslated name: PropResizing", or an untranslated dependency on
+one, since the verifier reads the library at the base revision; against
+`ef6f57a1`, main's archive with the new library, they read as the
+addition. By the user's decision of 2026-10-29 the ledger is not extended
+for this decided migration: its policy refuses an added assumption and
+keeps one base per file. The audit is the gate.
+
 ### Consumers outside the archive, 2026-10-20
 
 | Where | Files | Uses |

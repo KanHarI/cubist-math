@@ -1476,7 +1476,10 @@ inductive Quotient(U, V < UU0, A : U, R : A -> A -> V) : set {
    `LEM[Truncate]` and `Choice[Truncate]`, go with the legacy truncation.
 6. **The ordinary migration check stays strict.** Intentional changes of
    public universes, hypotheses or assumption lists are allowed only through
-   the ledger of 8.5. The new axiom transition retires affected historical
+   the ledger of 8.5. The archive's in-place migration of 2026-10-29 is the
+   one exception, by the user's decision: its verifier result is recorded,
+   not ledgered, and the audit is its gate
+   ([record](h1-truncation-migration.md#migration-in-place-2026-10-29)). The new axiom transition retires affected historical
    comparisons with their last passing revision recorded when their exact
    pins change; it does not delay that retirement until archive deletion.
 
