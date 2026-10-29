@@ -9,7 +9,10 @@
 // on, so a call may pass values of its own for them. The expression's motive
 // is its `return` type or its expected type; the closing proof statement's
 // comes from its goal, through motive abstraction (motives.mjs), and each of
-// its clauses is a proof block.
+// its clauses is a proof block. In either form, a hypothesis whose type
+// mentions the matched variable is generalized through motive abstraction:
+// each clause has it again at its constructor. An induction expression
+// generalizes only where its result type mentions the variable.
 // Untrusted: the kernel checks every clause at its clause type.
 import { isResourceLimit } from "../resource-limits.mjs";
 import {propagateElaborationStop,SourceRefusal} from "./control.mjs";
@@ -85,10 +88,10 @@ export function recursionSite(d, own) {
 // of its own for it, but not over one the matched parameter's type depends
 // on, directly or through the types of others: the eliminator's instance
 // fixes those. A recursive call passes those, and universe parameters,
-// unchanged. A parameter whose type mentions the matched one (dependent)
-// takes another value at every call. Each elaboration's `state` records
-// whether a call needed the motive over the others (varied) and whether one
-// was made (called), for recursively.
+// unchanged. A parameter whose type mentions the matched one is a hypothesis
+// about it, which every motive generalizes, so a call passes its own value for
+// it. Each elaboration's `state` records whether a call needed the motive over
+// the others (varied) and whether one was made (called), for recursively.
 function recursionOf(scope, n) {
   const recursive = scope.env.get(RECURSIVE);
   if (recursive?.site !== n || n.value.kind !== "name") return null;
@@ -103,20 +106,18 @@ function recursionOf(scope, n) {
     for (const name of freeNames(scope.context.get(pending.pop()) ?? T.unit))
       if (!needed.has(name)) { needed.add(name); pending.push(name); }
   const generalizable = fixed.map((binding, i) => i !== index && binding?.tag === "Var" && !needed.has(binding.name));
-  const dependent = fixed.map((binding, i) => generalizable[i] && freeNames(scope.context.get(binding.name) ?? T.unit).has(matched));
-  return { ...recursive, index, fixed, matched, generalizable, dependent };
+  return { ...recursive, index, fixed, matched, generalizable };
 }
 
 // A recursive match is elaborated first as it is written, with the
-// declaration's other parameters fixed. A recursive call that changes one of
-// them, or passes one whose type mentions the matched parameter, marks that
-// attempt varied, and the match is elaborated again with a motive over every
-// generalizable parameter. That second elaboration also stands when the first
-// fails and it does not: a dependent parameter used at its refined type, before
-// a call or with none, fails as written. The decision is the
-// one name resolution makes, so no spelling of a call or of a binder changes
-// it, and a match that passes its parameters unchanged, or never calls
-// itself, is the match as written.
+// declaration's other parameters fixed but the hypotheses about the matched
+// one. A recursive call that changes a fixed one marks that attempt varied,
+// and the match is elaborated again with a motive over every generalizable
+// parameter. That second elaboration also stands when the first fails and it
+// does not, as when a clause fails before the call that changes one. The
+// decision is the one name resolution makes, so no spelling of a call or of a
+// binder changes it, and a match that passes its parameters unchanged, or
+// never calls itself, is the match as written.
 function recursively(translator, scope, recursion, elaborate) {
   if (!recursion?.generalizable.some(Boolean))
     return elaborate(scope, recursion && { ...recursion, state: { varied: false, called: false } }, []);
@@ -249,13 +250,22 @@ export function elaborateMatch(translator, n, value, instance, scope, expected) 
   // through the motive service, as the statement's goal does: each clause
   // is at its constructor, with the hypotheses about the variable again.
   const dependent = !n.type && !recursion && value.tag === "Var" && freeNames(body).has(value.name);
+  // So does a hypothesis about the matched variable, whatever the result
+  // type mentions, as in the statement: each clause has it again at its
+  // constructor, and a recursive call passes its own value for it. A return
+  // type that mentions the variable itself, rather than the name `as` binds,
+  // states one type for every clause, and its match is elaborated as written.
+  // So is an induction: generalizing would change the types of the
+  // hypotheses its clauses name after with.
+  const hypotheses = keyword(n) === "match" && value.tag === "Var" && !(n.type && freeNames(body).has(value.name))
+    && [...scope.context].some(([name, type]) => name !== value.name && freeNames(type).has(value.name));
   return recursively(translator, scope, recursion, (scope, recursion, generalizing) => {
     const clauses = [];
     // A recursive match over the declaration's other parameters takes its
     // motive from the motive service, as the statement does: each clause
     // binds them again under their own names, and the eliminator's result is
     // applied to them.
-    if (generalizing.length || dependent) {
+    if (generalizing.length || dependent || hypotheses) {
       const motive = abstractMotive(new Goal(substituteTerm(body, z, value), scope), [value], { generalizing });
       const generalized = recursion ? { ...recursion, generalized: generalizedParameters(recursion, motive) } : null;
       for (const each of constructorClauses(n, declared, locate, translator.compilationBindings))
@@ -652,19 +662,13 @@ export function resolveRecursive(translator, node, value, args, scope) {
     // A fixed one is passed as the parameter's own binding, of whatever kind
     // (a universe parameter's is none of a variable's), or as the variable a
     // match statement took apart.
-    if (arg.kind === "passedParameter") {
-      if (value.generalizable[index] && value.dependent[index]) {
-        value.state.varied = true;
-        throw locate(Error(`A recursive call of ${value.source} changes ${parameter(index)}: the match needs its motive over its other parameters.`), arg);
-      }
-      return;
-    }
+    if (arg.kind === "passedParameter") return;
     const current = arg.kind === "name" ? scoped[index].scope.env.get(arg.name) : undefined, taken = arg.kind === "name" ? value.destructed?.get(arg.name) : undefined;
     const unchanged = current !== undefined && (current === value.fixed[index]
       || taken && current === taken.alias && value.fixed[index]?.tag === "Var" && value.fixed[index].name === taken.variable);
-    // One the motive may quantify over, changed, or whose type mentions the
-    // matched parameter, sends the match to its motive over the others.
-    if (value.generalizable[index] && (!unchanged || value.dependent[index])) {
+    // One the motive may quantify over, changed, sends the match to its
+    // motive over the others.
+    if (value.generalizable[index] && !unchanged) {
       value.state.varied = true;
       throw locate(Error(`A recursive call of ${value.source} changes ${parameter(index)}: the match needs its motive over its other parameters.`), arg);
     }
