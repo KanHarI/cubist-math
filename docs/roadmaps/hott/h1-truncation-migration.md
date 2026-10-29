@@ -312,23 +312,60 @@ remedy, double negation at `U1` through `LEM(U1, …)` as `h1_zorn_step`
 does, would take `PropResizing` from `no_maximal_strict_successor` alone:
 `zorn_chain_complete` reaches the resized tower through `bourbaki_witt`.
 
-The migration verifier compares the whole archive against main
-(`bfca6cad`, whose archive and library are `6f0cc3a4`'s):
+The migration verifier classifies what changed, against main (`bfca6cad`,
+whose archive and library are `6f0cc3a4`'s):
 `node --max-old-space-size=14336 tools/verify-proof-migration.mjs --base origin/main`.
 The heap flag is needed because Node's default heap of about 4 GB runs
 out after about 83 seconds. It compares 315 modules, 14 changed and 301
-dependents, and reports 1,266 failures, every one an assumption-list
-change, and nothing else differs: 800 declarations lose legacy labels, 446
-lose them with `LEM[Truncate]` and `Choice[Truncate]` replaced by `LEM` and
-`Choice`, and the 20 above gain `PropResizing`. Against main those 20 read
-as "Untranslated name: PropResizing", or an untranslated dependency on
-one, since the verifier reads the library at the base revision; against
-`ef6f57a1`, main's archive with the new library, they read as the
-addition. By the user's decision of 2026-10-29 the ledger is not extended
-for this decided migration: its policy refuses an added assumption and
-keeps one base per file. The audit is the gate. Since step 5's second part
-this comparison no longer runs: its baseline's archive uses the removed
-builtins.
+dependents, and reports 1,266 failures: 800 declarations lose legacy
+labels, 446 lose them with `LEM[Truncate]` and `Choice[Truncate]` replaced
+by `LEM` and `Choice`, and the 20 above gain `PropResizing`. Against
+`ef6f57a1`, main's archive with the new library, every one of the 1,266 is
+a report of a changed assumption list; against main the 20 read as
+"Untranslated name: PropResizing", or an untranslated dependency on one,
+since the verifier reads the library at the base revision. That
+classification is all the run shows: the verifier reports a declaration's
+changed assumptions before it compares its type or term, and does not
+compare a declaration it cannot translate. By the user's decision of
+2026-10-29 the ledger is not extended for this decided migration: its
+policy refuses an added assumption and keeps one base per file. The audit
+is the gate, and shows that every declaration checks. Since step 5's second
+part this run no longer classifies the migration: its baseline's archive
+uses the removed builtins, and its declarations over them no longer check.
+
+That the archive states the same results rests on its source text, reviewed
+here. Each declaration's text was compared between main and this change,
+parsed, with comments and spacing ignored: the 301 dependent modules are
+unchanged, `classical` and `surjections` change only comments, and every
+other changed declaration changes only its proof, except these:
+
+- `truncation`'s `Mere`, `merely`, `mere_is_prop` and `mere_eliminate`, and
+  `field_logic`'s `FieldExists`, `field_exists_intro`, `field_exists_prop`
+  and `field_exists_elim`: `Truncate(U, A)`, `TruncateIntro`,
+  `TruncateProp` and `TruncateElim` become `Trunc(U, A)`, `merely`,
+  `mere_is_prop` and `mere_eliminate` at the same universes. They are the
+  same truncation, introduction, proposition evidence and elimination into
+  a proposition of the same universe; only the truncation's own universe
+  differs, `U` where `Truncate` gave `U0`.
+- `linear_span`'s `Span` and `span_prop`, and `independent_extension`'s
+  `AdjoinVector` and `adjoin_vector_prop`: `Truncate(U0, X)` and
+  `TruncateProp(U0, X)` become `Mere(X)` and `mere_is_prop(X)`, the
+  truncation at `U0` as before.
+- `cauchy_quotient`'s `EventualClose`: the truncation of its small witness
+  type through `FieldExists`, at `U1`, which `Truncate` put in `U0`,
+  becomes its truncation at `U0`, `Mere`.
+- `field_logic`'s `small_mere_eliminate`: its truncated hypothesis
+  `Truncate(U0, A)` becomes `Trunc(U0, A)`.
+- `predicate_chains`' `predicate_union_upper` and `predicate_union_least`,
+  and `independent_unions`' `directed_union_independent` and
+  `chain_union_independent`: the union `PredicateUnion(I, A, P)`, now a
+  predicate in `U1`, becomes its resized copy in `U0`,
+  `PropResizing(PredicateUnion(I, A, P, x), …).1`, as `Truncate` made the
+  legacy union small. `IndependentUnion` keeps its type, and its value's
+  predicate is that resized union.
+- `bourbaki_witt`'s `tower_is_chain`: tower membership, now a proposition
+  in `U1`, becomes its resized copy in `U0`, as the legacy tower's
+  membership was.
 
 ### Consumers outside the archive, 2026-10-20
 
