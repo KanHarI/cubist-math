@@ -399,15 +399,13 @@ written and reads back each child under the same environment: a term as
 its closure, a level as below, and a list or a system of tubes rebuilt one
 level in turn. An annotation the kernel reads by its node kind is rebuilt
 one level too, never read back as a closure, which can be a redex: a path
-application's `Path` type and `unglue`'s `Glue` type, which `weak` reads,
-and a constructor's `Sort` instance (3.2). It is applied only to nodes
+application's `Path` type, which `weak` reads, and a constructor's `Sort`
+instance (3.2). It is applied only to nodes
 that are not term binders (`ck_term_binder`). A node that binds a
 dimension receives only values computed outside it, which mention no
 dimension (section 5), so nothing is captured. It keeps a literal node
 where the kernel reads a node's kind without reducing it: a spine node,
-whose spine `folding_head` reads, a constructor's instance, and a
-fallback node and its annotations
-([section 5](#5-fallback-in-mid-computation-d4)).
+whose spine `folding_head` reads, and a constructor's instance.
 
 Free-variable sets are computed once per copied node, binding as
 `ck_term_free` does (`Pi`, `Lam`, `Sigma`, `LPi` and `LLam` bind their
@@ -437,7 +435,7 @@ kernel first. So `!e` stays on the kernel (section 4).
   name is invented, and the display's one naming pass
   (`web/display-naming.mjs`) settles names on the normal form shown.
 - **Dimensions:** the fragment binds and substitutes none, and W2 keeps
-  it so: it never forces a part under a dimension binder (section 5).
+  it so: a fallback forces nothing (section 5).
   Dimension binders and face formulas are copied, as written, inside the
   closures that hold them. All dimension work stays with the kernel.
 - **Annotations:** read back as closures only when `R` reaches them, and
@@ -590,69 +588,61 @@ restart[ing] the same fallback"
 
 **Decided (D4): option c.** The machine meets a node it does not execute:
 a composition, a path applied, η of a path abstraction, Glue, `unglue` or
-`abort`. It then:
+`abort`. It forces none of the node's parts: parts the walk had already
+forced read back from their cells, the rest as closures, and the kernel's
+head query decides what it needs. Forcing a part first would add demand
+wherever the kernel's rule does not inspect that part: a composition at a
+function type is a λ at once (`ck_reduce_composition`), so
+`comp(fun (i : Interval) => Unit -> Unit, slow(2 * 255))` shows `<fun>`
+today without computing `slow`'s countdown (on `f7f082b3`). The machine:
 
-1. checks first the conditions of the kernel's rule for that node that read
-   syntax only, before any head is taken, as `weak`, `ck_expose` and
-   `ck_reduce_composition` check them: a path application at the endpoint
-   `0` or `1` under its `Path` annotation is that endpoint of the
-   annotation, and its path is not computed; a composition with a tube on
-   the total face is that tube's end, without its family or base, and a
-   transport on the total face is its base, without its family; an
-   `unglue` whose `Glue` type has a total face applies that face's
-   equivalence to the value without taking the value's head. Where such a
-   condition holds, the machine forces nothing, reads back nothing the
-   rule discards, and continues with the part it selects. An endpoint of
-   the annotation and a transport's base are parts of the node's code, and
-   the equivalence's first projection applied to the value is built from
-   two; each continues as cells under the node's environment. A
-   composition's total tube needs its end at the dimension, which is the
-   kernel's substitution: only that tube is read back, and
+1. checks first the kernel's conditions for that node that read syntax
+   only, as `weak` and `ck_expose` check them: a path application at the
+   endpoint `0` or `1` under its `Path` annotation is that endpoint of the
+   annotation; a composition with a tube on the total face is that tube's
+   end; a transport on the total face is its base; an `unglue` whose
+   `Glue` type has a total face applies that face's equivalence to the
+   value. Where such a condition holds, the machine continues with the part
+   it selects and reads back nothing the rule discards. An endpoint of the
+   annotation and a transport's base are parts of the node's code, and the
+   equivalence's first projection applied to the value is built from two;
+   each continues as cells under the node's environment, with no kernel
+   query. A composition's total tube needs its end at the dimension, which
+   is the kernel's substitution: only that tube is read back, and
    `cc_kernel_endpoint_term`, the query the instruction driver already
-   uses (`endpointTerm`), gives the term the machine continues with. The
-   tube's readback mentions no dimension but its own, since nothing under
-   a dimension binder is forced (step 2), so the substitution reaches only
-   the tube's. A discarded part can hold a value that readback refuses: in a
+   uses (`endpointTerm`), gives the term the machine continues with. These
+   shortcuts earn their place because a discarded part is never read back:
+   it costs no readback, and a `Lift` in it forces no restart (below). In a
    higher-order `Tree` induction,
    `((fun (g : Unit -> Unit) => refl(tt))(below)) @ 0`, with `below` a
    `Lift`, shows `tt` today (on `f7f082b3`, after the runtime stops at the
    `PApp`), and reading back its path would refuse it;
-2. otherwise forces, in the rule's order, the parts it takes the heads
-   of that lie outside the node's dimension binder: a transport's or
-   composition's base (`ck_hit_reduce`, `ck_reduce_composition`), the
-   path of a path application, `unglue`'s value; W4 checks this rule by
-   rule. The kernel then receives values, not unevaluated arguments, which
-   are what grows its syntax. A family or tube under the node's binder is
-   left to the kernel. Forced, its value would mention that dimension, and
-   a readback could put it under another binder on the same slot:
-   dimensions are numbered slots, and only the kernel's substitution
-   renames a binder that would capture one (`ck_fresh_dimension` in
-   `kernel/src/term_substitution.c`). With
-   `hold(A) := comp^i U0 [1 ↦ A] A` inside
-   `comp^i hold(swapped @ i) [] (tt, 3)`, both binders on one slot, a
-   forced outer family puts `swapped @ i` into the inner tube, whose end
-   then substitutes the outer dimension too;
-3. rebuilds the node one level ([3.3](#33-closures-as-redexes-d2)): each
-   part forced in step 2 as the readback of the cell that holds its value,
-   each other part as its closure. An annotation the kernel reads by its
-   node kind is rebuilt one level too, so it keeps its literal kind:
-   `weak` refuses an `unglue` whose type is not a literal `Glue`
-   ("Unchecked Glue projection reached reduction.") and applies a path
-   application's endpoint rules only under a literal `Path`. In a probe
-   on `f7f082b3`, with an empty system, the head of `unglue` of a glued
-   point under `(λA. Glue(A))(Unit)` failed with that message, and under
-   `Glue((λA. A)(Unit))`, rebuilt one level, was the point. The node's own
-   closure would not do either: for a closed node it is the original
-   handle, and the kernel would compute the forced parts again;
-4. asks `cc_kernel_whnf` for its head, spending the query's fuel as the
+2. otherwise reads the node back as its closure
+   ([3.3](#33-closures-as-redexes-d2)). The closure keeps the node's
+   annotations literal, since the kernel's β substitutes into the node
+   without changing their kinds, as `weak` needs of `unglue`'s `Glue` type
+   and a path application's `Path` type. In a probe on `f7f082b3`, with an
+   empty system, the head of `(λA. unglue(Glue(A), glue(tt)))(Unit)` was
+   the point, while `unglue` under `(λA. Glue(A))(Unit)` failed with
+   "Unchecked Glue projection reached reduction.";
+3. asks `cc_kernel_whnf` for its head, spending the query's fuel as the
    head queries do now;
-5. continues with that head as a cell in an empty environment, copied
+4. continues with that head as a cell in an empty environment, copied
    lazily like any kernel syntax.
+
+Since a fallback forces nothing, the machine never evaluates under a
+dimension binder, and no value mentions a dimension. That matters because
+dimensions are numbered slots, and only the kernel's substitution renames
+a binder that would capture one (`ck_fresh_dimension` in
+`kernel/src/term_substitution.c`). With `hold(A) := comp^i U0 [1 ↦ A] A`
+inside `comp^i hold(swapped @ i) [] (tt, 3)`, both binders on one slot, a
+forced outer family would put `swapped @ i` into the inner tube, whose end
+would then substitute the outer dimension too.
 
 A read-back handle met again in the kernel's answer maps back to its cell,
 so the runtime does not recompute it.
 
-A node whose rebuild reaches a `Lift`, a higher-order recursive
+A node whose readback reaches a `Lift`, a higher-order recursive
 hypothesis, cannot be sent, since readback refuses it (3.7). For such a
 node W2 keeps today's fallback: the walk restarts on the kernel's head
 queries. In a higher-order `Tree` induction, the clause
@@ -665,24 +655,29 @@ the constructor's field at the instance, would remove this restart; it
 stays deferred until M2 shows that it matters.
 
 The kernel's head can be one the runtime cannot interpret further, such as
-a formal composition at a higher sort. The cell then holds it as an opaque
-head, which is never asked again. A frame that consumes an opaque head, an
-application, a projection, a `Unit` or sum elimination or an eliminator,
-rebuilds the node it stands for with the opaque head in the consumed place
-and its other parts read back as in step 3, and sends that node through
-the same fallback. For this the `unit` and `sum` frames keep their node's
-motive, which they drop today. A circle eliminator applied to a
+a formal composition at a higher sort or a glue value. The cell then holds
+it as an opaque head, which is never asked again. A frame that consumes an
+opaque head, an application, a projection, a `Unit` or sum elimination or
+an eliminator, rebuilds the node it stands for with the opaque head in the
+consumed place and its other parts as closures, and sends that node
+through the same fallback. For this the `unit` and `sum` frames keep their
+node's motive, which they drop today. A circle eliminator applied to a
 transported `base` is such a case: with
 `def c : Circle := transport(fun (x : Circle) => Circle, base, base, loop, base);`,
 `evaluate c;` shows `<composition>`, the kernel's head of `c` being an
 `HComp`, but `evaluate to_nat(c);`, for a `to_nat` whose clauses both
 return `3`, shows `3` (both on `f7f082b3`): `ck_eliminate` hands a formal
 composition to `ck_eliminate_hcomp`, whereas the runtime's `eliminate`
-frame refuses anything but a constructor today. The marker, `<composition>`
-as the kernel's walk shows it, is shown only where the opaque head is
-itself the observation requested, with no frame left to consume it. A
-kernel stop (`K344`, budget) is reported as the kernel's. Each round trip
-computes a node the runtime did not, so nothing restarts.
+frame refuses anything but a constructor today. Where the opaque head is
+itself the observation requested, with no frame left to consume it, the
+kernel's walk completes that part's value form from it, as `valueFormOf`
+walks the whole value today. `def g : Glue(UNat) := glue(1 + 1);
+evaluate g;` shows `glue(2)` on `f7f082b3`, after the runtime refuses the
+glue value, since `shownHead` shows a glue value's base and system
+(`web/translator/evaluation.mjs`). A marker, such as `<composition>`,
+appears only where that walk shows one. A kernel stop (`K344`, budget) is
+reported as the kernel's. Each round trip computes a node the runtime did
+not, so nothing restarts.
 
 Showing a path constructor applied to its data is the separate decision
 recorded on 2026-10-28; this mechanism would show it as the kernel's walk
@@ -721,7 +716,7 @@ Take (b) if M2 shows that (c)'s round trips cost more than they save.
   | ι for point constructors | `ck_eliminate` with no path application |
   | projections, sum and `Unit` eliminations | `weak` |
   | origins | `folding_head` and `computed_data` |
-  | the pre-forcing order of W2 | `ck_hit_reduce`, `ck_reduce_composition` and the `PApp` and `Unglue` cases of `weak` |
+  | the syntax-only shortcuts of W2 | `ck_expose`, and the `PApp` and `Unglue` cases of `weak` |
 - **The review covers:**
   - claims 1 to 6 of [3.6](#36-what-readback-guarantees-to-be-tested);
   - lazy annotations, which `R` never evaluates;
@@ -775,7 +770,7 @@ Each is one PR, reviewed under the roadmap's rule.
 | ID | Work | Acceptance and tests | Size |
 | --- | --- | --- | --- |
 | W1 | **Readback and its oracle.** In `web/cubical-runtime.mjs`: environment frames record the β'd value; values keep their node, `Type` values their environment, and `Con` values their instance cell's code; readback by value from the fields the machine executes; queries made for normal forms keep every forced cell's origin; an internal `readback(handle)` returning a kernel handle; free-variable sets per copied node; the generation check at entry, before each write and before a handle is returned; readback counted in the query's work and cells. The correspondence goes into the runtime report. No user-visible change. | **Differential, by value:** for every value form the runtime computes (156 constructs, 40 binary contract values, the `cubist-tests` prints), with origins off, `normalize(R(root))` α-equals `normalize(e)` wherever the full normal form completes within a fixed budget. **Folding, by origin:** with origins on, `normalizeFolded(R(root))` α-equals `normalizeFolded(e)`, the target of 3.4, with these regressions: a closure over `cert(x)` inside a pair keeps `cert(tt)` folded (3.3), `(fun x => (tt, x.1))(certPair(tt))` keeps `certPair(tt).1` folded (3.4), and so does a pair of a `Box(x)` constructor and `(fun y => y.1)(x)`, with `x = certPair(tt)`, whose instance reads `x` by value first (3.5), and `(fun x => (tt, x.1(tt)))(certPair(tt))` keeps `certPair(tt).1(tt)` folded (3.3). **Typing:** `R(root)` is typed by instructions on the small constructs only, since 1.4's cost rules out more, and on a closure capturing `A : U0` and `x : A` (3.3) a constructor of `Box(A)` read back from a closure, which `kernel.head` must also eliminate, and the type value of `(fun (A : U0) => A -> A)(Unit)` read back by value, whose full normal form is `Unit -> Unit` (3.2). **Mutations that must fail:** swapped pair components; a constructor value whose index, signature or instance is changed in its own fields, the node it was made from left as it was; likewise a λ's body, symbol or environment and an eliminator's motive or clauses; a dropped instance; a function value replaced by another of its type (`λ_:Unit. Void` for `λ_:Unit. Unit`, which the folding check passes), a value read instead of its origin, a data cell inside a non-data origin read by its value, the farthest binding instead of the nearest, a free variable skipped, domains closed one by one instead of the telescope, a memo reused across generations. **Cases:** capture and shadowing; a level argument that mentions a bound level variable; an unused argument never read back; a cell reached twice read back as one handle; readback after a rollback and after a commit is `expired`, for a readback that writes and for one that writes nothing (a closed code's own handle, a memoized handle); a `Lift` refused. M1 recorded. | M |
-| W2 | **Per-node fallback** ([section 5](#5-fallback-in-mid-computation-d4)), replacing the whole restart in `valueFormOf`, by D4, except where a rebuild reaches a `Lift` (section 5). | Every value form unchanged against the kernel's queries alone: constructs, `cubist-tests`, contracts and the reference. A count of fallbacks now partial. No node asked twice. A fallback node rebuilt from its forced parts: the kernel's ticks for it do not include their computation. An unused expensive path: `p @ 0` under its `Path` annotation gives the endpoint without `p` being forced or read back. A discarded part holding a `Lift`: the higher-order `Tree` induction's `((fun (g : Unit -> Unit) => refl(tt))(below)) @ 0` still shows `tt`. A rebuild that reaches a `Lift` restarts as today: the higher-order `Tree` clause `comp(fun (i : Interval) => Unit -> Unit, below)(tt)` still shows `tt`. Two binders on one dimension slot: `comp^i hold(swapped @ i) [] (tt, 3)`, with `hold(A) := comp^i U0 [1 ↦ A] A`, shows `(3, tt)`. An `unglue` whose `Glue` type depends on the environment computes as the kernel's queries alone do. An opaque head consumed by a frame sent through the fallback: the circle eliminator on a transported `base` computes `3`. A kernel head the runtime cannot interpret shown by its marker only where it is the observation. A kernel stop reported as the kernel's. M2 recorded, slower rows said plainly. | M |
+| W2 | **Per-node fallback** ([section 5](#5-fallback-in-mid-computation-d4)), replacing the whole restart in `valueFormOf`, by D4, except where a rebuild reaches a `Lift` (section 5). | Every value form unchanged against the kernel's queries alone: constructs, `cubist-tests`, contracts and the reference. A count of fallbacks now partial. No node asked twice. A fallback forces nothing: `comp(fun (i : Interval) => Unit -> Unit, slow(2 * 255))` shows `<fun>` without computing `slow`, and cells the walk forced read back as values, whose computation the kernel's ticks for the node do not include. An unused expensive path: `p @ 0` under its `Path` annotation gives the endpoint without `p` being forced or read back. A discarded part holding a `Lift`: the higher-order `Tree` induction's `((fun (g : Unit -> Unit) => refl(tt))(below)) @ 0` still shows `tt`. A rebuild that reaches a `Lift` restarts as today: the higher-order `Tree` clause `comp(fun (i : Interval) => Unit -> Unit, below)(tt)` still shows `tt`. Two binders on one dimension slot: `comp^i hold(swapped @ i) [] (tt, 3)`, with `hold(A) := comp^i U0 [1 ↦ A] A`, shows `(3, tt)`. An `unglue` whose `Glue` type depends on the environment computes as the kernel's queries alone do. An opaque head consumed by a frame sent through the fallback: the circle eliminator on a transported `base` computes `3`. An opaque head that is the observation completed by the kernel's walk: `def g : Glue(UNat) := glue(1 + 1); evaluate g;` shows `glue(2)`, and a marker appears only where that walk shows one. A kernel stop reported as the kernel's. M2 recorded, slower rows said plainly. | M |
 | W3 | **`!!` printed through the runtime**, only if W1's folded tests pass and M3 shows a gain: the runtime's data, `R(root)` with origins, then the kernel's folded normalization. | Identical text on every `print(evaluate(!!…))` and REPL transcript in `cubist-tests`, the contracts and the reference. `expecting !!_` stays on the kernel. M3 re-recorded. | S |
 | W4 | **EVAL8 review record** for the readback fragment and the fallback boundary, [section 6](#6-eval8-interaction)'s list. | Review rounds by the roadmap's rule. Applicable suites: C and JavaScript, `make sanitize SANITIZERS=undefined` (ASan runs in CI), canonicity fixtures, browser and CLI evaluation, archive checking, definition re-derivation, isolation. | S |
 | W5 | **Optional, by D1: runtime-guided derivation, measured only** (option D), as a scratch tool like the closure experiment. | M5 recorded; D1 reopened with it, or not. | M |
@@ -813,10 +808,10 @@ Each is one PR, reviewed under the roadmap's rule.
   heap. Pruning to free variables and the memos bound `R` by the cells
   and code nodes reached. The 20M-cell cap and the arena (`K347`) bound
   the rest. M1 measures it.
-- **Kernel work from read-back parts in W2.** The kernel reduces whatever
-  a node demands, with its own substitution. The pre-forcing order must
-  match the kernel's rules, or the kernel recomputes the runtime's work.
-  M2 will show it.
+- **Kernel work in W2.** The kernel computes, with its own substitution,
+  whatever part of a fallback node its rule inspects and the walk had not
+  forced. That avoids demand the kernel would not make, but repeats work
+  the runtime could have done; M2 will show how much.
 - **Divergence from folding.** The folded correspondence is a target
   ([3.4](#34-origins-provenance-and-folding)). W1's folded tests and their
   regressions check it, W3 waits on them, and a mismatch fails `!!` text
