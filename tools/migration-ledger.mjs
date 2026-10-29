@@ -1,9 +1,13 @@
 // K2.5: a ledger permits only a pinned public change, never an unchecked
 // declaration. Types and values include a checked hash and readable rendering.
+// The labels of the legacy truncation assumptions, which K2.5 step 5 removed
+// from the language: the only assumptions a pinned change may remove. The
+// ledger's changes, all in retired comparisons, keep them as the record.
 const LEGACY = new Set(["Truncate","TruncateIntro","TruncateProp","TruncateElim"]);
-// The archive's builtin excluded middle and choice over Truncate, and the
-// library's axioms over Trunc that replace them (h1-truncation-migration.md,
-// step 1). A replacement is listed explicitly, never inferred.
+// The archive's builtin excluded middle and choice over Truncate, removed
+// with it, and the library's axioms over Trunc that replace them
+// (h1-truncation-migration.md, step 1). A replacement is listed explicitly,
+// never inferred.
 export const REPLACEMENTS = new Map([["LEM[Truncate]","LEM"],["Choice[Truncate]","Choice"]]);
 const pins = ["oldPublicType","newPublicType","oldValue","newValue"];
 const lists = ["hypothesesAdded","assumptionsRemoved","assumptionsRetained","extensionsAdded","extensionsRetained"];

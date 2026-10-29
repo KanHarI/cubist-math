@@ -593,13 +593,6 @@ theory Parent(U < UU0) { M : U;
   await derived.click(); await inspected("ua");
   assert.match(await page.locator("#inspect-description").textContent(), /introduces no axiom/);
 
-  await openProof("field_logic", "FieldExists");
-  assert.match(await page.locator("#kernel-expression").textContent(), /‖/);
-  await page.locator("#kernel-truncation-sugar").uncheck();
-  assert.match(await page.locator("#kernel-expression").textContent(), /Truncate/);
-  await page.locator('#kernel-expression [data-name="Truncate"]').first().click();
-  await inspected("Truncate");
-
   await openProof("cubical_paths", "reverse_twice");
   await page.locator('.source-line').filter({ hasText: "fun (i : Interval) => p @ flip(i)" }).locator('[data-name="p"]').click();
   await inspected("p");

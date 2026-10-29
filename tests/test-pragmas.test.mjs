@@ -23,12 +23,12 @@ evaluate zero expecting zero;`;
 });
 
 test("test formatting preserves annotation attachment, comments and identities",()=>{
-  const source=`#test(generation . hom) #expect_axioms([LEM[Truncate],classical_axioms::Choice])\ndef x(A:U0,a:A):A:=a;
+  const source=`#test(generation . hom) #expect_axioms([LEM,classical_axioms::Choice])\ndef x(A:U0,a:A):A:=a;
 # test(failure) // the contract stays attached
 # expect_error(E606)
 def bad:Void:=tt;`;
   const formatted=formatCubist(source,{printWidth:40});
-  assert.match(formatted,/# test\(generation\.hom\)\n# expect_axioms\(\s*\[\s*LEM\s*\[Truncate\],\s*classical_axioms::Choice\s*\]\s*\)\ndef x/);
+  assert.match(formatted,/# test\(generation\.hom\)\n# expect_axioms\(\s*\[\s*LEM,\s*classical_axioms::Choice\s*\]\s*\)\ndef x/);
   assert.deepEqual(expandedSyntax(parse(formatted)),expandedSyntax(parse(source)));
   assert.equal(formatCubist(formatted,{printWidth:40}),formatted);
   assert.match(formatted,/\/\/ the contract stays attached/);
@@ -43,7 +43,7 @@ for(const [source,message] of [
   ["# test(a) # expect_error(E606) # expect_error(E343) def x := tt;",/Repeated test pragma/],
   ["# test(a) def x := tt; # test(a) def y := tt;",/Duplicate test case/],
   ["# test(a) # expect_error(E606) # expect_axioms([]) def x := tt;",/refused test/],
-  ["# test(a) # expect_axioms([LEM[h1_truncation.Trunc]]) def x := tt;",/Expected '\]', found '\.'/],
+  ["# test(a) # expect_axioms([LEM[Truncate]]) def x := tt;",/Expected '\]', found '\['/],
   ["# test(a) # expect_axioms([Choice,Choice]) def x := tt;",/repeats a name/],
   ["# expect_error(E606) def x := tt;",/named # test/],
   ["# test(a)",/no following target/],

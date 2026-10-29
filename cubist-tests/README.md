@@ -232,7 +232,6 @@ workbench's Kernel graph.
 | [`truncation_resize`](truncation_resize.cubist) | G6: resizing a proposition with LEM alone, and a `StrictlyAbove` witness refused set evidence. |
 | [`truncation_strict_successor`](truncation_strict_successor.cubist) | G7: `no_maximal_strict_successor`, double negation at U1, LEM retained. |
 | [`truncation_rebuilt_classical`](truncation_rebuilt_classical.cubist) | The archive's double negation and the library's rely on one excluded middle, the library's `LEM` over `Trunc`, listed once by a program that uses both, and the retired truncation former is refused. |
-| [`truncation_legacy_confined`](truncation_legacy_confined.cubist) | K2.5 step 4: the archive's legacy builtins, `Truncate`, its three companions and the builtin `LEM` and `Choice`, refused outside the archive, called or named, with what replaces them (E491). |
 | [`printer_lint`](printer_lint.cubist) | The printer's values and types of matches, inductions, binders and declared types, which `tests/printer-lint.test.mjs` lints: eliminators print as the match or induction that builds them. |
 | [`translation_failed_proofs`](translation_failed_proofs.cubist) | A failed proof becomes no axiom: a use of it fails, and the rest checks. |
 | [`translation_path_induction`](translation_path_induction.cubist) | Weak J from composition and singleton contraction. |

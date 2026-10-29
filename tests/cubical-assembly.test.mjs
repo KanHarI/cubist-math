@@ -95,6 +95,5 @@ test("a generic assumption is one kernel entry, and each use is a level applicat
   const labels = name => program.symbols[name].axioms.map(id => program.checker.assumptionLabels.get(id)).sort();
   assert.deepEqual(labels("assembly_generic_assumptions__choice0"), ["Choice"]);
   assert.deepEqual(labels("assembly_generic_assumptions__choice1"), ["Choice"]);
-  // Trunc keeps its universe, where the archive's Truncate resized into U0
-  // (G0 Q5): the module prints its type.
+  // Trunc keeps its universe (G0 Q5): the module prints its type.
 });

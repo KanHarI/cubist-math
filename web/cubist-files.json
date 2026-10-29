@@ -2315,10 +2315,6 @@
    "summary": "G5: the rebuilt `CauchySame` and `EventualClose` in U0, computable."
   },
   {
-   "path": "cubist-tests/truncation_legacy_confined.cubist",
-   "summary": "K2.5 step 4: the archive's legacy builtins, `Truncate`, its three companions and the builtin `LEM` and `Choice`, refused outside the archive, called or named, with what replaces them (E491)."
-  },
-  {
    "path": "cubist-tests/truncation_readout.cubist",
    "summary": "`print(witness(t))`: the witness a closed truncation holds, read under maps, squash endpoints and transport along a path of types, with its type and certificate; values that are no truncation."
   },

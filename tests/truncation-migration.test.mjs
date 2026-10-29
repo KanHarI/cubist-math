@@ -5,7 +5,8 @@ import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { validateLedger } from "../tools/migration-ledger.mjs";
 import { execFileSync } from "node:child_process";
-import { checkTestModule } from "./check-program.mjs";
+import { moduleReader } from "../web/module-resolution.mjs";
+import { checkProgram, checkTestModule } from "./check-program.mjs";
 
 const module = await createCubical();
 // The programs are cubist-tests/truncation_*.cubist, whose comments state
@@ -101,6 +102,19 @@ test("the CLI refuses the field-logic and Cauchy comparisons, retired with the l
       "--ledger","docs/roadmaps/hott/h1-truncation-ledger.json",...(scope ? ["--declarations",scope] : []),module];
     assert.throws(()=>execFileSync(process.execPath,args,{stdio:"pipe"}),
       error=>error.status===1 && new RegExp(`The ledger retired its ${module} comparison, which last passed at 7896d18a`).test(String(error.stderr)));
+  }
+});
+
+// K2.5 step 5 removed the legacy builtins: their names are unknown
+// everywhere, an archive module's as a library module's.
+test("the legacy builtins' names are unknown in an archive module and in a library module",async t=>{
+  const source="def truncated := Truncate(U0, Unit);\n";
+  for(const place of ["archive","library"]) {
+    const reader=moduleReader(()=>null);
+    reader.place("legacy",place);
+    const {get}=await checkProgram(t,source,{module,name:"legacy",reader});
+    assert.equal(get("truncated").code,"E343",place);
+    assert.match(get("truncated").reason,/^Untranslated name: Truncate\b/,place);
   }
 });
 

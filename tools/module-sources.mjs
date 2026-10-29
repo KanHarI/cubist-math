@@ -28,8 +28,7 @@ const below = (directory, path) => `${directory}${sep}${path}`;
 // A path as the operating system reads it: every symbolic link resolved in
 // order, a `..` after one leaving its target, and each name spelled as its
 // directory entry is, so that on a case-insensitive file system
-// archive/first-library/CLASSICAL.cubist and
-// ARCHIVE/FIRST-LIBRARY/classical.cubist are the archive's classical.cubist,
+// LIBRARY/classical_axioms.cubist is the library's classical_axioms.cubist,
 // which provenance and a transfer's file name as the root lists it. The
 // operating system's realpath gives that path; Node's own keeps the caller's
 // spelling. A path that does not exist stays as written; reading it reports
