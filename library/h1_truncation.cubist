@@ -1,6 +1,6 @@
 import hlevels;
 
-// Universe-preserving truncation; the archive keeps its legacy assumptions.
+// Universe-preserving truncation; the archive's truncation wraps it at U0.
 inductive Trunc(U < UU0, A : U) : prop U {
   point(a : A);
 }

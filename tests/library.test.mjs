@@ -16,7 +16,7 @@ import { sourceReader } from "../tools/module-sources.mjs";
 
 // The assumptions each module's declarations use; a module not listed uses none.
 const assumptions = {
-  classical_axioms: ["Choice", "LEM"],
+  classical_axioms: ["Choice", "LEM", "PropResizing"],
   universe_automorphisms: ["LEM"],
   h1_classical: ["LEM"],
   continuum_axioms: ["CH", "DecidableCH", "DecidableGCH", "GCH"],
@@ -52,6 +52,7 @@ test("the library's axioms have distinct names, which are their labels", async (
   }
   const names = axioms.map(([name]) => name);
   assert.deepEqual(names.filter((name, index) => names.indexOf(name) !== index), [], JSON.stringify(axioms));
-  assert.deepEqual(axioms, [["LEM", "classical_axioms"], ["Choice", "classical_axioms"], ["CH", "continuum_axioms"],
-    ["DecidableCH", "continuum_axioms"], ["GCH", "continuum_axioms"], ["DecidableGCH", "continuum_axioms"]]);
+  assert.deepEqual(axioms, [["LEM", "classical_axioms"], ["Choice", "classical_axioms"],
+    ["PropResizing", "classical_axioms"], ["CH", "continuum_axioms"], ["DecidableCH", "continuum_axioms"],
+    ["GCH", "continuum_axioms"], ["DecidableGCH", "continuum_axioms"]]);
 });
