@@ -21,9 +21,8 @@ test("quotient universal property works for genuinely U1 targets without represe
     const symbol = program.symbols[binding];
     assert.equal(symbol.verified, true, binding);
     const assumptions = symbol.axioms.map(name => program.checker.assumptionLabels.get(name) ?? name).sort();
-    t.diagnostic(`${symbol.name}: ${JSON.stringify(assumptions)}`);
-    assert.ok(assumptions.length > 0);
-    assert.ok(assumptions.every(name => /^Truncate(?:Intro|Elim|Prop)?$/.test(name)), JSON.stringify(assumptions));
+    // The quotient's truncation is the library's Trunc, which assumes nothing.
+    assert.deepEqual(assumptions, [], binding);
   }
 });
 

@@ -5,8 +5,10 @@ import order_maps;
 use unat;
 
 // Families may be indexed in U1, since the collection of small subsets is
-// itself large. The union uses the existing U1 truncation signature explicitly.
-def PredicateUnion(I : U1, A : U0, P : I -> A -> U0, x : A) := FieldExists(exists i : I. P(i, x));
+// itself large. Membership in the union, a proposition in U1, is resized to
+// a small predicate by the library's propositional resizing.
+def PredicateUnion(I : U1, A : U0, P : I -> A -> U0, x : A) :=
+  PropResizing(FieldExists(exists i : I. P(i, x)), field_exists_prop(exists i : I. P(i, x))).1;
 
 def PredicateChain(I : U1, A : U0, P : I -> A -> U0) := forall i : I. forall j : I. FieldOr(
   PredicateIncluded(A, P(i), P(j)), PredicateIncluded(A, P(j), P(i))
@@ -17,12 +19,15 @@ def PredicateDirected(I : U1, A : U0, P : I -> A -> U0) := forall i : I. forall 
 );
 
 def predicate_union_prop(I : U1, A : U0, P : I -> A -> U0, x : A) :=
-  field_exists_prop(exists i : I. P(i, x));
+  PropResizing(FieldExists(exists i : I. P(i, x)), field_exists_prop(exists i : I. P(i, x))).2.1;
 
 def predicate_union_upper(I : U1, A : U0, P : I -> A -> U0, i : I) :
   PredicateIncluded(A, P(i), PredicateUnion(I, A, P)) {
   intro x, member;
-  exact field_exists_intro((exists j : I. P(j, x)), typed((exists j : I. P(j, x)), (i, member)));
+  let Member := exists j : I. P(j, x);
+  exact PropResizing(FieldExists(Member), field_exists_prop(Member)).2.2.1(
+    field_exists_intro(Member, typed(Member, (i, member)))
+  );
 }
 
 def predicate_union_least(
@@ -36,7 +41,11 @@ def predicate_union_least(
     obtain (i, hx) := witness_;
     exact included(i, x, hx);
   }
-  exact field_exists_elim((exists i : I. P(i, x)), Q(x), propQ(x), fromMember, member);
+  let Member := exists i : I. P(i, x);
+  exact field_exists_elim(
+    Member, Q(x), propQ(x), fromMember,
+    PropResizing(FieldExists(Member), field_exists_prop(Member)).2.2.2(member)
+  );
 }
 
 def predicate_chain_directed(I : U1, A : U0, P : I -> A -> U0, chain : PredicateChain(I, A, P)) :
@@ -106,8 +115,10 @@ def finite_cover_step(
       field_exists_prop(Cover), fromTail, tailCover
     );
   }
+  let Head := exists i : I. P(i, h);
   exact field_exists_elim(
-    (exists i : I. P(i, h)), FieldExists(Cover), field_exists_prop(Cover), fromHead, headMember
+    Head, FieldExists(Cover), field_exists_prop(Cover), fromHead,
+    PropResizing(FieldExists(Head), field_exists_prop(Head)).2.2.2(headMember)
   );
 }
 

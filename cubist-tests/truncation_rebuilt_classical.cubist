@@ -1,8 +1,7 @@
-// From tests/truncation-migration.test.mjs: the library's excluded middle coexists with the
-// archive's legacy builtin, and a program that uses both lists both.
-// The archive's double negation uses its legacy LEM over Truncate, labelled LEM[Truncate]; the
-// library's uses the axiom LEM of classical_axioms, over Trunc, which the import of h1_classical
-// binds in place of the builtin.
+// From tests/truncation-migration.test.mjs: the archive's double negation and the library's rely
+// on one excluded middle, the axiom LEM of classical_axioms, over Trunc, so a program that uses
+// both lists it once. The archive's truncation module imports classical_axioms, which binds LEM
+// in its classical module in place of the legacy builtin.
 import classical;
 import h1_classical;
 

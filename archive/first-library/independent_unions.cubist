@@ -28,7 +28,11 @@ def directed_union_independent(
       finite_directed_union_cover(I, A, P, directed, seed, n, vectors, members)
     );
   }
-  exact field_exists_elim((exists j : I. P(j, vectors(i))), Goal, prop_, fromSeed, members(i));
+  let Seed := exists j : I. P(j, vectors(i));
+  exact field_exists_elim(
+    Seed, Goal, prop_, fromSeed,
+    PropResizing(FieldExists(Seed), field_exists_prop(Seed)).2.2.2(members(i))
+  );
 }
 
 def chain_union_independent(

@@ -84,7 +84,7 @@ test("archive module names check from the CLI and the verifier, with no marker",
 test("the library's axiom modules verify unchanged against their committed baseline",()=>{
   const report=execFileSync(process.execPath,["tools/verify-proof-migration.mjs","--no-dependents","--edited-root","library",
     "classical_axioms","h1_classical","universe_automorphisms"],{encoding:"utf8"});
-  assert.match(report,/ok {3}classical_axioms: 4 identical/);
+  assert.match(report,/ok {3}classical_axioms: 7 identical/);
   assert.match(report,/ok {3}universe_automorphisms: 23 identical/);
   assert.match(report,/3 modules \(0 dependents\), 0 failures/);
 });
@@ -102,12 +102,10 @@ test("both remaining documented ledger comparisons verify their pinned changes a
   }
 });
 
-test("the library's excluded middle coexists with the archive's legacy builtin, and a program that uses both lists both",async t=>{
+test("the archive's excluded middle is the library's, and a program that uses both lists it once",async t=>{
   const {get,assumptions}=await check(t,"truncation_rebuilt_classical");
   for(const name of ["old","rebuilt","both"])assert.ok(get(name).verified,get(name).reason);
-  assert.deepEqual(assumptions(get("old")),["LEM[Truncate]","Truncate","TruncateElim"]);
-  assert.deepEqual(assumptions(get("rebuilt")),["LEM"]);
-  assert.deepEqual(assumptions(get("both")),["LEM","LEM[Truncate]","Truncate","TruncateElim"]);
+  for(const name of ["old","rebuilt","both"])assert.deepEqual(assumptions(get(name)),["LEM"],name);
   assert.equal(get("rejected").verified,false);
   assert.match(get("rejected").reason,/^Expected a universe/);
 });

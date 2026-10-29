@@ -25,7 +25,8 @@ def strict_above_is_set(A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A
 }
 
 // If there is no maximal element, each point merely has a strict successor.
-// At this stage there is no selected successor function.
+// At this stage there is no selected successor function. The truncated
+// successor is a proposition in U1, resized to U0 for double negation.
 def no_maximal_strict_successor(
   A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le),
   none : FieldExists(exists x : A. OrderMaximal(A, le, x)) -> Void, x : A
@@ -46,8 +47,17 @@ def no_maximal_strict_successor(
     }
     exact none(field_exists_intro((exists a : A. OrderMaximal(A, le, a)), (x, maximal)));
   }
-  exact double_negation(
-    FieldExists(StrictlyAbove(A, le, x)), field_exists_prop(StrictlyAbove(A, le, x)), contradiction
+  let small :=
+    PropResizing(FieldExists(StrictlyAbove(A, le, x)), field_exists_prop(StrictlyAbove(A, le, x)));
+  exact small.2.2.2(
+    double_negation(
+      small.1, small.2.1,
+      (
+        fun (no : small.1 -> Void) => contradiction(
+          fun (p : FieldExists(StrictlyAbove(A, le, x))) => no(small.2.2.1(p))
+        )
+      )
+    )
   );
 }
 
@@ -68,9 +78,10 @@ def no_strict_successor_function(
   exact strict(transport order_refl(A, le, laws, f(x)) along fixed in le(f(x)));
 }
 
-// The chain-complete form of Zorn, derived from Choice(U1) and LEM.
-// Choice is applied only to sets, and its merely selected function is
-// eliminated into Void. No maximality or fixed-point axiom is introduced.
+// The chain-complete form of Zorn, derived from Choice(U1) and LEM, with
+// the truncated conclusion resized to U0 for double negation. Choice is
+// applied only to sets, and its merely selected function is eliminated
+// into Void. No maximality or fixed-point axiom is introduced.
 def zorn_chain_complete(
   A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), complete : ChainComplete(A, le)
 ) :
@@ -88,5 +99,15 @@ def zorn_chain_complete(
       no_strict_successor_function(A, le, laws, complete), successors
     );
   }
-  exact double_negation(FieldExists(Result), field_exists_prop(Result), contradiction);
+  let small := PropResizing(FieldExists(Result), field_exists_prop(Result));
+  exact small.2.2.2(
+    double_negation(
+      small.1, small.2.1,
+      (
+        fun (no : small.1 -> Void) => contradiction(
+          fun (p : FieldExists(Result)) => no(small.2.2.1(p))
+        )
+      )
+    )
+  );
 }

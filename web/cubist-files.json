@@ -2316,7 +2316,7 @@
   },
   {
    "path": "cubist-tests/truncation_legacy_confined.cubist",
-   "summary": "K2.5 step 4: the archive's legacy builtins, `Truncate`, its three companions and the builtin `LEM` and `Choice`, refused outside the archive, called or named, with what replaces them (E491); the archive's own declarations over them stay usable."
+   "summary": "K2.5 step 4: the archive's legacy builtins, `Truncate`, its three companions and the builtin `LEM` and `Choice`, refused outside the archive, called or named, with what replaces them (E491)."
   },
   {
    "path": "cubist-tests/truncation_readout.cubist",
@@ -2324,7 +2324,7 @@
   },
   {
    "path": "cubist-tests/truncation_rebuilt_classical.cubist",
-   "summary": "The library's excluded middle, an axiom over `Trunc`, beside the archive's legacy builtin over `Truncate`: a program that uses both lists both, and the retired truncation former is refused."
+   "summary": "The archive's double negation and the library's rely on one excluded middle, the library's `LEM` over `Trunc`, listed once by a program that uses both, and the retired truncation former is refused."
   },
   {
    "path": "cubist-tests/truncation_resize.cubist",
@@ -2508,7 +2508,7 @@
   },
   {
    "path": "library/classical_axioms.cubist",
-   "summary": "Excluded middle and the axiom of choice: their statements over `Trunc`, `ExcludedMiddle(U)` and `AxiomOfChoice(U)`, and the axioms that assume them, `def LEM := axiom ExcludedMiddle;` and `def Choice := axiom AxiomOfChoice;`. Importing it brings `Trunc` into scope."
+   "summary": "Excluded middle and the axiom of choice: their statements over `Trunc`, `ExcludedMiddle(U)` and `AxiomOfChoice(U)`, and the axioms that assume them, `def LEM := axiom ExcludedMiddle;` and `def Choice := axiom AxiomOfChoice;`. Propositional resizing from `U1` to `U0`, which excluded middle implies: `PropResize(P)`, a proposition in `U0` with maps both ways to a proposition `P : U1`, its statement for every such `P`, `PropositionalResizing`, and the axiom that assumes it, `def PropResizing := axiom PropositionalResizing;`, which the archive's results that resize propositions use. Importing it brings `Trunc` into scope."
   },
   {
    "path": "library/continuum_axioms.cubist",
@@ -2548,7 +2548,7 @@
   },
   {
    "path": "library/h1_classical.cubist",
-   "summary": "Classical logic from [`classical_axioms`](classical_axioms.cubist)'s `LEM`: double-negation elimination for propositions, deciding a proposition, and resizing a proposition in `U1` to one in `U0`."
+   "summary": "Classical logic from [`classical_axioms`](classical_axioms.cubist)'s `LEM`: double-negation elimination for propositions, deciding a proposition, and resizing a proposition in `U1` to one in `U0`, `PropResize(P)`, without `PropResizing`."
   },
   {
    "path": "library/h1_truncation.cubist",

@@ -262,16 +262,17 @@ test("witness readout keeps its closedness restriction in a local context",async
 });
 
 test("context queries retain published declarations with explicit logical assumptions",async t=>{
-  const source="import truncation; def f(x : Unit) : Unit := x;";
+  const source="import h1_classical; def f(x : Unit) : Unit := x;";
   const {program,session}=await setup(t,source,"x;",{phase:"expression",length:1});
-  const registry=program.compilationBindings,value=program.modules.get("truncation").get("Mere");
+  // double_negation uses LEM, so it is published applied to the assumption.
+  const registry=program.compilationBindings,value=program.modules.get("h1_classical").get("double_negation");
   assert.equal(value.tag,"App");
   const binding=registry.ofValue(value);
-  assert.equal(binding.id,registry.declaration("truncation__Mere").binding.id);
+  assert.equal(binding.id,registry.declaration("h1_classical__double_negation").binding.id);
   assert.equal(registry.ofValue(structuredClone(value)),null,"core equality confers no declaration identity");
-  await query(session,"typeof Mere(Unit)","type");
-  await query(session,"typeof merely(Unit, x)","type");
-  await query(session,"witness merely(Unit, x)","error");
+  await query(session,"typeof double_negation(U0, Unit, unit_is_prop)","type");
+  await query(session,"typeof merely(U0, Unit, x)","type");
+  await query(session,"witness merely(U0, Unit, x)","error");
 });
 
 // Each result is reported with every assumption it relies on: through its

@@ -6,6 +6,10 @@
 // Trunc and the library's axioms: a library module, a file of the user's,
 // the workspace, a REPL or console entry and a test fixture, and so is a
 // module that only spells an archive module's name or edits its text.
+// No module of the repository's archive uses them since K2.5 step 5 moved
+// it to the library's truncation and axioms; an archive module that does is
+// legacyClassical, read from a temporary project's archive (legacyProject)
+// or answered as the archive's own file (legacyArchiveReader).
 import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -22,10 +26,10 @@ import { ContextualSession } from "../web/contextual-session.mjs";
 import { WorkbenchSession } from "../web/cubical-workbench-session.mjs";
 import { moduleListing } from "../web/module-listing.mjs";
 import { archiveProvenance, libraryProvenance, listedReader, moduleReader } from "../web/module-resolution.mjs";
-import { sourceReader } from "../tools/module-sources.mjs";
+import { moduleOfFile, sourceReader } from "../tools/module-sources.mjs";
 import { verifyMigration } from "../tools/proof-migration.mjs";
 import { migrationSourceReader } from "../tools/migration-sources.mjs";
-import { checkProgram, checkTestModule } from "./check-program.mjs";
+import { checkProgram, checkTestModule, legacyArchiveReader, legacyClassical } from "./check-program.mjs";
 
 const module = await createCubical();
 const root = fileURLToPath(new URL("../", import.meta.url));
@@ -40,32 +44,47 @@ const verdicts = result => Object.fromEntries(result.outputs.map(output => [outp
   output.verified ? true : `${output.code}: ${output.reason}`]));
 const labels = (result, name) => result.outputs.find(output => output.name === name).axioms
   .map(id => result.assumptionLabels[id] ?? id).sort();
+const legacyLabels = ["LEM[Truncate]", "Truncate", "TruncateElim"];
+// A project whose archive holds legacyClassical as its classical module, with
+// the listing and the reader of its files that a transfer's provenance takes.
+async function legacyProject(t) {
+  const directory = fs.realpathSync.native(await mkdtemp(join(tmpdir(), "cubist-legacy-")));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const project = join(directory, "project"), classical = join(project, "archive/first-library/classical.cubist");
+  await mkdir(join(project, "archive/first-library"), { recursive: true });
+  await writeFile(classical, legacyClassical);
+  return { directory, project, classical, listing: { archive: ["classical"] }, fetchText: path => readFile(join(project, path), "utf8") };
+}
 
-test("an archive module, read from the archive as it holds it, still uses the legacy builtins", async t => {
-  // The archive's three call sites of LEM and Choice keep them.
-  for (const [name, declaration, label] of [["classical", "double_negation", "LEM[Truncate]"],
-    ["zorn_chain_complete", "zorn_chain_complete", "Choice[Truncate]"], ["surjections", "every_surjection_has_right_inverse", "Choice[Truncate]"]]) {
+test("an archive module may still use the legacy builtins; the archive's own call sites use the library's axioms", async t => {
+  // The archive's three call sites of LEM and Choice are the library's.
+  for (const [name, declaration, label] of [["classical", "double_negation", "LEM"],
+    ["zorn_chain_complete", "zorn_chain_complete", "Choice"], ["surjections", "every_surjection_has_right_inverse", "Choice"]]) {
     const path = join(root, "archive/first-library", `${name}.cubist`);
     const { result } = await checkProgram(t, await archived(name), { module, name, reader: sourceReader({ path }) });
     assert.equal(result.complete, true, `${name}: ${JSON.stringify(result.gaps[0])}`);
     assert.ok(labels(result, declaration).includes(label), `${name}.${declaration}: ${labels(result, declaration)}`);
+    assert.ok(!labels(result, declaration).some(label => legacyLabels.includes(label) || label === "Choice[Truncate]"), name);
   }
   // From the command line, by its path and by its name.
   for (const target of ["archive/first-library/classical.cubist", "classical"]) {
     const run = spawnSync(process.execPath, [cli, "check", target], { cwd: root, encoding: "utf8", timeout: 60000 });
     assert.equal(run.status, 0, run.stdout + run.stderr);
-    assert.match(run.stdout, /double_negation assumes LEM\[Truncate\], Truncate, TruncateElim/);
+    assert.match(run.stdout, /double_negation assumes LEM\n/);
   }
+  // An archive module over the builtins, as its file holds it.
+  const { classical, project } = await legacyProject(t);
+  const { result } = await checkProgram(t, legacyClassical, { module, name: "classical", reader: sourceReader({ path: classical, root: project }) });
+  assert.equal(result.complete, true, JSON.stringify(result.gaps[0]));
+  assert.deepEqual(labels(result, "double_negation"), legacyLabels);
 });
 
-test("a test fixture refuses each legacy builtin, called or named, and keeps the archive's declarations over them", async t => {
+test("a test fixture refuses each legacy builtin, called or named", async t => {
   const { result } = await checkTestModule(t, "truncation_legacy_confined", { module });
   const refused = verdicts(result);
   for (const [name, builtin] of [["truncated", "Truncate"], ["introduced", "TruncateIntro"], ["proposition", "TruncateProp"],
     ["eliminated", "TruncateElim"], ["excluded", "LEM"], ["choice_at_zero", "Choice"], ["named", "Truncate"]])
     assert.match(refused[name], confined(builtin), name);
-  assert.equal(refused.archived, true);
-  assert.deepEqual(labels(result, "archived"), ["Truncate"]);
 });
 
 // universe_generic_builtins once took the legacy builtin LEM at UU0 (E407);
@@ -86,30 +105,38 @@ test("a library module may not use them, though read unedited from library/", as
 });
 
 test("a file of the user's may not, nor a copy of an archive module outside the archive; a link into it may", async t => {
-  const directory = await mkdtemp(join(tmpdir(), "cubist-confinement-"));
-  t.after(() => rm(directory, { recursive: true, force: true }));
+  const { directory, project, classical } = await legacyProject(t);
   const check = file => spawnSync(process.execPath, [cli, "check", file], { cwd: directory, encoding: "utf8", timeout: 60000 });
   await writeFile(join(directory, "mine.cubist"), "def excluded(A : U0, nn : (A -> Void) -> Void) := LEM(U0, A, nn);\n");
   const mine = check("mine.cubist");
   assert.notEqual(mine.status, 0);
   assert.match(mine.stdout + mine.stderr, /error E491 at line 1:51 \(excluded\): LEM is the archive's legacy builtin/);
+  // A file read as the command line reads it, in the project, whose archive
+  // module uses the builtins.
+  const verdict = async path => {
+    const { result } = await checkProgram(t, await readFile(path, "utf8"), { module, name: moduleOfFile(path),
+      reader: sourceReader({ path, root: project }) });
+    return verdicts(result).double_negation;
+  };
+  assert.equal(await verdict(classical), true);
   // The archive's own text under its own name, outside the archive: a
   // module's name and text do not make it the archive's, its root does.
-  await writeFile(join(directory, "classical.cubist"), await archived("classical"));
-  const copy = check("classical.cubist");
-  assert.notEqual(copy.status, 0);
-  assert.match(copy.stdout + copy.stderr, /error E491 at line \d+:\d+ \(double_negation\): LEM is the archive's legacy builtin/);
+  await writeFile(join(directory, "classical.cubist"), legacyClassical);
+  assert.match(await verdict(join(directory, "classical.cubist")), /^E491: /);
   // A link resolves to the archive's own file, as an import of it does,
   // under its own name or another (#332's review, finding 1: a renamed link
   // was refused, its name's archive file looked for).
   const linked = join(directory, "linked");
-  await symlink(join(root, "archive/first-library"), linked);
-  const link = check(join(linked, "classical.cubist"));
-  assert.equal(link.status, 0, link.stdout + link.stderr);
-  await symlink(join(root, "archive/first-library/classical.cubist"), join(directory, "renamed.cubist"));
-  const renamed = check("renamed.cubist");
-  assert.equal(renamed.status, 0, renamed.stdout + renamed.stderr);
-  assert.match(renamed.stdout, /double_negation assumes LEM\[Truncate\], Truncate, TruncateElim/);
+  await symlink(join(project, "archive/first-library"), linked);
+  assert.equal(await verdict(join(linked, "classical.cubist")), true);
+  await symlink(classical, join(directory, "renamed.cubist"));
+  assert.equal(await verdict(join(directory, "renamed.cubist")), true);
+  // So the command line checks the repository's archive through a renamed
+  // link, over the library's LEM.
+  await symlink(join(root, "archive/first-library/classical.cubist"), join(directory, "archived.cubist"));
+  const archivedLink = check("archived.cubist");
+  assert.equal(archivedLink.status, 0, archivedLink.stdout + archivedLink.stderr);
+  assert.match(archivedLink.stdout, /double_negation assumes LEM\n/);
 });
 
 // On a case-insensitive file system a path may spell the archive's file in
@@ -123,15 +150,17 @@ test("a path that spells the archive's file in another case is the archive's fil
   for (const path of ["archive/first-library/CLASSICAL.cubist", "ARCHIVE/FIRST-LIBRARY/classical.cubist"]) {
     const run = spawnSync(process.execPath, [cli, "check", path], { cwd: root, encoding: "utf8", timeout: 60000 });
     assert.equal(run.status, 0, `${path}: ${run.stdout}${run.stderr}`);
-    assert.match(run.stdout, /double_negation assumes LEM\[Truncate\], Truncate, TruncateElim/, path);
+    assert.match(run.stdout, /double_negation assumes LEM\n/, path);
   }
-  const program = new CubicalProgram(module, sourceReader({ path: join(root, "archive/first-library/CLASSICAL.cubist") }), { collectReferences: false });
+  const { project, listing, fetchText: fetchProject } = await legacyProject(t);
+  const program = new CubicalProgram(module, sourceReader({ path: join(project, "archive/first-library/CLASSICAL.cubist"), root: project }),
+    { collectReferences: false });
   t.after(() => program.dispose());
-  assert.equal((await program.check(await archived("classical"), "CLASSICAL")).complete, true);
+  assert.equal((await program.check(legacyClassical, "CLASSICAL")).complete, true);
   const exported = program.export("CLASSICAL__double_negation");
   assert.equal(exported.files.CLASSICAL, "archive/first-library/classical.cubist");
   const session = new WorkbenchSession(module, { fromLibrary: libraryProvenance(moduleListing, fetchText),
-    fromArchive: archiveProvenance(moduleListing, fetchText) });
+    fromArchive: archiveProvenance(listing, fetchProject) });
   t.after(() => session.dispose());
   const loaded = await session.load(exported);
   assert.ok(loaded.view.axioms.map(name => loaded.view.symbols[name].name).includes("LEM[Truncate]"));
@@ -222,7 +251,8 @@ test("a file aliased into the archive's place is not the archive's", async t => 
   for (const name of ["truncated", "introduced", "proposition", "eliminated", "excluded", "choice_at_zero", "named"])
     assert.equal(program.symbols[`external_example__${name}`].code, "E491", name);
   // The archive's own file under an alias of another name is.
-  const own = sourceReader({ files: new Map([["archive/borrowed", join(root, "archive/first-library/classical.cubist")]]) });
+  const { project, classical } = await legacyProject(t);
+  const own = sourceReader({ root: project, files: new Map([["archive/borrowed", classical]]) });
   own.place("fingerprint", "archive");
   const archive = new CubicalProgram(module, own, { collectReferences: false });
   t.after(() => archive.dispose());
@@ -341,13 +371,13 @@ test("a module checked again is checked afresh when its provenance changes, thou
 // The browser's reader (web/cubical-worker.mjs): a page places the module it
 // opened, and the module is the archive's only while its text is.
 test("a workspace module is the archive's only as the archive holds it: an edit or a borrowed name is refused", async t => {
-  const browser = (main, place) => listedReader(moduleListing, fetchText, main, place);
-  const original = await archived("classical");
-  const kept = await checkProgram(t, original, { module, name: "classical", reader: browser("classical", "archive") });
+  const { listing, fetchText: fetchProject } = await legacyProject(t);
+  const browser = (main, place) => listedReader(listing, fetchProject, main, place);
+  const kept = await checkProgram(t, legacyClassical, { module, name: "classical", reader: browser("classical", "archive") });
   assert.equal(kept.result.complete, true, JSON.stringify(kept.result.gaps[0]));
-  assert.ok(labels(kept.result, "double_negation").includes("LEM[Truncate]"));
-  const edited = await checkProgram(t, `${original}\ndef extra := tt;\n`, { module, name: "classical", reader: browser("classical", "archive") });
-  assert.match(verdicts(edited.result).double_negation, confined("LEM"));
+  assert.deepEqual(labels(kept.result, "double_negation"), legacyLabels);
+  const edited = await checkProgram(t, `${legacyClassical}\ndef extra := tt;\n`, { module, name: "classical", reader: browser("classical", "archive") });
+  assert.match(verdicts(edited.result).double_negation, /^E491: /);
   assert.equal(verdicts(edited.result).extra, true);
   // Placed in the archive by its page, or by a listed name, a module whose
   // text the archive does not hold is the user's.
@@ -358,11 +388,12 @@ test("a workspace module is the archive's only as the archive holds it: an edit 
 });
 
 test("a REPL entry may not, over an archive module or not", async t => {
+  const { project, classical } = await legacyProject(t);
   for (const base of [null, "classical"]) {
-    const reader = base ? sourceReader({ path: join(root, "archive/first-library", `${base}.cubist`) }) : sourceReader();
+    const reader = base ? sourceReader({ path: classical, root: project }) : sourceReader();
     const program = new CubicalProgram(module, reader, { collectReferences: false });
     t.after(() => program.dispose());
-    if (base) assert.equal((await program.check(await archived(base), base)).complete, true);
+    if (base) assert.equal((await program.check(legacyClassical, base)).complete, true);
     const repl = new ReplSession(program, base ? { base } : {});
     for (const entry of ["def truncated(A : U0) := Truncate(U0, A);", "typeof LEM(U0);", "typeof TruncateIntro;"]) {
       const [result] = await repl.run(entry);
@@ -378,15 +409,16 @@ test("a REPL entry may not, over an archive module or not", async t => {
 // recorded provenance (cubical-replay-inputs.mjs): the archive module
 // replays with its builtins, and an entry in its scope is still refused.
 test("a console entry in an archive module's scope may not", async t => {
-  const source = await archived("classical"), marker = "LEM(U0, P, nn)";
+  const { project, classical } = await legacyProject(t);
+  const source = legacyClassical, marker = "LEM(U0, P, nn)";
   const { program } = await checkProgram(t, source, { module, name: "classical",
-    reader: sourceReader({ path: join(root, "archive/first-library/classical.cubist") }), options: { collectScopes: true } });
+    reader: sourceReader({ path: classical, root: project }), options: { collectScopes: true } });
   const point = [...program.scopePoints.values()].find(point => point.origin.module === "classical"
     && point.origin.start === source.indexOf(marker) && point.phase === "expression");
   assert.ok(point);
   const session = new ContextualSession(program, point.id);
   t.after(() => session.dispose());
-  const [typed] = await session.run("typeof mere_eliminate(P, P, prop_, (fun (p : P) => p));");
+  const [typed] = await session.run("typeof nn;");
   assert.equal(typed.kind, "type", JSON.stringify(typed));
   const [refused] = await session.run("typeof LEM(U0, P, nn);");
   assert.equal(refused.kind, "error", JSON.stringify(refused));
@@ -396,11 +428,12 @@ test("a console entry in an archive module's scope may not", async t => {
 // A transfer's sources are text: the workbench asks which are the
 // archive's, as it asks which are the library's.
 test("a workbench transfer replays an archive module only as the archive holds it", async t => {
-  const program = new CubicalProgram(module, sourceReader(), { collectReferences: false });
+  const { project, listing, fetchText: fetchProject } = await legacyProject(t);
+  const program = new CubicalProgram(module, sourceReader({ root: project }), { collectReferences: false });
   t.after(() => program.dispose());
   await program.check("import classical;\ndef again := double_negation;", "workbench");
   const exported = program.export("workbench__again");
-  const fromArchive = archiveProvenance(moduleListing, fetchText), fromLibrary = libraryProvenance(moduleListing, fetchText);
+  const fromArchive = archiveProvenance(listing, fetchProject), fromLibrary = libraryProvenance(moduleListing, fetchText);
   const load = async (sources, options) => {
     const session = new WorkbenchSession(module, options);
     t.after(() => session.dispose());
@@ -419,8 +452,8 @@ test("a workbench transfer replays an archive module only as the archive holds i
 // and never by a file the archive does not hold (#332's review round 2,
 // finding 1).
 test("a workbench transfer authenticates each source by the file it was read from, under any name", async t => {
-  const classical = join(root, "archive/first-library/classical.cubist");
-  const fromArchive = archiveProvenance(moduleListing, fetchText), fromLibrary = libraryProvenance(moduleListing, fetchText);
+  const { directory, project, classical, listing, fetchText: fetchProject } = await legacyProject(t);
+  const fromArchive = archiveProvenance(listing, fetchProject), fromLibrary = libraryProvenance(moduleListing, fetchText);
   const load = async payload => {
     const session = new WorkbenchSession(module, { fromLibrary, fromArchive });
     t.after(() => session.dispose());
@@ -428,20 +461,19 @@ test("a workbench transfer authenticates each source by the file it was read fro
     return loaded.view.axioms.map(name => loaded.view.symbols[name].name);
   };
   // An alias of the archive's file, as the fingerprint tool reads one.
-  const aliased = new CubicalProgram(module, sourceReader({ files: new Map([["archive/borrowed", classical]]) }), { collectReferences: false });
+  const aliased = new CubicalProgram(module, sourceReader({ root: project, files: new Map([["archive/borrowed", classical]]) }),
+    { collectReferences: false });
   t.after(() => aliased.dispose());
   await aliased.check("import borrowed;\ndef again := double_negation;", "workbench");
   const borrowed = aliased.export("workbench__again");
   assert.equal(borrowed.files.borrowed, "archive/first-library/classical.cubist");
   assert.ok((await load(borrowed)).includes("LEM[Truncate]"));
   // A renamed link to it, checked as a file.
-  const directory = await mkdtemp(join(tmpdir(), "cubist-transfer-"));
-  t.after(() => rm(directory, { recursive: true, force: true }));
   const link = join(directory, "renamed.cubist");
   await symlink(classical, link);
-  const linked = new CubicalProgram(module, sourceReader({ path: link }), { collectReferences: false });
+  const linked = new CubicalProgram(module, sourceReader({ path: link, root: project }), { collectReferences: false });
   t.after(() => linked.dispose());
-  assert.equal((await linked.check(await archived("classical"), "renamed")).complete, true);
+  assert.equal((await linked.check(legacyClassical, "renamed")).complete, true);
   const renamed = linked.export("renamed__double_negation");
   assert.ok((await load(renamed)).includes("LEM[Truncate]"));
   // A file the archive does not hold, or other text, is not the archive's.
