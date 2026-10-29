@@ -105,8 +105,8 @@ def span_least(
       K, V, S, n, vectors, coefficients, (fun (i : Fin(n)) => included(vectors(i), members(i)))
     ) along sum in subspace_members(K, V, S);
   }
-  exact TruncateElim(
-    U0, SpanWitness(K, V, P, x), subspace_members(K, V, S, x), subspace_prop(K, V, S, x), descend,
+  exact mere_eliminate(
+    SpanWitness(K, V, P, x), subspace_members(K, V, S, x), subspace_prop(K, V, S, x), descend,
     member
   );
 }

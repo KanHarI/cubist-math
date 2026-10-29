@@ -23,7 +23,8 @@ and compatibility gates passed. The reals roadmap stays paused. See the
    - all of the archive's number theory moved to the library and removed
      from the archive ([NT1–NT5](archive-retirement.md#number-theory-in-the-library)),
      with EVAL7's primality, divisibility and Euclid as NT2.
-3. Alongside the runtime phase: K2.5's `axiom` definitions.
+3. Alongside the runtime phase: K2.5's `axiom` definitions, done through
+   the legacy truncation's removal on 2026-10-29.
 4. After it: simplicial ST0 and ST2, then the language direction below.
 
 **Language direction selected on 2026-10-17:** develop the language through categories,
@@ -57,7 +58,7 @@ rerun those reviews.
 | Track | Implemented | Still open |
 | --- | --- | --- |
 | Kernel and universes | Instruction-kernel stages 1–5; checker retirement; G0; face restriction; checking/bridge optimizations #194–#197. For the runtime track: the full-normalization cache (#269), explicit-stack normalization, weak-head, substitution and comparison traversals (#291, #292, #294, #297), resource failures preserved across APIs (#285) and the folded normal-form query (#309); workbench reduction controls (#298); kernel reference chapters 14–17 (#301) | Remaining stage-6 performance/certificate work; composition, Glue and HIT tube helpers still recurse natively; optional E1/E2 |
-| Inductive declarations | H1 released: one-sort data and higher types, matching, structural recursion and automatic clauses | Derivations/views; H2 indexed families; H3 companion sorts; H4 on demand; legacy truncation removal (K2.5), completed by the archive retirement (I0.5) |
+| Inductive declarations | H1 released: one-sort data and higher types, matching, structural recursion and automatic clauses; the legacy truncation removed (K2.5, 2026-10-29) | Derivations/views; H2 indexed families; H3 companion sorts; H4 on demand |
 | Proof ergonomics | Rewriting, simplification, `let`, holes, inference, implicit parameters, cubical shorthand, two h-level solver slices, evaluation patterns/readout, box notation and squares | Folded path rules, constructor descent, induction tooling, broader dependent rewriting, solver and square-migration remainders |
 | Theories | L2.4 and all six L2.4c slices: models, families/relations, inheritance, `Hom`/`Iso`, `use` and qualified operators; inherited operations and laws implemented by a child theory (#268); the algebra lattice with ordered-ring and ordered-field interfaces (#267) | Morphism opt-ins, general proposition laws, implicit operation arguments, checked initial/free capabilities, structure identity |
 | Notation | L2.10a–e and i–k: named notation, operands, literals, printing, reversal, explicit selection and partial inverse | Shadowing/inspection/printing details; deferred large numerals and `decide`; proposed general notation rules |
@@ -110,9 +111,10 @@ these language strands. See
   [critical pairs](hott/h1-critical-pairs.md): current normative rules and
   approved mathematical arguments. These remain active references after release.
 - [Truncation migrations](hott/h1-truncation-migration.md) and their
-  [ledger](hott/h1-truncation-ledger.json): 17 pinned changes and an implemented
-  verifier. Decided on 2026-10-20: the legacy assumptions are removed with the
-  archive ([removal plan](hott/h1-truncation-migration.md#removing-the-legacy-assumptions)),
+  [ledger](hott/h1-truncation-ledger.json): 17 pinned changes, kept as the
+  record in four retired comparisons, and an implemented verifier. The legacy
+  assumptions were removed on 2026-10-29, after the archive was migrated in
+  place ([removal plan](hott/h1-truncation-migration.md#removing-the-legacy-assumptions)),
   and the remaining archive remedies are not pursued.
 
 ## High-level abstractions

@@ -5,8 +5,8 @@ import embedding_counts;
 use unat;
 // Error: E606: Type mismatch: found exists f : af_carrier(K) -> af_carrier(T).
 //   FieldEmbeddingLaws(K, af_carrier(T), structure_data(FieldData, T), f), expected forall p :
-//   Polynomial(Truncate, T). PolynomialNonzero(Truncate, TruncateIntro, T, p) ->
-//   (PolynomialUnit(Truncate, TruncateIntro, TruncateProp, TruncateElim, T,….
+//   Polynomial(T). PolynomialNonzero(T, p) -> (PolynomialUnit(T, p) -> Void) -> Mere(exists x :
+//   af_carrier(T). PolynomialRoot(LEM, T, T, field_embedding….
 def embedding_without_closed_target(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L),
   finite : FiniteExtension(K, embedding_as_extension(K, L, e)), T : AlgebraicField,
@@ -16,9 +16,9 @@ def embedding_without_closed_target(
   exact finite_extension_embedding_exists(K, L, e, finite, T, j);
 }
 
-// Error: E606: Type mismatch: found HasCardinality(Truncate, EmbeddingsOver(K, L, e, T, j),
-//   extension_degree(Truncate, K, embedding_as_extension(K, L, e), finite)), expected
-//   HasCardinality(Truncate, EmbeddingsOver(K, L, e, T, j), 1).
+// Error: E606: Type mismatch: found HasCardinality(EmbeddingsOver(K, L, e, T, j),
+//   extension_degree(K, embedding_as_extension(K, L, e), finite)), expected
+//   HasCardinality(EmbeddingsOver(K, L, e, T, j), 1).
 def all_separable_extensions_have_one_embedding(
   K : AlgebraicField, L : AlgebraicField, e : FieldEmbedding(K, L),
   finite : FiniteExtension(K, embedding_as_extension(K, L, e)),

@@ -9,7 +9,7 @@ await browserTest(async ({ browser, base }) => {
   assert.equal(await page.locator("#inspect-parameters").getAttribute("open"), null);
   await page.locator("#inspect-parameters summary").click();
   assert.match(await page.locator("#inspect-parameters-list").textContent(), /order : StrictOrder\(F, lt\)/);
-  assert.doesNotMatch(await page.locator("#inspect-parameters-list").textContent(), /Truncate|Π/);
+  assert.doesNotMatch(await page.locator("#inspect-parameters-list").textContent(), /Π/);
   await page.screenshot({ path: "/tmp/cubist-statement-desktop.png", fullPage: false });
   await page.locator('#inspect-type button[data-name="F"]').first().click();
   await page.waitForFunction(() => document.querySelector("#inspect-name")?.textContent === "F" && document.querySelector("#inspect-parameters")?.hidden);

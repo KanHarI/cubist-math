@@ -51,7 +51,8 @@ test("spans are least subspaces and independent chains have bounds, including em
     const symbol = program.symbols[file + "__" + name];
     assert.equal(symbol.verified, true, name);
     const assumptions = symbol.axioms.map(binding => program.checker.assumptionLabels.get(binding));
-    assert.ok(assumptions.every(name => /^Truncate/.test(name)), JSON.stringify(assumptions));
+    // The union of a U1-indexed chain is a small predicate by resizing.
+    assert.deepEqual(assumptions, name.includes("union") ? ["PropResizing"] : [], name);
   }
   assert.deepEqual(program.symbols.independent_order__independent_partial_order.axioms, []);
 });
@@ -67,12 +68,10 @@ test("the general basis theorem derives maximality from choice, with its exact a
   for (const name of ["vector_arithmetic__vector_scale_injective", "finite_omission__fin_omit_cover",
     "finite_omission__linear_combination_omit", "chain_complete_orders__partial_order_is_set"])
     assert.deepEqual(assumptions(name), [], name);
-  assert.ok(assumptions("bourbaki_witt__bourbaki_witt").every(name => /^(Truncate|LEM)/.test(name)));
-  assert.ok(assumptions("independent_extension__adjoin_independent").every(name => /^(Truncate|LEM)/.test(name)));
+  assert.deepEqual(assumptions("bourbaki_witt__bourbaki_witt"), ["LEM", "PropResizing"]);
+  assert.deepEqual(assumptions("independent_extension__adjoin_independent"), ["LEM"]);
   const basisAxioms = assumptions("vector_basis_existence__vector_space_has_basis");
-  assert.ok(basisAxioms.includes("Choice[Truncate]"), JSON.stringify(basisAxioms));
-  assert.ok(basisAxioms.includes("LEM[Truncate]"), JSON.stringify(basisAxioms));
-  assert.ok(basisAxioms.every(name => /^(Choice\[Truncate\]|LEM\[Truncate\]|Truncate(?:Intro|Prop|Elim)?)$/.test(name)), JSON.stringify(basisAxioms));
+  assert.deepEqual(basisAxioms, ["Choice", "LEM", "PropResizing"]);
   assert.deepEqual(assumptions("linear_algebra_general_basis_regression__any_vector_space"), basisAxioms);
 });
 

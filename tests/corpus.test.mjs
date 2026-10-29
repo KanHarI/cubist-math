@@ -5,8 +5,8 @@ import { benchmark } from "../web/benchmark-runner.mjs";
 import { budget } from "./timing.mjs";
 import { archiveReader } from "../tools/module-sources.mjs";
 
-// G3 of the H1 specification: the archive, with its legacy assumptions,
-// still checks in full after H1.
+// G3 of the H1 specification: the archive still checks in full after H1,
+// on the library's truncation and axioms since K2.5's in-place migration.
 test("the complete canonical .cubist corpus checks with the sole native kernel", { timeout: budget(900000) }, async t => {
   // A correctness test: the limits only stop a hang, far above any
   // declaration's time and the whole run's, even under machine load. Speed is
@@ -37,10 +37,12 @@ test("the complete canonical .cubist corpus checks with the sole native kernel",
   // retirement) added 8 and removed hlevels' decision and primes' 9 copies;
   // hlevels' subtype_injective added 1; and the library's Euclid (NT2)
   // removed the entry point euclid's 2 and primes' 10 of divisibility and
-  // primality; and least elements (NT3) added unat's 2 order laws, the
-  // library's unat_least_elements (12) and polynomial_degree's
+  // primality; the archive's truncation over the library's Trunc, importing
+  // classical_axioms (K2.5's in-place migration), added h1_truncation's 6
+  // and classical_axioms' 7; and least elements (NT3) added unat's 2 order
+  // laws, the library's unat_least_elements (12) and polynomial_degree's
   // classical_least.
   assert.deepEqual(report.importErrors, []);
-  assert.equal(report.declarations.length, 3859, "The corpus must not silently lose modules.");
+  assert.equal(report.declarations.length, 3872, "The corpus must not silently lose modules.");
   t.diagnostic(JSON.stringify(report.counts));
 });

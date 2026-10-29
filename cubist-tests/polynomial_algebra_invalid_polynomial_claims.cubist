@@ -3,17 +3,17 @@
 import polynomial_root_bound;
 use unat;
 // Error: E606: Type mismatch: found (fun (n : UNat) => induction n return af_carrier(K) { zero =>
-//   field_one(K); succ ignored => field_zero(K); }, merely(Truncate, TruncateIntro, exists k :
-//   UNat. …, expected (fun (n : UNat) => K.2.1.1.1, merely(Truncate, TruncateIntro, exists k :
-//   UNat. SeriesSupport(K, series_zero(K), k), (0, fun (k : UNat, above : 0 <= k) => refl(….
+//   field_one(K); succ ignored => field_zero(K); }, merely(exists k : UNat. SeriesSupport(K,
+//   series_c…, expected (fun (n : UNat) => K.2.1.1.1, merely(exists k : UNat. SeriesSupport(K,
+//   series_zero(K), k), (0, fun (k : UNat, above : 0 <= k) => refl(field_zero(K))))) = polyn….
 def zero_has_no_roots(K : AlgebraicField) : RootFamily(K, polynomial_zero(K), 1) -> Void {
   exact polynomial_root_bound(K, polynomial_zero(K), polynomial_one_not_zero(K));
 }
 
 // Error: E606: Type mismatch: found (fun (n : UNat) => induction n return af_carrier(K) { zero =>
-//   field_one(K); succ ignored => field_zero(K); }, merely(Truncate, TruncateIntro, exists k :
-//   UNat. …, expected (fun (n : UNat) => K.2.1.1.1, merely(Truncate, TruncateIntro, exists k :
-//   UNat. SeriesSupport(K, series_zero(K), k), (0, fun (k : UNat, above : 0 <= k) => refl(….
+//   field_one(K); succ ignored => field_zero(K); }, merely(exists k : UNat. SeriesSupport(K,
+//   series_c…, expected (fun (n : UNat) => K.2.1.1.1, merely(exists k : UNat. SeriesSupport(K,
+//   series_zero(K), k), (0, fun (k : UNat, above : 0 <= k) => refl(field_zero(K))))) = polyn….
 def divide_by_zero(K : AlgebraicField, p : Polynomial(K)) :
   PolynomialDivision(K, p, polynomial_zero(K)) {
   exact polynomial_division(K, p, polynomial_zero(K), polynomial_one_not_zero(K));

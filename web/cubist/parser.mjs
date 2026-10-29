@@ -63,14 +63,8 @@ export const builtinNames = new Set([
   "Interval", "PathP", "comp", "face", "face_when", "flip", "meet", "join", "Glue", "glue", "unglue",
   "next", "max", "refl", "absurd", "sym", "trans", "cong", "transport", "apd", "apd_path",
   "pair_induction", "unit_induction", "path_induction", "based_induction", "path_from_transport", "path_to_transport",
-  "FunExt", "Truncate", "TruncateIntro", "TruncateProp", "TruncateElim", "UnivalenceBeta", "ua",
+  "FunExt", "UnivalenceBeta", "ua",
 ]);
-// Excluded middle and choice are the library's axioms, LEM and Choice of
-// classical_axioms, and ordinary names. Where nothing binds them, in an
-// archive module, they fall back to the archive's legacy builtins over
-// Truncate, labelled LEM[Truncate] and Choice[Truncate]; anywhere else they
-// are refused (docs/roadmaps/hott/h1-truncation-migration.md, step 4).
-export const legacyBuiltinNames = new Set(["LEM", "Choice"]);
 export const generatedNames = new Set([
   "Hom", "Iso", "cat", "equality", "make", "map", "id", "inverse", "compose", "to", "from", "from_to", "to_from",
   "model", "fold", "fold_map", "fold_unique", "universal", "gen", "squash",
@@ -102,7 +96,7 @@ export const isUniverseConstant = name => /^U+[0-9]+$/.test(name);
 // keywords and generated member labels are not expression-level builtins.
 // Universe spellings are still validated by the translator when consumed.
 export function reservedReferences(source) {
-  return [...new Set([...builtinNames,...legacyBuiltinNames,...primitiveNames,"typed","left","right","path","fill","at","on",
+  return [...new Set([...builtinNames,...primitiveNames,"typed","left","right","path","fill","at","on",
     ...tokenize(source).map(token=>token.text).filter(isUniverseConstant)])];
 }
 
@@ -1212,13 +1206,11 @@ export function parse(source, typeOnly = false, { bindable = [], historicalTrans
       if(!/^\d+$/.test(token.text)||!Number.isSafeInteger(value))
         throw testFailure("A search count needs a nonnegative safe integer.",token);
     } else if(pragma==="expect_axioms") {
-      // Assumptions by their labels: LEM, an axiom of another module as
-      // module::Name, or a legacy builtin over Truncate as LEM[Truncate].
+      // Assumptions by their labels: LEM, or an axiom of another module as
+      // module::Name.
       take("[");value=[];
       if(peek()!=="]")while(true) {
-        let assumption=qualifiedWord.test(peek())?take().text:testName();
-        if(peek()==="[") {take("[");assumption+=`[${testName()}]`;take("]");}
-        value.push(assumption);
+        value.push(qualifiedWord.test(peek())?take().text:testName());
         if(peek()!==",")break;
         take(",");
       }

@@ -1,4 +1,3 @@
-import { assumptionMark } from "./translator/names.mjs";
 import { displayFreeNames } from "./translator/display-names.mjs";
 import { renameLevel, universeText } from "./cubical-levels.mjs";
 import {numeralValue} from "./translator/numerals.mjs";
@@ -102,7 +101,7 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
     if (t.tag === "Var") {
       const symbol = outer(t.name) ? undefined : symbols[t.name];
       return { ...name(label(t.name)), local: symbol?.kind !== "axiom",
-        ...(symbol?.kind === "axiom" ? { binding: t.name, axiomNotation: t.name === `__assumption_Truncate${assumptionMark}` ? "truncation" : undefined }
+        ...(symbol?.kind === "axiom" ? { binding: t.name }
           : symbol?.binding ? { contextBinding: symbol.binding } : {}) };
     }
     if (t.tag === "U") return { kind: "Universe", level: renameLevel(t.level, label) };
@@ -143,13 +142,7 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
         args.unshift(fn.tag === "App" ? visit(fn.arg) : { kind: "Universe", level: renameLevel(fn.level, label) });
         fn = fn.fn;
       }
-      const head = visit(fn);
-      // Truncate(U, A) is written ‖A‖: the universe argument comes first.
-      // Only an archive module can build it (builtins.mjs,
-      // legacyConfinement), but its declarations are shown wherever they
-      // are used, so this keys on the assumption; it leaves with the archive.
-      if (head.axiomNotation === "truncation") head.truncationArgument = 1;
-      return { kind: "Call", fn: head, args };
+      return { kind: "Call", fn: visit(fn), args };
     }
     if (t.tag === "Pair" && paths) return call("pair", [child(t.as, "as"), child(t.first, "first"), child(t.second, "second")]);
     if (t.tag === "Pair") return { kind: "Pair", left: child(t.first, "first"), right: child(t.second, "second") };

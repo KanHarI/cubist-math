@@ -12,10 +12,9 @@ def decide_prop(U < UU0, P : U, prop_ : IsProp(U, P)) : P or (P -> Void) := doub
   )
 );
 
-// G6: this packages a small proposition and maps in both directions.
-// The hypothesis prop prevents its use on an arbitrary witness type.
-def PropResize(P : U1) := exists Q : U0. IsProp(U0, Q) and (P -> Q) and (Q -> P);
-
+// G6: excluded middle resizes a proposition, classical_axioms' PropResize:
+// a small proposition with maps in both directions. The hypothesis prop
+// prevents its use on an arbitrary witness type.
 def resize_prop(P : U1, prop_ : IsProp(U1, P)) :
   PropResize(P) := match decide_prop(U1, P, prop_) return PropResize(P) {
     left p => (Unit, unit_is_prop, fun (q : P) => tt, fun (u : Unit) => p);

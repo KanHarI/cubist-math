@@ -24,7 +24,7 @@ def cauchy_modulus(
   field_second(UNat -> Q, FieldCauchy(Q, zero, addQ, ltQ), sequence);
 
 def EventualClose(Q : U0, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0, x, y : UNat -> Q, epsilon : Q) :=
-  FieldExists(
+  Mere(
     exists bound : UNat. forall n : UNat. IndexLE(bound, n)
     -> FieldClose(Q, addQ, ltQ, x(n), y(n), epsilon)
   );
@@ -62,7 +62,7 @@ def sequence_same_prop(Q : U0, zero : Q, addQ : Q -> Q -> Q, ltQ : Q -> Q -> U0,
           )
         ),
         (
-          fun (positive : ltQ(zero, epsilon)) => field_exists_prop(
+          fun (positive : ltQ(zero, epsilon)) => mere_is_prop(
             exists bound : UNat. forall n : UNat. IndexLE(bound, n)
             -> FieldClose(Q, addQ, ltQ, x(n), y(n), epsilon)
           )
@@ -80,7 +80,7 @@ def sequence_same_reflexive(
 ) :
   SequenceSame(Q, zero, addQ, ltQ, x, x) {
   intro epsilon, positive;
-  exact field_exists_intro(
+  exact merely(
     (
       exists bound : UNat. forall n : UNat. IndexLE(bound, n)
       -> FieldClose(Q, addQ, ltQ, x(n), x(n), epsilon)
@@ -100,7 +100,7 @@ def sequence_same_symmetric(
 ) :
   SequenceSame(Q, zero, addQ, ltQ, y, x) {
   intro epsilon, positive;
-  exact field_exists_map(
+  exact mere_map(
     (
       exists bound : UNat. forall n : UNat. IndexLE(bound, n)
       -> FieldClose(Q, addQ, ltQ, x(n), y(n), epsilon)
@@ -207,10 +207,10 @@ def sequence_same_transitive(
   let resultTail := exists bound : UNat. forall n : UNat. IndexLE(bound, n) -> FieldClose(
     Q, addQ, ltQ, x(n), z(n), epsilon
   );
-  exact field_exists_elim(
-    leftTail, FieldExists(resultTail), field_exists_prop(resultTail),
+  exact mere_eliminate(
+    leftTail, Mere(resultTail), mere_is_prop(resultTail),
     (
-      fun (leftActual : leftTail) => field_exists_map(
+      fun (leftActual : leftTail) => mere_map(
         rightTail, resultTail,
         close_tails_compose(Q, addQ, ltQ, x, y, z, epsilon, delta, composeAt, leftActual),
         yz(delta, deltaPositive)

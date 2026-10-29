@@ -18,9 +18,8 @@ test("quotient groups and the first isomorphism theorem check constructively acr
     const symbol = program.symbols[binding];
     assert.equal(symbol.verified, true, binding);
     const assumptions = symbol.axioms.map(name => program.checker.assumptionLabels.get(name) ?? name).sort();
-    t.diagnostic(`${symbol.name}: ${JSON.stringify(assumptions)}`);
-    assert.ok(assumptions.length > 0, "quotient construction must disclose truncation");
-    assert.ok(assumptions.every(name => /Truncate|truncate|truncation/i.test(name)), JSON.stringify(assumptions));
+    // The quotient's truncation is the library's Trunc, which assumes nothing.
+    assert.deepEqual(assumptions, [], binding);
   }
 });
 

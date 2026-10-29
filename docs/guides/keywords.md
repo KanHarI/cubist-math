@@ -22,12 +22,11 @@ statement and standalone transport prefix are not part of the current language;
 expression, the whole value of `def Name := axiom F;`
 ([axioms](../../web/reference/first-proof.html#axiom-definitions)). `LEM` and
 `Choice` became ordinary names then: the library's `classical_axioms` declares
-them, and only where nothing binds them do they fall back to the archive's
-builtins over `Truncate`, and since step 4 (2026-10-28) only in an archive
-module; anywhere else, such a use is refused (E491). `Truncate`,
-`TruncateIntro`, `TruncateProp` and `TruncateElim` stay reserved until the
-archive retires, so that a source using them meets that refusal rather
-than an unknown name. No revision before gave `axiom` a meaning, so the
+them. Until K2.5 step 5 (2026-10-29), where nothing bound them they fell back
+to the archive's builtins over `Truncate`; step 5 removed those builtins and
+freed `Truncate`, `TruncateIntro`, `TruncateProp` and `TruncateElim`, which
+had stayed reserved until then: each is an ordinary name now, unknown unless
+a source declares it. No revision before gave `axiom` a meaning, so the
 historical source reader reads a source of that time with every `axiom` as
 the name it was, renamed with its declaration wherever its binding came
 from, and a later source with the form (`historicalKeywords` in

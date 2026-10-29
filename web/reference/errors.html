@@ -278,8 +278,7 @@
             <div class="table-scroll"><table>
               <thead><tr><th>Code</th><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
               <tbody>
-                <tr id="E491"><td class="code"><code>E491</code></td><td data-message="is the archive's legacy builtin, accepted only in archive modules">“<var>name</var> is the archive's legacy builtin, accepted only in archive modules: elsewhere use the library's Trunc, from h1_truncation, and its axioms LEM and Choice, from classical_axioms.”</td><td>One of the archive’s legacy builtins, <code>Truncate</code>, <code>TruncateIntro</code>, <code>TruncateProp</code> or <code>TruncateElim</code>, or <code>LEM</code> or <code>Choice</code> where nothing binds them, was used outside the archive. Only a module read unchanged from the archive may use them. For a truncation, use the library’s <code>Trunc</code>; for excluded middle or choice, <code>import classical_axioms;</code>, whose <code>LEM</code> and <code>Choice</code> then name its axioms over <code>Trunc</code>.</td><td><a href="assumptions.html#truncation">truncation</a></td></tr>
-                <tr id="E403"><td class="code"><code>E403</code></td><td data-message="Too many arguments to">“Too many arguments to <var>name</var>.”</td><td><code>ua</code>, <code>UnivalenceBeta</code> or, in an archive module, one of the archive’s legacy builtins got more arguments than its type allows.</td><td><a href="assumptions.html#generic-library">univalence</a></td></tr>
+                <tr id="E403"><td class="code"><code>E403</code></td><td data-message="Too many arguments to">“Too many arguments to <var>name</var>.”</td><td><code>ua</code> or <code>UnivalenceBeta</code> got more arguments than its type allows.</td><td><a href="assumptions.html#generic-library">univalence</a></td></tr>
                 <tr id="E330"><td class="code"><code>E330</code></td><td data-message="This computable declaration depends on non-computing assumptions:">“This computable declaration depends on non-computing assumptions: …”</td><td>The declaration uses an assumption, directly or through a definition. The message names the chain. Replace that step, or drop <code>computable</code>.</td><td><a href="assumptions.html#computable">computable</a></td></tr>
                 <tr id="E324"><td class="code"><code>E324</code></td><td data-message="The evaluated term depends on non-computing assumptions:">“The evaluated term depends on non-computing assumptions: …”</td><td><code>evaluate</code> accepts only terms that use no assumption.</td><td><a href="assumptions.html#evaluate">evaluate</a></td></tr>
                 <tr id="E326"><td class="code"><code>E326</code> <code>E477</code></td><td data-message="The term evaluates to">“The term evaluates to <var>a</var>, not <var>b</var>.”, “The term evaluates to <var>a</var>, which does not match <var>p</var>: <var>c</var> is not <var>q</var>.”</td><td>The normal forms differ; the message shows both. Against a pattern, it names the first part of the value that does not match, and the part of the pattern it fails; the value is shown as far as the pattern computed it, <code>&lt;unevaluated&gt;</code> marking a part it did not.</td><td><a href="assumptions.html#evaluate">evaluate</a></td></tr>
@@ -626,10 +625,10 @@ def mixed(a, b : UNat, h : a = b) : a &lt;= b {
                 <tr id="E401"><td><code>E401</code></td><td>Univalence requires a universe.</td></tr>
                 <tr id="E402"><td><code>E402</code></td><td>… takes a universe below UU0.</td></tr>
                 <tr><td><a href="#E403"><code>E403</code></a></td><td>Too many arguments to ….</td></tr>
-                <tr id="E404"><td><code>E404</code></td><td>… needs a universe argument.</td></tr>
+                <tr id="E404"><td><code>E404</code></td><td>… needs a universe argument. (retired)</td></tr>
                 <tr id="E405"><td><code>E405</code></td><td>… with a truncation former needs a universe argument. (retired)</td></tr>
-                <tr id="E406"><td><code>E406</code></td><td>Logical assumptions require a universe and an explicit native context.</td></tr>
-                <tr id="E407"><td><code>E407</code></td><td>… holds only for universes below UU0.</td></tr>
+                <tr id="E406"><td><code>E406</code></td><td>Logical assumptions require a universe and an explicit native context. (retired)</td></tr>
+                <tr id="E407"><td><code>E407</code></td><td>… holds only for universes below UU0. (retired)</td></tr>
                 <tr id="E408"><td><code>E408</code></td><td>Invalid arguments to ….</td></tr>
                 <tr id="E409"><td><code>E409</code></td><td>A composition wall has syntax face(i, 0 or 1, fun (j : Interval) =&gt; ...).</td></tr>
                 <tr id="E410"><td><code>E410</code></td><td>A composition face needs an outer interval coordinate and endpoint 0 or 1.</td></tr>
@@ -713,7 +712,7 @@ def mixed(a, b : UNat, h : a = b) : a &lt;= b {
                 <tr id="E488"><td><code>E488</code></td><td>The runtime's evaluation of the value form exhausted its allocation budget of … cells.</td></tr>
                 <tr id="E489"><td><code>E489</code></td><td>The runtime's evaluation of the value form exceeded its time limit.</td></tr>
                 <tr id="E490"><td><code>E490</code></td><td>The runtime failed to evaluate the value form: …</td></tr>
-                <tr><td><a href="#E491"><code>E491</code></a></td><td>… is the archive's legacy builtin, accepted only in archive modules: elsewhere use the library's Trunc, from h1_truncation, and its axioms LEM and Choice, from classical_axioms.</td></tr>
+                <tr id="E491"><td><code>E491</code></td><td>… is the archive's legacy builtin, accepted only in archive modules: elsewhere use the library's Trunc, from h1_truncation, and its axioms LEM and Choice, from classical_axioms. (retired)</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e5">Inductive types and matching</h3>
@@ -801,7 +800,7 @@ def mixed(a, b : UNat, h : a = b) : a &lt;= b {
             <div class="table-scroll"><table class="codes">
               <thead><tr><th>Code</th><th>Message</th></tr></thead>
               <tbody>
-                <tr id="E601"><td><code>E601</code></td><td>Unsupported library assumption: …</td></tr>
+                <tr id="E601"><td><code>E601</code></td><td>Unsupported library assumption: … (retired)</td></tr>
                 <tr id="E602"><td><code>E602</code></td><td>Only LEM and Choice have rebuilt truncation signatures. (retired)</td></tr>
                 <tr id="E603"><td><code>E603</code></td><td>Rebuilt LEM and Choice require an admitted proposition truncation. (retired)</td></tr>
                 <tr><td><a href="#E604"><code>E604</code></a></td><td>Instruction kernel: …</td></tr>

@@ -26,12 +26,11 @@
 // archive-first, and checking anything else is library-first: a library
 // module shadows the archive module of that name.
 //
-// A root also vouches for its modules' text (fromLibrary, fromArchive): a
-// module read unedited from library/'s file of its name names its axioms by
-// their bare names, and only text read unedited from a file of the archive
-// may use the archive's legacy builtins over Truncate. What vouches is the
-// file a module was really read from, by its real path; a module's name, or
-// a place given to it for its imports, vouches for nothing.
+// The library also vouches for its modules' text (fromLibrary): a module
+// read unedited from library/'s file of its name names its axioms by their
+// bare names. What vouches is the file a module was really read from, by its
+// real path; a module's name, or a place given to it for its imports,
+// vouches for nothing.
 //
 // A check holds one module per name. When two modules of one check would
 // resolve the same name to different files, for example a library module and
@@ -127,10 +126,10 @@ export function moduleReader(read) {
     }
     return placed.has(name) ? probe(placed.get(name), name) : Promise.resolve(null);
   };
-  // A root vouches only for text a file of its own holds: an edited source,
-  // a file elsewhere aliased into a root's place, and a source placed in a
-  // root for its imports alone, which no file of the root holds, are not
-  // the root's. Its place and its name decide nothing here.
+  // The library vouches only for text a file of its own holds: an edited
+  // source, a file elsewhere aliased into the library's place, and a source
+  // placed there for its imports alone, which no file of the library holds,
+  // are not the library's. Its place and its name decide nothing here.
   //
   // Only a library module names its axioms by their bare names, as LEM and
   // Choice (web/cubical-assumptions.mjs). A bare label is a name, so the
@@ -141,19 +140,9 @@ export function moduleReader(read) {
     const origin = await originOf(name);
     return origin?.root === "library" && origin.file === `${moduleRoots.library}${name}.cubist` && origin.text === text;
   };
-  // Only an archive module may use the archive's legacy builtins, Truncate,
-  // its three companions and the builtin LEM and Choice over it
-  // (web/translator/builtins.mjs, legacyConfinement): text that a file of
-  // the archive holds, under any name, as a link to it reads. The archive is
-  // frozen until it retires, so an archive module edited, in the workspace or
-  // elsewhere, is a module of the user's, and may not.
-  readSource.fromArchive = async (name, text) => {
-    const origin = await originOf(name);
-    return origin?.root === "archive" && origin.text === text;
-  };
   // The file `text` was read from, as a root's path, when it is that file's
   // text: what a transfer carries so that its receiver authenticates the
-  // same file (rootProvenance), whatever name the module has.
+  // same file (libraryProvenance).
   readSource.fileOf = async (name, text) => {
     const origin = await originOf(name);
     return origin?.text === text ? origin.file : null;
@@ -181,26 +170,20 @@ export function moduleReader(read) {
   return readSource;
 }
 
-// Whether a source given as text, as a transfer gives one, is the text of a
-// root's file, read through `fetchText` as listedReader reads it: the
-// provenance of a module no reader placed. `file` is the file the transfer
-// says the module was read from (CubicalProgram.export), a root's path, so
-// that a module read under another name, through an alias or a link, is
-// authenticated by its file, as its reader authenticated it; without one,
-// the root's file of the module's name. Only a library module names its
-// axioms by their bare names (fromLibrary), its file of its own name, and
-// only an archive module may use the archive's legacy builtins
-// (fromArchive). A file the root does not list, and a text that cannot be
-// compared, as when the root is unreachable, are not the root's.
-const rootProvenance = root => (listing, fetchText) => async (name, text, file = null) => {
-  const path = file ?? `${moduleRoots[root]}${name}.cubist`;
-  const own = path.startsWith(moduleRoots[root]) && path.endsWith(".cubist")
-    ? path.slice(moduleRoots[root].length, -".cubist".length) : null;
-  if (own === null || !listing[root]?.includes(own) || root === "library" && own !== name) return false;
-  try { return await fetchText(path) === text; } catch { return false; }
+// Whether a source given as text, as a transfer gives one, is the text of
+// the library's file of its name, read through `fetchText` as listedReader
+// reads it: the provenance of a module no reader placed, which names its
+// axioms by their bare names (fromLibrary). `file` is the file the transfer
+// says the module was read from (CubicalProgram.export), so that a module
+// is authenticated by its file, as its reader authenticated it; without
+// one, the library's file of the module's name. Another file, a name the
+// library does not list, and a text that cannot be compared, as when the
+// library is unreachable, are not the library's.
+export const libraryProvenance = (listing, fetchText) => async (name, text, file = null) => {
+  const own = `${moduleRoots.library}${name}.cubist`;
+  if ((file ?? own) !== own || !listing.library?.includes(name)) return false;
+  try { return await fetchText(own) === text; } catch { return false; }
 };
-export const libraryProvenance = rootProvenance("library");
-export const archiveProvenance = rootProvenance("archive");
 
 // Modules known by name, as the browser knows them: `listing` names the
 // modules of each root, and fetchText(path) reads one by its path from the
