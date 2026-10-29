@@ -54,12 +54,13 @@ export function testModule(name, options = {}) {
 // they remain accepted only in archive modules until they are removed. A
 // test of them reads a module of the archive's that does, the archive's
 // classical double negation over them with its wrappers unfolded, and choice
-// over them, through legacyArchiveReader: it answers each of `modules` as the
+// over them at its truncated result type, through legacyArchiveReader: it answers each of `modules` as the
 // archive's own file, and every other module from its root in the repository.
 export const legacyClassical = "def double_negation(P : U0, prop_ : forall x, y : P. x = y, nn : (P -> Void) -> Void) : P :=\n"
   + "  TruncateElim(U0, P, P, prop_, fun (p : P) => p, LEM(U0, P, nn));\n"
   + "def choice(A : U0, B : A -> U0, setA : forall x, y : A. forall p, q : x = y. p = q,\n"
-  + "  setB : forall a : A. forall x, y : B(a). forall p, q : x = y. p = q, inhabited : forall a : A. Truncate(U0, B(a))) :=\n"
+  + "  setB : forall a : A. forall x, y : B(a). forall p, q : x = y. p = q, inhabited : forall a : A. Truncate(U0, B(a)))\n"
+  + "  : Truncate(U0, forall a : A. B(a)) :=\n"
   + "  Choice(U0, A, B, setA, setB, inhabited);\n";
 export function legacyArchiveReader(modules = { legacy: legacyClassical }) {
   const root = fileURLToPath(new URL("../", import.meta.url));
