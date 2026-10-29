@@ -1,9 +1,10 @@
 // Least elements of predicates on unary UNat, for clients indexed by unary
-// naturals: least_elements' search and uniqueness, by structural recursion.
-// A decidable predicate that holds at some n has a least element, and the
-// search decides 0, 1, 2, ... in turn until the predicate holds. For a
-// predicate valued in propositions having a least element is a proposition.
-import hlevels;
+// naturals: least_elements' results, by structural recursion. A decidable
+// predicate that holds at some n has a least element, and the search
+// decides 0, 1, 2, ... in turn until the predicate holds. For a predicate
+// valued in propositions having a least element is a proposition, and its
+// mere existence gives it.
+import h1_truncation;
 use unat;
 
 // n is the least natural where P holds.
@@ -98,4 +99,16 @@ computable def unat_least_is_prop(P : UNat -> U0, prop_ : forall n : UNat. IsPro
   IsProp(U0, UNatLeast(P)) := fun (u, v : UNatLeast(P)) => subtype_injective(
     U0, UNat, UNatIsLeast(P), unat_is_least_is_prop(P, prop_), u, v,
     unat_least_unique(P, u.1, v.1, u.2, v.2)
+  );
+
+// So a decidable predicate valued in propositions that merely holds
+// somewhere has a least element.
+computable def unat_least_element_from_mere(
+  P : UNat -> U0, prop_ : forall n : UNat. IsProp(U0, P(n)), decide : forall n : UNat.
+  Decidable(U0, P(n)), somewhere : Trunc(U0, exists n : UNat. P(n))
+) :
+  UNatLeast(P) := mere_eliminate(
+    U0, U0, exists n : UNat. P(n), UNatLeast(P), unat_least_is_prop(P, prop_),
+    fun (found : exists n : UNat. P(n)) => unat_least_element(P, decide, found.1, found.2),
+    somewhere
   );

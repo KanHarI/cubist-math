@@ -2616,7 +2616,7 @@
   },
   {
    "path": "library/unat_least_elements.cubist",
-   "summary": "Least elements over unary `UNat`, by structural recursion, for clients indexed by unary naturals such as the archive's polynomial degrees: `UNatIsLeast`, `UNatLeast`, the search `unat_least_element`, uniqueness and propositionality (`unat_least_unique`, `unat_least_is_prop`)."
+   "summary": "Least elements over unary `UNat`, by structural recursion, for clients indexed by unary naturals such as the archive's polynomial degrees: `UNatIsLeast`, `UNatLeast`, the search `unat_least_element`, uniqueness and propositionality (`unat_least_unique`, `unat_least_is_prop`), and the least element from mere existence (`unat_least_element_from_mere`)."
   },
   {
    "path": "library/unat_models.cubist",

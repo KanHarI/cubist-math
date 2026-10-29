@@ -1,26 +1,22 @@
+// The library's modules come first, so that the archive's truncation names
+// (truncation, through polynomial_ring) shadow h1_truncation's, which
+// unat_least_elements brings: a later import shadows an earlier one.
 import unat;
+import unat_least_elements;
 import polynomial_ring;
 import finite_basis_search;
-import unat_least_elements;
 use unat;
 
-// The least natural where a predicate valued in propositions holds, from its
-// mere existence: excluded middle decides the predicate, and the library's
-// search (unat_least_elements) finds the least from a witness. A least
-// element is unique, so mere existence suffices.
+// The least natural where a predicate valued in propositions merely holds:
+// excluded middle decides the predicate, and the library finds the least
+// (unat_least_elements).
 def classical_least(
   P : UNat -> U0, prop_ : (forall n : UNat. Proposition(P(n))),
   inhabited : Mere(exists n : UNat. P(n))
 ) :
   UNatLeast(P) {
-  exact mere_eliminate(
-    (exists n : UNat. P(n)), UNatLeast(P), unat_least_is_prop(P, prop_),
-    (
-      fun (found : (exists n : UNat. P(n))) => unat_least_element(
-        P, (fun (k : UNat) => excluded_middle(P(k), prop_(k))), sigma_first(UNat, P, found),
-        sigma_second(UNat, P, found)
-      )
-    ), inhabited
+  exact unat_least_element_from_mere(
+    P, prop_, (fun (k : UNat) => excluded_middle(P(k), prop_(k))), inhabited
   );
 }
 

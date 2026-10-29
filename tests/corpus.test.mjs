@@ -40,9 +40,9 @@ test("the complete canonical .cubist corpus checks with the sole native kernel",
   // primality; the archive's truncation over the library's Trunc, importing
   // classical_axioms (K2.5's in-place migration), added h1_truncation's 6
   // and classical_axioms' 7; and least elements (NT3) added unat's 2 order
-  // laws, the library's unat_least_elements (12) and polynomial_degree's
+  // laws, the library's unat_least_elements (13) and polynomial_degree's
   // classical_least.
   assert.deepEqual(report.importErrors, []);
-  assert.equal(report.declarations.length, 3872, "The corpus must not silently lose modules.");
+  assert.equal(report.declarations.length, 3873, "The corpus must not silently lose modules.");
   t.diagnostic(JSON.stringify(report.counts));
 });
