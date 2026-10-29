@@ -8,8 +8,8 @@ for it are deleted. The timing is open: retirement follows the runtime phase
 and is a prerequisite of no scheduled package. This note owns the follow-ups
 that other tasks hand to the retirement. The legacy truncation assumptions
 of K2.5 are no longer among them: since 2026-10-29 the archive uses the
-library's truncation and axioms, and K2.5 removes the legacy builtins on its
-own. It is a plan, not a delivered change; the
+library's truncation and axioms, and K2.5 removed the legacy builtins the
+same day. It is a plan, not a delivered change; the
 [work plan](work-plan.md#stage-0-delivered-baseline-and-remaining-documentation)
 schedules it as I0.5.
 
@@ -82,9 +82,9 @@ Each step is small enough for one pull request, or a few.
 | Step | Work | Measure |
 | --- | --- | --- |
 | R1 | Confine new dependencies. Fixtures and reference examples that import an archive module only for a small helper (`primes`'s rules, `paths_`, `w`, `pushout`, `suspension_types`, `binary_naturals`, `binary_arithmetic`, `classical`) take it from the library or from `cubist-tests/`; `simp` fixtures get rules of their own | Archive imports from `cubist-tests/` and the reference fall to the mathematical regressions and the two H1 slices |
-| R2 | Legacy truncation confined to the archive: K2.5's steps 1–4 in the [removal plan](hott/h1-truncation-migration.md#removing-the-legacy-assumptions), with excluded middle and choice as `def … := axiom …` definitions in `classical_axioms` | No library, fixture, reference or guide directly invokes `Truncate`, `TruncateIntro`, `TruncateProp`, `TruncateElim` or the builtin `LEM`/`Choice`; archive regression expectations retain the legacy labels until their tests retire. Since 2026-10-29 the archive uses none of them either, and its expectations list the library's axioms (K2.5 step 5) |
+| R2 | Legacy truncation confined to the archive: K2.5's steps 1–4 in the [removal plan](hott/h1-truncation-migration.md#removing-the-legacy-assumptions), with excluded middle and choice as `def … := axiom …` definitions in `classical_axioms` | No library, fixture, reference or guide directly invokes `Truncate`, `TruncateIntro`, `TruncateProp`, `TruncateElim` or the builtin `LEM`/`Choice`; archive regression expectations retain the legacy labels until their tests retire. Since 2026-10-29 the archive uses none of them either, its expectations list the library's axioms, and the builtins are removed from the language (K2.5 step 5) |
 | R3 | Decide per area of the results catalog: rebuild in the library before deletion, or record and drop. The mathematics roadmaps that cite archive modules as checked progress (Galois, complex analysis, reals) record what their archive modules proved and what the rebuild must restate | A decision per catalog area, recorded in the catalog |
-| R4 | Remaining fixtures, reference examples, tests and tools. Following R3's decisions, move or retire the 26 mathematical regression fixtures and the two H1 slices left after R1, and any other remaining archive-dependent fixture or reference example; update their module lists, test selections and generated file index together. Each archive-reading JavaScript test moves to library modules or retires with the module it tests; the audit, coverage, fingerprint and baseline tools take `library/` and `cubist-tests/` roots; remaining archive-dependent ledger comparisons retire with their last passing revisions recorded before the migration verifier loses its archive baseline resolution | None of the original 65 fixtures, 5 reference pages, 22 tests or 13 tools, nor any replacements, imports an archive module or reads an archive path; the 28 fixtures deliberately retained by R1 have each migrated or retired |
+| R4 | Remaining fixtures, reference examples, tests and tools. Following R3's decisions, move or retire the 26 mathematical regression fixtures and the two H1 slices left after R1, and any other remaining archive-dependent fixture or reference example; update their module lists, test selections and generated file index together. Each archive-reading JavaScript test moves to library modules or retires with the module it tests; the audit, coverage, fingerprint and baseline tools take `library/` and `cubist-tests/` roots; remaining archive-dependent ledger comparisons retire with their last passing revisions recorded before the migration verifier loses its archive baseline resolution (K2.5 step 5 retired the last two, on 2026-10-29) | None of the original 65 fixtures, 5 reference pages, 22 tests or 13 tools, nor any replacements, imports an archive module or reads an archive path; the 28 fixtures deliberately retained by R1 have each migrated or retired |
 | R5 | Delete. The directory, the module list and the resolution root; archive-only readers and settings. The tactical checkpoints move to `historical/`, the catalog's module table becomes a historical record, and the roadmap index and documentation index are updated | `npm test`, the site build and the reference pass with no `archive/` directory; `git grep archive/first-library` finds only historical documents |
 
 Acceptance for R5 is the measure in its row, with the catalog's per-area
@@ -93,10 +93,10 @@ decisions of R3 recorded before the deletion.
 **Scheduled early, on 2026-10-26.** Two parts no longer wait for the runtime
 phase to end: R2 (K2.5's steps 1–4) runs alongside it, and so does the
 archive's number theory, below. R2 is done (2026-10-28): the legacy
-builtins are accepted only in an archive module, read unedited from the
-archive's root, and refused anywhere else. Since 2026-10-29 no archive
-module uses them either: by the user's decision the archive was migrated in
-place, and K2.5 removes the builtins without waiting for R5.
+builtins were accepted only in an archive module, read unedited from the
+archive's root, and refused anywhere else. On 2026-10-29, by the user's
+decision, the archive was migrated in place, and K2.5 removed the builtins
+without waiting for R5: no module, the archive's included, can use them.
 
 ## Number theory in the library
 
@@ -135,15 +135,15 @@ They stay in the archive until decided.
 
 - [K2.5](work-plan.md#stage-2-one-sort-signatures-basic-theories-and-matching):
   since 2026-10-29 (the user's decision) the archive is migrated in place to
-  the library's truncation and axioms, and K2.5 removes the legacy
-  truncation assumptions before the retirement. The archive's 47
+  the library's truncation and axioms, and K2.5 removed the legacy
+  truncation assumptions the same day, before the retirement. The archive's 47
   resizing-dependent declarations are kept: 27 need no resizing, and 20 use
   the library's `PropResizing`. R3 still decides which the library rebuilds,
   at the universes they need.
 - I1.1, module resolution: the archive root is the last fallback and the only
-  one that goes. It also vouches for the only modules that may use the
-  legacy builtins (`fromArchive`, K2.5 step 4), which K2.5 removes with the
-  builtins.
+  one that goes. Its provenance, which vouched for the only modules that
+  could use the legacy builtins (`fromArchive`, K2.5 step 4), left with the
+  builtins on 2026-10-29.
 - The [instruction coverage report](work-plan.md#the-instruction-kernel-and-this-plan):
   archive coverage is replaced by library and fixture coverage as evidence.
 - The [mathematics roadmaps](README.md#mathematics) and the tactical

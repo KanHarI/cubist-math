@@ -37,7 +37,7 @@ function availability() {
   $("back").disabled = blocked || !history.length;
   $("check").disabled = blocked || !view || $("syntax").value === syntaxDisplayLimitMessage;
   $("syntax").disabled = blocked;
-  for (const id of ["unhighlight", "fold-names", "identity-sugar", "truncation-sugar", "assembly-more", "more-reduction-sites"])
+  for (const id of ["unhighlight", "fold-names", "identity-sugar", "assembly-more", "more-reduction-sites"])
     $(id).disabled = blocked;
   enableReductions(!blocked && !!checked);
 }
@@ -116,7 +116,7 @@ function adopt(snapshot) {
 }
 const remember = () => ({ view, checked, selected, id: state, kernelPath: [...kernelPath], kernelSide: $("kernel-side").value });
 const options = () => ({ resolve: binding => view.symbols[binding], inspect: info => inspect(info.binding),
-  identitySugar: $("identity-sugar").checked, truncationSugar: $("truncation-sugar").checked });
+  identitySugar: $("identity-sugar").checked });
 async function display(updateSyntax = true) {
   const mode = $("workbench-view").value, assembly = mode === "assembly", kernelGraph = mode === "graph";
   $("mathematical-view").hidden = mode !== "math";
@@ -169,8 +169,7 @@ async function display(updateSyntax = true) {
       return element;
     } : null;
     renderMathNotation($(side), cubicalMathTree(active ? view[side] : display[side], view.symbols,
-      active ? reductionLimit : 1200, { paths: active, dimensions: viewDimensions(view) }), { ...options(), decorateTerm,
-        ...(active ? { truncationSugar: false } : {}) });
+      active ? reductionLimit : 1200, { paths: active, dimensions: viewDimensions(view) }), { ...options(), decorateTerm });
   }
   for (const side of ["expression", "type"]) for (const kind of ["beta", "delta"])
     $(kind + "-" + side).setAttribute("aria-pressed", String(reductionMode?.side === side && reductionMode.kind === kind));
@@ -428,7 +427,7 @@ $("unhighlight").onclick = action(async () => {
   getSelection()?.removeAllRanges();
   document.querySelectorAll(".highlight,.selected").forEach(node => node.classList.remove("highlight", "selected"));
 });
-for (const id of ["identity-sugar", "truncation-sugar", "fold-names"]) $(id).onchange = action(() => { if (view) return display(false); });
+for (const id of ["identity-sugar", "fold-names"]) $(id).onchange = action(() => { if (view) return display(false); });
 $("syntax").oninput = () => {
   const wasSelecting = reductionMode !== null;
   reductionMode = null;

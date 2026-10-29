@@ -1465,6 +1465,7 @@ inductive Quotient(U, V < UU0, A : U, R : A -> A -> V) : set {
    stated in `classical_axioms`, in place of their remedies, so every
    archive result is kept and lists it
    ([migration](h1-truncation-migration.md#migration-in-place-2026-10-29)).
+   Both were done on 2026-10-29 (K2.5 step 5).
 5. **`LEM` and `Choice` are restated over `Trunc`** when the rebuilt library
    adopts it. They remain non-computing assumptions. Under the removal plan
    of 2026-10-20, revised on 2026-10-21, they became definitions
@@ -1602,7 +1603,8 @@ local experiment; the archive is unchanged.
   be identical or ledgered and inside the comparison scope. Value pins close
   over the meanings of other helpers, even when their names stay folded.
 - The legacy assumptions are removed from `web/cubical-assumptions.mjs` only
-  when no module that the tests check uses them.
+  when no module that the tests check uses them: done on 2026-10-29 (K2.5
+  step 5), after the archive's in-place migration.
 
 **Status on 2026-09-30.** The [ledger](h1-truncation-ledger.json) pins
 17 checked changes in version 2, including value pins and explicit

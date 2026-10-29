@@ -15,7 +15,7 @@
 // generalizes only where its result type mentions the variable.
 // Untrusted: the kernel checks every clause at its clause type.
 import { isResourceLimit } from "../resource-limits.mjs";
-import {propagateElaborationStop,SourceRefusal} from "./control.mjs";
+import {propagateElaborationStop} from "./control.mjs";
 import {T,substituteTerm,substituteDimension,freeNames} from "./core.mjs";
 import {interval as I} from "./lattice.mjs";
 import {abstractMotive} from "./motives.mjs";
@@ -33,9 +33,7 @@ import {constructorText} from "./qualified-names.mjs";
 
 // The keyword a match or an induction was written with, for messages.
 const keyword = n => n.kind === "induction" || n.induction === true ? "induction" : "match";
-// A failure no other elaboration answers: running out, or a refused source
-// (control.mjs, SourceRefusal), which a second elaboration would only hide.
-const resourceFailure=error=>isResourceLimit(error?.kind)||error instanceof SearchLimit||error instanceof SourceRefusal;
+const resourceFailure=error=>isResourceLimit(error?.kind)||error instanceof SearchLimit;
 
 // The environment key of the declaration's own name, for recursion: a key
 // no source name can spell.

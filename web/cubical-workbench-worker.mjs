@@ -1,18 +1,16 @@
 import createCubical from "./dist/cubical.mjs";
 import { WorkbenchSession } from "./cubical-workbench-session.mjs";
 import { moduleListing } from "./module-listing.mjs";
-import { archiveProvenance, libraryProvenance } from "./module-resolution.mjs";
+import { libraryProvenance } from "./module-resolution.mjs";
 import { moduleFault } from "./cubical-kernel.mjs";
 let aborted = null;
-// A transferred module is the library's when library/ holds that text, and
-// the archive's when the archive does.
-const fetchText = async path => {
+// A transferred module is the library's when library/ holds that text.
+const fromLibrary = libraryProvenance(moduleListing, async path => {
   const response = await fetch(new URL(`./${path}`, import.meta.url), { cache: "no-store" });
   return response.ok ? response.text() : null;
-};
-const fromLibrary = libraryProvenance(moduleListing, fetchText), fromArchive = archiveProvenance(moduleListing, fetchText);
+});
 const module = await createCubical({ onAbort: reason => { aborted = String(reason); } });
-const session = new WorkbenchSession(module, { fromLibrary, fromArchive });
+const session = new WorkbenchSession(module, { fromLibrary });
 self.postMessage({ ready: true });
 let queue = Promise.resolve();
 // An instance that failed (KernelFault) is never entered again: the worker

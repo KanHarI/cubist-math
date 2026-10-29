@@ -87,30 +87,26 @@ test("a module resolves its imports by where it lives", async () => {
   await assert.rejects(told("old", "entry"), /a library module imports only from the library/);
 });
 
-// A root vouches for the file a module was read from, as the reader found it
-// by its real path, never for the place it was read under or its name
-// (#332's review, finding 1): the archive for any file of its own, the
-// library for its file of the module's own name, whose axioms' bare labels
-// are names.
+// The library vouches for the file a module was read from, as the reader
+// found it by its real path, never for the place it was read under or its
+// name (#332's review, finding 1): its file of the module's own name, whose
+// axioms' bare labels are names.
 test("provenance is the file a module was read from, apart from its place and its name", async () => {
   const answers = {
-    "archive/aliased": { text: "aliased", root: "local", file: null },
-    "archive/renamed": { text: "renamed", root: "archive", file: "archive/first-library/classical.cubist" },
+    "library/aliased": { text: "aliased", root: "local", file: null },
     "library/linked": { text: "linked", root: "library", file: "library/classical_axioms.cubist" },
     "library/own": "own",
   };
   const reader = moduleReader((place, name) => answers[`${place}/${name}`] ?? null);
-  for (const name of ["aliased", "renamed", "linked", "own"]) await reader(name);
+  for (const name of ["aliased", "linked", "own"]) await reader(name);
   // Each module's text is its name.
-  assert.deepEqual(await Promise.all(["aliased", "renamed", "linked", "own"].map(name => reader.fromArchive(name, name))),
-    [false, true, false, false]);
-  assert.deepEqual(await Promise.all(["linked", "own"].map(name => reader.fromLibrary(name, name))), [false, true]);
+  assert.deepEqual(await Promise.all(["aliased", "linked", "own"].map(name => reader.fromLibrary(name, name))), [false, false, true]);
   assert.equal(await reader.fromLibrary("own", "edited"), false);
   // A checked source given as text comes from the file its origin reads.
-  reader.place("main", "archive", () => ({ text: "main", root: "archive", file: "archive/first-library/other.cubist" }));
-  assert.deepEqual([await reader.fromArchive("main", "main"), await reader.fromArchive("main", "edited")], [true, false]);
-  reader.place("synthetic", "archive");
-  assert.equal(await reader.fromArchive("synthetic", "import x;"), false);
+  reader.place("main", "library", () => ({ text: "main", root: "library", file: "library/main.cubist" }));
+  assert.deepEqual([await reader.fromLibrary("main", "main"), await reader.fromLibrary("main", "edited")], [true, false]);
+  reader.place("synthetic", "library");
+  assert.equal(await reader.fromLibrary("synthetic", "import x;"), false);
 });
 
 test("the browser lists every module the CLI finds on disk", async () => {

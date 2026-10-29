@@ -50,8 +50,8 @@ steps:
 `UU0` and can be named, paired and compared. Only reasoning about types in
 `UU0` themselves, for example equivalences between generic statements, needs
 generic definitions at tier 1. In this version a universe argument of tier 1
-or above is rejected, including by the builtins. `LEM`, `Choice` and
-`Truncate` stay below `UU0` by decision, independently of this proposal.
+or above is rejected, including by the builtins. `LEM` and `Choice` stay
+below `UU0` by decision, independently of this proposal.
 
 **What would justify it.** A library result that needs univalence,
 function extensionality or a generic library definition at a type in `UU0`.

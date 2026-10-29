@@ -21,14 +21,9 @@ export function independentBinderGroups(tree, enabled = true) {
   return { groups, tail };
 }
 
-export function isTruncationApplication(node) {
-  return node.kind === "Call" && node.fn.kind === "Name" && node.fn.axiomNotation === "truncation"
-    && node.fn.truncationArgument !== undefined && node.args.length === node.fn.truncationArgument + 1;
-}
-
 // Native MathML provides mathematical typesetting without a CDN, TeX input,
 // HTML interpolation, or a change to the stored proof.
-export function renderMathNotation(container, tree, { resolve = () => null, inspect = () => {}, truncationSugar = false, groupIndependentBinders = false, identitySugar = true, decorateTerm = null } = {}) {
+export function renderMathNotation(container, tree, { resolve = () => null, inspect = () => {}, groupIndependentBinders = false, identitySugar = true, decorateTerm = null } = {}) {
   const doc = container.ownerDocument;
   const element = (tag, ...children) => {
     const node = doc.createElementNS(mathNamespace, tag);
@@ -115,11 +110,6 @@ export function renderMathNotation(container, tree, { resolve = () => null, insp
         ["Product", "Sum", "Arrow", "Equality"].includes(tail.kind) ? fenced(body) : body);
     }
     if (node.kind === "Call") {
-      if (truncationSugar && isTruncationApplication(node)) {
-        const formula = row(reference(operator("‖"), node.fn), visit(node.args[node.fn.truncationArgument]), reference(operator("‖"), node.fn));
-        formula.dataset.truncationSugar = "true";
-        return formula;
-      }
       const args = [];
       node.args.forEach((arg, i) => { if (i) args.push(operator(",")); args.push(visit(arg)); });
       const fn = visit(node.fn);

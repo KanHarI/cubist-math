@@ -41,8 +41,6 @@ test("every library module checks completely", async t => {
 // A library axiom is labelled by its bare name (web/cubical-assumptions.mjs),
 // so no two library modules may assume under one name. Each is listed here,
 // as each module's assumptions are above: adding one is a reviewed change.
-// The legacy builtins' labels cannot meet them: they are reserved words,
-// or carry brackets, as LEM[Truncate] does.
 test("the library's axioms have distinct names, which are their labels", async () => {
   const axioms = [];
   for (const name of libraryModules) {

@@ -11,7 +11,7 @@ import { foldedInspection } from "../web/cubical-inspection.mjs";
 import { cubicalMathTree } from "../web/cubical-notation.mjs";
 import { boundedSyntaxJson } from "../web/cubical-json.mjs";
 import { simplifyTypeApplications } from "../web/cubical-reduction.mjs";
-import { checkTestModule, legacyArchiveReader } from "./check-program.mjs";
+import { checkTestModule } from "./check-program.mjs";
 
 const module = await createCubical();
 const archiveSource = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
@@ -157,22 +157,11 @@ test("path notation and raw syntax display stay bounded on shared terms", () => 
 test("axiom labels and derived cubical helpers remain inspectable", async t => {
   const { program } = await cases(t, "axiom_labels");
   const tree = view => cubicalMathTree(view.folded.expression, view.symbols, undefined, { dimensions: (view.dimensions ?? []).map(([name]) => name) });
-  // The library's excluded middle shows by its label, with no notation of
-  // its own, and inspects as the assumption it is.
+  // The library's excluded middle shows by its label and inspects as the
+  // assumption it is.
   const lem = tree(program.inspect("inspection_axiom_labels__excluded")).body.body.fn;
-  assert.deepEqual([lem.name, lem.binding, lem.axiomNotation], ["LEM", program.checker.axioms.get("classical_axioms__LEM"), undefined]);
+  assert.deepEqual([lem.name, lem.binding], ["LEM", program.checker.axioms.get("classical_axioms__LEM")]);
   assert.equal(program.inspect(lem.binding).expression.tag, "Var");
-  // The archive's legacy Truncate(U, A) is written ‖A‖ until it is removed,
-  // as an archive module that uses it shows it.
-  const archive = new CubicalProgram(module, legacyArchiveReader({ legacy: "def Mere(A : U0) := Truncate(U0, A);\n" }));
-  t.after(() => archive.dispose());
-  assert.equal((await archive.check("import legacy;\ndef truncated := Mere(Unit);\n", "main")).complete, true);
-  const truncate = tree(archive.inspect("legacy__Mere")).body.fn;
-  assert.equal(truncate.axiomNotation, "truncation");
-  assert.equal(truncate.truncationArgument, 1);
-  assert.equal(archive.inspect(truncate.binding).expression.tag, "Var");
-  const ordinary = cubicalMathTree(variable("Truncate"), { Truncate: { name: "Truncate" } }, undefined, { dimensions: [] });
-  assert.equal(ordinary.axiomNotation, undefined);
 });
 
 test("a let alias preserves the original local's name and does not leak to later declarations", async t => {

@@ -34,11 +34,8 @@ family member) to have exactly those external transitive assumptions, including
 type dependencies and excluding bound hypotheses. It cannot accompany an
 expected refusal. Name each assumption by its label: its bare name for a
 library axiom (as read from `library/` with every module it imports), as
-`LEM`, `Choice` or `PropResizing`,
-`module::Name` for another module's axiom, and
-`Truncate` or `LEM[Truncate]` for the archive's legacy builtins, which a test
-relies on only through an archive module's declarations, until they are
-removed; no module of the repository's archive uses them since 2026-10-29. An axiom's
+`LEM`, `Choice` or `PropResizing`, and
+`module::Name` for another module's axiom. An axiom's
 label names its defining module and declaration, independently of source
 aliases.
 
