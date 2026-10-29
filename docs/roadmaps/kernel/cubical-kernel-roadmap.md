@@ -301,8 +301,8 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
   pushouts. The first two are H1 declarations. The third remains a library
   option, for comparing proof and computation cost.
 - [ ] **G2. Resizing policy, applied by H1.** The archived library's
-  [assumption schema](../../../web/cubical-assumptions.mjs) declares
-  `Truncate : U_l -> U0`, which includes universe lowering. `Trunc` at H1 is
+  assumption schema declared `Truncate : U_l -> U0`, which included universe
+  lowering, until K2.5 removed it on 2026-10-29. `Trunc` at H1 is
   universe-preserving (`Trunc(U < UU0, A : U) : U`) and provides no resizing.
   - The rebuilt library uses no resizing. Where the archive relied on it
     (`small_mere_eliminate`, large predicates, predicate-encoded quotients),
@@ -323,9 +323,11 @@ G1 and G3 are superseded by H1 and H2. G2 remains as a policy that H1 applies.
   - Status (2026-10-21): the policy is approved (specification Q12, Q17).
     The exact ledger verifier, 17 pinned changes and the G2/G4–G7 fixtures
     are implemented (K2.5). Archive retirement supersedes the remaining
-    remedies. The legacy assumptions remain until that removal plan is
-    implemented; comparisons whose pins change retire in the relevant
-    transition, with their last passing revisions recorded.
+    remedies. Reordered on 2026-10-29 (the user): the archive was migrated
+    in place, with the library's `PropResizing` axiom where a result needs a
+    resized proposition, and the legacy assumptions were removed the same
+    day; every ledger comparison has retired, with its last passing
+    revision recorded.
 - [ ] **G3. Superseded by H2.** An identity type with strict J computation is
   the declared family `Id(A, a) : A -> type { refl }` at H2. Its J computes on
   `refl` because transport along a varying index stays a formal composition,

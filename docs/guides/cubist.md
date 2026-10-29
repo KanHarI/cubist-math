@@ -252,18 +252,14 @@ Propositional resizing is an assumption of its own: `classical_axioms`'
 excluded middle implies it (`h1_classical`'s `resize_prop`).
 
 The archive's modules used an older truncation, `Truncate`, `TruncateIntro`,
-`TruncateProp` and `TruncateElim`, four assumptions that resize every
-truncation into `U0`, with excluded middle and choice over it, `LEM(U, …)`
-and `Choice(U, …)` where nothing binds those names, listed as
-`LEM[Truncate]` and `Choice[Truncate]`. Since 2026-10-29 they use `Trunc`
-and the axioms of `classical_axioms`, with `PropResizing` where a result
-needs a resized proposition, and the legacy builtins remain only until they
-are removed ([K2.5](../roadmaps/hott/h1-truncation-migration.md#removing-the-legacy-assumptions)):
-only an archive module, read unedited from `archive/first-library/`, may
-use them. Anywhere else, in a library module, a test, a file of your own, an
-edited archive module, the workspace or the REPL, each is refused, called or
-named, with an error that names `Trunc` and the axioms of
-`classical_axioms` (E491).
+`TruncateProp` and `TruncateElim`, four builtin assumptions that resized
+every truncation into `U0`, with excluded middle and choice over it. Since
+2026-10-29 they use `Trunc` and the axioms of `classical_axioms`, with
+`PropResizing` where a result needs a resized proposition, and the legacy
+builtins are removed from the language
+([K2.5](../roadmaps/hott/h1-truncation-migration.md#removing-the-legacy-assumptions)):
+their names are unknown in every module, as is `LEM` or `Choice` where
+nothing binds it.
 The [real-number foundation notes](../roadmaps/mathematics/reals-roadmap.md)
 discuss what working without resizing implies for the reals.
 
