@@ -301,6 +301,23 @@ def far : UNat := 100 * 100;
   assert.throws(() => far.readback(), deep);
 });
 
+// A readback's work and cells are the query's, under its limits (3.7): a
+// query whose walk leaves too few for its readback stops it, as an
+// observation stops.
+test("a readback spends the query's work and cells, and stops at its limits", async t => {
+  const s = await setup(t, "inductive Flag { disabled; enabled; }\ndef pair : Flag and Flag := ((fun (x : Flag) => x)(enabled), disabled);");
+  const calibration = s.query("pair");
+  s.walk(calibration);
+  const walked = calibration.stats;
+  calibration.readback();
+  assert.ok(calibration.stats.steps > walked.steps && calibration.stats.allocatedCells > walked.allocatedCells);
+  for (const [option, counter, kind] of [["maxSteps", "steps", "budget"], ["maxCells", "allocatedCells", "resource"]]) {
+    const runtime = s.query("pair", { [option]: walked[counter] + 2 });
+    s.walk(runtime);
+    assert.throws(() => runtime.readback(), error => fails(kind)(error) && error.limit === walked[counter] + 2, option);
+  }
+});
+
 // n closures over the same n variables: each closure's telescope binds all
 // n, so the readback grows as n², and stays within 3.5's bound, a node
 // per cell reached, per node rebuilt and two per binding, its DAG within

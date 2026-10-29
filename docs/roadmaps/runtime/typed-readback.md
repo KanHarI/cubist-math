@@ -10,8 +10,13 @@ the applicable part of EVAL8's review. It also answers the condition of the
 decision of 2026-10-26 that constructor patterns stay on the kernel's queries
 "until typed readback and the applicable EVAL8 review"
 ([REPL integration](runtime-evaluation-roadmap.md#repl-integration)).
-Nothing here is implemented yet, and nothing here changes the kernel. W1
-and W2 are next ([8](#8-work-items)).
+W1 is implemented (2026-10-29): `RuntimeQuery.readback`, internal, reads a
+runtime value back by value and, on a query made with origins, by origin,
+with W1's tests, the oracle over every value form the runtime computes
+among them, and M1; the [runtime report](../../reports/shared-runtime-evaluation.md#typed-readback-w1)
+records the correspondence as implemented and where it reads this note
+more precisely. No observation changes, and nothing here changes the
+kernel. W2 is next ([8](#8-work-items)).
 
 ## Summary
 

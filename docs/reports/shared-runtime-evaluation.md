@@ -25,7 +25,11 @@ freeing the session, however it is made, as the bridge's `cb_generation`
 tells) fails as `expired`; what it copied and computed before stays
 observable
 ([report](runtime-repl-evaluation.md#the-query-copies-only-what-the-walk-reaches)).
-The rest of this report describes the query as #289 added it.
+Update of 2026-10-29: the query reads its values back into closed kernel
+terms, W1 of [typed readback](../roadmaps/runtime/typed-readback.md), with
+the correspondence it implements ([below](#typed-readback-w1)); no checker,
+REPL or page reads a value back yet. The rest of this report describes the
+query as #289 added it.
 
 ## Boundary and representation
 
@@ -197,3 +201,232 @@ eliminating native substitution chains does not eliminate memory cost. The work
 count includes snapshot and observation, but precedes the retained graph walk.
 The bounded case counts the attempted step that exhausted its limit. None of
 these results forces the final prime certificates.
+
+## Typed readback (W1)
+
+W1 of [typed readback](../roadmaps/runtime/typed-readback.md), 2026-10-29,
+on main `bfca6cad`. `RuntimeQuery.readback(handle, options)` gives the
+closed kernel term a value stands for, R of the note's section 3. It is
+internal: no checker, REPL or page calls it, so no value form, observation,
+display or verdict changes, and no verdict will consume it (D1). The term is
+admitted to the kernel's normalize queries as derived (D3, the
+`derivedHandles` guard); only tests type it by instructions. The note gives
+the argument; this section records what the code does, and where it reads
+the note more precisely than the note's text.
+
+### What the machine keeps
+
+- An environment frame records the node of the function its β applied
+  (`binder`): a readback telescope binds the frame as that function's
+  binder, a term or level λ, at the domain written in that node.
+- Term and level functions and path abstractions keep the node they were
+  made from, and a type value its node and the environment it was made in,
+  where it kept neither before. A constructor's instance is read from its
+  instance cell: unforced, its code and environment; forced, those its type
+  value now keeps. So a constructor value keeps no copy of its own.
+- A query made with `{ origins: true }` keeps each forced cell's code and
+  environment, or an application cell's two cells: its origin (3.4). Value
+  forms make no such query.
+- After η, an observation's head is no cell's value: the query keeps it,
+  by the cell asked, for `readback(handle, { head: true })`.
+
+None of these adds a step or a cell to the machine's counters. The
+evaluation baseline (`tools/evaluation-baseline.mjs`, one cold sample per
+workload, at `804841d4`'s code) gives every one of its 45 workloads the
+outcome, kernel counters, phases and runtime counters recorded in
+`tests/fixtures/evaluation-baseline.json`, exactly. On seven workloads the
+runtime computes, `unary-510` to the wide binary-integer product, main's
+query and this one walking the same value form give the same value, the
+same counters and the same retained objects. A frame records the applied
+function's node rather than the function value: recording the value, as
+the note's 3.3 words it, kept each applied function's domain cell alive,
+and retained 17 to 36% more runtime objects on those seven.
+
+### The correspondence as implemented
+
+`R(cell)` reads in one of three modes: by value (origins off); a normal-form
+readback, `{ origins: true }`, which reads data by value outside every
+non-data part and a non-data cell by its origin; and, inside an origin,
+every cell that has an origin by it, data included. A forced cell with no
+origin, an eliminator or lifted hypothesis the eliminate frame made ready,
+is read by value. An unforced cell is its closure, and an application cell
+the application of its two cells.
+
+By value: a constructor from its index and instance cell, rebuilt one level
+into a literal `Sort` that must be of the value's signature, applied to its
+arguments in the kernel's order; a pair, an injection and the point from
+their fields; a term or level function as the closure of the λ its symbol,
+body and node's domain make, under its environment; a path abstraction as
+the closure of its node with its body; a type as the closure of its node
+under its environment; an eliminator rebuilt from its signature, motive and
+clause cells. A lifted hypothesis is refused as `unsupported` (3.7).
+
+`closure(code, env)`, in order:
+
+1. a variable is the cell its nearest binding holds, as the machine's lookup
+   takes it;
+2. a definition whose cell is forced is that cell, by value; in a
+   normal-form readback only where its value is data, and otherwise, and
+   inside an origin, the reference is kept;
+3. a code with no variable bound in `env` and no forced definition outside
+   its term binders is the code itself;
+4. a spine node (`App`, `LApp`, `Fst`, `Snd`, `PApp`), or a node no term
+   binder that references a forced definition outside its term binders, is
+   rebuilt one level;
+5. anything else is the telescope of the frames it needs, applied to their
+   cells: the nearest binding of each variable free in it and, for each
+   frame, the nearest binding above it of each variable free in its binder's
+   domain, outermost first.
+
+Inside an origin no definition is read as its cell, so rules 3 and 4
+consider none there.
+
+Rebuilt one level, a node keeps its kind and payload, and each child is read
+back under the same environment: a term as its closure, a level as below,
+and these parts rebuilt one level in turn: a `Sort`'s parameter and level
+lists and an eliminator's clause list, a list's next cell, the tubes of a
+composition, a homogeneous composition, a transport and a glue value and a
+tube's next one, a `Glue` type's system and a system's next piece, and the
+annotations the kernel reads by node kind without reducing them, a path
+application's `Path` type, an `unglue`'s `Glue` type and a constructor's
+`Sort` instance. Variables free in a node, bound as `ck_term_free` binds
+them, and the definitions it references outside its term binders, are
+computed once per copied node; a definition inside a term binder stays as
+written.
+
+A level that is a variable is the level its frame binds; one with no
+variable is itself; and any other is read off the kernel's weak head of the
+universe at that level, closed by its telescope, which
+`ck_level_instantiate` substitutes and canonicalizes.
+
+Readback keeps its own stack, as the machine does, so a value deeper than
+the host's stack is refused by the kernel's own syntax depth (K344) when its
+term is built: a unary 10,000 fails there, as does the pair of two 510s.
+Its work and cells count against the query's limits.
+
+The memo is by mode, of cells and of closures by environment and code. An
+entry is stable when every cell it read was forced and every definition the
+closure rules consulted has a forced cell; only a stable entry answers a
+later readback, and within one readback every entry is reused, so a cell
+reached twice is one handle. The machine never forces a level cell, nor
+does a value form force a pair's or an injection's type cell, so entries
+that read one are unstable.
+
+### Where the code reads the note more precisely
+
+1. **Definitions under origins.** Read literally, 3.3's rule 2 makes a
+   forced definition, inside an origin, its cell's origin: the definition's
+   body, not its reference. Then `(fun x => (tt, x.1))(certPair(tt))` would
+   fold to `fun y => tt`, not the `certPair(tt).1` that 3.4 shows and that
+   the kernel's folded normal form keeps. 3.4 requires a closure of an
+   origin to β-reduce to the kernel's term at that position, which is the
+   reference; so inside an origin a reference is kept, and in a normal-form
+   readback a forced definition is read by its cell only where its value is
+   data.
+2. **A constructor's instance** is read from its instance cell, whose code
+   survives forcing in the type value (above), rather than from a copy on
+   the constructor value.
+3. **An `unglue`'s `Glue` type** is rebuilt one level besides the two
+   annotations 3.3 names, by 3.3's own rule for annotations the kernel
+   reads by node kind: `weak` reads it, as section 5 says.
+4. **A frame records the applied function's node**, not the function value
+   3.3 names: the node is all a telescope reads, and the value kept its
+   domain cell alive (above).
+
+### Session safety
+
+As section 7 of the note has it, a readback checks the kernel's handle
+generation (`handlesHeld`) when it starts, before each write, the level's
+head query included, and before it returns a handle; after any rollback or
+commit it fails as `expired` and drops its memo, for a readback that would
+write and for one that writes nothing, a closed code's own handle or a
+memoized one. The asynchronous `observe` can hold a query across a session
+operation, and its outcome there is `expired`: what was copied and computed
+stays observable, and reads and readback fail. No user path holds a query
+across one, so this has no diagnostic code.
+
+### Tests
+
+- `tests/runtime-readback.test.mjs`: capture and shadowing, with one symbol
+  bound twice and with an inner domain naming the outer binder, written as
+  kernel syntax since the elaborator names a shadowing binder apart; an
+  unused argument never read back, nothing written; a cell reached twice
+  one handle; a level argument mentioning a bound level variable, which
+  comes back as `3`; typing by instructions of a closure capturing
+  `A : U0` and `x : A`, of the type value of
+  `(fun (A : U0) => A -> A)(Unit)`, whose full normal form is
+  `Unit -> Unit`, and of a constructor of `Box(A)` read back from a closure,
+  which `kernel.head` eliminates, where the same constructor with its
+  instance a redex is refused, as are the domains closed one by one; the
+  heads η computed; the four folding regressions of the note by origin, each
+  folding away by value; expiry after a rollback and after a commit; a
+  lifted hypothesis refused and K344 at the 511th successor; readback's
+  work and cells counted in the query's, stopping at its limits; the scaling
+  test, n closures over n variables for n = 4, 8 and 16, within 3.5's bound
+  and growing as n²; and the note's eighteen mutations, each a change to
+  `web/cubical-runtime.mjs` at one site, the memo's at two, imported as a
+  module of its own, each failing an oracle the unchanged runtime passes
+  while the runtime's own walk completes.
+- The differential (`tests/runtime-readback-oracle.mjs`), run where the
+  value forms are checked: every value form the runtime computes is read
+  back by value, its full normal form compared with the kernel's of the
+  term, as are those of the heads the walk observed; a query made with
+  origins walks it again, and its readback's folded normal form is compared
+  with the kernel's; and a readback of at most 400 nodes as a tree is typed
+  at the term's type. Each normal form, and each comparison, has 2M steps.
+  No comparison disagrees, and no readback is refused:
+  - the constructs' 156 runtime value forms
+    (`tests/evaluation-demand-marks.test.mjs`): 153 agree by value, and the
+    3 whose full normal forms that test already calls slow are undecided;
+    all observed heads agree but 1 undecided; all 156 fold as the kernel's
+    folded normal forms; 144 readbacks are small enough to type, and type;
+  - the binary contracts' 40 (`tests/runtime-evaluation.test.mjs`): 36
+    agree by value and the 4 widest are undecided; 39 fold as the kernel's,
+    1 undecided; 37 type. The same file reads back its other runtime value
+    forms, the points of higher sorts and the binary integers and
+    rationals, among them `bint_decide` of a wide integer and `-1`, whose
+    full normal form the kernel itself cannot build (K344): undecided;
+  - the Cubist test modules' 97 (`tests/cubist-tests-inlined.mjs`): 94
+    agree by value, 3 undecided; all 97 fold as the kernel's; 88 type.
+
+### M1, readback
+
+`node tools/runtime-repl-probe.mjs NAME readback` reads the query's root
+back by value after the value form's walk, before the query is disposed
+of. Each workload ran in a process of its own at `804841d4` with a clean
+tree, Node 24.13.0, macOS arm64, runtime SHA-256 prefix
+`949ed3d6ad7b0c71`. Steps are readback's own work in the query's budget;
+writes are its kernel syntax calls, and the arena's growth the nodes they
+added, interning merging the rest; cells, rebuilt nodes and telescope
+bindings are its counters; the DAG and tree sizes are R(root)'s. Each
+readback took at most 6 ms.
+
+| Workload | Value form | Readback steps | Writes | Arena growth | Memo hits | Cells | Rebuilt | Bindings | DAG | Tree |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `euclid-3` | falls back (`Comp`) | 926 | 32 | 30 | 13 | 11 | 17 | 5 | 204 | 1,747 |
+| `euclid-4` | falls back (`Comp`) | 1,012 | 37 | 31 | 13 | 18 | 17 | 5 | 223 | 2,413 |
+| `euclid-4-prime` | falls back (`Comp`) | 2,187 | 7 | 7 | 0 | 4 | 7 | 0 | 533 | 3,101 |
+| `euclid-5-prime` | falls back (`Comp`) | 2,190 | 7 | 7 | 0 | 4 | 7 | 0 | 534 | 3,104 |
+| `euclid-6-prime` | falls back (`Comp`) | 2,193 | 7 | 7 | 0 | 4 | 7 | 0 | 535 | 3,107 |
+| `euclid-7-prime` | falls back, then K344 | 2,196 | 7 | 7 | 0 | 4 | 7 | 0 | 536 | 3,110 |
+| `euclid-10-prime` | falls back (`Comp`) | 2,167 | 7 | 7 | 0 | 4 | 7 | 0 | 529 | 3,103 |
+| `binary-factorial-40` | falls back (`Comp`) | 1,785 | 6 | 6 | 0 | 4 | 6 | 0 | 447 | 2,659 |
+| `binary-rational-equal` | falls back (path constructor) | 17,173 | 731 | 421 | 254 | 330 | 251 | 149 | 2,245 | 12,487,305 |
+| `count-into-510` | runtime | 4,088 | 1,021 | 255 | 0 | 511 | 0 | 0 | 513 | 1,532 |
+| `unary-doubling-8` | runtime | 2,056 | 513 | 248 | 0 | 257 | 0 | 0 | 259 | 770 |
+| `binary-product` | runtime | 1,049 | 261 | 130 | 0 | 131 | 0 | 0 | 136 | 392 |
+| `binary-rational` | runtime | 14,850 | 575 | 378 | 205 | 252 | 194 | 129 | 2,048 | 3,036,253 |
+| `binary-rational-wide-inverse` | runtime | 14,628 | 824 | 437 | 164 | 385 | 170 | 98 | 2,028 | 3,077,891 |
+| `binary-rational-distinct` | runtime | 14,379 | 557 | 378 | 196 | 237 | 166 | 140 | 2,008 | 2,477,494 |
+| `binary-integer-wide-product` | runtime | 6,050 | 623 | 360 | 28 | 310 | 16 | 39 | 887 | 8,851 |
+| `binary-integer-distinct` | runtime | 9,457 | 406 | 234 | 30 | 337 | 299 | 43 | 966 | 38,267 |
+
+A value form that falls back is read back as far as the runtime's walk
+went, the rest as closures. `unary-510`, the pair of two 510s, is 513 deep:
+its readback is refused with the kernel's K344 after 8,189 steps and 2,043
+writes, as the kernel refuses to build the pair. `list-parity-200000` and
+`duplicated-calls-24` stop at the runtime's allocation cap (E488), and so
+do their readbacks, within two steps. `euclid-3-expecting`,
+`euclid-5-expecting` and `euclid-5-folded` make no runtime query. The
+rationals' terms keep their sharing: about 2,000 nodes as a DAG for 2.5 to
+12.5 million as a tree.
