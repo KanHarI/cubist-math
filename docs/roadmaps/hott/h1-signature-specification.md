@@ -1458,6 +1458,13 @@ inductive Quotient(U, V < UU0, A : U, R : A -> A -> V) : set {
    modules are their only permitted consumers, and the remedies of 8.4 are not
    carried out in place; see the
    [removal plan](h1-truncation-migration.md#removing-the-legacy-assumptions).
+   Amended again on 2026-10-29 (the user): the archive is migrated in place
+   to `Trunc` and the library's axioms, and the legacy assumptions are then
+   removed without waiting for its retirement. Groups 1 and 2 of 8.4 take
+   their remedies; groups 3–7 use a library axiom `PropResizing` (item 2),
+   stated in `classical_axioms`, in place of their remedies, so every
+   archive result is kept and lists it
+   ([migration](h1-truncation-migration.md#migration-in-place-2026-10-29)).
 5. **`LEM` and `Choice` are restated over `Trunc`** when the rebuilt library
    adopts it. They remain non-computing assumptions. Under the removal plan
    of 2026-10-20, revised on 2026-10-21, they became definitions
@@ -2067,7 +2074,10 @@ over `A → U1` puts membership in `U2`. The union of independent sets has
 the same shape. The measured roots now have the seven remedy groups of 8.4,
 none a resizing assumption. *Decided, as recommended:* no resizing assumption in the
 rebuilt foundation. Apply 8.4 when those areas are rebuilt. `PropResizing`
-stays unused unless a rebuilt result proves to need it.
+stays unused unless a rebuilt result proves to need it. *Amended on
+2026-10-29* (the user): the archive, migrated in place, uses a library
+`PropResizing` axiom for groups 3–7 of 8.4; the rebuilt foundation still
+uses none.
 
 **Q13. Where the experimental gate lives.** In the elaborator only, or in the
 kernel too. *Decided, as recommended:* in the kernel, so no client can admit a signature

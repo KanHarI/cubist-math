@@ -98,7 +98,8 @@ An explicit assumption is a definition whose whole value is an axiom
 expression, `def Name := axiom F;`. `F` is a type, or a family of types such as
 `ExcludedMiddle(U < UU0)`, whose body is closed over its parameters: the
 library's `classical_axioms` states `def LEM := axiom ExcludedMiddle;` and
-`def Choice := axiom AxiomOfChoice;` over `Trunc`. The checker adds one context
+`def Choice := axiom AxiomOfChoice;` over `Trunc`, and
+`def PropResizing := axiom PropositionalResizing;`. The checker adds one context
 entry of that type, named by the definition, and the kernel checks every proof
 that uses it abstracted over it; no new rule is trusted. Every result and the
 inspector list the assumptions it uses, including dependencies in types and
@@ -201,7 +202,7 @@ and `fun (U < UU0) => t` bind a universe variable in a type or a term. See the
 The following functions are the library principles and their derived
 operations, each generic over `U < UU0`. `Trunc`, the propositional
 truncation, and its operations come from `h1_truncation`; `LEM` and `Choice`
-are the two axioms of `classical_axioms`, which imports it. See
+are the two classical axioms of `classical_axioms`, which imports it. See
 [the single-axiom univalence development](../tactical/univalence.md).
 
 ```text
@@ -244,16 +245,23 @@ lifted, but larger types cannot be lowered. `Trunc(U, A)` is a proposition in
 proposition `P` of any universe `V`, given evidence that `P` is a
 proposition; nothing resizes a truncation into a smaller universe. A family
 may need an explicit lift, such as `fun (a : A) => typed(U1, Unit)`.
+Propositional resizing is an assumption of its own: `classical_axioms`'
+`PropResizing(P, prop_)` gives a proposition `P : U1`, with
+`prop_ : IsProp(U1, P)`, a copy in `U0`, `PropResize(P)`: a proposition
+`Q : U0` with maps both ways. It is listed with every result that uses it;
+excluded middle implies it (`h1_classical`'s `resize_prop`).
 
-The archive's modules use an older truncation, `Truncate`, `TruncateIntro`,
+The archive's modules used an older truncation, `Truncate`, `TruncateIntro`,
 `TruncateProp` and `TruncateElim`, four assumptions that resize every
 truncation into `U0`, with excluded middle and choice over it, `LEM(U, …)`
 and `Choice(U, …)` where nothing binds those names, listed as
-`LEM[Truncate]` and `Choice[Truncate]`. Only an archive module, read
-unedited from `archive/first-library/`, may use them, until the archive
-retires ([K2.5](../roadmaps/hott/h1-truncation-migration.md#removing-the-legacy-assumptions)).
-Anywhere else, in a library module, a test, a file of your own, an edited
-archive module, the workspace or the REPL, each is refused, called or
+`LEM[Truncate]` and `Choice[Truncate]`. Since 2026-10-29 they use `Trunc`
+and the axioms of `classical_axioms`, with `PropResizing` where a result
+needs a resized proposition, and the legacy builtins remain only until they
+are removed ([K2.5](../roadmaps/hott/h1-truncation-migration.md#removing-the-legacy-assumptions)):
+only an archive module, read unedited from `archive/first-library/`, may
+use them. Anywhere else, in a library module, a test, a file of your own, an
+edited archive module, the workspace or the REPL, each is refused, called or
 named, with an error that names `Trunc` and the axioms of
 `classical_axioms` (E491).
 The [real-number foundation notes](../roadmaps/mathematics/reals-roadmap.md)
