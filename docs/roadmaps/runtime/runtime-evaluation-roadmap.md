@@ -1322,10 +1322,6 @@ Both notes below are complete and archived in `historical/` (2026-10-26).
 Their decisions remain this package's contract, and the open work is in this
 section.
 
-The [typed readback note](typed-readback.md) of 2026-10-28 proposes the
-readback, its correspondence and the observations it moves, for the
-user's decision.
-
 The [evaluation demand marks](../historical/evaluation-demand-marks.md) note of 2026-10-21,
 decided the same day, is this package's observation contract: unmarked
 positions are forced as far as the pattern or printer observes them, `!`
@@ -1351,6 +1347,12 @@ definition whose head is no data stays as written, so a stuck proof is
 named, not unfolded. `!!!` names the full normal form, which stage 4 below
 measures. `rationals.(2/3) expecting !!_` falls from 70,301,825 ticks and
 1,116,794 nodes to 43,932 ticks and 936.
+
+The [typed readback note](typed-readback.md) of 2026-10-28 specifies the
+readback, its correspondence and the observations it moves. The user
+accepted every recommendation the same day (D1–D6): readback serves
+displays and a per-node fallback, and no verdict consumes one. Its W1,
+readback and its oracle tests, and W2, the per-node fallback, are next.
 
 Provide typed readback for demanded data and a separately specified way to
 inspect suspended fields. Keep function bodies as closures until application
