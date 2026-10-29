@@ -5,10 +5,8 @@ import order_maps;
 use unat;
 
 // Families may be indexed in U1, since the collection of small subsets is
-// itself large. Membership in the union, a proposition in U1, is resized to
-// a small predicate by the library's propositional resizing.
-def PredicateUnion(I : U1, A : U0, P : I -> A -> U0, x : A) :=
-  PropResizing(FieldExists(exists i : I. P(i, x)), field_exists_prop(exists i : I. P(i, x))).1;
+// itself large. The union truncates at U1, so it is a predicate in U1.
+def PredicateUnion(I : U1, A : U0, P : I -> A -> U0, x : A) := FieldExists(exists i : I. P(i, x));
 
 def PredicateChain(I : U1, A : U0, P : I -> A -> U0) := forall i : I. forall j : I. FieldOr(
   PredicateIncluded(A, P(i), P(j)), PredicateIncluded(A, P(j), P(i))
@@ -19,14 +17,18 @@ def PredicateDirected(I : U1, A : U0, P : I -> A -> U0) := forall i : I. forall 
 );
 
 def predicate_union_prop(I : U1, A : U0, P : I -> A -> U0, x : A) :=
-  PropResizing(FieldExists(exists i : I. P(i, x)), field_exists_prop(exists i : I. P(i, x))).2.1;
+  field_exists_prop(exists i : I. P(i, x));
 
+// The union is a predicate in U1. Inclusion relates small predicates, so
+// the union is resized to one by the library's propositional resizing.
 def predicate_union_upper(I : U1, A : U0, P : I -> A -> U0, i : I) :
-  PredicateIncluded(A, P(i), PredicateUnion(I, A, P)) {
+  PredicateIncluded(
+    A, P(i),
+    fun (x : A) => PropResizing(PredicateUnion(I, A, P, x), predicate_union_prop(I, A, P, x)).1
+  ) {
   intro x, member;
-  let Member := exists j : I. P(j, x);
-  exact PropResizing(FieldExists(Member), field_exists_prop(Member)).2.2.1(
-    field_exists_intro(Member, typed(Member, (i, member)))
+  exact PropResizing(PredicateUnion(I, A, P, x), predicate_union_prop(I, A, P, x)).2.2.1(
+    field_exists_intro((exists j : I. P(j, x)), typed((exists j : I. P(j, x)), (i, member)))
   );
 }
 
@@ -34,17 +36,19 @@ def predicate_union_least(
   I : U1, A : U0, P : I -> A -> U0, Q : A -> U0, propQ : (forall x : A. Proposition(Q(x))),
   included : (forall i : I. PredicateIncluded(A, P(i), Q))
 ) :
-  PredicateIncluded(A, PredicateUnion(I, A, P), Q) {
+  PredicateIncluded(
+    A, fun (x : A) => PropResizing(PredicateUnion(I, A, P, x), predicate_union_prop(I, A, P, x)).1,
+    Q
+  ) {
   intro x, member;
   let fromMember : (exists i : I. P(i, x)) -> Q(x) {
     intro witness_;
     obtain (i, hx) := witness_;
     exact included(i, x, hx);
   }
-  let Member := exists i : I. P(i, x);
   exact field_exists_elim(
-    Member, Q(x), propQ(x), fromMember,
-    PropResizing(FieldExists(Member), field_exists_prop(Member)).2.2.2(member)
+    (exists i : I. P(i, x)), Q(x), propQ(x), fromMember,
+    PropResizing(PredicateUnion(I, A, P, x), predicate_union_prop(I, A, P, x)).2.2.2(member)
   );
 }
 
@@ -115,10 +119,8 @@ def finite_cover_step(
       field_exists_prop(Cover), fromTail, tailCover
     );
   }
-  let Head := exists i : I. P(i, h);
   exact field_exists_elim(
-    Head, FieldExists(Cover), field_exists_prop(Cover), fromHead,
-    PropResizing(FieldExists(Head), field_exists_prop(Head)).2.2.2(headMember)
+    (exists i : I. P(i, h)), FieldExists(Cover), field_exists_prop(Cover), fromHead, headMember
   );
 }
 

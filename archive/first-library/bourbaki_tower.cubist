@@ -1,9 +1,8 @@
 import chain_complete_orders;
 
 // The least family closed under a progressive map and chain suprema is
-// represented by its universal property, a proposition in U1 that the
-// library's propositional resizing makes small; elimination is always into
-// a proved proposition.
+// represented by its universal property. Membership truncates it at U1, a
+// proposition in U1; elimination is always into a proved proposition.
 def TowerLaws(
   A : U1, le : OrderRelation(A), complete : ChainComplete(A, le), f : A -> A, P : A -> U0
 ) :=
@@ -14,18 +13,12 @@ def TowerLaws(
   );
 
 def TowerMember(A : U1, le : OrderRelation(A), complete : ChainComplete(A, le), f : A -> A, x : A) :=
-  PropResizing(
-    FieldExists(forall P : A -> U0. TowerLaws(A, le, complete, f, P) -> P(x)),
-    field_exists_prop(forall P : A -> U0. TowerLaws(A, le, complete, f, P) -> P(x))
-  ).1;
+  FieldExists(forall P : A -> U0. TowerLaws(A, le, complete, f, P) -> P(x));
 
 def tower_member_prop(
   A : U1, le : OrderRelation(A), complete : ChainComplete(A, le), f : A -> A, x : A
 ) :=
-  PropResizing(
-    FieldExists(forall P : A -> U0. TowerLaws(A, le, complete, f, P) -> P(x)),
-    field_exists_prop(forall P : A -> U0. TowerLaws(A, le, complete, f, P) -> P(x))
-  ).2.1;
+  field_exists_prop(forall P : A -> U0. TowerLaws(A, le, complete, f, P) -> P(x));
 
 def tower_contains(
   A : U1, le : OrderRelation(A), complete : ChainComplete(A, le), f : A -> A, P : A -> U0,
@@ -33,10 +26,13 @@ def tower_contains(
 ) :
   P(x) {
   obtain (prop_, step, supremum) := laws;
-  let Universal := forall Q : A -> U0. TowerLaws(A, le, complete, f, Q) -> Q(x);
   exact field_exists_elim(
-    Universal, P(x), prop_(x), (fun (universal_ : Universal) => universal_(P, laws)),
-    PropResizing(FieldExists(Universal), field_exists_prop(Universal)).2.2.2(member)
+    (forall Q : A -> U0. TowerLaws(A, le, complete, f, Q) -> Q(x)), P(x), prop_(x),
+    (
+      fun (universal_ : (forall Q : A -> U0. TowerLaws(A, le, complete, f, Q) -> Q(x))) => universal_(
+        P, laws
+      )
+    ), member
   );
 }
 
@@ -50,9 +46,8 @@ def tower_step(
     obtain (prop_, step, supremum) := laws;
     exact step(x, tower_contains(A, le, complete, f, P, laws, x, member));
   }
-  let Universal := forall P : A -> U0. TowerLaws(A, le, complete, f, P) -> P(f(x));
-  exact PropResizing(FieldExists(Universal), field_exists_prop(Universal)).2.2.1(
-    field_exists_intro(Universal, universal_)
+  exact field_exists_intro(
+    (forall P : A -> U0. TowerLaws(A, le, complete, f, P) -> P(f(x))), universal_
   );
 }
 
@@ -70,10 +65,11 @@ def tower_sup(
       (fun (x : A, cx : C(x)) => tower_contains(A, le, complete, f, P, laws, x, members(x, cx)))
     );
   }
-  let Universal :=
-    forall P : A -> U0. TowerLaws(A, le, complete, f, P) -> P(chain_sup(A, le, complete, C, chain));
-  exact PropResizing(FieldExists(Universal), field_exists_prop(Universal)).2.2.1(
-    field_exists_intro(Universal, universal_)
+  exact field_exists_intro(
+    (
+      forall P : A -> U0. TowerLaws(A, le, complete, f, P)
+      -> P(chain_sup(A, le, complete, C, chain))
+    ), universal_
   );
 }
 

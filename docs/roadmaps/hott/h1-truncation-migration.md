@@ -273,25 +273,23 @@ nothing, unless it uses a resized proposition (below). The roots:
 | --- | --- | --- | --- |
 | `small_mere_eliminate` | `field_logic` | The library's elimination, whose motive may lie in any universe: it is `h1_truncation`'s `small_mere_eliminate` (8.4's group 1) | None |
 | `CauchyQuotient`, `cauchy_same_equivalence` | `cauchy_quotient` | `EventualClose` truncates its small witness at `U0`, `Mere(…)`, as `h1_cauchy_quotient`'s does (group 2) | None |
-| `predicate_union_upper`, `predicate_union_least` | `predicate_chains` | `PredicateUnion`, membership in the union of a `U1`-indexed family, is resized to a small predicate at its definition; the resizing's maps lead in and out of it | `PropResizing` |
-| `directed_union_independent` | `independent_unions` | A member of the resized union is taken out through its map | `PropResizing` |
+| `predicate_union_upper`, `predicate_union_least` | `predicate_chains` | Inclusion relates small predicates, so their statements take `PredicateUnion`, membership in the union of a `U1`-indexed family, resized to a small predicate; the resizing's maps lead in and out of it | `PropResizing` |
+| `directed_union_independent` | `independent_unions` | Its statement takes the resized union, as `chain_union_independent`'s and `IndependentUnion`'s do; its members are taken out through the resizing's map | `PropResizing` |
 | `tower_induction_large` | `bourbaki_tower` | Its motive, a family of propositions in `U1`, is resized | `PropResizing` |
 | `no_maximal_strict_successor` | `zorn_chain_complete` | The truncated successor, a proposition in `U1`, is resized to `U0` for the archive's `double_negation` | `PropResizing` |
 
 Two declarations that the measurement counted only through a root need
 resizing of their own: `bourbaki_witt`'s `tower_is_chain` uses the tower
-as a chain of small predicates, so `TowerMember` is resized at its
-definition, as `PredicateUnion` is; and `zorn_chain_complete` resizes its
+as a chain of small predicates, so its statement takes tower membership
+resized, and `bourbaki_witt` passes the chain's members and the supremum's
+step through the resizing's maps; and `zorn_chain_complete` resizes its
 conclusion for `double_negation`, as `no_maximal_strict_successor` does.
 
-Of the 47, the 20 of groups 3–7 list `PropResizing`, and the 27 of groups
-1 and 2 list no resizing. Twelve declarations outside the 47 list it too,
-through the two resized definitions: `PredicateUnion`,
-`predicate_union_prop`, `finite_cover_step` and
-`finite_directed_union_cover` in `predicate_chains`; `TowerMember`,
-`tower_member_prop`, `tower_contains`, `tower_step`, `tower_sup`,
-`TowerStable` and `tower_stable_prop` in `bourbaki_tower`; and
-`tower_separation_step` in `bourbaki_witt`. The specification's group 7
+Resizing is used only there, where a statement or a proof needs the small
+form. `PredicateUnion` and `TowerMember` stay truncations at `U1`, so their
+own lemmas assume nothing. Of the 47, the 20 of groups 3–7 list
+`PropResizing`, the 27 of groups 1 and 2 list no resizing, and no other
+archive declaration lists it. The specification's group 7
 remedy, double negation at `U1` through `LEM(U1, …)` as `h1_zorn_step`
 does, would take `PropResizing` from `no_maximal_strict_successor` alone:
 `zorn_chain_complete` reaches the resized tower through `bourbaki_witt`.

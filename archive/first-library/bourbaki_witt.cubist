@@ -196,12 +196,27 @@ def tower_is_stable(
   );
 }
 
+// The tower is a chain of small predicates: its membership, a proposition in
+// U1, resized to U0 by the library's propositional resizing.
 def tower_is_chain(
   A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), complete : ChainComplete(A, le),
   f : A -> A, progressive : Progressive(A, le, f)
 ) :
-  OrderChain(A, le, TowerMember(A, le, complete, f)) {
-  intro x, y, tx, ty;
+  OrderChain(
+    A, le,
+    fun (x : A) => PropResizing(
+      TowerMember(A, le, complete, f, x), tower_member_prop(A, le, complete, f, x)
+    ).1
+  ) {
+  intro x, y, smallX, smallY;
+  let tx :=
+    PropResizing(TowerMember(A, le, complete, f, x), tower_member_prop(A, le, complete, f, x)).2.2.2(
+      smallX
+    );
+  let ty :=
+    PropResizing(TowerMember(A, le, complete, f, y), tower_member_prop(A, le, complete, f, y)).2.2.2(
+      smallY
+    );
   exact field_or_elim(
     le(x, y), le(f(y), x), FieldOr(le(x, y), le(y, x)), field_exists_prop(le(x, y) or le(y, x)),
     (fun (xy : le(x, y)) => field_exists_intro(le(x, y) or le(y, x), left(xy))),
@@ -224,15 +239,20 @@ def bourbaki_witt(
   f : A -> A, progressive : Progressive(A, le, f)
 ) :
   exists x : A. f(x) = x {
-  let T := TowerMember(A, le, complete, f);
+  let small := fun (x : A) => PropResizing(
+    TowerMember(A, le, complete, f, x), tower_member_prop(A, le, complete, f, x)
+  );
+  let T := fun (x : A) => small(x).1;
   let chain := tower_is_chain(A, le, laws, complete, f, progressive);
   let s := chain_sup(A, le, complete, T, chain);
-  let member := tower_sup(A, le, complete, f, T, chain, (fun (x : A, tx : T(x)) => tx));
+  let member :=
+    tower_sup(A, le, complete, f, T, chain, (fun (x : A, tx : T(x)) => small(x).2.2.2(tx)));
   let next_ := tower_step(A, le, complete, f, s, member);
   exact (
     s,
     order_antisym(
-      A, le, laws, f(s), s, chain_sup_upper(A, le, complete, T, chain, f(s), next_), progressive(s)
+      A, le, laws, f(s), s,
+      chain_sup_upper(A, le, complete, T, chain, f(s), small(f(s)).2.2.1(next_)), progressive(s)
     )
   );
 }
