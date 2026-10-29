@@ -13,7 +13,7 @@ const module = await createCubical();
 const cases = (t, name) => checkTestModule(t, name, { module, options: { collectReferences: false } });
 // Archive modules resolve their imports in the archive, then the library.
 const readSource = sourceReader();
-const allowed = /^(LEM\[Truncate\]|Truncate(?:Intro|Prop|Elim)?)$/;
+const allowed = /^LEM$/;
 // Archive modules, each checked as a program's main module.
 async function archive(t, ...names) {
   const p = new CubicalProgram(module, readSource, { collectReferences: false });
@@ -47,7 +47,7 @@ test("finite algebraic extensions, actual splitting fields, normality and genera
   }
   // The intermediate finite-choice construction is constructive. Univalence
   // transports the resulting count; it is not an extra axiom in this kernel.
-  assert.ok(p.symbols.finite_dependent_counts__finite_mere_choice.axioms.every(id => /^Truncate(?:Intro|Prop|Elim)?$/.test(p.checker.assumptionLabels.get(id))));
+  assert.deepEqual(p.symbols.finite_dependent_counts__finite_mere_choice.axioms, []);
 
   const { result: invalid } = await cases(t, "algebraic_extensions_invalid_embedding_claims");
   assert.equal(invalid.complete, false);

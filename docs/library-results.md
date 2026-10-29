@@ -19,9 +19,10 @@ keep assumption-free results computing:
 | Tag | Meaning |
 | --- | --- |
 | **C** | Assumption-free; closed instances compute. |
-| **T** | Uses propositional truncation, which the first library postulated rather than constructed. |
+| **T** | Uses propositional truncation, which the first library postulated rather than constructed. Since 2026-10-29 the archive uses the library's declared `Trunc`, which assumes nothing. |
 | **LEM** | Uses excluded middle for propositions. |
 | **AC** | Uses the axiom of choice for sets. |
+| **PR** | Uses propositional resizing from `U1` to `U0`, which the first library's truncation gave silently; since 2026-10-29 the library's axiom `PropResizing`. |
 
 Univalence and function extensionality are theorems of the cubical theory and
 are not tagged.
@@ -84,9 +85,9 @@ are not tagged.
   directions are equivalent. [LEM]
 - ★ **Bourbaki–Witt fixed-point theorem.** On a partial order in which every
   chain, including the empty chain, has a supremum, every progressive map
-  (x ≤ f(x)) has a fixed point. [LEM]
+  (x ≤ f(x)) has a fixed point. [LEM, PR]
 - ★ **Zorn's lemma.** In such a chain-complete partial order there is a
-  maximal element. [AC, LEM]
+  maximal element. [AC, LEM, PR]
 
 ## Groups
 
@@ -130,7 +131,7 @@ are not tagged.
 
 ## Linear algebra
 
-- ★ **Every vector space has a basis.** [AC, LEM]
+- ★ **Every vector space has a basis.** [AC, LEM, PR]
 - ★ **Invariance of dimension.** The dimension of a finite-dimensional space
   does not depend on the basis, and isomorphic spaces have equal dimension.
   Every finite spanning family contains a basis. Subspaces of

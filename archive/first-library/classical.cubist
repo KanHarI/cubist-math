@@ -1,7 +1,7 @@
 import bijection_equality;
 import truncation;
 
-// The existing LEM axiom returns Mere(P), not an arbitrary witness of P.
+// The library's LEM axiom returns Mere(P), not an arbitrary witness of P.
 // Elimination into P is allowed here precisely because P is a proposition.
 def double_negation(P : U0, prop_ : Proposition(P), nn : (P -> Void) -> Void) : P {
   exact mere_eliminate(P, P, prop_, (fun (p : P) => p), LEM(U0, P, nn));

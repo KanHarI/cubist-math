@@ -1,9 +1,10 @@
-// The two classical assumptions: excluded middle and the axiom of choice,
-// stated over the library's truncation Trunc. Each statement is a type
-// family, so that a result can take excluded middle or choice as a
-// hypothesis, or state an equivalence with it; `axiom` then assumes it.
-// An assumption has no computation rule: a result that uses one is listed
-// with it and cannot be computable.
+// The classical assumptions: excluded middle and the axiom of choice,
+// stated over the library's truncation Trunc, and propositional resizing.
+// Each statement is a type, or a type family, so that a result can take
+// excluded middle, choice or resizing as a hypothesis, or state an
+// equivalence with it; `axiom` then assumes it. An assumption has no
+// computation rule: a result that uses one is listed with it and cannot be
+// computable.
 import h1_truncation;
 
 // Excluded middle: a type that is not empty is merely inhabited. For a
@@ -18,10 +19,22 @@ def AxiomOfChoice(U < UU0) :=
   forall A : U. forall B : A -> U. IsSet(U, A) -> (forall a : A. IsSet(U, B(a)))
   -> (forall a : A. Trunc(U, B(a))) -> Trunc(U, forall a : A. B(a));
 
+// A proposition P in U1 resizes to U0: a proposition Q in U0 with maps both
+// ways, so that Q and P are equivalent.
+def PropResize(P : U1) := exists Q : U0. IsProp(U0, Q) and (P -> Q) and (Q -> P);
+
+// Propositional resizing, from U1 to U0: every proposition in U1 resizes.
+// Excluded middle implies it (h1_classical's resize_prop).
+def PropositionalResizing := forall P : U1. IsProp(U1, P) -> PropResize(P);
+
 // Excluded middle, assumed: LEM(U, A, nn) : Trunc(U, A) for a type A : U
 // that cannot be refuted, nn : (A -> Void) -> Void.
 def LEM := axiom ExcludedMiddle;
 
 // The axiom of choice, assumed: Choice(U, A, B, set_a, sets_b, inhabited)
-// merely gives a function selecting an element of each B(a).
+// merely gives a function selecting an element of each.
 def Choice := axiom AxiomOfChoice;
+
+// Propositional resizing, assumed: PropResizing(P, prop_) : PropResize(P)
+// for a proposition P : U1, prop_ : IsProp(U1, P).
+def PropResizing := axiom PropositionalResizing;

@@ -24,9 +24,10 @@ expression, the whole value of `def Name := axiom F;`
 `Choice` became ordinary names then: the library's `classical_axioms` declares
 them, and only where nothing binds them do they fall back to the archive's
 builtins over `Truncate`, and since step 4 (2026-10-28) only in an archive
-module; anywhere else, such a use is refused (E491). `Truncate`,
+module; anywhere else, such a use is refused (E491). Since step 5's
+in-place migration (2026-10-29) no archive module uses them. `Truncate`,
 `TruncateIntro`, `TruncateProp` and `TruncateElim` stay reserved until the
-archive retires, so that a source using them meets that refusal rather
+builtins are removed, so that a source using them meets that refusal rather
 than an unknown name. No revision before gave `axiom` a meaning, so the
 historical source reader reads a source of that time with every `axiom` as
 the name it was, renamed with its declaration wherever its binding came

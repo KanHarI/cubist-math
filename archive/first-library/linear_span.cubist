@@ -37,17 +37,17 @@ def SpanWitness(
 def Span(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x : vector_carrier(K, V)
 ) :=
-  Truncate(U0, SpanWitness(K, V, P, x));
+  Mere(SpanWitness(K, V, P, x));
 
 def span_prop(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x : vector_carrier(K, V)
 ) :=
-  TruncateProp(U0, SpanWitness(K, V, P, x));
+  mere_is_prop(SpanWitness(K, V, P, x));
 
 def span_zero(K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0) :
   Span(K, V, P, vector_zero(K, V)) {
-  exact TruncateIntro(
-    U0, SpanWitness(K, V, P, vector_zero(K, V)),
+  exact merely(
+    SpanWitness(K, V, P, vector_zero(K, V)),
     typed(
       SpanWitness(K, V, P, vector_zero(K, V)),
       (
@@ -65,8 +65,8 @@ def span_generator(
   member : P(x)
 ) :
   Span(K, V, P, x) {
-  exact TruncateIntro(
-    U0, SpanWitness(K, V, P, x),
+  exact merely(
+    SpanWitness(K, V, P, x),
     typed(
       SpanWitness(K, V, P, x),
       (
@@ -92,16 +92,16 @@ def span_included(
   let mapWitness : SpanWitness(K, V, P, x) -> Span(K, V, Q, x) {
     intro witness_;
     obtain (n, vectors, coefficients, members, sum) := witness_;
-    exact TruncateIntro(
-      U0, SpanWitness(K, V, Q, x),
+    exact merely(
+      SpanWitness(K, V, Q, x),
       typed(
         SpanWitness(K, V, Q, x),
         (n, vectors, coefficients, (fun (i : Fin(n)) => included(vectors(i), members(i))), sum)
       )
     );
   }
-  exact TruncateElim(
-    U0, SpanWitness(K, V, P, x), Span(K, V, Q, x), span_prop(K, V, Q, x), mapWitness, member
+  exact mere_eliminate(
+    SpanWitness(K, V, P, x), Span(K, V, Q, x), span_prop(K, V, Q, x), mapWitness, member
   );
 }
 

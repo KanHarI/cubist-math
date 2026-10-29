@@ -25,7 +25,7 @@ def EverySurjectionHasRightInverse :=
   forall A : U0. forall B : U0. IsSet(U0, A) -> IsSet(U0, B) -> forall f : A -> B.
   Surjective(A, B, f) -> Mere(RightInverse(A, B, f));
 
-// Apply the existing set-level axiom of choice to the fibers over B.
+// Apply the library's set-level axiom of choice to the fibers over B.
 // Its conclusion is mere existence; truncation is eliminated only into the
 // proposition Mere(RightInverse(...)), never into an arbitrarily selected map.
 def every_surjection_has_right_inverse : EverySurjectionHasRightInverse {

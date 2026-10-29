@@ -1,7 +1,6 @@
 // From tests/truncation-confinement.test.mjs: the archive's legacy builtins over Truncate are
 // accepted only in archive modules. A test module is none, so each is refused here, called or
-// named, with what replaces it; the archive's own declarations over them stay usable.
-import truncation;
+// named, with what replaces it.
 
 // Error: E491: Truncate is the archive's legacy builtin, accepted only in archive modules:
 //   elsewhere use the library's Trunc, from h1_truncation, and its axioms LEM and Choice, from
@@ -21,7 +20,8 @@ def proposition(A : U0) := TruncateProp(U0, A);
 // Error: E491: TruncateElim is the archive's legacy builtin, accepted only in archive modules:
 //   elsewhere use the library's Trunc, from h1_truncation, and its axioms LEM and Choice, from
 //   classical_axioms.
-def eliminated(A, P : U0, prop_ : IsProp(P), f : A -> P) := TruncateElim(U0, A, P, prop_, f);
+def eliminated(A, P : U0, prop_ : (forall x, y : P. x = y), f : A -> P) :=
+  TruncateElim(U0, A, P, prop_, f);
 
 // Error: E491: LEM is the archive's legacy builtin, accepted only in archive modules: elsewhere use
 //   the library's Trunc, from h1_truncation, and its axioms LEM and Choice, from classical_axioms.
@@ -36,6 +36,3 @@ def choice_at_zero := Choice(U0);
 //   elsewhere use the library's Trunc, from h1_truncation, and its axioms LEM and Choice, from
 //   classical_axioms.
 def named := Truncate;
-
-// The archive's truncation module uses the builtins itself, as the archive may.
-def archived := Mere(Unit);

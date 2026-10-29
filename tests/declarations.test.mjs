@@ -15,7 +15,7 @@ import { moduleListing } from "../web/module-listing.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { ReplSession } from "../web/repl-session.mjs";
-import { checkProgram, checkTestModule } from "./check-program.mjs";
+import { checkProgram, checkTestModule, legacyArchiveReader } from "./check-program.mjs";
 
 test("removed theorem declarations are rejected in both source forms", () => {
   for (const source of [
@@ -255,12 +255,12 @@ test("an inspected assumption states its own axiom, whatever else its label spel
 // An assumption is published with the site of its axiom definition, found
 // through its recorded origin, so every link to it can show the source: in
 // the check's symbols, which the axiom list reads, and in an inspection's,
-// which the inspector reads. A legacy builtin, which only the archive uses,
-// as its truncation module does, has no source (#317's review round 6,
-// finding 3).
+// which the inspector reads. A legacy builtin, which only an archive module
+// may use, has no source (#317's review round 6, finding 3).
 test("an assumption is published with its axiom definition's site", async t => {
   const { program, result } = await checkProgram(t,
-    "import classical_axioms;\nimport truncation;\ndef P := axiom Unit;\ndef used : ExcludedMiddle(U0) and Unit := (LEM(U0), P);\ndef legacy := truncation::Mere(Unit);", { module: await createCubical() });
+    "import classical_axioms;\nimport legacy;\ndef P := axiom Unit;\ndef used : ExcludedMiddle(U0) and Unit := (LEM(U0), P);\ndef old := legacy::double_negation;",
+    { module: await createCubical(), reader: legacyArchiveReader() });
   assert.equal(result.complete, true, JSON.stringify(program.gaps));
   const published = binding => result.symbols.find(symbol => symbol.binding === binding);
   for (const [declaration, module] of [["classical_axioms__LEM", "classical_axioms"], ["main__P", "main"]]) {
@@ -290,15 +290,14 @@ test("a refused declaration never overwrites the records of the identity it clas
 
 test("assumption names live where no declaration, constructor, binder or generated name can", async t => {
   const modules = inMemory({ a: "def b__c := axiom Unit;\ndef d := b__c;\n", a__b: "def e := tt;\n" });
-  const fallback = sourceReader();
-  // The archive's truncation uses the legacy builtins, which only the
-  // archive does.
-  const source = "import classical_axioms;\nimport a;\nimport a__b;\nimport truncation;\n"
+  // An archive module may use the legacy builtins, as legacy does.
+  const fallback = legacyArchiveReader();
+  const source = "import classical_axioms;\nimport a;\nimport a__b;\nimport legacy;\n"
     + "def F(m__A : Unit) : Unit := m__A;\ndef A1 := axiom Void;\ndef A1_ := tt;\n"
     + "def G(m__A1 : Unit, x : Unit) : Unit := (fun (y : Unit) => m__A1)(x);\n"
     + "inductive T { c; A1__(t : T); }\ntheory Th(U < UU0) { M : U; point : M; }\n"
     + "def poly(U < UU0, A : U, a : A) : A := a;\ndef applied := poly(U1, U0, Unit);\n"
-    + "def lem : ExcludedMiddle(U0) := LEM(U0);\ndef legacy := truncation::Mere(Unit);\ndef qualified := a::b__c;\n";
+    + "def lem : ExcludedMiddle(U0) := LEM(U0);\ndef old := legacy::double_negation;\ndef qualified := a::b__c;\n";
   const reader = async (name, importer) => await modules(name) ?? fallback(name, importer);
   reader.fromLibrary = fallback.fromLibrary;
   reader.fromArchive = fallback.fromArchive;
@@ -345,8 +344,8 @@ test("bare axiom labels need the library's own module, in the command line, the 
   const browser = () => listedReader(moduleListing, async file => readFile(fileURLToPath(new URL(`../${file}`, import.meta.url)), "utf8"),
     "classical_axioms", "library");
   for (const [reader, text, labels] of [
-    [sourceReader({ path }), library, ["Choice", "LEM"]],
-    [browser(), library, ["Choice", "LEM"]],
+    [sourceReader({ path }), library, ["Choice", "LEM", "PropResizing"]],
+    [browser(), library, ["Choice", "LEM", "PropResizing"]],
     [sourceReader({ path }), forged, ["classical_axioms::LEM"]],
     [browser(), forged, ["classical_axioms::LEM"]],
     [sourceReader(), forged, ["classical_axioms::LEM"]],

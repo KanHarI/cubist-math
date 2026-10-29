@@ -2,13 +2,13 @@ import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
-import {checkProgram} from "./check-program.mjs";
+import {checkProgram,legacyArchiveReader} from "./check-program.mjs";
 import {observeTestCases} from "../web/cubist/test-pragmas.mjs";
 import {Translator} from "../web/translator/translate.mjs";
 
 const module=await createCubical();
-const checked=async(t,source,options={})=>{
-  const {program,result}=await checkProgram(t,source,{module,options:{testMode:true,...options}});
+const checked=async(t,source,options={},reader=undefined)=>{
+  const {program,result}=await checkProgram(t,source,{module,...(reader?{reader}:{}),options:{testMode:true,...options}});
   return {program,result,report:observeTestCases(program,result)};
 };
 
@@ -79,17 +79,17 @@ for(const [label,sources] of [
   assert.ok(report.prerequisites.length);
 });
 
-// The legacy builtins are the archive's, as its classical module uses them.
+// The legacy builtins are an archive module's, as legacy uses them.
 test("assumption expectations name axioms and legacy builtins by their labels",async t=>{
-  for(const source of [`import classical_axioms;
+  for(const [source,reader] of [[`import classical_axioms;
 # test(library) # expect_axioms([LEM])
 def excluded := LEM(U0);
 def Pointed := axiom UNat;
 # test(qualified) # expect_axioms([Choice, main::Pointed])
-def both : AxiomOfChoice(U0) and UNat := (Choice(U0), Pointed);`,`import classical;
+def both : AxiomOfChoice(U0) and UNat := (Choice(U0), Pointed);`],[`import legacy;
 # test(legacy) # expect_axioms([LEM[Truncate], Truncate, TruncateElim])
-def excluded := classical::double_negation;`]) {
-    const {report}=await checked(t,`import unat;\n${source}`);
+def excluded := legacy::double_negation;`,legacyArchiveReader()]]) {
+    const {report}=await checked(t,`import unat;\n${source}`,{},reader);
     assert.deepEqual(report.prerequisites,[]);
     assert.deepEqual(report.failures,[]);
     assert.deepEqual(report.cases.map(entry=>entry.failures),report.cases.map(()=>[]));

@@ -195,10 +195,11 @@ test("a transfer keeps the library's labels only for the library's own text", as
     const loaded = await session.load({ ...exported, sources });
     return Object.values(loaded.view.symbols).filter(symbol => symbol.kind === "axiom").map(symbol => symbol.name).sort();
   };
-  assert.deepEqual(await label(exported.sources, { fromLibrary }), ["Choice", "LEM"]);
-  assert.deepEqual(await label(exported.sources, {}), ["classical_axioms::Choice", "classical_axioms::LEM"]);
+  assert.deepEqual(await label(exported.sources, { fromLibrary }), ["Choice", "LEM", "PropResizing"]);
+  const qualified = ["classical_axioms::Choice", "classical_axioms::LEM", "classical_axioms::PropResizing"];
+  assert.deepEqual(await label(exported.sources, {}), qualified);
   const edited = { ...exported.sources, h1_truncation: `${exported.sources.h1_truncation}\ndef extra := tt;\n` };
-  assert.deepEqual(await label(edited, { fromLibrary }), ["classical_axioms::Choice", "classical_axioms::LEM"]);
+  assert.deepEqual(await label(edited, { fromLibrary }), qualified);
 });
 
 // Provenance only names axioms: a transfer whose library text cannot be
