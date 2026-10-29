@@ -1,6 +1,7 @@
 // EVAL3/EVAL4 execution query. It produces observations of checked values,
-// never kernel evidence or a full typed normal form. Cubical execution and
-// complete typed readback remain separate EVAL8 integration work.
+// never kernel evidence. Its readback (EVAL5's typed readback, W1 of
+// docs/roadmaps/runtime/typed-readback.md) gives a value as a closed kernel
+// term, which no verdict consumes; cubical execution remains EVAL8 work.
 import { InstructionGraph } from "./cubical-instructions.mjs";
 import { KernelFault, faultToken } from "./cubical-kernel.mjs";
 
@@ -19,6 +20,32 @@ const pathConstructorRefused = "Execution of a path constructor is not implement
 const cubicalPositionsRefused = "Execution of a constructor with cubical recursive positions is not implemented.";
 // The term binders of ck_term_binder: each binds its payload in its second child.
 const binders = new Set(["Pi", "Lam", "Sigma", "LPi", "LLam"]);
+// Readback's tables (docs/roadmaps/runtime/typed-readback.md, 3.2 to 3.5).
+// Data: the values a normal-form readback reads by value outside every
+// non-data part.
+const data = new Set(["Con", "Pair", "Inl", "Inr", "Point"]);
+// The nodes of an application spine (spine_node, kernel/src/term_normalize.c),
+// which a closure rebuilds one level so that folding sees definition spines.
+const spine = new Set(["App", "LApp", "Fst", "Snd", "PApp"]);
+// The children that hold a level.
+const levelSlots = { U: [0], LSucc: [0], LMax: [0, 1], LApp: [1] };
+// The children rebuilt one level with their node, never read back as
+// closures: a list, whose items are terms or levels (null where its parent
+// says), a chain of tubes or of Glue system pieces, and an annotation the
+// kernel reads by its node kind without reducing it, a path application's
+// Path type and an unglue's Glue type (weak) and a constructor's Sort
+// instance (admitted_signature, kernel/src/signatures.c).
+const rebuiltSlots = {
+  Sort: { 0: "term", 1: "level" }, Elim: { 1: "term" },
+  Comp: { 1: null }, HComp: { 1: null }, Trans: { 1: null }, GlueTerm: { 2: null }, Tube: { 1: null },
+  Glue: { 1: null }, GlueSystem: { 2: null },
+  PApp: { 1: null }, Con: { 0: null }, Unglue: { 0: null },
+};
+const none = new Set();
+// The closures memo's key for the empty environment.
+const topLevel = Object.freeze({});
+const memos = () => Object.fromEntries(["value", "outer", "origin", "level"].map(mode => [mode, { cells: new WeakMap(), closures: new WeakMap() }]));
+const first = ([handle]) => handle;
 const yieldTask = typeof setImmediate === "function" ? () => new Promise(setImmediate)
   : () => new Promise(resolve => {
     const channel = new MessageChannel();
@@ -81,7 +108,7 @@ function judged(kernel, judgement, budget) {
   const checked = graph.judgement(judgement);
   if (checked.kind !== "typing" || checked.context.length)
     fail("input", "Runtime execution requires a closed, assumption-free typing judgement.");
-  return { kernel, held: kernel.handleToken(), nodes: new Map(), signatures: new Map(),
+  return { kernel, held: kernel.handleToken(), nodes: new Map(), signatures: new Map(), scopes: new Map(),
     expression: checked.term, type: checked.type };
 }
 
@@ -124,8 +151,20 @@ export class RuntimeQuery {
   // failed publishes nothing more, as nothing computed after a failure is
   // kept, though its snapshot was copied before.
   #fault;
+  // A query made with { origins: true }, for normal-form readback, keeps
+  // each forced cell's code and environment, its origin (3.4); value forms
+  // keep none.
+  #origins;
+  // The head an observation computed by η, by the cell it was asked of,
+  // which keeps the λ.
+  #heads = new WeakMap();
+  // Readback's memo, by mode, of cells and of closures by environment and
+  // code (3.5); each readback is an epoch of its own.
+  #memo = memos(); #epoch = 0;
+  #readStats = { readbacks: 0, writes: 0, hits: 0, cells: 0, rebuilt: 0, bindings: 0 };
   constructor(kernel, judgement, options = {}) {
     this.#budget = new Budget(options);
+    this.#origins = options.origins === true;
     this.#fault = faultToken(kernel.module);
     try {
       this.#budget.start(options);
@@ -251,12 +290,14 @@ export class RuntimeQuery {
                 budget.stats.snapshotDefinitions = this.#definitions.size;
               }
               force(this.#definitions.get(n.payload)); break;
+            // A function keeps the node it was made from, whose domain a
+            // readback telescope binds (3.3).
             case "Lam": case "LLam":
-              returned(this.#value({ tag: n.kind, symbol: n.payload, body: c[1], env, domain: delay(c[0]) })); break;
+              returned(this.#value({ tag: n.kind, symbol: n.payload, body: c[1], env, domain: delay(c[0]), node: cell.code })); break;
             // A path abstraction is a weak head too, kept with its
             // environment. Applying one, at an interval point, is cubical
             // demand, so nothing here substitutes a dimension.
-            case "PLam": returned(this.#value({ tag: "PLam", body: c[1], env })); break;
+            case "PLam": returned(this.#value({ tag: "PLam", body: c[1], env, node: cell.code })); break;
             case "App": case "LApp":
               push({ operation: "apply", argument: delay(c[1]), level: n.kind === "LApp" }); force(delay(c[0])); break;
             case "Pair":
@@ -279,9 +320,10 @@ export class RuntimeQuery {
             case "Elim":
               returned(this.#value({ tag: "Elim", signature: n.payload, motive: delay(c[0]), clauses: this.#list(c[1], env) })); break;
             // A type former is its own weak head. Its parts stay unevaluated;
-            // Glue, which can reduce on its faces, is cubical demand.
+            // Glue, which can reduce on its faces, is cubical demand. It
+            // keeps its node and environment, which readback reads it from.
             case "U": case "Pi": case "Sigma": case "Path": case "Sum": case "Unit": case "Void": case "Sort": case "LPi":
-              returned(this.#value({ tag: "Type" })); break;
+              returned(this.#value({ tag: "Type", node: cell.code, env })); break;
             default: fail("unsupported", `Runtime execution of ${n.kind} is not implemented.`);
           }
           continue;
@@ -291,9 +333,12 @@ export class RuntimeQuery {
         switch (frame.operation) {
           case "update": {
             const cell = frame.cell;
-            // Release the suspended syntax/environment after successful forcing.
-            if (cell.operation === "syntax") cell.code = cell.env = undefined;
-            else cell.fn = cell.argument = undefined;
+            // Release the suspended syntax/environment after successful
+            // forcing, unless they are kept as the cell's origin.
+            if (!this.#origins) {
+              if (cell.operation === "syntax") cell.code = cell.env = undefined;
+              else cell.fn = cell.argument = undefined;
+            }
             cell.state = 2; cell.value = value; break;
           }
           case "project":
@@ -309,7 +354,9 @@ export class RuntimeQuery {
             const argument = frame.argument;
             if (value.tag === (frame.level ? "LLam" : "Lam")) {
               budget.stats.beta++;
-              force(this.#delay(value.body, this.#cell({ parent: value.env, symbol: value.symbol, cell: argument })));
+              // The frame records the node of the function it applied, whose
+              // binder, at its domain, a readback telescope binds (3.3).
+              force(this.#delay(value.body, this.#cell({ parent: value.env, symbol: value.symbol, cell: argument, binder: value.node })));
             } else if (!frame.level && value.tag === "Con") {
               const descriptor = this.#descriptor(value.signature, value.index);
               if (value.args.length >= descriptor.count) fail("input", "A constructor received too many arguments.");
@@ -359,7 +406,11 @@ export class RuntimeQuery {
   // weak head is then taken in turn. The body is inspected, never evaluated.
   *#head(cell) {
     let value = yield* this.#run(cell);
-    for (let f; (f = this.#eta(value));) value = yield* this.#run(this.#delay(f, value.env));
+    for (let f; (f = this.#eta(value));) {
+      value = yield* this.#run(this.#delay(f, value.env));
+      // η leaves the cell holding the λ: the head is kept for its readback.
+      this.#heads.set(cell, value);
+    }
     return value;
   }
   #eta(value) {
@@ -465,8 +516,332 @@ export class RuntimeQuery {
       return { runtimeObjects: seen.size, snapshotNodes: this.#image.nodes.size };
     } finally { this.#budget.finish(); }
   }
+  get readbackStats() { return { ...this.#readStats }; }
+  // The closed kernel term a handle's cell stands for, R(cell) of
+  // docs/roadmaps/runtime/typed-readback.md, internal: no user path reads a
+  // value back yet (W1). Read back by value, it is every value the runtime
+  // computed, functions included, as the β-redexes its closures stand for,
+  // so that the kernel performs every substitution (D2); with { origins },
+  // on a query made with them, a normal-form readback: data by its value
+  // outside every non-data part, and each non-data part as the computation
+  // it was forced from (3.4). With { head }, the head an observation of the
+  // handle returned after η is read back instead of its cell. No type is
+  // consulted. The term is admitted to the normalize queries as derived
+  // (D3): the written correspondence, under EVAL8's review, is its
+  // justification, and only tests type it by instructions. A readback
+  // starts, writes kernel syntax and returns a handle only while the
+  // kernel's handles are the query's, and fails as "expired" otherwise,
+  // dropping its memo (section 7). Its work and cells are the query's.
+  readback(handle = this.root, options = {}) {
+    const cell = this.#begin(handle), { origins = false, head = false } = options;
+    if (origins && !this.#origins) fail("input", "Read back by origin a query made with origins.");
+    this.#running = true;
+    try {
+      this.#budget.start(options); this.#budget.check();
+      this.#kernel();
+      this.#epoch++; this.#readStats.readbacks++;
+      const mode = origins ? "outer" : "value";
+      let start = { kind: "cell", cell, mode };
+      if (head) {
+        const value = this.#heads.get(cell) ?? (cell.state === 2 ? cell.value : null);
+        if (!value) fail("input", "Read back the head of an observed handle.");
+        start = { kind: "value", value, mode: mode === "outer" && !data.has(value.tag) ? "origin" : mode };
+      }
+      const term = this.#readOut(start), kernel = this.#kernel();
+      (kernel.derivedHandles ??= new Set()).add(term);
+      return term;
+    } catch (error) {
+      if (error instanceof RuntimeError && error.kind === "expired") this.#memo = memos();
+      throw error;
+    } finally { this.#budget.finish(); this.#running = false; }
+  }
+  // Readback's machine, with its own stack, so that a value deeper than the
+  // host's stack is refused by the kernel's syntax depth (K344) when its
+  // term is built, not by the host. A task is a cell, a closure (code
+  // under an environment), a level, a value, or a part rebuilt one level;
+  // each gives a handle at once, or a frame that builds one from the
+  // handles of its parts. A result is stable when every cell it read was
+  // forced and every definition 3.3 read has a forced cell: only a stable
+  // memo entry answers a later readback, an unstable one only its own.
+  #readOut(start) {
+    const budget = this.#budget, stack = [];
+    let task = start, result = null;
+    for (;;) {
+      budget.tick();
+      if (task) {
+        const next = this.#task(task);
+        task = null;
+        if (next.parts?.length) { budget.allocate(); stack.push(next); task = next.parts[0]; }
+        else result = next.parts ? { handle: next.build([]), stable: next.stable } : next;
+        continue;
+      }
+      if (!stack.length) return result.handle;
+      const frame = stack.at(-1);
+      frame.results.push(result.handle); frame.stable &&= result.stable;
+      if (frame.results.length < frame.parts.length) { task = frame.parts[frame.results.length]; continue; }
+      stack.pop();
+      result = { handle: frame.build(frame.results), stable: frame.stable };
+      if (frame.memo) { budget.allocate(); frame.memo.set(frame.key, { ...result, epoch: this.#epoch }); }
+    }
+  }
+  #task(task) {
+    switch (task.kind) {
+      case "cell": return this.#cellTask(task.cell, task.mode);
+      case "closure": return this.#closureTask(task.code, task.env, task.mode);
+      case "level": return this.#levelTask(task.code, task.env);
+      case "value": return this.#valueTask(task.value, task.mode);
+      default: return this.#partTask(task.code, task.env, task.mode, task.items);
+    }
+  }
+  #recall(entry) {
+    if (!entry || !(entry.stable || entry.epoch === this.#epoch)) return null;
+    this.#readStats.hits++;
+    return entry;
+  }
+  // R(cell) (3.2): a forced cell by its value, or by its origin, the code
+  // and environment it was forced from, where the mode asks: in a
+  // normal-form readback ("outer") a non-data cell, and inside an origin
+  // ("origin") every cell that has one, data included. An unforced cell is
+  // its closure, an application cell the application of its two cells; it
+  // can be forced later, so its readback is unstable.
+  #cellTask(cell, mode) {
+    const memo = this.#memo[mode].cells, known = this.#recall(memo.get(cell));
+    if (known) return known;
+    this.#readStats.cells++;
+    const kept = (inner, stable) => ({ results: [], stable, memo, key: cell, ...cell.operation === "apply"
+      ? { parts: [{ kind: "cell", cell: cell.fn, mode: inner }, { kind: "cell", cell: cell.argument, mode: inner }],
+        build: ([fn, argument]) => this.#write("App", 0, fn, argument) }
+      : { parts: [{ kind: "closure", code: cell.code, env: cell.env, mode: inner }], build: first } });
+    if (cell.state !== 2) return kept(mode, false);
+    const value = cell.value, origin = cell.operation === "syntax" ? cell.code !== undefined : cell.fn !== undefined;
+    if (origin && (mode === "origin" || mode === "outer" && !data.has(value.tag))) return kept("origin", true);
+    const read = this.#valueTask(value, mode === "outer" && !data.has(value.tag) ? "origin" : mode);
+    return read.parts ? Object.assign(read, { memo, key: cell }) : read;
+  }
+  // A value, from the fields the machine executes (3.2): a constructor's
+  // index and instance cell, rebuilt one level into a literal Sort of the
+  // value's signature, never the node it was made from; a function's
+  // symbol, body and environment; an eliminator's signature, motive and
+  // clauses. A node supplies only what a value does not hold: a function's
+  // domain, a path abstraction's dimension and family, a type's parts.
+  #valueTask(value, mode) {
+    const frame = (parts, build) => ({ parts, results: [], stable: true, build });
+    const cell = c => ({ kind: "cell", cell: c, mode }), closure = (code, env) => frame([{ kind: "closure", code, env, mode }], first);
+    switch (value.tag) {
+      case "Point": return { handle: this.#write("Point", 0), stable: true };
+      case "Pair": return frame([cell(value.type), cell(value.first), cell(value.second)], ([type, a, b]) => this.#write("Pair", 0, type, a, b));
+      case "Inl": case "Inr": return frame([cell(value.type), cell(value.item)], ([type, item]) => this.#write(value.tag, 0, type, item));
+      case "Con": {
+        const [code, env] = this.#instance(value);
+        return frame([{ kind: "part", code, env, mode, items: null }, ...value.args.map(cell)],
+          ([instance, ...args]) => args.reduce((fn, argument) => this.#write("App", 0, fn, argument), this.#write("Con", value.index, instance)));
+      }
+      case "Lam": case "LLam": return closure(this.#made(value.node, value.tag, value.symbol, value.body), value.env);
+      case "PLam": return closure(this.#made(value.node, "PLam", this.#node(value.node).payload, value.body), value.env);
+      case "Type": return closure(value.node, value.env);
+      case "Elim": return frame([cell(value.motive), ...value.clauses.map(cell)], ([motive, ...clauses]) =>
+        this.#write("Elim", value.signature, motive, clauses.reduceRight((next, clause) => this.#write("List", 0, clause, next), 0)));
+      // Its λ needs the domains of the constructor's field telescope at the
+      // instance, the one place readback would need types (3.7).
+      case "Lift": return fail("unsupported", "Readback of a higher-order recursive hypothesis is not implemented.");
+      default: return fail("input", `Readback of ${value.tag} is not implemented.`);
+    }
+  }
+  // A constructor's instance, from its instance cell: its code and
+  // environment, or, forced, those its type value keeps.
+  #instance(value) {
+    const cell = value.instance, [code, env] = cell.state === 2 ? [cell.value.node, cell.value.env] : [cell.code, cell.env];
+    const n = code && this.#node(code);
+    if (n?.kind !== "Sort" || n.payload !== value.signature) fail("input", "A constructor's instance must be its own signature's sort.");
+    return [code, env];
+  }
+  // A function as the value holds it: its node where the value's fields are
+  // the node's, and otherwise that node's kind and domain with the value's
+  // binder and body.
+  #made(id, kind, payload, body) {
+    const n = this.#node(id);
+    return n.kind === kind && n.payload === payload && n.children[1] === body ? id : { kind, payload, children: [n.children[0], body, 0, 0] };
+  }
+  // closure(code, env) (3.3): a variable is the cell it is bound to; a
+  // definition with a forced cell is that cell, except where a normal-form
+  // readback keeps the reference, its own origin; a code with no variable
+  // bound in env and no forced definition outside its term binders is the
+  // code itself; a spine node, or a node referencing a forced definition
+  // there, is rebuilt one level; and anything else is the telescope of the
+  // frames it needs, applied to their cells. Inside an origin, definitions
+  // are kept as written.
+  #closureTask(code, env, mode) {
+    const memo = typeof code === "number" ? this.#closures(mode, env) : null, known = memo && this.#recall(memo.get(code));
+    if (known) return known;
+    const n = this.#syntax(code);
+    if (n.kind === "Var")
+      return { parts: [{ kind: "cell", cell: this.#binding(env, n.payload).cell, mode }], results: [], stable: true, build: first, memo, key: code };
+    if (n.kind === "DefRef" && mode !== "origin") {
+      const cell = this.#definitions.get(n.payload), forced = cell?.state === 2;
+      if (forced && (mode === "value" || data.has(cell.value.tag)))
+        return { parts: [{ kind: "cell", cell, mode }], results: [], stable: true, build: first, memo, key: code };
+      return { handle: code, stable: forced };
+    }
+    const { vars, defs } = this.#scope(code), settled = mode === "origin" || !defs.size;
+    // A term binder references no definition outside its binders.
+    const forced = mode !== "origin" && [...defs].some(d => this.#definitions.get(d)?.state === 2);
+    if (!vars.size && !forced) return { handle: this.#handleOf(code), stable: settled };
+    if (spine.has(n.kind) || forced) return { ...this.#rebuild(n, env, mode, null), memo, key: code };
+    return this.#telescope(code, env, mode, settled, memo, code);
+  }
+  // A part rebuilt one level with its parent (rebuiltSlots), or itself
+  // where nothing in it is bound or forced.
+  #partTask(code, env, mode, items) {
+    const { vars, defs } = this.#scope(code);
+    const forced = mode !== "origin" && [...defs].some(d => this.#definitions.get(d)?.state === 2);
+    if (!vars.size && !forced) return { handle: code, stable: mode === "origin" || !defs.size };
+    return this.#rebuild(this.#node(code), env, mode, items);
+  }
+  // One level: the node's kind and payload as written, each child read
+  // back under the same environment, a term as its closure, a level as a
+  // level, and a list, a tube or system chain or a read annotation rebuilt
+  // one level in turn. Only nodes that are no term binder are rebuilt.
+  #rebuild(n, env, mode, items) {
+    this.#readStats.rebuilt++;
+    const at = [], parts = [];
+    n.children.forEach((child, i) => {
+      if (!child) return;
+      at.push(i);
+      const rebuilt = n.kind === "List" ? (i === 1 ? items : undefined) : rebuiltSlots[n.kind]?.[i];
+      parts.push(rebuilt !== undefined ? { kind: "part", code: child, env, mode, items: rebuilt }
+        : (n.kind === "List" ? items === "level" : levelSlots[n.kind]?.includes(i)) ? { kind: "level", code: child, env }
+        : { kind: "closure", code: child, env, mode });
+    });
+    return { parts, results: [], stable: true, build: handles => {
+      const children = [...n.children];
+      at.forEach((i, j) => { children[i] = handles[j]; });
+      return this.#write(n.kind, n.payload, ...children);
+    } };
+  }
+  // The telescope of the frames a code needs, applied to their cells:
+  // App(…App(L1(x1; D1, … Ln(xn; Dn, code)…), R(c1))…, R(cn)). The frames
+  // needed are the nearest binding of each variable free in the code, and,
+  // for each, the nearest binding above it of each variable free in its
+  // binder's domain, in the environment's order, outermost first. Each Li
+  // is the binder the frame's β contracted, a term or level λ, and Di its
+  // domain as written, so the domains are closed together, never one by
+  // one. A level binding is applied to its level, read back.
+  #telescope(code, env, mode, stable, memo, key, then = term => term) {
+    const needed = new Set(), pending = [[this.#scope(code).vars, env]];
+    while (pending.length) {
+      const [vars, from] = pending.pop();
+      for (const symbol of vars) {
+        const frame = this.#binding(from, symbol);
+        if (needed.has(frame)) continue;
+        this.#budget.allocate(); needed.add(frame);
+        pending.push([this.#scope(this.#node(frame.binder).children[0]).vars, frame.parent]);
+      }
+    }
+    const frames = [];
+    for (let at = env; at && frames.length < needed.size; at = at.parent) {
+      this.#budget.tick();
+      if (needed.has(at)) frames.push(at);
+    }
+    frames.reverse();
+    this.#readStats.bindings += frames.length;
+    const binder = frame => this.#node(frame.binder), level = frame => binder(frame).kind === "LLam";
+    return { parts: frames.map(frame => level(frame) ? { kind: "level", code: frame.cell.code, env: frame.cell.env } : { kind: "cell", cell: frame.cell, mode }),
+      results: [], stable, memo, key, build: args => {
+        let term = this.#handleOf(code);
+        for (let i = frames.length; i-- > 0;) term = this.#write(binder(frames[i]).kind, frames[i].symbol, binder(frames[i]).children[0], term);
+        frames.forEach((frame, i) => { term = this.#write(level(frame) ? "LApp" : "App", 0, term, args[i]); });
+        return then(term);
+      } };
+  }
+  // A level (3.3, Levels): a variable is the level its frame binds; a level
+  // with no variable is itself; and otherwise the universe at the level,
+  // closed by its telescope, is asked of the kernel's head query, which
+  // substitutes and canonicalizes the levels (ck_level_instantiate), and
+  // the level is read off the universe returned. A level cell is never
+  // forced, so a level read through one is unstable, as 3.5 has it.
+  #levelTask(code, env) {
+    const memo = this.#closures("level", env), key = code, known = this.#recall(memo.get(code));
+    if (known) return known;
+    let n = this.#node(code), stable = true;
+    while (n.kind === "Var") {
+      const { cell } = this.#binding(env, n.payload);
+      if (cell.operation !== "syntax" || cell.state === 2) fail("input", "A level variable is bound to a term.");
+      code = cell.code; env = cell.env; n = this.#node(code); stable = false;
+    }
+    if (!this.#scope(code).vars.size) return { handle: code, stable };
+    return this.#telescope({ kind: "U", payload: 0, children: [code, 0, 0, 0] }, env, "value", false, memo, key, term => {
+      this.#budget.tick();
+      const kernel = this.#kernel(), universe = kernel.node(kernel.head(term));
+      if (universe.kind !== "U") fail("input", "A level's universe has another weak head.");
+      return universe.children[0];
+    });
+  }
+  // The nearest binding of a symbol in an environment, as the machine's
+  // lookup takes it.
+  #binding(env, symbol) {
+    for (let at = env; at; at = at.parent) {
+      this.#budget.tick();
+      if (at.symbol === symbol) return at;
+    }
+    return fail("input", "Unbound variable in a closed runtime query.");
+  }
+  #closures(mode, env) {
+    const byEnvironment = this.#memo[mode].closures, key = env ?? topLevel;
+    let codes = byEnvironment.get(key);
+    if (!codes) byEnvironment.set(key, codes = new Map());
+    return codes;
+  }
+  // A code is a node of the checked syntax, or a function as its value holds
+  // it (#made), written only when it is read back as it is.
+  #syntax(code) { return typeof code === "number" ? this.#node(code) : code; }
+  #handleOf(code) { return typeof code === "number" ? code : this.#write(code.kind, code.payload, ...code.children); }
+  // Kernel syntax, built only while the kernel's handles are the query's.
+  #write(kind, payload, ...children) {
+    this.#budget.tick(); this.#readStats.writes++;
+    return this.#kernel().term(kind, payload, ...children);
+  }
+  // The variables free in a code, binding as ck_term_free does, and the
+  // definitions it references outside its term binders, once per copied
+  // node, within the query's budget (3.3). Everything inside a term binder
+  // stays as written, so a binder references none.
+  #scope(code) {
+    if (typeof code !== "number") return this.#scopeOf(code, code.children.map(child => child ? this.#scope(child) : null));
+    const scopes = this.#image.scopes;
+    if (scopes.has(code)) return scopes.get(code);
+    const pending = [code];
+    while (pending.length) {
+      this.#budget.tick();
+      const id = pending.at(-1), n = this.#node(id), missing = n.children.filter(child => child && !scopes.has(child));
+      if (missing.length) { pending.push(...missing); continue; }
+      pending.pop();
+      if (!scopes.has(id)) scopes.set(id, this.#scopeOf(n, n.children.map(child => child ? scopes.get(child) : null)));
+    }
+    return scopes.get(code);
+  }
+  #scopeOf(n, children) {
+    const union = sets => {
+      const some = sets.filter(set => set.size);
+      if (some.length < 2) return some[0] ?? none;
+      this.#budget.allocate();
+      return new Set(some.flatMap(set => [...set]));
+    };
+    if (n.kind === "Var" || n.kind === "DefRef") {
+      this.#budget.allocate();
+      const own = new Set([n.payload]);
+      return n.kind === "Var" ? { vars: own, defs: none } : { vars: none, defs: own };
+    }
+    const binder = binders.has(n.kind), parts = children.filter(Boolean);
+    const vars = union(children.flatMap((child, i) => {
+      if (!child) return [];
+      if (!(binder && i === 1 && child.vars.has(n.payload))) return [child.vars];
+      this.#budget.allocate();
+      return [new Set([...child.vars].filter(symbol => symbol !== n.payload))];
+    }));
+    return { vars, defs: binder ? none : union(parts.map(child => child.defs)) };
+  }
   dispose() {
     this.#disposed = true; this.#image = this.#root = this.#type = null;
     this.#definitions.clear(); this.#handles = new WeakMap(); this.#wrapped = new WeakMap();
+    this.#memo = memos(); this.#heads = new WeakMap();
   }
 }

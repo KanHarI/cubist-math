@@ -13,6 +13,7 @@ import { normalDigest, sharedNormalDigest } from "../tools/evaluation-baseline.m
 import { reported } from "../tools/inline-errors.mjs";
 import { printedNodes, valueForm } from "../web/translator/evaluation.mjs";
 import { Translator } from "../web/translator/translate.mjs";
+import { watchReadbacks, disagreements } from "./runtime-readback-oracle.mjs";
 
 // Evaluation demand marks (docs/roadmaps/historical/evaluation-demand-marks.md):
 // `!` asks for a part's weak head, `!!` for its normal form, stuck
@@ -668,6 +669,8 @@ for (const setup of Object.keys(corpus.setups)) {
       at.set(lines.join("\n").split("\n").length + 1, [item, "kernel print"]);
       lines.push(`print(evaluate(probe_${index}));`);
     });
+    // Each value form the runtime computes is read back (W1, below).
+    const watched = watchReadbacks({ typing: 400 });
     const { program, evaluations } = recordedProgram(t), valueFormOf = Translator.prototype.valueFormOf;
     // Of each pair of value forms, the first may ask the runtime and the
     // second is the kernel's queries' alone.
@@ -678,7 +681,8 @@ for (const setup of Object.keys(corpus.setups)) {
     };
     let result;
     try { result = await program.check(lines.join("\n"), "main"); }
-    finally { Translator.prototype.valueFormOf = valueFormOf; }
+    finally { Translator.prototype.valueFormOf = valueFormOf; watched.restore(); }
+    for (const outcome of watched.outcomes) readbacks.push({ id: items[Number(outcome.source.slice("probe_".length))].id, ...outcome });
     const outcome = new Map([...result.evaluations.map(evaluation => [evaluation.start, evaluation.value]),
       ...result.prints.map(print => [print.start, print.text]),
       ...result.gaps.filter(gap => gap.directive).map(gap => [gap.declarationStart, { refused: gap.code }])]);
@@ -769,6 +773,24 @@ test("the runtime computes the value forms of the constructs on data, ordinary a
     "Runtime execution of Glue is not implemented.": 1,
     "Runtime execution of Unglue is not implemented.": 1,
   });
+});
+
+// Each value form the runtime computed above is read back into a kernel
+// term (W1 of docs/roadmaps/runtime/typed-readback.md,
+// tests/runtime-readback-oracle.mjs): by value, its full normal form is the
+// kernel's of the construct, as is the full normal form of each head the
+// walk observed; by origin, its folded normal form is the kernel's folded
+// one; and where it has at most 400 nodes as a tree, the instruction driver
+// types it at the construct's type. Within the oracle's budget of 2M steps
+// a normal form, only the three constructs whose full normal forms are slow
+// go undecided, by value.
+const readbacks = [];
+test("each value form the runtime computes reads back to the kernel's normal forms, and the small ones type", () => {
+  assert.equal(readbacks.length, valueForms.runtime);
+  assert.deepEqual(disagreements(readbacks), []);
+  assert.deepEqual(readbacks.filter(readback => readback.value === "budget").map(readback => readback.id).sort(), [...slowNormalForms].sort());
+  assert.deepEqual(readbacks.filter(readback => readback.folded !== true), []);
+  assert.equal(readbacks.filter(readback => readback.typed === true).length, 144);
 });
 
 // The acceptance report (docs/roadmaps/historical/evaluation-demand-marks/

@@ -10,6 +10,7 @@ import { ReplSession } from "../web/repl-session.mjs";
 import { Translator } from "../web/translator/translate.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { checkProgram } from "./check-program.mjs";
+import { watchReadbacks, disagreements } from "./runtime-readback-oracle.mjs";
 
 // The value form of `evaluate e` and `print(evaluate(e))` is observed by the
 // runtime (web/cubical-runtime.mjs, EVAL3/EVAL4), and demand it reports
@@ -79,18 +80,21 @@ print(evaluate(typed(Unit and Circle, (tt, base))));
 // The value forms of a source, alternately by the runtime and by the
 // kernel's queries alone, in one program: each print is written twice, and
 // the first of each pair may ask the runtime. Checking a source's imports
-// once serves both.
+// once serves both. Each value form the runtime computes is read back, and
+// its readback's normal forms are the kernel's (W1,
+// tests/runtime-readback-oracle.mjs): the pairs' `readbacks`.
 async function alternately(t, source, { reader = sourceReader(), options = {} } = {}) {
   const program = new CubicalProgram(module, reader, options);
   t.after(() => program.dispose());
-  const valueFormOf = Translator.prototype.valueFormOf;
+  const watched = watchReadbacks({ typing: 400 }), valueFormOf = Translator.prototype.valueFormOf;
   let turn = 0;
   Translator.prototype.valueFormOf = function (...args) {
     this.checker.runtimeEvaluation = turn++ % 2 === 0;
     try { return valueFormOf.apply(this, args); } finally { this.checker.runtimeEvaluation = true; }
   };
   let result;
-  try { result = await program.check(source, "main"); } finally { Translator.prototype.valueFormOf = valueFormOf; }
+  try { result = await program.check(source, "main"); } finally { Translator.prototype.valueFormOf = valueFormOf; watched.restore(); }
+  assert.deepEqual(disagreements(watched.outcomes), []);
   assert.deepEqual(result.gaps.filter(gap => gap.directive).map(gap => gap.reason), []);
   assert.equal(result.prints.length % 2, 0);
   const pairs = [];
@@ -101,7 +105,7 @@ async function alternately(t, source, { reader = sourceReader(), options = {} } 
     assert.equal(runtime.text, kernel.text, `the runtime's value form at ${runtime.start} is the kernel's`);
     pairs.push({ text: runtime.text, ...runtime.valueForm });
   }
-  return pairs;
+  return Object.assign(pairs, { readbacks: watched.outcomes });
 }
 const twice = terms => terms.map(term => `print(evaluate(${term}));\nprint(evaluate(${term}));`).join("\n");
 // What computed each value form: the runtime, or the demand it refused.
@@ -198,6 +202,15 @@ ${twice([
   assert.ok(pairs[0].snapshotNodes < 3200, `copied ${pairs[0].snapshotNodes} nodes`);
 });
 
+// The contract values whose full normal forms, the readback's or the
+// term's, exceed the readback oracle's budget.
+const wide = "340282366920938463463374607431768211455";
+const undecided = {
+  binary_integer_contracts: [`integer_equal( ${wide} * ${wide}, 115792089237316195423570985008687907852589419931798687112530834793049593217025 )`],
+  binary_integer_domain_contracts: [],
+  binary_rational_contracts: [`binary_rational_equal( 18446744073709551615/${wide}, 1/18446744073709551617 )`,
+    `typed(BQ, 18446744073709551615/${wide})`, `bq_inv(-${wide}/18446744073709551615)`],
+};
 // The binary integer and rational contracts (tests/fixtures/contracts/), each
 // evaluated term printed in place of its directive, whose expected value
 // stays on the kernel's queries: every value form is the kernel's. The
@@ -213,6 +226,12 @@ for (const [file, expected] of [
     printed = printed.slice(0, directive.start) + twice([source.slice(directive.value.start, directive.value.end)]) + printed.slice(directive.end);
   const pairs = await alternately(t, printed, { reader: sourceReader({ path }), options: { testMode: true } });
   assert.deepEqual(computedBy(pairs), expected);
+  // Each runtime value form is read back; within the oracle's budget of 2M
+  // steps a normal form, all but the widest values' full normal forms are
+  // decided.
+  assert.equal(pairs.readbacks.length, expected.filter(by => by === "runtime").length);
+  assert.deepEqual(pairs.readbacks.filter(readback => readback.value === "budget").map(readback => readback.source.replace(/\s+/g, " ")),
+    undecided[file]);
 });
 
 test("the runtime shows a value whose weak head the kernel builds too deep, as the reference shows", async t => {

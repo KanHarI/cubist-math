@@ -11,6 +11,7 @@ import createCubical from "../web/dist/cubical.mjs";
 import { cubistTestModules } from "../web/cubist/modules.mjs";
 import { checkedModule, reported, stated } from "../tools/inline-errors.mjs";
 import { NativeCubicalElaborator } from "../web/cubical-elaborator.mjs";
+import { watchReadbacks, disagreements } from "./runtime-readback-oracle.mjs";
 
 export const SHARDS = 4;
 
@@ -41,12 +42,20 @@ function oneDisplayEach(name, result) {
   for (const warning of result.warnings ?? []) warning.message = plain(warning.message);
 }
 
+// Each value form a module's prints compute in the runtime is read back,
+// and its readback's normal forms are the kernel's
+// (tests/runtime-readback-oracle.mjs, W1 of
+// docs/roadmaps/runtime/typed-readback.md).
 export function inlinedShard(shard) {
   const names = cubistTestModules.filter((_, k) => k % SHARDS === shard);
   test(`Cubist test modules ${shard + 1} of ${SHARDS}: inlined errors, warnings and outputs are the checker's`, async () => {
     const module = await createCubical();
     for (const name of names) {
-      const { source, result } = await checkedModule(name, module);
+      const readbacks = watchReadbacks({ typing: 400 });
+      let checked;
+      try { checked = await checkedModule(name, module); } finally { readbacks.restore(); }
+      assert.deepEqual(disagreements(readbacks.outcomes), [], `${name}: a value form's readback`);
+      const { source, result } = checked;
       oneDisplayEach(name, result);
       assert.ok(result.outputs.length || result.evaluations.length || result.prints.length, `${name} declares nothing`);
       const items = reported(source, result, name);
