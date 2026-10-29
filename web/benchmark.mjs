@@ -1,4 +1,4 @@
-import { areaLabels, savedReport } from "./benchmark-areas.mjs";
+import { areaLabels, savedReport, declarationLink } from "./benchmark-areas.mjs";
 
 const $ = id => document.getElementById(id);
 // The area measured, from the page's address: ?area=library, archive or tests.
@@ -8,9 +8,11 @@ const area = () => $("area").value;
 const labels = { checked: "1 · Checked within deadline", optimize: "2 · Needs optimization",
   blocked: "3 · Blocked", failed: "4 · Needs fixing", intended: "5 · Intended failures" };
 let report, lastText, worker, localRun = false;
+// A row's name, linked to its source where the report has the one it measured.
 function link(row) {
-  const a = document.createElement("a");
-  a.href = `proof.html?proof=${encodeURIComponent(row.module)}&name=${encodeURIComponent(row.name)}`;
+  const href = declarationLink(report, row), a = document.createElement(href ? "a" : "span");
+  if (href) a.href = href;
+  else a.title = "Measured from working changes: no committed source is the one measured.";
   a.textContent = `${row.module}.${row.name}`; return a;
 }
 function renderRows() {
@@ -50,7 +52,7 @@ function renderReport() {
     $("category").querySelector('[value="checked"]').textContent = labels.checked;
     const counts = report.counts ?? Object.fromEntries(Object.keys(labels).map(c => [c, report.declarations.filter(d => d.category === c).length]));
     const total = report.total ?? report.declarations.length;
-    $("status").textContent = `${areaLabels[report.area ?? "archive"]} · ${report.complete ? "Completed" : "Running"} · ${new Date(report.generatedAt).toLocaleString()} · ${report.modules ?? "…"} modules · ${total} declarations${report.elapsedSeconds ? ` · ${report.elapsedSeconds}s elapsed` : ""}${report.revision ? ` · ${report.revision.slice(0, 8)}${report.dirty ? " + working changes" : ""}` : ""}`;
+    $("status").textContent = `${areaLabels[report.area ?? "archive"]} · ${report.complete ? "Completed" : "Running"} · ${new Date(report.generatedAt).toLocaleString()} · ${report.modules ?? "…"} modules · ${total} declarations${report.elapsedSeconds ? ` · ${report.elapsedSeconds}s elapsed` : ""}${report.revision ? ` · ${report.revision.slice(0, 8)}${report.dirty ? " + working changes" : ""}` : ""}${report.revision ? `, ${Object.keys(report.sources ?? {}).length} of its modules linked as measured there` : ""}`;
     $("progress").max = Math.max(1, total); $("progress").value = counts.checked ?? 0;
     $("counts").replaceChildren(...Object.entries(labels).map(([key, label]) => {
       const button = document.createElement("button"), number = document.createElement("strong");

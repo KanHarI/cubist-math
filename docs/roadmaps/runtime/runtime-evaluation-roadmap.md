@@ -121,9 +121,17 @@ stays within its stated contract.
 
 Make small, closed mathematical constructions practical to execute while
 preserving their checked types, assumptions and computational meaning.
-The first workload is [Euclid's construction](../../../archive/first-library/euclid.cubist):
+The first workload is [Euclid's construction](https://github.com/KanHarI/cubist-math/blob/27c0cc387b0847bcde7c589da1abf6afe40717fa/archive/first-library/euclid.cubist):
 `euclid(n)` returns a prime above `n`, together with its certificates, by
 finding a prime divisor of `factorial(n) + 1`.
+
+**Update of 2026-10-28:** this section describes the archive's unary
+Euclid, the workload until EVAL7's part two deleted it. `import euclid` now
+names the library's [Euclid](../../../library/euclid.cubist) over binary
+`Nat` ([EVAL7](#eval7-reduce-the-algorithms-work)), for which the commands
+below show `(7, (tt, <fun>), tt)` twice, `(5, (tt, <fun>), tt)`, `5` and
+`24`; its depth failure begins at `euclid(7).1`, whose least divisor search
+passes the same guard.
 
 At the baseline, `euclid(3)` returns a pair beginning with `7`, but both
 `euclid(4)` and `euclid(4).1` fail with:
@@ -170,7 +178,9 @@ work and arena counters are deterministic; every workload's five cold
 samples agree on them. Times are medians on that machine, not portable
 targets. To repeat this historical behavior, use an isolated checkout of
 `b5a261c8` (or the pre-EVAL1 `fc0362d3`) and rebuild there with `make wasm`.
-Running these commands on the current sources measures EVAL1 instead:
+Running these commands on the current sources measures the current record
+instead, version 10 since 2026-10-28, whose Euclid workloads are the
+library's ([EVAL7](#eval7-reduce-the-algorithms-work)):
 
 ```sh
 npm run baseline:evaluation
@@ -215,14 +225,17 @@ The record also shows:
 - Warm runs of the same entry reuse the session's kernel caches: the failed
   `euclid(4).1` takes under 1 ms warm, and `evaluate euclid(3)` 58 ms.
 
-A separate JavaScript experiment, now
-[versioned](../../../tools/closure-evaluation-experiment.mjs), evaluates checked
+A separate JavaScript experiment,
+[versioned](https://github.com/KanHarI/cubist-math/blob/27c0cc387b0847bcde7c589da1abf6afe40717fa/tools/closure-evaluation-experiment.mjs)
+until 2026-10-28, evaluated checked
 syntax with environments and memoized thunks. It keeps lambda domains, pair
 types, eliminator motives and unused fields suspended. It supports the
 ordinary data operations used by this workload and refuses unsupported
 operations; it does not implement general H1 elimination or cubical
-computation. The baseline runs it as a separate series on the checked
-definition `probe := euclid(n)`:
+computation. The baseline ran it as a separate series on the checked
+definition `probe := euclid(n)`, until version 10 retired the series with
+the archive's Euclid: it reads unary numbers only, and the runtime (#289)
+has replaced it.
 
 | Prime component requested | Scratch result | Evaluation time | Thunks forced | Deepest forcing | Peak memory |
 | --- | --- | --- | --- | --- | --- |
@@ -397,8 +410,9 @@ EVAL0 is done. EVAL1 is implemented in #266; EVAL2 and NUM0 are implemented belo
 NUM1's semiring, transport, equality/order and dependent-recursion work is
 implemented. The default-`Nat` compatibility migration is implemented with
 release validation passed (#278, 2026-10-18), and the default `Z`/`Q`
-migration on 2026-10-26. NUM2, EVAL3/EVAL4 and EVAL5 are
-partly delivered, as their rows say; the other rows remain. Sizes are relative
+migration on 2026-10-26. EVAL7 is implemented (2026-10-28). NUM2,
+EVAL3/EVAL4 and EVAL5 are partly delivered, as their rows say; the other
+rows remain. Sizes are relative
 scope, as in the work plan.
 
 | Package | Deliverable | Dependencies | Size |
@@ -413,7 +427,7 @@ scope, as in the work plan.
 | EVAL4 | Explicit evaluation stack and bounded runtime. #289's machine loop and a synchronous observation for the checker; a responsive snapshot for asynchronous use, memory calibration, closed-environment pruning and sharing of repeated calls remain | EVAL3 design; implement alongside it | M |
 | EVAL5 | Lazy observation and typed readback. The observation contract is implemented: demand marks (#304–#306) and folded normal forms (#309, #310); typed readback remains | EVAL3, EVAL4 | L |
 | EVAL6 | Packed BNat runtime values and checked specialization | NUM0–NUM2, EVAL3, EVAL4; new profile | L |
-| EVAL7 | Efficient checked divisibility and search over BNat. Part one, the library modules, implemented; part two, moving the archive's Euclid consumers and deleting its divisibility and primality, remains | NUM1, EVAL0; independent of the new evaluator | M |
+| EVAL7 | Efficient checked divisibility and search over BNat. **Implemented** on 2026-10-28: the library modules (part one), and the archive's Euclid consumers moved to the library's `euclid` with its divisibility and primality deleted from the archive (part two) | NUM1, EVAL0; independent of the new evaluator | M |
 | EVAL8 | Cubical integration, semantic review and release | Packages selected for release | L |
 
 ### EVAL0: measure the work separately
@@ -430,7 +444,11 @@ before failure; do not count only successful normalization.
 Keep the archived Euclid algorithm fixed for evaluator comparisons until EVAL7
 replaces it (decided 2026-10-26). Then the comparisons move to the library
 Euclid under a new baseline version, and the unary series keeps its recorded
-revisions. A source algorithm change gets a separate series. Keep scratch evaluator
+revisions. **Done** on 2026-10-28: version 10 measures the library's Euclid
+over binary `Nat`, and the unary series, the archive's Euclid and the
+scratch closure experiment on it, keeps its last record, version 9, in
+[the fixture at main `27c0cc38`](https://github.com/KanHarI/cubist-math/blob/27c0cc387b0847bcde7c589da1abf6afe40717fa/tests/fixtures/evaluation-baseline.json).
+A source algorithm change gets a separate series. Keep scratch evaluator
 results separate from trusted normal forms and measure their different
 output contracts explicitly.
 
@@ -1383,6 +1401,13 @@ safe or produces a documented expiry error; lazy observations are visibly
 distinct from full normal forms. Report whether full `euclid(4)` succeeds;
 do not close that failure based on its projection alone.
 
+Since EVAL7's part two (2026-10-28) this acceptance reads the library's
+Euclid over binary `Nat`. Its value forms, `euclid(4)` against `(5, _)` and
+the full normal form `!!!euclid(4)` compute by the kernel's queries; the
+runtime falls back from each at NUM1's compositions. The syntax depth guard
+now first stops `euclid(7).1`
+([report](../../reports/binary-euclid.md)).
+
 ### EVAL6: packed binary arithmetic and specialization
 
 After NUM0–NUM2 supply source-level binary arithmetic, investigate packing
@@ -1471,6 +1496,25 @@ in 512,364; `euclid(7)`, with 70 candidates, stops with K344, as strong
 recursion alone does at that depth. The runtime falls back from every
 library value form at the compositions of NUM1's recursion. Part two is
 the migration above, steps 1 and 2.
+
+**Part two implemented** on 2026-10-28
+([report](../../reports/binary-euclid.md#part-two)). The library's Euclid
+module takes the name `euclid`, so `proof.html?proof=euclid`,
+`check euclid` and `import euclid` find it. The landing page, quick
+reference, language page and file index; the site, landing, inspector,
+proof-navigation, inspection, program and instruction-driver tests; #289's
+runtime tests and the REPL probe; the demand marks' tests; and the Cubist
+guide moved to it. The archive's `euclid` is deleted, and `primes` keeps
+only the least-witness search and unary `factorial`; of the 239 sources
+that reach `primes`, none named a deleted definition. The evaluation
+baseline's version 10 measures the library's Euclid, factorial and
+decision, with `euclid(7).1` as its depth failure; the unary series and the
+retired scratch experiment keep their version 9 record. The kernel's
+queries compute every library Euclid value and full normal form through
+`euclid(5)`, where the archive's stopped with K344 from `euclid(4)` on.
+Re-deriving NUM1's definitions in instruction mode exposed an alpha
+equality fault in the driver: a face's dimension was pruned from the
+renaming before the face was compared. It is fixed.
 
 ### EVAL8: integrate with the trusted computation rules
 

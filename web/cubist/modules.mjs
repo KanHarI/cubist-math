@@ -372,15 +372,14 @@ export const archiveModules = [
   "group_univalence",
   "circle_group_identity",
   "cubical_paths",
-  // Entry points, which no module imports.
+  // An entry point, which no module imports.
   "basics",
-  "euclid",
 ];
 
 // Modules of the rebuilt library, served from library/. A name here shadows an
 // archive module of the same name. The first, nat, is the natural numbers,
 // which a module imports to use them.
-export const libraryModules = ["nat", "unat", "bnat", "bnat_equality", "bnat_notation", "bnat_unary", "bnat_arithmetic", "bnat_order", "semirings", "unat_models", "bnat_semiring", "bnat_models", "bnat_transport", "bnat_peano", "bnat_recursion", "bnat_order_laws", "bnat_division", "divisibility", "prime_numbers", "binary_euclid", "classical_axioms", "universe_automorphisms", "hlevels",
+export const libraryModules = ["nat", "unat", "bnat", "bnat_equality", "bnat_notation", "bnat_unary", "bnat_arithmetic", "bnat_order", "semirings", "unat_models", "bnat_semiring", "bnat_models", "bnat_transport", "bnat_peano", "bnat_recursion", "bnat_order_laws", "bnat_division", "divisibility", "prime_numbers", "euclid", "classical_axioms", "universe_automorphisms", "hlevels",
   "h1_truncation", "h1_classical", "contractible_maps", "univalence", "universe_smallness", "propositions",
   "finite_sets", "binary", "powersets", "continuum_hypothesis", "continuum_classical", "continuum_axioms", "lists", "lexemes", "quotients", "algebra", "ring_numerals", "ordered_algebra", "differences", "binary_integers", "integers", "fractions", "binary_rationals", "rationals", "squares"];
 
@@ -435,7 +434,8 @@ export const cubistTestModules = [
   "quotient_groups_quotient_regression", "quotient_universal_hom_universe_regression",
   "quotient_universal_regression", "quotient_universal_bad_factorization", "h1_cauchy_quotient", "h1_zorn_step",
   "truncation_small_mere", "truncation_cauchy_same", "truncation_resize", "truncation_strict_successor",
-  "truncation_rebuilt_classical", "printer_lint", "translation_failed_proofs", "translation_path_induction",
+  "truncation_rebuilt_classical", "truncation_legacy_confined", "printer_lint", "translation_failed_proofs",
+  "translation_path_induction",
   "translation_weak_j", "mismatch_source_syntax", "mismatch_calc_naming", "source_text_messages",
   "inspection_declared_types", "inspection_shadowed_nat", "inspection_axiom_labels", "inspection_let_alias",
   "inspection_square_boundary", "assembly_fixture", "assembly_generic_assumptions", "glue_printed",

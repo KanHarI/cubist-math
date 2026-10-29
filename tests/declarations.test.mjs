@@ -1,7 +1,7 @@
 import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -301,6 +301,7 @@ test("assumption names live where no declaration, constructor, binder or generat
     + "def lem : ExcludedMiddle(U0) := LEM(U0);\ndef legacy := truncation::Mere(Unit);\ndef qualified := a::b__c;\n";
   const reader = async (name, importer) => await modules(name) ?? fallback(name, importer);
   reader.fromLibrary = fallback.fromLibrary;
+  reader.fromArchive = fallback.fromArchive;
   const { program, result, get } = await checkProgram(t, source, { name: "m", module: await createCubical(), reader });
   assert.equal(result.complete, true, JSON.stringify(program.gaps));
   // The review's case: inspect A1_ shows the definition, and A1 the axiom.
@@ -385,17 +386,22 @@ test("a library axiom whose module reads an edited library module is labelled as
 // bare name (the user's decision of 2026-10-26); the same module from
 // anywhere else is listed by its module and name. Module names are user
 // text: one named as an object's property reaches no prototype (finding 5).
+// The library is the file a module was read from, by its real path: a file
+// elsewhere aliased into the library's place is not (#332's review, finding 1).
 test("a library module's axioms take their bare names, and the same module elsewhere its qualified ones", async t => {
   const directory = await mkdtemp(join(tmpdir(), "cubist-axiom-modules-"));
   t.after(() => rm(directory, { recursive: true, force: true }));
   const sources = [["constructor", "def X := axiom Unit;\n"], ["toString", "def Y := axiom Unit;\n"]];
   const files = new Map();
+  await mkdir(join(directory, "library"));
   for (const [name, source] of sources) {
+    await writeFile(join(directory, "library", `${name}.cubist`), source);
     await writeFile(join(directory, `${name}.cubist`), source);
     files.set(`library/${name}`, join(directory, `${name}.cubist`));
   }
   const module = await createCubical(), main = "import constructor;\nimport toString;\ndef both : Unit and Unit := (X, Y);";
-  for (const [reader, labels] of [[sourceReader({ files }), ["X", "Y"]], [inMemory(Object.fromEntries(sources)), ["constructor::X", "toString::Y"]]]) {
+  for (const [reader, labels] of [[sourceReader({ root: directory }), ["X", "Y"]], [sourceReader({ root: directory, files }), ["constructor::X", "toString::Y"]],
+    [inMemory(Object.fromEntries(sources)), ["constructor::X", "toString::Y"]]]) {
     const { result } = await checkProgram(t, main, { module, reader });
     assert.deepEqual(result.imports.map(output => [output.binding, labelsOf(result, output)]),
       [["constructor__X", [labels[0]]], ["toString__Y", [labels[1]]]]);

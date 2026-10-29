@@ -49,7 +49,10 @@ function report(error) {
     $("reduction-status").textContent = "";
   }
 }
+// The transport reports a fatal reply itself (WorkerRequests), and the
+// request that got it does too: the first report stands.
 function workerStopped(error) {
+  if (workerFailure) return;
   workerFailure = error;
   requests.terminate(error);
   availability();

@@ -158,6 +158,12 @@ compute, and each is the kernel's.
   phase and the runtime's counters for each value form, bounded as the
   kernel's work is; a value form demands no kernel weak head, where version
   8 counted the type's, and its query copies only what its walk reaches.
+  Version 10, the same day, measures the library's Euclid over binary `Nat`
+  in place of the archive's, deleted ([EVAL7 part two](binary-euclid.md#part-two)):
+  its value forms fall back at NUM1's compositions, and the kernel's
+  queries compute them. The Euclid rows of the tables below measure the
+  archive's Euclid, as it was; `tools/runtime-repl-probe.mjs`'s `euclid-*`
+  workloads now measure the library's.
 - `tests/site.browser.mjs` checks the REPL page's worker: a value past the
   kernel's guard, then E488, then a further entry.
 

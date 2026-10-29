@@ -9,6 +9,7 @@ import { decode, referenceExamples, statedErrors, statedWarnings } from "./refer
 // tests keep its navigation consistent and every link and anchor working.
 const web = fileURLToPath(new URL("../web/", import.meta.url));
 const repository = fileURLToPath(new URL("../", import.meta.url));
+const layout = JSON.parse(await readFile(join(repository, "tools/site-layout.json"), "utf8"));
 const read = path => readFile(join(web, path), "utf8");
 const ids = html => new Set([...html.matchAll(/\sid="([^"]+)"/g)].map(([, id]) => id));
 const hrefs = html => [...html.matchAll(/\shref="([^"]+)"/g)].map(([, href]) => href.replace(/&amp;/g, "&"));
@@ -45,9 +46,11 @@ test("every link in the reference and the quick reference resolves, including it
       const [target, anchor] = href.split("#");
       const path = target ? normalize(join(dirname(page), target.split("?")[0])) : page;
       if (path.startsWith("..")) continue; // Links outside web/, such as the repository.
-      // The site serves the documentation and the archived library from the repository root.
-      const root = /^(docs|archive)\//.test(path) ? repository : web;
-      try { await access(join(root, path)); } catch { problems.push(`${page}: ${href} (no file ${path})`); continue; }
+      // The site serves the library, the archive, the Cubist tests and the
+      // documentation at their mounts (tools/site-layout.json).
+      const mount = Object.keys(layout).find(name => name && path.startsWith(`${name}/`));
+      const file = mount ? join(repository, layout[mount], path.slice(mount.length)) : join(web, path);
+      try { await access(file); } catch { problems.push(`${page}: ${href} (no file ${path})`); continue; }
       if (anchor && path.endsWith(".html") && !(await idsOf(path)).has(anchor))
         problems.push(`${page}: ${href} (no id ${anchor} in ${path})`);
     }

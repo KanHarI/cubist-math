@@ -229,32 +229,43 @@ print(evaluate(count_into(2 * 255, 0)));
   assert.deepEqual(outcomes(kernel), ["508", "K344: Native prototype syntax depth exceeds 512."]);
 });
 
-test("the runtime shows Euclid's primes past the kernel's syntax depth guard, and stops at its limits", async t => {
-  const { runtime, kernel } = await bothWays(t, `import euclid;
-use unat;
-print(evaluate(euclid(3)));
-print(evaluate(euclid(4).1));
-print(evaluate(euclid(4)));
-print(evaluate(euclid(5).1));
-print(evaluate(euclid(6).1));
+// The library's Euclid (library/euclid.cubist) computes by NUM1's strong
+// recursion, which transports along offset paths: the runtime refuses its
+// compositions, and the kernel's queries compute each value form, the
+// certificate's function shown as such. 7! + 1 = 71 * 71 takes the search
+// past the kernel's syntax depth guard.
+test("the library Euclid's value forms fall back from the runtime at NUM1's compositions", async t => {
+  const pairs = await alternately(t, `import euclid;
+use nat;
+${twice(["euclid(3)", "euclid(4).1", "euclid(4)", "euclid(5).1", "euclid(6).1", "factorial(5)"])}
 `);
-  // The certificate's path and function are shown as such, not computed.
-  assert.deepEqual(outcomes(runtime), ["(7, (5, <path>, <fun>), tt)", "5", "(5, (3, <path>, <fun>), tt)", "11",
-    "E488: The runtime's evaluation of the value form exhausted its allocation budget of 20,000,000 cells."]);
-  assert.deepEqual(by(runtime), ["runtime", "runtime", "runtime", "runtime"]);
-  // A stop at the runtime's limits is the runtime's, not retried by the kernel.
+  assert.deepEqual(pairs.map(pair => pair.text), ["(7, (tt, <fun>), tt)", "5", "(5, (tt, <fun>), tt)", "11", "7", "120"]);
+  assert.deepEqual(computedBy(pairs), Array(6).fill(composition));
+  const { runtime, kernel } = await bothWays(t, "import euclid;\nuse nat;\nprint(evaluate(euclid(7).1));");
+  assert.deepEqual(outcomes(runtime), ["K344: Native prototype syntax depth exceeds 512."]);
+  assert.deepEqual(outcomes(runtime), outcomes(kernel));
+});
+
+// The same call written twice, through 24 definitions: the kernel's weak-head
+// cache shares each g_i(tt) by its syntax, and the runtime computes it twice,
+// 2^24 calls (EVAL4).
+const duplicated = ["def both(a, b : Unit) : Unit := unit_induction(fun (x : Unit) => Unit, b, a);", "def g0(u : Unit) : Unit := u;",
+  ...Array.from({ length: 24 }, (_, i) => `def g${i + 1}(u : Unit) : Unit := both(g${i}(u), g${i}(u));`)].join("\n");
+
+test("a stop at the runtime's limits is reported, not retried by the kernel's queries", async t => {
+  const { runtime, kernel } = await bothWays(t, `${duplicated}\nprint(evaluate(g24(tt)));\n`);
+  assert.deepEqual(outcomes(runtime), ["E488: The runtime's evaluation of the value form exhausted its allocation budget of 20,000,000 cells."]);
   assert.equal(runtime.gaps.find(gap => gap.directive).failure, "resource");
-  assert.deepEqual(outcomes(kernel), ["(7, (5, <path>, <fun>), tt)", ...Array(3).fill("K344: Native prototype syntax depth exceeds 512."),
-    "K336: Native reduction recursion depth exceeded."]);
+  assert.deepEqual(outcomes(kernel), ["tt"]);
 });
 
 test("the declaration's time limit bounds the runtime, as it bounds the kernel's queries", async t => {
   const program = new CubicalProgram(module, sourceReader(), { collectReferences: false });
   t.after(() => program.dispose());
   const session = new ReplSession(program);
-  assert.deepEqual((await session.run("import euclid; use unat;")).map(result => result.kind), ["info", "info"]);
+  assert.ok((await session.run(duplicated)).every(result => result.kind !== "error"));
   program.kernel.setDeadline(150);
-  const [answer] = await session.run("evaluate euclid(5).1;");
+  const [answer] = await session.run("evaluate g24(tt);");
   program.kernel.setDeadline();
   assert.equal(answer.text, "E629: Declaration time limit exceeded.");
 });

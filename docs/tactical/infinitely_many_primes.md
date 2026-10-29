@@ -1,5 +1,12 @@
 # Infinitely many primes
 
+**Update of 2026-10-28:** this checkpoint records the first library's proof,
+over unary numbers. That proof and its divisibility and primality were
+deleted from the archive (EVAL7, step NT2 of the
+[archive retirement](../roadmaps/archive-retirement.md#number-theory-in-the-library));
+the library's [Euclid](../../library/euclid.cubist) over binary `Nat`
+replaces them ([report](../reports/binary-euclid.md)).
+
 Open **Infinitely many primes (Euclid)** in the workbench, or use the CLI:
 
 ```text

@@ -75,10 +75,10 @@ the universe path and transport laws. `bnat_equality` supplies bitwise equality
 and setness, `bnat_order` comparison correctness, `bnat_peano` dependent
 zero/successor recursion, and `bnat_recursion` strong recursion and factorial.
 `bnat_order_laws` and `bnat_division` add order laws and division with
-remainder; `divisibility`, `prime_numbers` and `binary_euclid` build
-divisibility, primes and Euclid's theorem on them, over public `Nat`. The
-archive's unary `primes` and `euclid` stay as they are until their consumers
-move (EVAL7, step NT2 of the
+remainder; `divisibility`, `prime_numbers` and `euclid` build
+divisibility, primes and Euclid's theorem on them, over public `Nat`. They
+replace the archive's unary Euclid and its divisibility and primality,
+deleted on 2026-10-28 (EVAL7, step NT2 of the
 [archive retirement](../docs/roadmaps/archive-retirement.md#number-theory-in-the-library)).
 
 | Module | Contents | Assumptions |
@@ -102,7 +102,7 @@ move (EVAL7, step NT2 of the
 | [`bnat_division`](bnat_division.cubist) | Division with remainder by a positive divisor, high bits first, with one comparison and at most one subtraction a bit (`bnat_divmod`), and its certificate: `q * d + r = n` and `r < d` (`bnat_divmod_correct`). A multiple of the divisor leaves remainder zero (`bnat_remainder_zero`). The bitwise difference with a borrow that it subtracts with, `bnat_sub`, is `a - b` for `b <= a`. | None |
 | [`divisibility`](divisibility.cubist) | `Divides(d, n)` over public `Nat`, decided by one division with remainder (`divides_decide`): a zero remainder gives the quotient as the witness, and any other refutes every multiple. Reflexivity, transitivity and multiples; every number from one to n divides n! (`divides_factorial`), factorials are positive, and no number above one divides both n and n + 1 (`divisor_not_consecutive`). | None |
 | [`prime_numbers`](prime_numbers.cubist) | `Prime(p)`, and the least divisor above one of a number above one, by trial division (`least_divisor`): candidates rise from 2 by `nat`'s strong recursion on their distance to the number, the first divisor ends the search, and past the square root the number is its own least divisor, with that bound's proof (`no_divisor_past_square`). A least divisor is prime (`least_divisor_prime`), so every number above one has a prime divisor (`prime_divisor`). | None |
-| [`binary_euclid`](binary_euclid.cubist) | Euclid's theorem over binary `Nat`, `euclid : InfinitelyManyPrimes`: the least divisor of n! + 1 above one, with `nat`'s factorial, is a prime above n. Its witnesses for 0 through 5 are 2, 2, 3, 7, 5 and 11. | None |
+| [`euclid`](euclid.cubist) | Euclid's theorem over binary `Nat`, `euclid : InfinitelyManyPrimes`: the least divisor of n! + 1 above one, with `nat`'s factorial, is a prime above n. Its witnesses for 0 through 5 are 2, 2, 3, 7, 5 and 11. | None |
 | [`classical_axioms`](classical_axioms.cubist) | Excluded middle and the axiom of choice: their statements over `Trunc`, `ExcludedMiddle(U)` and `AxiomOfChoice(U)`, and the axioms that assume them, `def LEM := axiom ExcludedMiddle;` and `def Choice := axiom AxiomOfChoice;`. Importing it brings `Trunc` into scope. | `LEM`, `Choice` |
 | [`hlevels`](hlevels.cubist) | Contractible types, propositions and sets in every universe below `UU0`, with `HasLevel(U, n, A)` defined by recursion on `n`, so that `IsSet` is level 1 by conversion. Propositions are sets, levels are cumulative, having a level is a proposition, and a retract, such as a type equivalent to another by an inverse, a function type, a type of pairs, a product or a subtype keeps the level of the types it is made from; elements of a subtype with equal first components are equal (`subtype_injective`). Contractible types are closed under the same constructions except subtypes, since a subtype can be empty, and being contractible is a proposition. Negations are propositions (`not_is_prop`), and so is the decision of a proposition (`Decidable`, `decision_is_prop`). A type with decidable equality, such as `UNat`, is a set (Hedberg). | None |
 | [`h1_truncation`](h1_truncation.cubist) | The propositional truncation `Trunc(U, A)` as a declared type that computes: `merely`, that it is a proposition, maps between truncations, and elimination into a proposition of any universe below `UU0`. | None |

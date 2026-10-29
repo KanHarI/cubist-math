@@ -9,6 +9,7 @@
 // A `use` selects for every entry after it, as at a file's top level, and an
 // entry reads in the selections its base file ends with (L2.10j).
 import { withCode } from "./diagnostics.mjs";
+import { moduleFault } from "./cubical-kernel.mjs";
 import { assumptionLines, assumptionNote } from "./axiom-labels.mjs";
 
 export const replHelp = [
@@ -101,6 +102,27 @@ export function replTranscript(text) {
   return entries;
 }
 
+// What replacing a failed kernel instance restored, for its owner to say
+// (cli/repl.mjs; recordedSession in web/repl-console.mjs): the source it had
+// checked, named by `source` as a sentence starts, and the result of
+// checking it again, `rechecked`, complete or with what failed, or null when
+// it could not be checked; and the session's entries replayed, or those of
+// them that could not be (`lost`), whose names are gone. It never says more
+// was restored than was.
+export function restartNote({ source = null, rechecked = null, replayed = false, session = null }) {
+  const sentences = ["The kernel was restarted."], gaps = rechecked?.gaps ?? [];
+  const sentence = text => sentences.push(/[.;]$/.test(text) ? text : `${text}.`);
+  const failed = gaps.slice(0, 3).map(gap => `${gap.name ? `${gap.name}: ` : ""}${withCode(gap.reason, gap.code ?? undefined)}`).join(" ")
+    + (gaps.length > 3 ? ` And ${gaps.length - 3} more.` : "");
+  if (source) sentence(!rechecked ? `${source} could not be checked again: check it again to continue`
+    : rechecked.complete ? `${source} was checked again`
+    : `${source} was checked again, and did not check completely: ${failed || "check it again to see why"}`);
+  if (replayed) sentence(!session ? "The session's entries could not be checked again, and what they defined is gone"
+    : session.lost.length ? `These entries could not be checked again, and what they defined is gone: ${session.lost.join(" ")}`
+    : "The session's entries were checked again");
+  return sentences.join(" ");
+}
+
 export class ReplSession {
   // `modules` lists what import can load: { library, archive } module names.
   constructor(program, { base = null, modules = null } = {}) {
@@ -111,26 +133,63 @@ export class ReplSession {
     this.count = 0;
     // What the entries read in: the base file's selections, then each use's.
     this.uses = base ? program.selectionsAfter?.(base) ?? [] : [];
-    // Statements that extended the session, replayed by rebase.
+    // Statements that extended the session, each with the number of the
+    // entry it was checked as, which record keeps and restore checks again.
     this.accepted = [];
+    // Those that restore could not check again: their names are gone.
+    this.lost = [];
   }
 
-  // The same session over another program, such as a rechecked proof: what
-  // extended it is replayed, and what no longer checks is dropped.
-  async rebase(program, base = this.base) {
-    const session = new ReplSession(program, { base, modules: this.modules });
-    for (const statement of this.accepted) await session.statement(statement);
-    return session;
+  // What extended the session, statement by statement, each with the entry
+  // it was checked as, and the number of entries: plain data, which a page
+  // keeps so that a new worker can restore the session (restore).
+  record() {
+    return { accepted: this.accepted.map(({ text, entry }) => ({ text, entry })), count: this.count };
   }
 
-  // Run every statement of the input; a last statement may omit its `;`.
+  // Restore a record on this session, a new one: each statement that extended
+  // the recorded session is checked again as the entry it was, repl_N, so that
+  // a later entry naming repl_N::x still finds x, though the queries and the
+  // refused statements between them are not run again and change nothing.
+  // What no longer checks is dropped, and listed in `lost`. A failed kernel
+  // instance (KernelFault) is no refusal: the restore stops and throws it.
+  async restore({ accepted, count }) {
+    for (const { text, entry } of accepted) {
+      const before = this.accepted.length;
+      this.count = entry - 1;
+      await this.statement(text);
+      const fault = moduleFault(this.program.kernel?.module);
+      if (fault) throw fault;
+      if (this.accepted.length === before) this.lost.push(text);
+    }
+    this.count = count;
+    return this;
+  }
+
+  // The same session over another program, such as a rechecked proof or a
+  // new kernel instance (restore). It throws a failed instance's KernelFault,
+  // so that its owner installs no part of it, and replays this one whole on a
+  // new instance.
+  rebase(program, base = this.base) {
+    return new ReplSession(program, { base, modules: this.modules }).restore(this.record());
+  }
+
+  // Run every statement of the input; a last statement may omit its `;`. A
+  // statement whose kernel instance failed (KernelFault) ends the input: its
+  // owner replaces the instance and rebases the session, which replays what
+  // extended it.
   async run(input) {
     const { statements, rest } = replStatements(input);
     if (rest) statements.push(rest);
     const results = [];
-    for (const statement of statements) results.push(...await this.statement(statement));
+    for (const statement of statements) {
+      results.push(...await this.statement(statement));
+      if (this.faulted) break;
+    }
     return results;
   }
+
+  get faulted() { return moduleFault(this.program.kernel?.module) !== null; }
 
   async statement(entry) {
     // Comments before a statement, as in a pasted file, are not part of it.
@@ -196,7 +255,7 @@ export class ReplSession {
 
   advance(result, text) {
     this.previous = result.name;
-    this.accepted.push(text);
+    this.accepted.push({ text, entry: Number(result.name.slice("repl_".length)) });
   }
 
   async declare(body, text) {

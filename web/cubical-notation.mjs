@@ -145,6 +145,9 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
       }
       const head = visit(fn);
       // Truncate(U, A) is written ‖A‖: the universe argument comes first.
+      // Only an archive module can build it (builtins.mjs,
+      // legacyConfinement), but its declarations are shown wherever they
+      // are used, so this keys on the assumption; it leaves with the archive.
       if (head.axiomNotation === "truncation") head.truncationArgument = 1;
       return { kind: "Call", fn: head, args };
     }

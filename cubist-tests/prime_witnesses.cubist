@@ -1,8 +1,8 @@
-// The library's binary Euclid and least divisor search, shown as values
-// (library/binary_euclid.cubist, library/prime_numbers.cubist). Euclid's
+// The library's Euclid and least divisor search over binary Nat, shown as
+// values (library/euclid.cubist, library/prime_numbers.cubist). Euclid's
 // witness for n is the least divisor of n! + 1 above one. The exact values
-// are also checked in the binary Euclid source contracts.
-import binary_euclid;
+// are also checked in the Euclid source contracts.
+import euclid;
 use nat;
 
 // Output: 2

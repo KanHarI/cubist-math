@@ -12,7 +12,9 @@ legacy builtins are labelled `LEM[Truncate]` and `Choice[Truncate]`. Steps 2
 and 3 are implemented (2026-10-28): no fixture outside the archive invokes the
 legacy builtins itself, and the reference and guides teach `Trunc` and the
 library's axioms, keeping the legacy builtins to notes on the archive. Step 4
-is not implemented yet, and step 5 waits for the archive's deletion. The
+is implemented (2026-10-28): the legacy builtins are accepted only in an
+archive module, read unedited from the archive, and refused anywhere else.
+Step 5 waits for the archive's deletion. The
 [ledger](h1-truncation-ledger.json) pins 12 checked public changes against
 `f4d1961`, rebased from `cc6b50f` on 2026-10-05, and records 5 more of two
 comparisons that step 1 retired, with the revision at which they last
@@ -65,7 +67,8 @@ Step 1 retired that form: `library/classical_axioms.cubist` states
 listed as `LEM` and `Choice`. They keep their non-computing status. Where
 nothing binds `LEM` or `Choice`, the old `LEM(U, ...)` and `Choice(U, ...)`
 keep their archived signatures, listed as `LEM[Truncate]` and
-`Choice[Truncate]`, and can coexist with the axioms in the same session. A
+`Choice[Truncate]`, in an archive module only since step 4, and can coexist
+with the axioms in the same session. A
 ledger records a replacement of a legacy builtin by the axiom of its name
 explicitly.
 
@@ -149,6 +152,8 @@ comparisons pass; no mathematical source was changed.
 and its retired comparisons, coexistence of the library's `LEM` with the
 archive's `LEM[Truncate]`, and the CLI's refusal of another baseline, of a
 retired comparison and of a module without a baseline.
+`tests/truncation-confinement.test.mjs` checks step 4's confinement in each
+place a source can come from.
 Compared modules require a baseline at the requested Git revision in
 `library/` or `archive/first-library/`; an untracked new module cannot supply
 its own baseline. `tests/proof-migration.test.mjs` checks listed/unlisted G4 changes,
@@ -647,6 +652,157 @@ transition land together.
    same step, recording their last passing revision. The alternative to a
    translator check, a source test over the roots, is weaker: it reports
    after the fact and says nothing to a REPL entry.
+
+   **Done on 2026-10-28.** The translator refuses each legacy builtin
+   written outside an archive module: a call of `Truncate`,
+   `TruncateIntro`, `TruncateProp` or `TruncateElim`, or of `LEM` or
+   `Choice` where nothing binds them (the handler in
+   `web/translator/builtins.mjs`), and such a name unbound and not called
+   (`Translator.term`'s name case), which was E343's unknown name before.
+   The refusal is E491 (`legacyConfinement`): "LEM is the archive's legacy
+   builtin, accepted only in archive modules: elsewhere use the library's
+   Trunc, from h1_truncation, and its axioms LEM and Choice, from
+   classical_axioms." A REPL or console entry meets it as a file does.
+   - **Provenance.** An archive module is text read unedited from a file
+     that really lives in the archive's root, by its real path, under any
+     name (`fromArchive` in `web/module-resolution.mjs`, beside
+     `fromLibrary`), as `CubicalProgram.discover` asks and the program's
+     `archiveSources` records for the translator. The module reader keeps
+     the file each module was read from apart from its place, where its
+     imports resolve, and its name: `read` answers with the file it read,
+     `{ text, root, file }`, and a checked file brings its own
+     (`sourceReader` in `tools/module-sources.mjs`); an answer of text alone
+     vouches for its place's own file of that name, as the browser's and
+     the verifier's readers read. A module's name vouches for nothing, and
+     nor does a place given to a source for its imports alone, as the
+     audit's, the fingerprint's and the benchmark's synthetic modules have
+     one, nor a file elsewhere aliased into the archive's place, as the
+     fingerprint's `--examples` alias documentation examples. A link into
+     the archive is the archive's, renamed or not, and a copy outside it is
+     not. A real path spells each name as its directory entry does
+     (`realpathSync.native`), so on a case-insensitive file system a path
+     in another case, `archive/first-library/CLASSICAL.cubist` or
+     `ARCHIVE/FIRST-LIBRARY/classical.cubist`, is the archive's
+     `classical.cubist`, recorded as the root lists it for a transfer.
+     A path is resolved as the operating system reads it, never collapsed
+     as text first, so `link/..` leaves the link's target, and the text is
+     read through that same real path (`fileAt` in
+     `tools/module-sources.mjs`; the command line and the verifier read
+     their files through `canonicalFile`): what is read and the file it is
+     vouched for are one file. That path is resolved once and never again
+     after the read: the root is taken from it as text, and if it is no
+     longer the file that was read (a link swapped in, or another file put
+     there, by its device and inode), no root vouches for the text. Unlike the library's labels, provenance is not transitive, so a
+     module of the user's may import the archive and use its declarations
+     over the builtins.
+   - **Where written.** A builtin is the archive's when the module its
+     syntax was written in is: the origin every syntax node carries names
+     its authored module, through every expansion (`writtenInArchive`). So
+     a notation's rule written outside the archive and expanded in an
+     archive module is refused there: a named notation's operator, numeral,
+     literal and unary minus rules, selected by `use` or applied qualified
+     or as an operator section, and a model's attached notation. A theory's
+     fields, its parents' and its derived definitions are elaborated in the
+     theory's own module, which refuses them there; an initial or free
+     model's declared type uses no assumption at all (E850, E507), so its
+     generated members never carry a builtin. Syntax the archive writes
+     stays the archive's wherever it is expanded, as its declarations do.
+   - **A refusal is no failed attempt.** Where elaboration tries an
+     argument speculatively, to infer its type for an implicit parameter, a
+     hole, a constructor's parameters or a literal rule's parse, a failure
+     is a reason to try something else or to say that nothing determines
+     the parameter (E388). The confinement's refusal is a `SourceRefusal`
+     (`web/translator/control.mjs`), which those attempts report as it is:
+     `propagateLimit` rethrows it, as it rethrows running out, and a
+     recursive match keeps it rather than trying its second elaboration.
+   - **The library's labels had the same flaw**, fixed the same way: a file
+     elsewhere aliased into the library's place took bare labels. The
+     library also requires its file of the module's own name, since a bare
+     label is a name: a library file checked under another name, through a
+     link, would give a second assumption the same label.
+   - **A program checked again** reuses a module only from the same text,
+     the same provenance, library and archive, and the same file: text its
+     root no longer holds, or holds in another file, is checked again
+     (`CubicalProgram.check`), so an export names the file it was read from.
+   - **An edited archive module is not the archive's**, in the workspace or
+     as a file outside the root: the archive is frozen until it retires,
+     with no in-place remedies (I0.5), so an edit is a module of the user's
+     that spells an archive module's name. A rule by name or by place
+     would let any workspace module named as an archive module, which the
+     page places in the archive, use the builtins, adding consumers that
+     step 5 must remove; and it is #317's rule for the library's labels. The
+     archive's files as the repository holds them are the archive's text,
+     edited or not, as library/'s are the library's: an edit there is
+     reviewed and audited. So the migration verifier counts an edited
+     module read from the archive's own files as the archive's
+     (`readEdited.placeOf` in `tools/proof-migration.mjs`), as it compares
+     edits of the archive in place, and its baselines read from the archive
+     at their revision.
+   - **Replays keep it.** `ReplayInputs` records each module's archive
+     provenance with its library provenance, so the workspace console's
+     replay of an archive module checks it with its builtins; the console's
+     own entries are modules of their own, never the archive's. A
+     transfer carries the file each source was read from
+     (`CubicalProgram.export`'s `files`), and the workbench authenticates
+     that file (`archiveProvenance`, as `libraryProvenance` for the
+     library's labels): a module read under another name, through an alias
+     or a link, replays as the archive's when its file is a file the
+     archive lists and its text is that file's. Without that provenance, a
+     transfer of an archive declaration does not replay completely and is
+     refused.
+   - The labels `LEM[Truncate]` and `Choice[Truncate]` stay, so
+     `truncation_rebuilt_classical`'s `both` lists `LEM` and
+     `LEM[Truncate]`. `universe_generic_builtins` invokes no legacy builtin.
+   - `tests/truncation-confinement.test.mjs` covers each place: the
+     archive's three call sites and `classical` from the command line, by
+     path and by name, keep the builtins; the test fixture
+     `truncation_legacy_confined` refuses each of the six, called or named,
+     and uses the archive's `Mere`; a library module, read unedited from a
+     reader's library root, is refused; from the command line, a file of
+     the user's and a copy of `classical.cubist` outside the archive are
+     refused, and a link into the archive, renamed or not, is not; a file
+     aliased into the archive's place is refused, and the archive's own
+     file aliased under another name is not; each notation mechanism above
+     is refused where an archive module expands a rule written outside the
+     archive, and accepted for one the archive writes, and a theory's
+     parent and derived definition are refused where the theory is
+     written, beside an initial model of it that verifies either way; the
+     refusal is reported through an implicit parameter's, a hole's, a
+     named argument's, a constructor's and a literal rule's inference; a
+     workbench transfer of a declaration over an aliased or renamed archive
+     file replays as the archive's, and one naming a file the archive does
+     not hold is refused; a program checked again refuses the builtins, and gives a
+     library axiom its qualified label, once the root no longer holds the
+     same text; with the browser's
+     reader, the unedited archive module checks, and an edited one, a
+     module the page places in the archive and a listed name with other
+     text are refused; so are REPL entries, over an archive module or not,
+     and a console entry in an archive module's scope; a workbench
+     transfer of an archive declaration loads only with the archive's
+     provenance and its text; and the migration verifier keeps the
+     builtins for an archive baseline and an edit in place, not for an
+     edit elsewhere.
+   - **Reference and guides.** The assumptions chapter's note confines the
+     legacy builtins to the archive's modules as the archive holds them,
+     and shows E491 by `LEM(U0, A, nn)` without `classical_axioms`, in place
+     of step 3's E406 and E407 examples, which the confinement now answers
+     first. E406 and E407, which only the legacy builtins raise, in archive
+     modules, joined E404 in the code list without a shown example; the
+     errors chapter explains E491. `docs/guides/cubist.md`,
+     `docs/guides/keywords.md` and `docs/guides/regression-contracts.md`
+     state the confinement.
+   - `Truncate`, `TruncateIntro`, `TruncateProp` and `TruncateElim` stay
+     reserved, so that a source using them meets E491 rather than an
+     unknown name (Decisions, reserved names).
+   - **The `‖A‖` notation hook stays as it is.** It renders the legacy
+     `Truncate` assumption, which only an archive module can now introduce,
+     but an archive declaration's type is shown wherever it is used, in an
+     importer's types and the inspector, so the hook keys on the assumption,
+     not on the module; it leaves with the builtins in step 5.
+   - **No ledger comparison retires.** The field-logic and Cauchy
+     comparisons read their baselines from the archive at `f4d1961`, which
+     keep the builtins, and their edited sources use none; both pass with
+     their pins unchanged (2026-10-28).
 5. **Removal, with the archive** ([I0.5](../archive-retirement.md), R5).
    `web/cubical-assumptions.mjs` goes entirely: the four truncation types, the
    legacy `LEM`/`Choice` signatures, their builtins, the notation hook and the
@@ -699,7 +855,7 @@ transition land together.
   remains unsupported.
   That step also permits ordinary declarations of `LEM` and `Choice`, with
   imported bindings resolved before the legacy builtin fallback. Step 4
-  restricts that fallback to archive modules.
+  restricted that fallback to archive modules (2026-10-28).
   `Truncate`, `TruncateIntro`, `TruncateProp` and `TruncateElim` stay
   reserved through step 4, so that a historical source fails with the
   retirement error rather than an unknown name, and are freed in step 5.

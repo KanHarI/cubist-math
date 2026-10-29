@@ -165,6 +165,11 @@ Tractable observations are compared against native full reduction.
 
 Run `node tools/shared-evaluation-probe.mjs` to measure each of the unchanged
 archive workloads in a fresh Node process (or pass `4`, `5` or `6` for one).
+(Update of 2026-10-28: the archive's Euclid was deleted, and this probe with
+it, in EVAL7's part two ([report](binary-euclid.md#part-two)); the library's
+Euclid, over binary `Nat`, falls back from the runtime at NUM1's
+compositions. The figures below remain as measured; the probe runs in a
+checkout from before the deletion, such as `27c0cc38`.)
 The tool records the revision, a modified-tree flag including untracked files,
 runtime/kernel source hashes, Node/platform, separate
 checking/snapshot/observation times, work, allocations, retained objects,

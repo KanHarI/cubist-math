@@ -20,8 +20,8 @@ test("the complete canonical .cubist corpus checks with the sole native kernel",
   // of its declarations checks. Declaring BinaryNat, BinaryPositive, RadixNat
   // and RadixPositive by their constructors removed 21 W-encoding helpers.
   // The declared pushout module added Pushout and pushout_induction. The
-  // entry points basics and euclid, which no module imports, are checked
-  // too since the archive has one list of modules (web/cubist/modules.mjs).
+  // entry point basics, which no module imports, is checked too since the
+  // archive has one list of modules (web/cubist/modules.mjs).
   // The count includes the library modules the archive imports: replacing
   // the archive's sets by the library's hlevels removed 6 declarations and
   // added hlevels' 40; unat's multiplication laws added 8 and removed
@@ -33,10 +33,12 @@ test("the complete canonical .cubist corpus checks with the sole native kernel",
   // and lists (7), which it imports; hlevels' prop_over_unique (B8 of
   // the rational normalization debugging plan) added 1; lexemes'
   // power_of_ten, which only the removed unary rationals used (NUM2), 1 less;
-  // unat's order lemmas and equality decision (NT1 of the archive
+  // and unat's order lemmas and equality decision (NT1 of the archive
   // retirement) added 8 and removed hlevels' decision and primes' 9 copies;
-  // and hlevels' subtype_injective added 1.
+  // hlevels' subtype_injective added 1; and the library's Euclid (NT2)
+  // removed the entry point euclid's 2 and primes' 10 of divisibility and
+  // primality.
   assert.deepEqual(report.importErrors, []);
-  assert.equal(report.declarations.length, 3856, "The corpus must not silently lose modules.");
+  assert.equal(report.declarations.length, 3844, "The corpus must not silently lose modules.");
   t.diagnostic(JSON.stringify(report.counts));
 });

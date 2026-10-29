@@ -200,11 +200,11 @@ test("a session over a proof sees its names, and rebases onto a rechecked proof"
 test("slash commands: /modules lists what import can load, /help the commands", async t => {
   const program = new CubicalProgram(await createCubical(), sourceReader(), { collectReferences: false });
   t.after(() => program.dispose());
-  const modules = async () => ({ library: ["lists"], archive: ["lists", "primes", "euclid", "cubical_paths"] });
+  const modules = async () => ({ library: ["lists"], archive: ["lists", "primes", "basics", "cubical_paths"] });
   const repl = new ReplSession(program, { modules });
   // The library shadows the archive's module of the same name.
   assert.deepEqual(texts(await repl.run("/modules")),
-    ["info: Library (1): lists\nArchive, the first library (3): cubical_paths, euclid, primes\nLoad one with import NAME;"]);
+    ["info: Library (1): lists\nArchive, the first library (3): basics, cubical_paths, primes\nLoad one with import NAME;"]);
   assert.deepEqual(texts(await repl.run("/modules prime")), ["info: Archive, the first library (1): primes\nLoad one with import NAME;"]);
   assert.deepEqual(texts(await repl.run("/modules zeta")), ["info: No importable module's name contains zeta."]);
   assert.deepEqual(await repl.run("/help"), await repl.run("help"));

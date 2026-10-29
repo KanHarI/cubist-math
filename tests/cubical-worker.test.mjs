@@ -139,3 +139,26 @@ test("generated declaration links and contextual summaries share binding identit
   const {session}=await worker.request("context-open",{scope:selected[0].id});
   assert.equal((await worker.request("context-run",{session,input:"x"}))[0].text,"x");
 });
+
+// A page keeps its REPL session's record, and restores it on the worker that
+// replaces one a kernel failure stopped (recordedSession in
+// web/repl-console.mjs): each statement that extended the session is checked
+// again as the entry it was, and nothing else. A refused statement stays
+// refused, and each statement that no longer checks is named, even beside a
+// query of the same entry that failed.
+test("a REPL session's record restores on a new worker as it was, statement by statement",async t=>{
+  const worker=await workerFor(t),plain=results=>results.map(({kind,text})=>({kind,text}));
+  await worker.request("check",{source:"def base : Unit := tt;",module:"main"});
+  let record;
+  for(const input of ["let kept := tt;","let surprise := added;","let saved := base; typeof absent;"])
+    ({record}=await worker.request("repl",{input,record:true}));
+  assert.deepEqual(record,{accepted:[{text:"let kept := tt;",entry:1},{text:"let saved := base;",entry:3}],count:4});
+  // The new worker checks the source as edited since: base is gone, and
+  // added is there.
+  const next=await workerFor(t);
+  await next.request("check",{source:"def added : Unit := tt;",module:"main"});
+  assert.deepEqual(await next.request("repl-restore",{record}),
+    {lost:["let saved := base;"],record:{accepted:[{text:"let kept := tt;",entry:1}],count:4}});
+  assert.deepEqual(plain(await next.request("repl",{input:"typeof surprise; typeof saved; let again := repl_1::kept;"})),
+    [{kind:"error",text:"E343: Untranslated name: surprise"},{kind:"error",text:"E343: Untranslated name: saved"},{kind:"defined",text:"again : Unit"}]);
+});
