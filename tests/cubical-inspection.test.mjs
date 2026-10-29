@@ -5,7 +5,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
-import { archiveReader } from "../tools/module-sources.mjs";
+import { fileURLToPath } from "node:url";
+import { archiveReader, sourceReader } from "../tools/module-sources.mjs";
 import { foldedInspection } from "../web/cubical-inspection.mjs";
 import { cubicalMathTree } from "../web/cubical-notation.mjs";
 import { boundedSyntaxJson } from "../web/cubical-json.mjs";
@@ -81,21 +82,23 @@ test("type simplification avoids capture, preserves definitions, and has a budge
 });
 
 test("Euclid locals retain checked syntax, source aliases, and navigable assumptions", async t => {
-  const program = new CubicalProgram(module, archiveReader("euclid")); t.after(() => program.dispose());
-  const source = await archiveSource("euclid"), result = await program.check(source, "euclid");
+  const path = fileURLToPath(new URL("../library/euclid.cubist", import.meta.url));
+  const program = new CubicalProgram(module, sourceReader({ path })); t.after(() => program.dispose());
+  const source = await readFile(path, "utf8"), result = await program.check(source, "euclid");
   assert.equal(result.complete, true);
-  const link = result.links.find(link => link.name === "hd");
+  const link = result.links.find(link => link.name === "least");
   const view = program.inspect(link.binding);
-  assert.match(view.typeText, /Divides\(succ\(succ\(i\)\), m\)/);
-  assert.equal(view.folded.reference.name, "hd");
+  assert.match(view.typeText, /IsLeastDivisor\(succ\(factorial\(n\)\), p\)/);
+  assert.equal(view.folded.reference.name, "least");
   assert.equal(view.context[0].label, "n");
-  assert.equal(program.inspect(view.context[0].binding).type.tag, "Sort");
-  const i = view.locals.find(local => local.name === "i");
-  assert.equal(program.inspect(i.binding).type.tag, "Sort");
-  assert.equal(source.slice(view.symbols[i.binding].definitionStart).startsWith("i,"), true);
+  const natural = { tag: "DefRef", name: "nat__Nat" };
+  assert.deepEqual(program.inspect(view.context[0].binding).type, natural);
+  const p = view.locals.find(local => local.name === "p");
+  assert.deepEqual(program.inspect(p.binding).type, natural);
+  assert.equal(source.slice(view.symbols[p.binding].definitionStart).startsWith("p,"), true);
   assert.ok(JSON.stringify(view.type).includes('"Fst"'));
   assert.ok(!JSON.stringify(view.type).includes("DisplayRef"));
-  assert.equal(view.locals.some(local => local.name === "hd"), false);
+  assert.equal(view.locals.some(local => local.name === "least"), false);
   // Export reconstructs terms from source, never trusts the display projection.
   const payload = program.export(link.binding);
   assert.equal(JSON.stringify(payload).includes("DisplayRef"), false);
@@ -153,11 +156,20 @@ test("path notation and raw syntax display stay bounded on shared terms", () => 
 
 test("axiom labels and derived cubical helpers remain inspectable", async t => {
   const { program } = await cases(t, "axiom_labels");
-  const view = program.inspect("inspection_axiom_labels__Mere");
-  const tree = cubicalMathTree(view.folded.expression, view.symbols, undefined, { dimensions: (view.dimensions ?? []).map(([name]) => name) });
-  assert.equal(tree.body.fn.axiomNotation, "truncation");
-  assert.equal(tree.body.fn.truncationArgument, 1);
-  assert.equal(program.inspect(tree.body.fn.binding).expression.tag, "Var");
+  const tree = view => cubicalMathTree(view.folded.expression, view.symbols, undefined, { dimensions: (view.dimensions ?? []).map(([name]) => name) });
+  // The library's excluded middle shows by its label, with no notation of
+  // its own, and inspects as the assumption it is.
+  const lem = tree(program.inspect("inspection_axiom_labels__excluded")).body.body.fn;
+  assert.deepEqual([lem.name, lem.binding, lem.axiomNotation], ["LEM", program.checker.axioms.get("classical_axioms__LEM"), undefined]);
+  assert.equal(program.inspect(lem.binding).expression.tag, "Var");
+  // The archive's legacy Truncate(U, A) is written ‖A‖ until it retires
+  // with the archive: its own truncation module shows it so.
+  const archive = new CubicalProgram(module, archiveReader("truncation")); t.after(() => archive.dispose());
+  assert.equal((await archive.check(await archiveSource("truncation"), "truncation")).complete, true);
+  const truncate = tree(archive.inspect("truncation__Mere")).body.fn;
+  assert.equal(truncate.axiomNotation, "truncation");
+  assert.equal(truncate.truncationArgument, 1);
+  assert.equal(archive.inspect(truncate.binding).expression.tag, "Var");
   const ordinary = cubicalMathTree(variable("Truncate"), { Truncate: { name: "Truncate" } }, undefined, { dimensions: [] });
   assert.equal(ordinary.axiomNotation, undefined);
 });

@@ -16,10 +16,11 @@
 // SearchLimit(…), a
 // value assigned to `.message`, `detail` or `reason`, a linter warning, a
 // function that returns a message template, and a kernel failure, ck_fail(k,
-// "…"). A template's `${…}` becomes `…`, which matches any text. A literal
-// counts only when it reads as a sentence: it starts with a letter, …, a
-// tilde (as ~p does) or a minus (as -x does), and has a space and at least ten other
-// characters, so names and keys are not messages.
+// "…"), or a recursion guard's, ck_enter(k, "…"). A template's `${…}` becomes
+// `…`, which matches any text. A literal counts only when it reads as a
+// sentence: it starts with a letter, …, a tilde (as ~p does) or a minus (as
+// -x does), and has a space and at least ten other characters, so names and
+// keys are not messages.
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -114,7 +115,7 @@ function javascriptMessages(file) {
 // nested call. C's adjacent string literals form one message.
 function kernelMessages(file) {
   const source = readFileSync(join(root, file), "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, ""), found = [];
-  for (const match of source.matchAll(/\b(?:ck_formula_result|ck_fail_as|ck_fail|fail_as|fail)\s*\(\s*k\s*,/g)) {
+  for (const match of source.matchAll(/\b(?:ck_formula_result|ck_fail_as|ck_fail|ck_enter|fail_as|fail)\s*\(\s*k\s*,/g)) {
     for (let i = match.index + match[0].length, depth = 1; i < source.length && depth;) {
       if (source[i] === "(") depth++;
       else if (source[i] === ")") depth--;

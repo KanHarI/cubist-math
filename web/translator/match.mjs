@@ -15,7 +15,7 @@
 // generalizes only where its result type mentions the variable.
 // Untrusted: the kernel checks every clause at its clause type.
 import { isResourceLimit } from "../resource-limits.mjs";
-import {propagateElaborationStop} from "./control.mjs";
+import {propagateElaborationStop,SourceRefusal} from "./control.mjs";
 import {T,substituteTerm,substituteDimension,freeNames} from "./core.mjs";
 import {interval as I} from "./lattice.mjs";
 import {abstractMotive} from "./motives.mjs";
@@ -33,7 +33,9 @@ import {constructorText} from "./qualified-names.mjs";
 
 // The keyword a match or an induction was written with, for messages.
 const keyword = n => n.kind === "induction" || n.induction === true ? "induction" : "match";
-const resourceFailure=error=>isResourceLimit(error?.kind)||error instanceof SearchLimit;
+// A failure no other elaboration answers: running out, or a refused source
+// (control.mjs, SourceRefusal), which a second elaboration would only hide.
+const resourceFailure=error=>isResourceLimit(error?.kind)||error instanceof SearchLimit||error instanceof SourceRefusal;
 
 // The environment key of the declaration's own name, for recursion: a key
 // no source name can spell.
@@ -598,13 +600,15 @@ function automaticClauseAt(translator, scope, type, name, node, proof, index) {
     const hints = (proof?.body[0].hints ?? []).map(node => {
       const term = translator.term(node, at, null); return {term,type:at.infer(term).type};
     });
-    const search = new HLevelSearch(at, hints, term => translator.shown(term, at), locals,
+    // The search's refusals are printed with the message that reports them.
+    const message = translator.message(at);
+    const search = new HLevelSearch(at, hints, message.show, locals,
       {instantiate:true, rules:orderedHLevelRules(translator.simpRegistry)});
     try { return pathEvidence(search, path, at); }
     catch (error) {
       propagateElaborationStop(error);
-      if (!(error instanceof HLevelUnproved)) throw error;
-      throw scope.unit.locate(Error(`Cannot generate ${name}: ${translator.shown(error.chain.at(-1).type, at)} must be ${error.chain.at(-1).level === 0 ? "a proposition" : `of h-level ${error.chain.at(-1).level}`}; ${error.reason}. Give checked h-level evidence, or an explicit obligation.`), node);
+      if (!(error instanceof HLevelUnproved)) throw message.resolve(error);
+      throw scope.unit.locate(Error(message.text(`Cannot generate ${name}: ${message.show(error.chain.at(-1).type)} must be ${error.chain.at(-1).level === 0 ? "a proposition" : `of h-level ${error.chain.at(-1).level}`}; ${error.reason}. Give checked h-level evidence, or an explicit obligation.`)), node);
     }
   };
   const term = translator.search(scope, `Generating ${name}`, at => build(at, type));

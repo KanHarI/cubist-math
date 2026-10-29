@@ -2,16 +2,24 @@ import "./fresh-build.mjs";
 import {sourceReader} from "../tools/module-sources.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
-import {readFile} from "node:fs/promises";
+import {readFile, mkdtemp, rm, writeFile} from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { fileURLToPath } from "node:url";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalKernel } from "../web/cubical-kernel.mjs";
 import { InstructionGraph } from "../web/cubical-instructions.mjs";
 import { benchmark, benchmarkAreas, category } from "../web/benchmark-runner.mjs";
-import { areaLabels, savedReport } from "../web/benchmark-areas.mjs";
+import { areaLabels, savedReport, declarationLink, repository } from "../web/benchmark-areas.mjs";
 import { parse } from "../web/cubist/parser.mjs";
 import { diagnosticCode } from "../web/diagnostics.mjs";
 import { InstructionDriver } from "../web/cubical-instruction-driver.mjs";
 import { budget } from "./timing.mjs";
+import { committedSource, pinnedSources } from "../tools/benchmark-cubical.mjs";
+
+const checkout = fileURLToPath(new URL("../", import.meta.url));
 
 // A kernel session with its instruction graph, and a definition of tt : Unit
 // admitted by Define, recorded under its name as the elaborator records one.
@@ -120,6 +128,93 @@ test("benchmark measures an area, the library, the archive or the Cubist tests, 
   await assert.rejects(benchmark({ area: "elsewhere" }), /library, archive or tests, not elsewhere/);
 });
 
+// The benchmark page links a row of a saved report to its declaration's
+// source at the revision the report measured (declarationLink), not to
+// today's workspace, where a declaration measured then may be gone or
+// changed; and only where that source is the one measured: a saved report
+// pins a module (tools/benchmark-cubical.mjs's pinnedSources) with the
+// SHA-256 of the text it measured, which is the file's at the revision, and
+// a report measured on a clean tree pins every module. A row of a module it
+// does not pin has no link. A run in the browser opens its rows in the
+// workspace.
+test("every link from a saved benchmark opens the source it measured, at the revision it measured", async () => {
+  for (const area of Object.keys(benchmarkAreas)) {
+    const report = JSON.parse(await readFile(new URL(`../web/${savedReport(area)}`, import.meta.url), "utf8"));
+    assert.ok(report.revision, `${area}: the report records its revision`);
+    const modules = [...new Set(report.declarations.map(row => row.module))];
+    if (!report.dirty) assert.deepEqual(modules.filter(name => !report.sources?.[name]), [], `${area}: a clean report pins every module`);
+    const pinned = Object.entries(report.sources ?? {});
+    // Every pinned file at that revision, read in one batch: a header, then its text.
+    const batch = execFileSync("git", ["cat-file", "--batch"], { cwd: checkout, maxBuffer: 1 << 28,
+      input: pinned.map(([, { path }]) => `${report.revision}:${path}\n`).join("") });
+    const lines = new Map();
+    for (let at = 0, i = 0; i < pinned.length; i++) {
+      const [name, { path, sha256 }] = pinned[i], end = batch.indexOf(10, at), header = batch.subarray(at, end).toString();
+      const size = Number(/^\w+ blob (\d+)$/.exec(header)?.[1]);
+      assert.ok(Number.isInteger(size), `${area}: ${path} at ${report.revision}: ${header}`);
+      const text = batch.subarray(end + 1, end + 1 + size);
+      assert.equal(createHash("sha256").update(text).digest("hex"), sha256, `${area}: ${name} is pinned to the text it measured`);
+      lines.set(name, text.toString().split("\n").length);
+      at = end + 1 + size + 1;
+    }
+    for (const row of report.declarations) {
+      const source = report.sources?.[row.module], label = `${area}: ${row.module}.${row.name}`;
+      assert.equal(declarationLink(report, row), source ? `${repository}/blob/${report.revision}/${source.path}#L${row.line}` : null, label);
+      if (source) assert.ok(row.line >= 1 && row.line <= lines.get(row.module), label);
+    }
+  }
+  assert.equal(declarationLink({ declarations: [] }, { module: "nat", name: "nat_add", line: 3 }), "proof.html?proof=nat&name=nat_add");
+});
+
+// A report measured with working changes pins only the modules whose measured
+// text is the committed one, byte for byte: a declaration added in memory to
+// nat, at a line past the committed file's end, gets no link into the
+// committed nat; nor does a file that is not valid UTF-8, whose byte 0xff and
+// any other invalid byte both decode to U+FFFD.
+test("a saved benchmark pins no source it did not measure", async t => {
+  const revision = execFileSync("git", ["rev-parse", "HEAD"], { cwd: checkout, encoding: "utf8" }).trim();
+  const committed = path => committedSource(revision, path, checkout);
+  const nat = committed("library/nat.cubist").toString(), lists = committed("library/lists.cubist").toString();
+  const edited = `${nat}\ncomputable def added_in_memory : Nat := 0;\n`;
+  // A repository whose one file has the byte 0xff in a comment; the working
+  // tree's 0xfe there decodes as it does.
+  const scratch = await mkdtemp(join(tmpdir(), "cubist-pins-"));
+  t.after(() => rm(scratch, { recursive: true, force: true }));
+  // The scratch repository ignores the caller's Git: no inherited GIT_*
+  // variable (GIT_DIR or GIT_INDEX_FILE would send writes elsewhere), and a
+  // home of its own and no system files, so no settings, ignore or attribute
+  // files, commit signing, hooks, templates or identity of theirs.
+  const inherited = Object.entries(process.env).filter(([name]) => !name.startsWith("GIT_"));
+  const isolated = { ...Object.fromEntries(inherited), HOME: scratch, XDG_CONFIG_HOME: scratch,
+    GIT_CONFIG_NOSYSTEM: "1", GIT_ATTR_NOSYSTEM: "1",
+    GIT_AUTHOR_NAME: "test", GIT_AUTHOR_EMAIL: "test@example.com",
+    GIT_COMMITTER_NAME: "test", GIT_COMMITTER_EMAIL: "test@example.com" };
+  const git = args => execFileSync("git", ["-c", "commit.gpgsign=false", "-c", "core.hooksPath=/dev/null", ...args],
+    { cwd: scratch, encoding: "utf8", env: isolated });
+  const bytes = byte => Buffer.from(`// ${byte}\ncomputable def odd : Unit := tt;\n`, "latin1");
+  git(["init", "-q", "--template="]);
+  await writeFile(join(scratch, "invalid.cubist"), bytes("\xff"));
+  git(["add", "invalid.cubist"]);
+  git(["commit", "-q", "-m", "invalid UTF-8"]);
+  const scratchRevision = git(["rev-parse", "HEAD"]).trim(), invalid = bytes("\xfe").toString();
+  const scratchCommitted = path => committedSource(scratchRevision, path, scratch, isolated);
+  assert.equal(invalid, bytes("\xff").toString(), "both bytes decode to U+FFFD");
+  assert.deepEqual(scratchCommitted("invalid.cubist"), bytes("\xff"), "the committed bytes are read back");
+  assert.deepEqual(pinnedSources([{ name: "invalid", path: "invalid.cubist", text: invalid }], scratchCommitted), {});
+  const sources = pinnedSources([
+    { name: "nat", path: "library/nat.cubist", text: edited },
+    { name: "lists", path: "library/lists.cubist", text: lists },
+    { name: "uncommitted", path: "library/uncommitted.cubist", text: "computable def fresh : Unit := tt;\n" },
+  ], committed);
+  assert.deepEqual(Object.keys(sources), ["lists"]);
+  assert.equal(sources.lists.sha256, createHash("sha256").update(committed("library/lists.cubist")).digest("hex"));
+  const report = { revision, dirty: true, sources, declarations: [] }, line = edited.split("\n").length - 1;
+  assert.ok(line > nat.split("\n").length - 1, "the added declaration lies past the committed file");
+  assert.equal(declarationLink(report, { module: "nat", name: "added_in_memory", line }), null);
+  assert.equal(declarationLink(report, { module: "uncommitted", name: "fresh", line: 1 }), null);
+  assert.equal(declarationLink(report, { module: "lists", name: "List", line: 4 }), `${repository}/blob/${revision}/library/lists.cubist#L4`);
+});
+
 test("benchmark lists a failure or block its source's comment states as intended, not as one to fix", async () => {
   const body = "import unat;\ndef bad : 0 = 1 { exact refl(0); }\ndef dependent := bad;\ndef other : 0 = 1 { exact refl(0); }\n";
   const read = source => async name => name === "sample" ? source : sourceReader()(name);
@@ -190,7 +285,7 @@ test("the instruction kernel admits each declaration the benchmark counts", asyn
 test("benchmark shares source contracts without hiding invalid contracts or unrelated failures",async()=>{
   const sources={valid:"# test(refusal) # expect_error(E606) def bad : Void := tt;",
     invalid:"# test(wrong_contract) # expect_error(E343) def bad : Void := tt;",
-    assumption:"# test(assumption) # expect_axioms([]) def x := Truncate(U0,Unit);",
+    assumption:"# test(assumption) # expect_axioms([]) def x := axiom Unit;",
     unrelated:"def bad : Void := tt;"};
   const report=await benchmark({area:"tests",modules:Object.keys(sources),limitMs:budget(10000),readSource:async name=>sources[name]});
   assert.deepEqual(report.declarations.map(row=>[row.module,row.category]),

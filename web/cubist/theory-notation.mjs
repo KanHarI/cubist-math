@@ -16,8 +16,10 @@ export function validateFieldNotation(item,{theory:T,isCarrier}) {
     if(unary||item.params.length!==2||left?.text!==item.params[0].name.text||right?.text!==item.params[1].name.text)
       throw located(Error(`A notation names a family's two indices in order, as in le(x, y : M) : prop U notation x <= y.`),item.notation);
   } else if(numeral) {
-    if(item.kind!=="derived"||item.params.length!==1||!(item.params[0].type.kind==="name"&&item.params[0].type.name==="UNat"))
-      throw located(Error(`notation numeral reads a plain numeral: it marks a derived operation of one natural number, as def of_nat(n : UNat) : R := … notation numeral.`),item.notation);
+    // The natural number is unary or binary: its checked type decides how
+    // a numeral is built (translate.mjs, rawNumeral).
+    if(item.kind!=="derived"||item.params.length!==1||!(item.params[0].type.kind==="name"&&["UNat","BNat","Nat"].includes(item.params[0].type.name)))
+      throw located(Error(`notation numeral reads a plain numeral: it marks a derived operation of one natural number, as def of_nat(n : BNat) : R := … notation numeral.`),item.notation);
   } else {
     if(unary) {
       if(!["operation","derived"].includes(item.kind)||item.params.length!==1||left.text!==item.params[0].name.text)

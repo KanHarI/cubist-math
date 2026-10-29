@@ -1,14 +1,14 @@
 {
-  "version": 8,
-  "generatedAt": "2026-10-26T14:38:46.028Z",
-  "revision": "d88f02cbb78aeb7c97bb9316268e340d4c987b84",
-  "modified": true,
+  "version": 10,
+  "generatedAt": "2026-10-28T11:34:04.367Z",
+  "revision": "1ba82af934e33aab4d9d23dabc36a7199cfc2ff8",
+  "modified": false,
   "build": {
-    "kernelSources": "ee6c58b8a64a341332f955a2560da6c27a12f85e66ec34784f3ad7614a089161",
-    "kernelOutputs": "26b702770e79931fa9635b186dfd1b6a41ad326f03bd2b756aa8801063e91423"
+    "kernelSources": "0df2c8cddc23c0fc58f62b6445e1f4cce3138c28685613d85f157584afa0391a",
+    "kernelOutputs": "74b9c89306de5aab9d36eb54c58bf04b3931ddac0499379c218fdeb4c64fe0f6"
   },
   "machine": {"node":"v24.13.0","platform":"darwin arm64","cpu":"Apple M3 Pro","cpus":12},
-  "settings": {"samples":3,"warm":3,"depth":true,"optimizations":"the CLI's defaults","stack":"Node's default"},
+  "settings": {"samples":5,"warm":3,"depth":true,"optimizations":"the CLI's defaults","stack":"Node's default"},
   "method": "Each sample is a new Node process that loads the kernel, runs the workload's setup entries in a new REPL session (web/repl-session.mjs, as the CLI does) and its entry once cold, then the warm runs in the same session. A further process times the cold entry with no phase observed, for the observation's cost. An outcome's text is a preview past 160 characters, with the whole text's length and hash. A value form, which a REPL or print workload shows, is its whole text, never cut at a width; a full normal form, which its !!! twin shows, is displayed to at most 1000 characters, so an outcome whose entry normalizes the whole term also digests that normal form, its bound variables and dimensions numbered by binding depth. Phases are observed by wrapping the methods named in `phases`; a phase's figures exclude the phases nested in it. Counters are the kernel's cumulative work and the arena's net growth, compared across the cold samples; times are medians over samples on this machine, and include the observation's wrappers. Failed entries count the work and time spent before they failed. A value form the runtime observed records the runtime's own counters, its query's steps and cells, as `runtime`, beside the kernel's. The depth sample repeats the cold entry, measuring the syntax depth of the nodes each normalization, comparison and check allocated, its times discarded.",
   "contracts": {
     "repl": "REPL evaluate: the value form, computed as far as it is shown",
@@ -17,1311 +17,1860 @@
     "printNormal": "print(evaluate(!!!e)): the full normal form, printed",
     "expected": "evaluate e expecting v: the normal form, stuck definitions folded, compared with v's",
     "pattern": "evaluate e expecting p, p with holes or marks: each part computed as far as p observes it",
-    "patternNormal": "evaluate e expecting !!!p: the full normal form, matched part by part",
-    "scratch": "closure experiment: the demanded natural only; untrusted, certifies nothing"
+    "patternNormal": "evaluate e expecting !!!p: the full normal form, matched part by part"
   },
   "phases": {
     "elaborate": "Translator.term: elaborating source terms, with the kernel queries elaboration asks",
     "check": "checker.checkSyntax, inside verify: checking the elaborated term",
     "normalize": "kernel.normalize, wherever it is asked: the kernel's normalization, whose result is syntax (no separate readback)",
     "decode": "checker.syntax.decode of a normal form, inside checker.normalForm: kernel syntax into terms",
-    "demand": "checker.derivedHead and checker.runtimeRefusal, outside other phases: the weak heads a pattern's parts demand, and a value form's type's",
+    "demand": "checker.derivedHead, outside other phases: the weak heads a pattern's parts demand",
     "runtime": "checker.runtimeQuery and RuntimeQuery.observeNow, outside other phases: the runtime's snapshot and observations of a value form",
     "inventory": "checker.evaluated's own work: the closedness, assumption and kernel-extension inventory",
     "compare": "checker.equal, outside other phases: comparing types, normal forms and patterns' parts",
     "render": "checker.displayText, outside other phases: printing a value or message",
-    "other": "the rest of the entry: parsing, module and session bookkeeping, transactions",
-    "execute": "scratch: forcing the definition to a pair",
-    "readback": "scratch: forcing the pair's first component to a number; laziness defers most computation here"
+    "other": "the rest of the entry: parsing, module and session bookkeeping, transactions"
   },
   "workloads": [
     {
       "id": "euclid-3",
-      "series": "kernel",
       "contract": "repl",
-      "setup": "import euclid; use unat;",
+      "setup": "import euclid; use nat;",
       "entry": "evaluate euclid(3);",
-      "outcome": {"status":"value","text":"(7, (5, <path>, <fun>), tt)","length":27,"sha256":"abb63b30b259dd07"},
+      "outcome": {"status":"value","text":"(7, (tt, <fun>), tt)","length":20,"sha256":"7284170f81cf29a2"},
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1425.366,"min":1396.885,"max":1559.179,"samples":3}
+        "instructions": 235246,
+        "rejected": 307,
+        "instructionSteps": 489521,
+        "queries": 14378,
+        "querySteps": 180611,
+        "nodes": 20319,
+        "ms": {"median":1518.951,"min":1458.726,"max":1664.688,"samples":5}
       },
-      "total": {"instructions":12,"instructionSteps":50,"queries":1,"querySteps":1,"nodes":14,"peakNodes":3701,"peakBytes":1377024},
-      "runtime": {"steps":247542,"allocatedCells":145770,"forces":33635,"hits":5780,"beta":9908,"iota":3131,"maxFrames":133,"snapshotNodes":2931},
-      "ms": {"cold":{"median":89.078,"min":17.674,"max":96.246,"samples":3},"unobserved":97.069,"warm":{"median":38.78,"min":6.08,"max":93.682,"samples":9}},
+      "total": {"instructions":105,"instructionSteps":462,"queries":17,"querySteps":26777,"nodes":7253,"peakNodes":27572,"peakBytes":3151872},
+      "runtime": {"steps":3690,"allocatedCells":3643,"forces":430,"hits":13,"beta":118,"iota":23,"maxFrames":104,"snapshotNodes":379,"snapshotDefinitions":21},
+      "ms": {"cold":{"median":8.996,"min":8.366,"max":9.532,"samples":5},"unobserved":6.745,"warm":{"median":3.391,"min":2.411,"max":4.374,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":10,"instructionSteps":33,"nodes":9,"coldMs":0.67,"warmMs":0.272},
-        "check": {"calls":1,"instructions":2,"instructionSteps":17,"nodes":5,"coldMs":0.063,"warmMs":0.009},
-        "inventory": {"calls":1,"coldMs":0.057,"warmMs":0.024},
-        "demand": {"calls":1,"queries":1,"querySteps":1,"coldMs":0.035,"warmMs":0.009},
-        "runtime": {"calls":22,"coldMs":80.281,"warmMs":35.22},
-        "render": {"calls":1,"coldMs":0.423,"warmMs":0.35},
-        "other": {"calls":1,"coldMs":3.26,"warmMs":0.655}
+        "check": {"calls":2,"instructions":6,"instructionSteps":49,"nodes":10,"coldMs":0.142,"warmMs":0.017},
+        "inventory": {"calls":2,"coldMs":0.105,"warmMs":0.035},
+        "normalize": {"calls":1,"queries":1,"querySteps":1145,"nodes":205,"coldMs":0.12,"warmMs":0.013},
+        "decode": {"calls":1,"coldMs":0.005,"warmMs":0.002},
+        "elaborate": {"calls":1,"instructions":99,"instructionSteps":413,"queries":6,"querySteps":128,"nodes":147,"coldMs":3.13,"warmMs":1.747},
+        "runtime": {"calls":3,"failures":1,"coldMs":1.485,"warmMs":0.303},
+        "demand": {"calls":10,"queries":10,"querySteps":25504,"nodes":6891,"coldMs":1.681,"warmMs":0.026},
+        "render": {"calls":1,"coldMs":0.175,"warmMs":0.109},
+        "other": {"calls":1,"coldMs":1.954,"warmMs":0.976}
       },
       "depth": {
-        "check": {"depth":9,"allocated":5,"chain":["Sigma.1 ×2","App.0","App.1 ×3","App.0","Con.0","Sort"],"kinds":{"App":3,"Sigma":2}}
+        "check": {
+          "depth": 15,
+          "allocated": 5,
+          "chain": ["Sigma.1 ×2","App.0","App.1","App.0","App.1 ×2","App.0","App.1 ×4","App.0","Con.0","Sort"],
+          "kinds": {"App":3,"Sigma":2}
+        },
+        "normalize": {
+          "depth": 86,
+          "allocated": 205,
+          "chain": [
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "Lam.1",
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "App.1",
+            "App.0",
+            "Elim.1",
+            "List.1",
+            "List.0",
+            "Lam.1 ×3",
+            "App.0",
+            "Elim.1",
+            "List.0"
+          ],
+          "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
+        }
       },
-      "maxRssMiB": {"median":182.9,"min":181.2,"max":188.1,"samples":3}
+      "maxRssMiB": {"median":322.8,"min":320,"max":324,"samples":5}
     },
     {
       "id": "euclid-3-normal",
-      "series": "kernel",
       "contract": "replNormal",
-      "setup": "import euclid; use unat;",
+      "setup": "import euclid; use nat;",
       "entry": "evaluate !!!euclid(3);",
       "outcome": {
         "status": "value",
-        "text": "(7, (5, refl(7), fun (j611 : UNat, smaller : (induction j611 return UNat -> U0 { zero => fun (y27 : UNat) => Unit; succ a_rec => fun (n : UNat) => induction n …",
+        "text": "(7, (tt, fun (d26 : BNat, above27 : match match d26 return BOrdering { b_zero => b_greater; b_positive(x) => match x return BOrdering { bp_one => b_equal; bp_e…",
         "length": 1000,
-        "sha256": "68670fbd6c751e57",
-        "normal": "d10d7930def8efbb"
+        "sha256": "097c6a6c3f91f257",
+        "normal": "cf584931db32d286"
       },
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1406.187,"min":1319.199,"max":1440.431,"samples":3}
+        "instructions": 235246,
+        "rejected": 307,
+        "instructionSteps": 489521,
+        "queries": 14378,
+        "querySteps": 180611,
+        "nodes": 20319,
+        "ms": {"median":1512.611,"min":1369.881,"max":2491.653,"samples":5}
       },
-      "total": {"instructions":12,"instructionSteps":50,"queries":1,"querySteps":223501,"nodes":54783,"peakNodes":58470,"peakBytes":5374720},
+      "total": {"instructions":105,"instructionSteps":462,"queries":8,"querySteps":402932,"nodes":104817,"peakNodes":125136,"peakBytes":10622976},
       "ms": {
-        "cold": {"median":142.867,"min":136.177,"max":174.082,"samples":3},
-        "unobserved": 175.424,
-        "warm": {"median":64.173,"min":13.459,"max":80.491,"samples":9}
+        "cold": {"median":125.457,"min":111.259,"max":186.537,"samples":5},
+        "unobserved": 114.438,
+        "warm": {"median":68.561,"min":56.092,"max":105.348,"samples":15}
       },
       "phases": {
-        "elaborate": {"calls":1,"instructions":10,"instructionSteps":33,"nodes":9,"coldMs":0.738,"warmMs":0.541},
-        "check": {"calls":1,"instructions":2,"instructionSteps":17,"nodes":5,"coldMs":0.163,"warmMs":0.012},
-        "inventory": {"calls":1,"coldMs":0.129,"warmMs":0.024},
-        "normalize": {"calls":1,"queries":1,"querySteps":223501,"nodes":54769,"coldMs":46.457,"warmMs":0.006},
-        "decode": {"calls":1,"coldMs":5.437,"warmMs":0.004},
-        "render": {"calls":1,"coldMs":73.928,"warmMs":62.487},
-        "other": {"calls":1,"coldMs":2.35,"warmMs":0.638}
+        "check": {"calls":2,"instructions":6,"instructionSteps":49,"nodes":10,"coldMs":0.128,"warmMs":0.026},
+        "inventory": {"calls":2,"coldMs":0.099,"warmMs":0.049},
+        "normalize": {"calls":2,"queries":2,"querySteps":402804,"nodes":104660,"coldMs":21.09,"warmMs":0.029},
+        "decode": {"calls":2,"coldMs":19.905,"warmMs":0.012},
+        "elaborate": {"calls":1,"instructions":99,"instructionSteps":413,"queries":6,"querySteps":128,"nodes":147,"coldMs":2.942,"warmMs":2.462},
+        "render": {"calls":1,"coldMs":75.484,"warmMs":62.155},
+        "other": {"calls":1,"coldMs":1.699,"warmMs":1.291}
       },
       "depth": {
-        "check": {"depth":9,"allocated":5,"chain":["Sigma.1 ×2","App.0","App.1 ×3","App.0","Con.0","Sort"],"kinds":{"App":3,"Sigma":2}},
+        "check": {
+          "depth": 15,
+          "allocated": 5,
+          "chain": ["Sigma.1 ×2","App.0","App.1","App.0","App.1 ×2","App.0","App.1 ×4","App.0","Con.0","Sort"],
+          "kinds": {"App":3,"Sigma":2}
+        },
         "normalize": {
-          "depth": 152,
-          "allocated": 54769,
-          "chain": ["App.1","Inl.1","App.1","Pair.2","App.1","Pair.2","App.1","Pair.1","App.1","Pair.2","Fst.0","Snd.0 ×2","App.1","Pair.2","App.1","Pair.2"],
-          "kinds": {"App":20815,"Lam":9162,"Pi":4837,"Var":3406,"Path":3016,"Sum":2735,"PApp":2012,"PLam":1424}
+          "depth": 264,
+          "allocated": 104455,
+          "chain": [
+            "Pair.2",
+            "Pair.1",
+            "Pair.2",
+            "Lam.1 ×4",
+            "Comp.2 ×9",
+            "SumRec.2",
+            "Lam.1",
+            "Abort.1",
+            "App.1",
+            "Comp.2 ×7",
+            "App.0 ×2",
+            "Elim.1",
+            "List.1",
+            "List.0",
+            "Lam.1 ×3",
+            "App.0 ×2"
+          ],
+          "kinds": {"App":45696,"Lam":11179,"Var":8678,"Tube":7414,"Comp":4789,"Path":4712,"PApp":4177,"Pi":3290}
         }
       },
-      "maxRssMiB": {"median":220.3,"min":219,"max":220.7,"samples":3}
+      "maxRssMiB": {"median":433.8,"min":432.1,"max":449.8,"samples":5}
     },
     {
       "id": "euclid-3-print",
-      "series": "kernel",
       "contract": "print",
-      "setup": "import euclid; use unat;",
+      "setup": "import euclid; use nat;",
       "entry": "print(evaluate(euclid(3)));",
-      "outcome": {"status":"value","text":"(7, (5, <path>, <fun>), tt)","length":27,"sha256":"abb63b30b259dd07"},
+      "outcome": {"status":"value","text":"(7, (tt, <fun>), tt)","length":20,"sha256":"7284170f81cf29a2"},
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1398.408,"min":1380.24,"max":1472.454,"samples":3}
+        "instructions": 235246,
+        "rejected": 307,
+        "instructionSteps": 489521,
+        "queries": 14378,
+        "querySteps": 180611,
+        "nodes": 20319,
+        "ms": {"median":1784.529,"min":1543.243,"max":1912.556,"samples":5}
       },
-      "total": {"instructions":12,"instructionSteps":50,"queries":1,"querySteps":1,"nodes":14,"peakNodes":3701,"peakBytes":1377024},
-      "runtime": {"steps":247542,"allocatedCells":145770,"forces":33635,"hits":5780,"beta":9908,"iota":3131,"maxFrames":133,"snapshotNodes":2931},
-      "ms": {"cold":{"median":91.801,"min":79.521,"max":98.942,"samples":3},"unobserved":64.293,"warm":{"median":42.9,"min":5.905,"max":61.564,"samples":9}},
+      "total": {"instructions":105,"instructionSteps":462,"queries":17,"querySteps":26777,"nodes":7253,"peakNodes":27572,"peakBytes":3151872},
+      "runtime": {"steps":3690,"allocatedCells":3643,"forces":430,"hits":13,"beta":118,"iota":23,"maxFrames":104,"snapshotNodes":379,"snapshotDefinitions":21},
+      "ms": {"cold":{"median":10.371,"min":9.029,"max":12.611,"samples":5},"unobserved":8.256,"warm":{"median":4.065,"min":2.514,"max":5.725,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":10,"instructionSteps":33,"nodes":9,"coldMs":0.727,"warmMs":0.376},
-        "check": {"calls":1,"instructions":2,"instructionSteps":17,"nodes":5,"coldMs":0.063,"warmMs":0.01},
-        "inventory": {"calls":1,"coldMs":0.061,"warmMs":0.027},
-        "demand": {"calls":1,"queries":1,"querySteps":1,"coldMs":0.038,"warmMs":0.015},
-        "runtime": {"calls":22,"coldMs":86.112,"warmMs":39.295},
-        "render": {"calls":1,"coldMs":0.419,"warmMs":0.384},
-        "other": {"calls":1,"coldMs":4.991,"warmMs":0.975}
+        "check": {"calls":2,"instructions":6,"instructionSteps":49,"nodes":10,"coldMs":0.166,"warmMs":0.02},
+        "inventory": {"calls":2,"coldMs":0.123,"warmMs":0.041},
+        "normalize": {"calls":1,"queries":1,"querySteps":1145,"nodes":205,"coldMs":0.134,"warmMs":0.016},
+        "decode": {"calls":1,"coldMs":0.006,"warmMs":0.003},
+        "elaborate": {"calls":1,"instructions":99,"instructionSteps":413,"queries":6,"querySteps":128,"nodes":147,"coldMs":3.825,"warmMs":1.988},
+        "runtime": {"calls":3,"failures":1,"coldMs":1.566,"warmMs":0.392},
+        "demand": {"calls":10,"queries":10,"querySteps":25504,"nodes":6891,"coldMs":2.196,"warmMs":0.03},
+        "render": {"calls":1,"coldMs":0.191,"warmMs":0.116},
+        "other": {"calls":1,"coldMs":2.097,"warmMs":1.105}
       },
       "depth": {
-        "check": {"depth":9,"allocated":5,"chain":["Sigma.1 ×2","App.0","App.1 ×3","App.0","Con.0","Sort"],"kinds":{"App":3,"Sigma":2}}
+        "check": {
+          "depth": 15,
+          "allocated": 5,
+          "chain": ["Sigma.1 ×2","App.0","App.1","App.0","App.1 ×2","App.0","App.1 ×4","App.0","Con.0","Sort"],
+          "kinds": {"App":3,"Sigma":2}
+        },
+        "normalize": {
+          "depth": 86,
+          "allocated": 205,
+          "chain": [
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "Lam.1",
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "App.1",
+            "App.0",
+            "Elim.1",
+            "List.1",
+            "List.0",
+            "Lam.1 ×3",
+            "App.0",
+            "Elim.1",
+            "List.0"
+          ],
+          "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
+        }
       },
-      "maxRssMiB": {"median":182.6,"min":182,"max":184.1,"samples":3}
+      "maxRssMiB": {"median":320.8,"min":319.6,"max":321.8,"samples":5}
     },
     {
       "id": "euclid-3-print-normal",
-      "series": "kernel",
       "contract": "printNormal",
-      "setup": "import euclid; use unat;",
+      "setup": "import euclid; use nat;",
       "entry": "print(evaluate(!!!euclid(3)));",
       "outcome": {
         "status": "value",
-        "text": "(7, (5, refl(7), fun (j611 : UNat, smaller : (induction j611 return UNat -> U0 { zero => fun (y27 : UNat) => Unit; succ a_rec => fun (n : UNat) => induction n …",
+        "text": "(7, (tt, fun (d26 : BNat, above27 : match match d26 return BOrdering { b_zero => b_greater; b_positive(x) => match x return BOrdering { bp_one => b_equal; bp_e…",
         "length": 1000,
-        "sha256": "68670fbd6c751e57",
-        "normal": "d10d7930def8efbb"
+        "sha256": "097c6a6c3f91f257",
+        "normal": "cf584931db32d286"
       },
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1467.058,"min":1430.708,"max":1510.393,"samples":3}
+        "instructions": 235246,
+        "rejected": 307,
+        "instructionSteps": 489521,
+        "queries": 14378,
+        "querySteps": 180611,
+        "nodes": 20319,
+        "ms": {"median":1541.024,"min":1506.568,"max":1583.329,"samples":5}
       },
-      "total": {"instructions":12,"instructionSteps":50,"queries":1,"querySteps":223501,"nodes":54783,"peakNodes":58470,"peakBytes":5374720},
+      "total": {"instructions":105,"instructionSteps":462,"queries":8,"querySteps":402932,"nodes":104817,"peakNodes":125136,"peakBytes":10622976},
       "ms": {
-        "cold": {"median":163.903,"min":150.485,"max":182.926,"samples":3},
-        "unobserved": 125.934,
-        "warm": {"median":47.366,"min":17.265,"max":77.957,"samples":9}
+        "cold": {"median":125.524,"min":118.361,"max":237.247,"samples":5},
+        "unobserved": 124.285,
+        "warm": {"median":68.084,"min":59.254,"max":91.238,"samples":15}
       },
       "phases": {
-        "elaborate": {"calls":1,"instructions":10,"instructionSteps":33,"nodes":9,"coldMs":0.729,"warmMs":0.584},
-        "check": {"calls":1,"instructions":2,"instructionSteps":17,"nodes":5,"coldMs":0.06,"warmMs":0.011},
-        "inventory": {"calls":1,"coldMs":0.059,"warmMs":0.029},
-        "normalize": {"calls":1,"queries":1,"querySteps":223501,"nodes":54769,"coldMs":59.827,"warmMs":0.006},
-        "decode": {"calls":1,"coldMs":5.395,"warmMs":0.003},
-        "render": {"calls":1,"coldMs":68.241,"warmMs":39.029},
-        "other": {"calls":1,"coldMs":1.164,"warmMs":0.682}
+        "check": {"calls":2,"instructions":6,"instructionSteps":49,"nodes":10,"coldMs":0.172,"warmMs":0.024},
+        "inventory": {"calls":2,"coldMs":0.169,"warmMs":0.046},
+        "normalize": {"calls":2,"queries":2,"querySteps":402804,"nodes":104660,"coldMs":25.592,"warmMs":0.022},
+        "decode": {"calls":2,"coldMs":20.141,"warmMs":0.011},
+        "elaborate": {"calls":1,"instructions":99,"instructionSteps":413,"queries":6,"querySteps":128,"nodes":147,"coldMs":3.454,"warmMs":2.131},
+        "render": {"calls":1,"coldMs":74.155,"warmMs":64.604},
+        "other": {"calls":1,"coldMs":1.84,"warmMs":1.286}
       },
       "depth": {
-        "check": {"depth":9,"allocated":5,"chain":["Sigma.1 ×2","App.0","App.1 ×3","App.0","Con.0","Sort"],"kinds":{"App":3,"Sigma":2}},
+        "check": {
+          "depth": 15,
+          "allocated": 5,
+          "chain": ["Sigma.1 ×2","App.0","App.1","App.0","App.1 ×2","App.0","App.1 ×4","App.0","Con.0","Sort"],
+          "kinds": {"App":3,"Sigma":2}
+        },
         "normalize": {
-          "depth": 152,
-          "allocated": 54769,
-          "chain": ["App.1","Inl.1","App.1","Pair.2","App.1","Pair.2","App.1","Pair.1","App.1","Pair.2","Fst.0","Snd.0 ×2","App.1","Pair.2","App.1","Pair.2"],
-          "kinds": {"App":20815,"Lam":9162,"Pi":4837,"Var":3406,"Path":3016,"Sum":2735,"PApp":2012,"PLam":1424}
+          "depth": 264,
+          "allocated": 104455,
+          "chain": [
+            "Pair.2",
+            "Pair.1",
+            "Pair.2",
+            "Lam.1 ×4",
+            "Comp.2 ×9",
+            "SumRec.2",
+            "Lam.1",
+            "Abort.1",
+            "App.1",
+            "Comp.2 ×7",
+            "App.0 ×2",
+            "Elim.1",
+            "List.1",
+            "List.0",
+            "Lam.1 ×3",
+            "App.0 ×2"
+          ],
+          "kinds": {"App":45696,"Lam":11179,"Var":8678,"Tube":7414,"Comp":4789,"Path":4712,"PApp":4177,"Pi":3290}
         }
       },
-      "maxRssMiB": {"median":220.4,"min":216.1,"max":220.8,"samples":3}
+      "maxRssMiB": {"median":431.6,"min":430.4,"max":431.9,"samples":5}
     },
     {
       "id": "euclid-4",
-      "series": "kernel",
       "contract": "repl",
-      "setup": "import euclid; use unat;",
+      "setup": "import euclid; use nat;",
       "entry": "evaluate euclid(4);",
-      "outcome": {"status":"value","text":"(5, (3, <path>, <fun>), tt)","length":27,"sha256":"cbe4efb8a3085aaf"},
+      "outcome": {"status":"value","text":"(5, (tt, <fun>), tt)","length":20,"sha256":"136bce0f506cd447"},
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1453.418,"min":1340.103,"max":1460.271,"samples":3}
+        "instructions": 235246,
+        "rejected": 307,
+        "instructionSteps": 489521,
+        "queries": 14378,
+        "querySteps": 180611,
+        "nodes": 20319,
+        "ms": {"median":1540.623,"min":1464.186,"max":1636.608,"samples":5}
       },
-      "total": {"instructions":13,"instructionSteps":53,"queries":1,"querySteps":1,"nodes":15,"peakNodes":3702,"peakBytes":1377024},
-      "runtime": {"steps":1385819,"allocatedCells":771843,"forces":194674,"hits":38431,"beta":58543,"iota":19663,"maxFrames":379,"snapshotNodes":2932},
-      "ms": {
-        "cold": {"median":205.239,"min":186.248,"max":207.753,"samples":3},
-        "unobserved": 182.736,
-        "warm": {"median":113.552,"min":67.955,"max":180.839,"samples":9}
-      },
+      "total": {"instructions":106,"instructionSteps":465,"queries":17,"querySteps":60854,"nodes":16861,"peakNodes":37180,"peakBytes":5117952},
+      "runtime": {"steps":3935,"allocatedCells":3799,"forces":464,"hits":17,"beta":127,"iota":26,"maxFrames":112,"snapshotNodes":383,"snapshotDefinitions":21},
+      "ms": {"cold":{"median":12.63,"min":10.549,"max":15.852,"samples":5},"unobserved":8.627,"warm":{"median":3.556,"min":2.524,"max":7.16,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":11,"instructionSteps":36,"nodes":10,"coldMs":0.757,"warmMs":0.368},
-        "check": {"calls":1,"instructions":2,"instructionSteps":17,"nodes":5,"coldMs":0.239,"warmMs":0.01},
-        "inventory": {"calls":1,"coldMs":0.205,"warmMs":0.023},
-        "demand": {"calls":1,"queries":1,"querySteps":1,"coldMs":0.091,"warmMs":0.01},
-        "runtime": {"calls":18,"coldMs":181.496,"warmMs":104.478},
-        "render": {"calls":1,"coldMs":0.348,"warmMs":0.34},
-        "other": {"calls":1,"coldMs":16.926,"warmMs":0.972}
+        "check": {"calls":2,"instructions":6,"instructionSteps":49,"nodes":10,"coldMs":0.158,"warmMs":0.019},
+        "inventory": {"calls":2,"coldMs":0.121,"warmMs":0.036},
+        "normalize": {"calls":1,"queries":1,"querySteps":1145,"nodes":205,"coldMs":0.124,"warmMs":0.017},
+        "decode": {"calls":1,"coldMs":0.006,"warmMs":0.003},
+        "elaborate": {"calls":1,"instructions":100,"instructionSteps":416,"queries":6,"querySteps":128,"nodes":147,"coldMs":3.585,"warmMs":1.836},
+        "runtime": {"calls":3,"failures":1,"coldMs":1.639,"warmMs":0.29},
+        "demand": {"calls":10,"queries":10,"querySteps":59581,"nodes":16499,"coldMs":4.283,"warmMs":0.038},
+        "render": {"calls":1,"coldMs":0.189,"warmMs":0.113},
+        "other": {"calls":1,"coldMs":2.32,"warmMs":1.033}
       },
       "depth": {
-        "check": {"depth":10,"allocated":5,"chain":["Sigma.1 ×2","App.0","App.1 ×4","App.0","Con.0","Sort"],"kinds":{"App":3,"Sigma":2}}
+        "check": {
+          "depth": 16,
+          "allocated": 5,
+          "chain": ["Sigma.1 ×2","App.0","App.1","App.0","App.1 ×2","App.0","App.1 ×5","App.0","Con.0","Sort"],
+          "kinds": {"App":3,"Sigma":2}
+        },
+        "normalize": {
+          "depth": 86,
+          "allocated": 205,
+          "chain": [
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "Lam.1",
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "App.1",
+            "App.0",
+            "Elim.1",
+            "List.1",
+            "List.0",
+            "Lam.1 ×3",
+            "App.0",
+            "Elim.1",
+            "List.0"
+          ],
+          "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
+        }
       },
-      "maxRssMiB": {"median":266.5,"min":264,"max":269.9,"samples":3}
+      "maxRssMiB": {"median":324.8,"min":322.1,"max":329.7,"samples":5}
     },
     {
       "id": "euclid-4-normal",
-      "series": "kernel",
       "contract": "replNormal",
-      "setup": "import euclid; use unat;",
+      "setup": "import euclid; use nat;",
       "entry": "evaluate !!!euclid(4);",
-      "outcome": {"status":"error","code":"K344","text":"K344: Native prototype syntax depth exceeds 512.","length":48,"sha256":"5e7e4ab653bb0f92"},
+      "outcome": {
+        "status": "value",
+        "text": "(5, (tt, fun (d26 : BNat, above27 : match match d26 return BOrdering { b_zero => b_greater; b_positive(x) => match x return BOrdering { bp_one => b_equal; bp_e…",
+        "length": 1000,
+        "sha256": "4ea1cd25e5f3e787",
+        "normal": "b276dae1228ed1ee"
+      },
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1427.916,"min":1424.825,"max":1533.523,"samples":3}
+        "instructions": 235246,
+        "rejected": 307,
+        "instructionSteps": 489521,
+        "queries": 14378,
+        "querySteps": 180611,
+        "nodes": 20319,
+        "ms": {"median":1464.596,"min":1400.674,"max":1545.033,"samples":5}
       },
-      "total": {
-        "instructions": 13,
-        "instructionSteps": 53,
-        "queries": 1,
-        "failedQueries": 1,
-        "querySteps": 662737,
-        "nodes": 136441,
-        "peakNodes": 140128,
-        "peakBytes": 19530496
-      },
+      "total": {"instructions":106,"instructionSteps":465,"queries":8,"querySteps":882773,"nodes":293565,"peakNodes":313884,"peakBytes":40507392},
       "ms": {
-        "cold": {"median":132.831,"min":112.693,"max":179.894,"samples":3},
-        "unobserved": 180.028,
-        "warm": {"median":2.2,"min":0.696,"max":19.899,"samples":9}
+        "cold": {"median":140.782,"min":132.833,"max":156.053,"samples":5},
+        "unobserved": 147.625,
+        "warm": {"median":53.195,"min":48.077,"max":77.386,"samples":15}
       },
       "phases": {
-        "elaborate": {"calls":1,"instructions":11,"instructionSteps":36,"nodes":10,"coldMs":1.606,"warmMs":0.48},
-        "check": {"calls":1,"instructions":2,"instructionSteps":17,"nodes":5,"coldMs":0.244,"warmMs":0.013},
-        "inventory": {"calls":1,"coldMs":0.154,"warmMs":0.027},
-        "normalize": {"calls":1,"failures":1,"queries":1,"failedQueries":1,"querySteps":662737,"nodes":136426,"coldMs":87.302,"warmMs":0.223},
-        "other": {"calls":1,"coldMs":24.017,"warmMs":1.293}
+        "check": {"calls":2,"instructions":6,"instructionSteps":49,"nodes":10,"coldMs":0.135,"warmMs":0.023},
+        "inventory": {"calls":2,"coldMs":0.104,"warmMs":0.043},
+        "normalize": {"calls":2,"queries":2,"querySteps":882645,"nodes":293408,"coldMs":59.786,"warmMs":0.028},
+        "decode": {"calls":2,"coldMs":17.681,"warmMs":0.011},
+        "elaborate": {"calls":1,"instructions":100,"instructionSteps":416,"queries":6,"querySteps":128,"nodes":147,"coldMs":3.04,"warmMs":2.149},
+        "render": {"calls":1,"coldMs":57.903,"warmMs":50.067},
+        "other": {"calls":1,"coldMs":1.636,"warmMs":1.156}
       },
       "depth": {
-        "check": {"depth":10,"allocated":5,"chain":["Sigma.1 ×2","App.0","App.1 ×4","App.0","Con.0","Sort"],"kinds":{"App":3,"Sigma":2}},
+        "check": {
+          "depth": 16,
+          "allocated": 5,
+          "chain": ["Sigma.1 ×2","App.0","App.1","App.0","App.1 ×2","App.0","App.1 ×5","App.0","Con.0","Sort"],
+          "kinds": {"App":3,"Sigma":2}
+        },
         "normalize": {
-          "depth": 512,
-          "allocated": 136426,
-          "chain": ["App.0","App.1","Fst.0","App.1","Pair.2","App.1","Pair.2","App.0","Lam.0","Sigma.1","Pi.1","Pi.0","App.1","Fst.0","App.1","Pair.2"],
-          "kinds": {"App":47823,"Lam":23228,"Pi":15611,"Sum":11002,"Var":10540,"Path":8424,"Inr":4102,"SumRec":2935}
+          "depth": 216,
+          "allocated": 293203,
+          "chain": [
+            "Pair.2",
+            "Pair.1",
+            "Pair.2",
+            "Lam.1 ×4",
+            "Comp.2 ×8",
+            "SumRec.1",
+            "Lam.1",
+            "Comp.2 ×2",
+            "SumRec.1",
+            "Lam.1",
+            "Comp.2 ×2",
+            "SumRec.2",
+            "Lam.1",
+            "Comp.0",
+            "App.1 ×2",
+            "PApp.0"
+          ],
+          "kinds": {"App":93549,"Tube":39883,"Var":27870,"Comp":26419,"Lam":18888,"Fst":16508,"Pair":16134,"Snd":11091}
         }
       },
-      "maxRssMiB": {"median":197.8,"min":194.2,"max":198.6,"samples":3}
+      "maxRssMiB": {"median":482.3,"min":465.5,"max":486.8,"samples":5}
     },
     {
       "id": "euclid-4-pattern",
-      "series": "kernel",
       "contract": "pattern",
-      "setup": "import euclid; use unat;",
+      "setup": "import euclid; use nat;",
       "entry": "evaluate euclid(4) expecting (5, _);",
-      "outcome": {"status":"error","code":"K344","text":"K344: Native prototype syntax depth exceeds 512.","length":48,"sha256":"5e7e4ab653bb0f92"},
+      "outcome": {"status":"value","text":"(5, <unevaluated>)","length":18,"sha256":"3070dd9733d74dc8"},
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1339.77,"min":1299.285,"max":1376.356,"samples":3}
+        "instructions": 235246,
+        "rejected": 307,
+        "instructionSteps": 489521,
+        "queries": 14378,
+        "querySteps": 180611,
+        "nodes": 20319,
+        "ms": {"median":1392.436,"min":1374.119,"max":1434.766,"samples":5}
       },
-      "total": {
-        "instructions": 14,
-        "instructionSteps": 56,
-        "queries": 4,
-        "failedQueries": 1,
-        "querySteps": 652150,
-        "nodes": 136149,
-        "peakNodes": 139836,
-        "peakBytes": 20579072
-      },
-      "ms": {
-        "cold": {"median":181.319,"min":161.832,"max":185.026,"samples":3},
-        "unobserved": 167.948,
-        "warm": {"median":18.825,"min":1.358,"max":37.435,"samples":9}
-      },
+      "total": {"instructions":174,"instructionSteps":673,"queries":13,"querySteps":57138,"nodes":15883,"peakNodes":36202,"peakBytes":5117952},
+      "ms": {"cold":{"median":10.12,"min":10.029,"max":10.299,"samples":5},"unobserved":9.285,"warm":{"median":4.291,"min":3.735,"max":5.373,"samples":15}},
       "phases": {
-        "elaborate": {"calls":2,"instructions":11,"instructionSteps":36,"nodes":10,"coldMs":0.937,"warmMs":1.31},
-        "check": {"calls":2,"instructions":3,"instructionSteps":20,"nodes":5,"coldMs":0.101,"warmMs":0.06},
-        "inventory": {"calls":2,"coldMs":0.082,"warmMs":0.084},
-        "demand": {"calls":1,"queries":1,"querySteps":133,"nodes":38,"coldMs":0.085,"warmMs":0.012},
-        "normalize": {"calls":2,"failures":1,"queries":2,"failedQueries":1,"querySteps":652016,"nodes":136096,"coldMs":141.896,"warmMs":0.279},
-        "decode": {"calls":1,"coldMs":0.004,"warmMs":0.012},
-        "other": {"calls":1,"queries":1,"querySteps":1,"coldMs":13.214,"warmMs":3.367}
+        "check": {"calls":4,"instructions":19,"instructionSteps":105,"nodes":29,"coldMs":0.211,"warmMs":0.036},
+        "inventory": {"calls":4,"coldMs":0.137,"warmMs":0.057},
+        "normalize": {"calls":4,"queries":4,"querySteps":56774,"nodes":15606,"coldMs":3.397,"warmMs":0.037},
+        "decode": {"calls":4,"coldMs":0.023,"warmMs":0.009},
+        "elaborate": {"calls":2,"instructions":126,"instructionSteps":487,"queries":7,"querySteps":185,"nodes":181,"coldMs":4.325,"warmMs":2.937},
+        "demand": {"calls":1,"queries":1,"querySteps":178,"nodes":51,"coldMs":0.056,"warmMs":0.004},
+        "compare": {"calls":1,"instructions":29,"instructionSteps":81,"nodes":16,"coldMs":0.149,"warmMs":0.023},
+        "render": {"calls":1,"coldMs":0.111,"warmMs":0.076},
+        "other": {"calls":1,"queries":1,"querySteps":1,"coldMs":1.727,"warmMs":0.877}
       },
       "depth": {
-        "check": {"depth":10,"allocated":5,"chain":["Sigma.1 ×2","App.0","App.1 ×4","App.0","Con.0","Sort"],"kinds":{"App":3,"Sigma":2}},
+        "check": {
+          "depth": 16,
+          "allocated": 5,
+          "chain": ["Sigma.1 ×2","App.0","App.1","App.0","App.1 ×2","App.0","App.1 ×5","App.0","Con.0","Sort"],
+          "kinds": {"App":3,"Sigma":2}
+        },
         "normalize": {
-          "depth": 512,
-          "allocated": 136096,
-          "chain": ["App.0","App.1","Fst.0","App.1","Pair.2","App.1","Pair.2","App.0","Lam.0","Sigma.1","Pi.1","Pi.0","App.1","Fst.0","App.1","Pair.2"],
-          "kinds": {"App":47671,"Lam":23170,"Pi":15597,"Sum":11001,"Var":10507,"Path":8420,"Inr":4102,"SumRec":2934}
-        }
+          "depth": 124,
+          "allocated": 15010,
+          "chain": [
+            "App.1",
+            "SumRec.2",
+            "Lam.1",
+            "SumRec.2",
+            "Lam.1",
+            "App.0",
+            "Lam.1",
+            "App.0 ×2",
+            "App.1 ×2",
+            "PLam.1",
+            "Comp.1",
+            "Tube.1",
+            "Tube.0",
+            "PApp.0",
+            "App.1",
+            "PLam.1"
+          ],
+          "kinds": {"App":7022,"Lam":2069,"Var":1607,"Comp":782,"Pi":665,"Tube":400,"Pair":388,"List":344}
+        },
+        "compare": {"depth":6,"allocated":16,"chain":["PLam.1","App.1 ×2","App.0","Con.0","Sort"],"kinds":{"Var":11,"Pi":3,"PLam":1,"Path":1}}
       },
-      "maxRssMiB": {"median":198.9,"min":198.4,"max":199,"samples":3}
+      "maxRssMiB": {"median":325.9,"min":321.1,"max":326.8,"samples":5}
     },
     {
       "id": "euclid-4-pattern-normal",
-      "series": "kernel",
       "contract": "patternNormal",
-      "setup": "import euclid; use unat;",
+      "setup": "import euclid; use nat;",
       "entry": "evaluate euclid(4) expecting !!!(5, _);",
-      "outcome": {"status":"error","code":"K344","text":"K344: Native prototype syntax depth exceeds 512.","length":48,"sha256":"5e7e4ab653bb0f92"},
+      "outcome": {
+        "status": "value",
+        "text": "(5, (tt, fun (d26 : BNat, above27 : match match d26 return BOrdering { b_zero => b_greater; b_positive(x) => match x return BOrdering { bp_one => b_equal; bp_e…",
+        "length": 1000,
+        "sha256": "4ea1cd25e5f3e787",
+        "normal": "b276dae1228ed1ee"
+      },
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1305.473,"min":1295.935,"max":1323.968,"samples":3}
+        "instructions": 235246,
+        "rejected": 307,
+        "instructionSteps": 489521,
+        "queries": 14378,
+        "querySteps": 180611,
+        "nodes": 20319,
+        "ms": {"median":1522.035,"min":1430.088,"max":1613.196,"samples":5}
       },
-      "total": {
-        "instructions": 13,
-        "instructionSteps": 53,
-        "queries": 1,
-        "failedQueries": 1,
-        "querySteps": 662737,
-        "nodes": 136441,
-        "peakNodes": 140128,
-        "peakBytes": 19530496
-      },
+      "total": {"instructions":174,"instructionSteps":680,"queries":12,"querySteps":884004,"nodes":293826,"peakNodes":314145,"peakBytes":40507392},
       "ms": {
-        "cold": {"median":159.036,"min":132.083,"max":204.629,"samples":3},
-        "unobserved": 79.139,
-        "warm": {"median":2.794,"min":1.058,"max":25.044,"samples":9}
+        "cold": {"median":145.868,"min":138.118,"max":153.511,"samples":5},
+        "unobserved": 153.26,
+        "warm": {"median":51.662,"min":45.44,"max":88.137,"samples":15}
       },
       "phases": {
-        "elaborate": {"calls":1,"instructions":11,"instructionSteps":36,"nodes":10,"coldMs":0.765,"warmMs":0.628},
-        "check": {"calls":1,"instructions":2,"instructionSteps":17,"nodes":5,"coldMs":0.06,"warmMs":0.019},
-        "inventory": {"calls":1,"coldMs":0.055,"warmMs":0.044},
-        "normalize": {"calls":1,"failures":1,"queries":1,"failedQueries":1,"querySteps":662737,"nodes":136426,"coldMs":152.271,"warmMs":0.24},
-        "other": {"calls":1,"coldMs":9.076,"warmMs":1.685}
+        "check": {"calls":4,"instructions":19,"instructionSteps":106,"nodes":29,"coldMs":0.235,"warmMs":0.046},
+        "inventory": {"calls":4,"coldMs":0.158,"warmMs":0.076},
+        "normalize": {"calls":4,"queries":4,"querySteps":883768,"nodes":293601,"coldMs":60.064,"warmMs":0.058},
+        "decode": {"calls":4,"coldMs":19.546,"warmMs":0.012},
+        "elaborate": {"calls":2,"instructions":126,"instructionSteps":492,"queries":7,"querySteps":235,"nodes":181,"coldMs":4.884,"warmMs":3.395},
+        "compare": {"calls":1,"instructions":29,"instructionSteps":82,"nodes":15,"coldMs":0.139,"warmMs":0.037},
+        "render": {"calls":1,"coldMs":57.066,"warmMs":46.637},
+        "other": {"calls":1,"queries":1,"querySteps":1,"coldMs":2.182,"warmMs":1.242}
       },
       "depth": {
-        "check": {"depth":10,"allocated":5,"chain":["Sigma.1 ×2","App.0","App.1 ×4","App.0","Con.0","Sort"],"kinds":{"App":3,"Sigma":2}},
+        "check": {
+          "depth": 16,
+          "allocated": 5,
+          "chain": ["Sigma.1 ×2","App.0","App.1","App.0","App.1 ×2","App.0","App.1 ×5","App.0","Con.0","Sort"],
+          "kinds": {"App":3,"Sigma":2}
+        },
         "normalize": {
-          "depth": 512,
-          "allocated": 136426,
-          "chain": ["App.0","App.1","Fst.0","App.1","Pair.2","App.1","Pair.2","App.0","Lam.0","Sigma.1","Pi.1","Pi.0","App.1","Fst.0","App.1","Pair.2"],
-          "kinds": {"App":47823,"Lam":23228,"Pi":15611,"Sum":11002,"Var":10540,"Path":8424,"Inr":4102,"SumRec":2935}
-        }
+          "depth": 216,
+          "allocated": 293203,
+          "chain": [
+            "Pair.2",
+            "Pair.1",
+            "Pair.2",
+            "Lam.1 ×4",
+            "Comp.2 ×8",
+            "SumRec.1",
+            "Lam.1",
+            "Comp.2 ×2",
+            "SumRec.1",
+            "Lam.1",
+            "Comp.2 ×2",
+            "SumRec.2",
+            "Lam.1",
+            "Comp.0",
+            "App.1 ×2",
+            "PApp.0"
+          ],
+          "kinds": {"App":93549,"Tube":39883,"Var":27870,"Comp":26419,"Lam":18888,"Fst":16508,"Pair":16134,"Snd":11091}
+        },
+        "compare": {"depth":6,"allocated":15,"chain":["Path.1","App.1 ×2","App.0","Con.0","Sort"],"kinds":{"Var":11,"Pi":3,"Path":1}}
       },
-      "maxRssMiB": {"median":196.8,"min":194.3,"max":199.4,"samples":3}
+      "maxRssMiB": {"median":479.9,"min":472.8,"max":488.7,"samples":5}
     },
     {
       "id": "euclid-3-prime",
-      "series": "kernel",
       "contract": "repl",
-      "setup": "import euclid; use unat;",
+      "setup": "import euclid; use nat;",
       "entry": "evaluate euclid(3).1;",
       "outcome": {"status":"value","text":"7","length":1,"sha256":"7902699be42c8a8e"},
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1588.449,"min":1455.658,"max":2010.917,"samples":3}
+        "instructions": 235246,
+        "rejected": 307,
+        "instructionSteps": 489521,
+        "queries": 14378,
+        "querySteps": 180611,
+        "nodes": 20319,
+        "ms": {"median":1432.226,"min":1408.657,"max":1441.825,"samples":5}
       },
-      "total": {"instructions":13,"instructionSteps":51,"queries":2,"querySteps":2,"nodes":15,"peakNodes":3702,"peakBytes":1377024},
-      "runtime": {"steps":89778,"allocatedCells":58366,"forces":11208,"hits":1918,"beta":3298,"iota":1042,"maxFrames":118,"snapshotNodes":2928},
-      "ms": {
-        "cold": {"median":39.48,"min":12.521,"max":44.486,"samples":3},
-        "unobserved": 12.163,
-        "warm": {"median":10.995,"min":3.426,"max":67.706,"samples":9}
-      },
+      "total": {"instructions":106,"instructionSteps":463,"queries":12,"querySteps":23664,"nodes":6469,"peakNodes":26788,"peakBytes":3151872},
+      "runtime": {"steps":3693,"allocatedCells":3648,"forces":431,"hits":13,"beta":118,"iota":23,"maxFrames":105,"snapshotNodes":380,"snapshotDefinitions":21},
+      "ms": {"cold":{"median":8.019,"min":7.842,"max":8.465,"samples":5},"unobserved":6.36,"warm":{"median":3.141,"min":2.558,"max":3.559,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":12,"instructionSteps":50,"queries":1,"querySteps":1,"nodes":14,"coldMs":0.896,"warmMs":0.37},
-        "check": {"calls":1,"instructions":1,"instructionSteps":1,"nodes":1,"coldMs":0.025,"warmMs":0.009},
-        "inventory": {"calls":1,"coldMs":0.053,"warmMs":0.017},
-        "demand": {"calls":1,"queries":1,"querySteps":1,"coldMs":0.056,"warmMs":0.028},
-        "runtime": {"calls":9,"coldMs":36.682,"warmMs":6.744},
-        "render": {"calls":1,"coldMs":0.267,"warmMs":0.231},
-        "other": {"calls":1,"coldMs":1.501,"warmMs":0.745}
+        "check": {"calls":2,"instructions":4,"instructionSteps":30,"nodes":6,"coldMs":0.095,"warmMs":0.019},
+        "inventory": {"calls":2,"coldMs":0.096,"warmMs":0.032},
+        "normalize": {"calls":1,"queries":1,"querySteps":1145,"nodes":205,"coldMs":0.099,"warmMs":0.011},
+        "decode": {"calls":1,"coldMs":0.005,"warmMs":0.003},
+        "elaborate": {"calls":1,"instructions":102,"instructionSteps":433,"queries":7,"querySteps":129,"nodes":152,"coldMs":2.991,"warmMs":1.648},
+        "runtime": {"calls":2,"failures":1,"coldMs":1.49,"warmMs":0.238},
+        "demand": {"calls":4,"queries":4,"querySteps":22390,"nodes":6106,"coldMs":1.429,"warmMs":0.013},
+        "render": {"calls":1,"coldMs":0.133,"warmMs":0.076},
+        "other": {"calls":1,"coldMs":1.683,"warmMs":0.896}
       },
       "depth": {
-        "check": {"depth":7,"allocated":1,"chain":["Fst.0","App.1 ×3","App.0","Con.0","Sort"],"kinds":{"Fst":1}}
+        "check": {"depth":13,"allocated":1,"chain":["Fst.0","App.1","App.0","App.1 ×2","App.0","App.1 ×4","App.0","Con.0","Sort"],"kinds":{"Fst":1}},
+        "normalize": {
+          "depth": 86,
+          "allocated": 205,
+          "chain": [
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "Lam.1",
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "App.1",
+            "App.0",
+            "Elim.1",
+            "List.1",
+            "List.0",
+            "Lam.1 ×3",
+            "App.0",
+            "Elim.1",
+            "List.0"
+          ],
+          "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
+        }
       },
-      "maxRssMiB": {"median":179,"min":177.7,"max":180.8,"samples":3}
+      "maxRssMiB": {"median":323,"min":320.7,"max":323.4,"samples":5}
     },
     {
       "id": "euclid-3-prime-normal",
-      "series": "kernel",
       "contract": "replNormal",
-      "setup": "import euclid; use unat;",
+      "setup": "import euclid; use nat;",
       "entry": "evaluate !!!euclid(3).1;",
-      "outcome": {"status":"value","text":"7","length":1,"sha256":"7902699be42c8a8e","normal":"08d8f5af9b8e6c3b"},
+      "outcome": {"status":"value","text":"7","length":1,"sha256":"7902699be42c8a8e","normal":"d7d31f8f153a5d61"},
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1703.803,"min":1634.874,"max":1754.471,"samples":3}
+        "instructions": 235246,
+        "rejected": 307,
+        "instructionSteps": 489521,
+        "queries": 14378,
+        "querySteps": 180611,
+        "nodes": 20319,
+        "ms": {"median":1440.26,"min":1393.314,"max":1509.073,"samples":5}
       },
-      "total": {"instructions":13,"instructionSteps":51,"queries":2,"querySteps":149484,"nodes":38508,"peakNodes":42195,"peakBytes":5374720},
-      "ms": {
-        "cold": {"median":76.578,"min":66.491,"max":82.267,"samples":3},
-        "unobserved": 104.844,
-        "warm": {"median":1.108,"min":0.599,"max":66.095,"samples":9}
-      },
+      "total": {"instructions":106,"instructionSteps":463,"queries":9,"querySteps":23680,"nodes":6471,"peakNodes":26790,"peakBytes":3151872},
+      "ms": {"cold":{"median":6.143,"min":6.032,"max":6.683,"samples":5},"unobserved":5.005,"warm":{"median":2.736,"min":2.249,"max":3.433,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":12,"instructionSteps":50,"queries":1,"querySteps":1,"nodes":14,"coldMs":0.861,"warmMs":0.399},
-        "check": {"calls":1,"instructions":1,"instructionSteps":1,"nodes":1,"coldMs":0.092,"warmMs":0.009},
-        "inventory": {"calls":1,"coldMs":0.091,"warmMs":0.02},
-        "normalize": {"calls":1,"queries":1,"querySteps":149483,"nodes":38493,"coldMs":55.963,"warmMs":0.007},
-        "decode": {"calls":1,"coldMs":0.047,"warmMs":0.003},
-        "render": {"calls":1,"coldMs":0.202,"warmMs":0.129},
-        "other": {"calls":1,"coldMs":5.399,"warmMs":0.534}
+        "check": {"calls":2,"instructions":4,"instructionSteps":30,"nodes":6,"coldMs":0.097,"warmMs":0.019},
+        "inventory": {"calls":2,"coldMs":0.095,"warmMs":0.03},
+        "normalize": {"calls":2,"queries":2,"querySteps":23551,"nodes":6313,"coldMs":1.514,"warmMs":0.011},
+        "decode": {"calls":2,"coldMs":0.021,"warmMs":0.007},
+        "elaborate": {"calls":1,"instructions":102,"instructionSteps":433,"queries":7,"querySteps":129,"nodes":152,"coldMs":2.991,"warmMs":1.572},
+        "render": {"calls":1,"coldMs":0.1,"warmMs":0.073},
+        "other": {"calls":1,"coldMs":1.335,"warmMs":0.823}
       },
       "depth": {
-        "check": {"depth":7,"allocated":1,"chain":["Fst.0","App.1 ×3","App.0","Con.0","Sort"],"kinds":{"Fst":1}},
+        "check": {"depth":13,"allocated":1,"chain":["Fst.0","App.1","App.0","App.1 ×2","App.0","App.1 ×4","App.0","Con.0","Sort"],"kinds":{"Fst":1}},
         "normalize": {
-          "depth": 152,
-          "allocated": 38493,
-          "chain": ["App.1","Inl.1","App.1","Pair.2","App.1","Pair.2","App.1","Pair.1","App.1","Pair.2","Fst.0","Snd.0 ×2","App.1","Pair.2","App.1","Pair.2"],
-          "kinds": {"App":13147,"Lam":6706,"Pi":4593,"Var":2906,"Sum":2665,"Path":2001,"Sigma":1337,"Inr":922}
+          "depth": 86,
+          "allocated": 205,
+          "chain": [
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "Lam.1",
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "App.1",
+            "App.0",
+            "Elim.1",
+            "List.1",
+            "List.0",
+            "Lam.1 ×3",
+            "App.0",
+            "Elim.1",
+            "List.0"
+          ],
+          "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
         }
       },
-      "maxRssMiB": {"median":180.5,"min":179.9,"max":182.2,"samples":3}
+      "maxRssMiB": {"median":320.6,"min":318.7,"max":322.9,"samples":5}
     },
     {
       "id": "euclid-3-prime-expected",
-      "series": "kernel",
       "contract": "expected",
-      "setup": "import euclid; use unat;",
+      "setup": "import euclid; use nat;",
       "entry": "evaluate euclid(3).1 expecting 7;",
-      "outcome": {"status":"value","text":"7","length":1,"sha256":"7902699be42c8a8e","normal":"08d8f5af9b8e6c3b"},
+      "outcome": {"status":"value","text":"7","length":1,"sha256":"7902699be42c8a8e","normal":"d7d31f8f153a5d61"},
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1620.773,"min":1527.977,"max":1632.097,"samples":3}
+        "instructions": 235246,
+        "rejected": 307,
+        "instructionSteps": 489521,
+        "queries": 14378,
+        "querySteps": 180611,
+        "nodes": 20319,
+        "ms": {"median":1426.891,"min":1406.713,"max":1574.501,"samples":5}
       },
-      "total": {"instructions":42,"instructionSteps":114,"queries":3,"querySteps":149722,"nodes":38577,"peakNodes":42264,"peakBytes":5636864},
-      "ms": {
-        "cold": {"median":40.074,"min":15.666,"max":54.373,"samples":3},
-        "unobserved": 98.909,
-        "warm": {"median":1.399,"min":0.817,"max":39.492,"samples":9}
-      },
+      "total": {"instructions":181,"instructionSteps":717,"queries":13,"querySteps":25089,"nodes":6889,"peakNodes":27208,"peakBytes":3151872},
+      "ms": {"cold":{"median":9.019,"min":8.343,"max":10.775,"samples":5},"unobserved":6.409,"warm":{"median":4.628,"min":3.838,"max":14.004,"samples":15}},
       "phases": {
-        "elaborate": {"calls":2,"instructions":12,"instructionSteps":50,"queries":1,"querySteps":1,"nodes":14,"coldMs":1.347,"warmMs":0.471},
-        "check": {"calls":2,"instructions":5,"instructionSteps":13,"nodes":1,"coldMs":0.105,"warmMs":0.026},
-        "inventory": {"calls":2,"coldMs":0.088,"warmMs":0.035},
-        "normalize": {"calls":2,"queries":2,"querySteps":149721,"nodes":38557,"coldMs":22.461,"warmMs":0.028},
-        "decode": {"calls":2,"coldMs":0.054,"warmMs":0.005},
-        "compare": {"calls":2,"instructions":25,"instructionSteps":51,"nodes":5,"coldMs":0.296,"warmMs":0.067},
-        "render": {"calls":1,"coldMs":0.19,"warmMs":0.144},
-        "other": {"calls":1,"coldMs":1.839,"warmMs":0.623}
+        "check": {"calls":4,"instructions":16,"instructionSteps":102,"nodes":28,"coldMs":0.205,"warmMs":0.035},
+        "inventory": {"calls":4,"coldMs":0.146,"warmMs":0.058},
+        "normalize": {"calls":4,"queries":4,"querySteps":24837,"nodes":6645,"coldMs":1.592,"warmMs":0.047},
+        "decode": {"calls":4,"coldMs":0.028,"warmMs":0.012},
+        "elaborate": {"calls":2,"instructions":125,"instructionSteps":517,"queries":9,"querySteps":252,"nodes":199,"coldMs":5.106,"warmMs":3.457},
+        "compare": {"calls":2,"instructions":40,"instructionSteps":98,"nodes":17,"coldMs":0.192,"warmMs":0.059},
+        "render": {"calls":1,"coldMs":0.096,"warmMs":0.062},
+        "other": {"calls":1,"coldMs":1.611,"warmMs":0.876}
       },
       "depth": {
-        "check": {"depth":7,"allocated":1,"chain":["Fst.0","App.1 ×3","App.0","Con.0","Sort"],"kinds":{"Fst":1}},
+        "check": {"depth":16,"allocated":21,"chain":["Pi.0","App.1 ×3","App.0","App.1 ×8","App.0","Con.0","Sort"],"kinds":{"Pi":14,"App":4,"Var":3}},
         "normalize": {
-          "depth": 152,
-          "allocated": 38557,
-          "chain": ["App.1","Inl.1","App.1","Pair.2","App.1","Pair.2","App.1","Pair.1","App.1","Pair.2","Fst.0","Snd.0 ×2","App.1","Pair.2","App.1","Pair.2"],
-          "kinds": {"App":13177,"Lam":6706,"Pi":4599,"Var":2934,"Sum":2665,"Path":2001,"Sigma":1337,"Inr":922}
+          "depth": 86,
+          "allocated": 205,
+          "chain": [
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "Lam.1",
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "App.1",
+            "App.0",
+            "Elim.1",
+            "List.1",
+            "List.0",
+            "Lam.1 ×3",
+            "App.0",
+            "Elim.1",
+            "List.0"
+          ],
+          "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
         },
-        "compare": {"depth":10,"allocated":2,"chain":["PLam.1","App.1 ×6","App.0","Con.0","Sort"],"kinds":{"PLam":1,"Path":1}}
+        "compare": {"depth":6,"allocated":13,"chain":["PLam.1","App.1 ×2","App.0","Con.0","Sort"],"kinds":{"Var":9,"Pi":2,"PLam":1,"Path":1}}
       },
-      "maxRssMiB": {"median":184.1,"min":180.5,"max":184.1,"samples":3}
+      "maxRssMiB": {"median":321.5,"min":320.3,"max":326,"samples":5}
     },
     {
       "id": "euclid-4-prime",
-      "series": "kernel",
       "contract": "repl",
-      "setup": "import euclid; use unat;",
+      "setup": "import euclid; use nat;",
       "entry": "evaluate euclid(4).1;",
       "outcome": {"status":"value","text":"5","length":1,"sha256":"ef2d127de37b942b"},
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1456.795,"min":1449.033,"max":1480.336,"samples":3}
+        "instructions": 235246,
+        "rejected": 307,
+        "instructionSteps": 489521,
+        "queries": 14378,
+        "querySteps": 180611,
+        "nodes": 20319,
+        "ms": {"median":1391.418,"min":1374.125,"max":1433.328,"samples":5}
       },
-      "total": {"instructions":14,"instructionSteps":54,"queries":2,"querySteps":2,"nodes":16,"peakNodes":3703,"peakBytes":1377024},
-      "runtime": {"steps":469175,"allocatedCells":267045,"forces":64884,"hits":12799,"beta":19508,"iota":6552,"maxFrames":364,"snapshotNodes":2929},
-      "ms": {
-        "cold": {"median":95.055,"min":86.568,"max":104.762,"samples":3},
-        "unobserved": 50.135,
-        "warm": {"median":57.365,"min":8.053,"max":114.318,"samples":9}
-      },
+      "total": {"instructions":107,"instructionSteps":466,"queries":12,"querySteps":56373,"nodes":15622,"peakNodes":35941,"peakBytes":5117952},
+      "runtime": {"steps":3938,"allocatedCells":3804,"forces":465,"hits":17,"beta":127,"iota":26,"maxFrames":113,"snapshotNodes":384,"snapshotDefinitions":21},
+      "ms": {"cold":{"median":9.991,"min":9.929,"max":10.749,"samples":5},"unobserved":8.288,"warm":{"median":2.805,"min":2.515,"max":3.695,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":13,"instructionSteps":53,"queries":1,"querySteps":1,"nodes":15,"coldMs":0.843,"warmMs":0.402},
-        "check": {"calls":1,"instructions":1,"instructionSteps":1,"nodes":1,"coldMs":0.024,"warmMs":0.009},
-        "inventory": {"calls":1,"coldMs":0.05,"warmMs":0.018},
-        "demand": {"calls":1,"queries":1,"querySteps":1,"coldMs":0.059,"warmMs":0.029},
-        "runtime": {"calls":7,"coldMs":91.961,"warmMs":55.729},
-        "render": {"calls":1,"coldMs":0.214,"warmMs":0.207},
-        "other": {"calls":1,"coldMs":2.439,"warmMs":0.795}
+        "check": {"calls":2,"instructions":4,"instructionSteps":30,"nodes":6,"coldMs":0.095,"warmMs":0.018},
+        "inventory": {"calls":2,"coldMs":0.094,"warmMs":0.029},
+        "normalize": {"calls":1,"queries":1,"querySteps":1145,"nodes":205,"coldMs":0.089,"warmMs":0.011},
+        "decode": {"calls":1,"coldMs":0.005,"warmMs":0.003},
+        "elaborate": {"calls":1,"instructions":103,"instructionSteps":436,"queries":7,"querySteps":129,"nodes":152,"coldMs":2.979,"warmMs":1.575},
+        "runtime": {"calls":2,"failures":1,"coldMs":1.507,"warmMs":0.222},
+        "demand": {"calls":4,"queries":4,"querySteps":55099,"nodes":15259,"coldMs":3.38,"warmMs":0.014},
+        "render": {"calls":1,"coldMs":0.134,"warmMs":0.074},
+        "other": {"calls":1,"coldMs":1.712,"warmMs":0.835}
       },
       "depth": {
-        "check": {"depth":8,"allocated":1,"chain":["Fst.0","App.1 ×4","App.0","Con.0","Sort"],"kinds":{"Fst":1}}
+        "check": {"depth":14,"allocated":1,"chain":["Fst.0","App.1","App.0","App.1 ×2","App.0","App.1 ×5","App.0","Con.0","Sort"],"kinds":{"Fst":1}},
+        "normalize": {
+          "depth": 86,
+          "allocated": 205,
+          "chain": [
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "Lam.1",
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "App.1",
+            "App.0",
+            "Elim.1",
+            "List.1",
+            "List.0",
+            "Lam.1 ×3",
+            "App.0",
+            "Elim.1",
+            "List.0"
+          ],
+          "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
+        }
       },
-      "maxRssMiB": {"median":191,"min":185.2,"max":191.8,"samples":3}
+      "maxRssMiB": {"median":325.5,"min":322.3,"max":327,"samples":5}
     },
     {
       "id": "euclid-4-prime-normal",
-      "series": "kernel",
       "contract": "replNormal",
-      "setup": "import euclid; use unat;",
+      "setup": "import euclid; use nat;",
       "entry": "evaluate !!!euclid(4).1;",
-      "outcome": {"status":"error","code":"K344","text":"K344: Native prototype syntax depth exceeds 512.","length":48,"sha256":"5e7e4ab653bb0f92"},
+      "outcome": {"status":"value","text":"5","length":1,"sha256":"ef2d127de37b942b","normal":"f124cdfe51dff23e"},
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1446.134,"min":1416.211,"max":1700.424,"samples":3}
+        "instructions": 235246,
+        "rejected": 307,
+        "instructionSteps": 489521,
+        "queries": 14378,
+        "querySteps": 180611,
+        "nodes": 20319,
+        "ms": {"median":1455.153,"min":1382.197,"max":1495.759,"samples":5}
       },
-      "total": {
-        "instructions": 14,
-        "instructionSteps": 54,
-        "queries": 2,
-        "failedQueries": 1,
-        "querySteps": 655035,
-        "nodes": 136150,
-        "peakNodes": 139837,
-        "peakBytes": 19530496
-      },
-      "ms": {
-        "cold": {"median":195.421,"min":195.01,"max":210.024,"samples":3},
-        "unobserved": 241.868,
-        "warm": {"median":2.537,"min":1.719,"max":44.676,"samples":9}
-      },
+      "total": {"instructions":107,"instructionSteps":466,"queries":9,"querySteps":56389,"nodes":15622,"peakNodes":35941,"peakBytes":5117952},
+      "ms": {"cold":{"median":8.626,"min":8.021,"max":9.324,"samples":5},"unobserved":6.426,"warm":{"median":2.609,"min":2.234,"max":3.088,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":13,"instructionSteps":53,"queries":1,"querySteps":1,"nodes":15,"coldMs":0.897,"warmMs":0.824},
-        "check": {"calls":1,"instructions":1,"instructionSteps":1,"nodes":1,"coldMs":0.025,"warmMs":0.022},
-        "inventory": {"calls":1,"coldMs":0.06,"warmMs":0.044},
-        "normalize": {"calls":1,"failures":1,"queries":1,"failedQueries":1,"querySteps":655034,"nodes":136134,"coldMs":145.11,"warmMs":0.308},
-        "other": {"calls":1,"coldMs":27.473,"warmMs":1.342}
+        "check": {"calls":2,"instructions":4,"instructionSteps":30,"nodes":6,"coldMs":0.097,"warmMs":0.018},
+        "inventory": {"calls":2,"coldMs":0.097,"warmMs":0.034},
+        "normalize": {"calls":2,"queries":2,"querySteps":56260,"nodes":15464,"coldMs":3.432,"warmMs":0.012},
+        "decode": {"calls":2,"coldMs":0.022,"warmMs":0.007},
+        "elaborate": {"calls":1,"instructions":103,"instructionSteps":436,"queries":7,"querySteps":129,"nodes":152,"coldMs":3.218,"warmMs":1.652},
+        "render": {"calls":1,"coldMs":0.109,"warmMs":0.074},
+        "other": {"calls":1,"coldMs":1.415,"warmMs":0.757}
       },
       "depth": {
-        "check": {"depth":8,"allocated":1,"chain":["Fst.0","App.1 ×4","App.0","Con.0","Sort"],"kinds":{"Fst":1}},
+        "check": {"depth":14,"allocated":1,"chain":["Fst.0","App.1","App.0","App.1 ×2","App.0","App.1 ×5","App.0","Con.0","Sort"],"kinds":{"Fst":1}},
         "normalize": {
-          "depth": 512,
-          "allocated": 136134,
-          "chain": ["App.0","App.1","Fst.0","App.1","Pair.2","App.1","Pair.2","App.0","Lam.0","Sigma.1","Pi.1","Pi.0","App.1","Fst.0","App.1","Pair.2"],
-          "kinds": {"App":47695,"Lam":23175,"Pi":15597,"Sum":11002,"Var":10507,"Path":8420,"Inr":4102,"SumRec":2935}
+          "depth": 124,
+          "allocated": 15259,
+          "chain": [
+            "App.1",
+            "SumRec.2",
+            "Lam.1",
+            "SumRec.2",
+            "Lam.1",
+            "App.0",
+            "Lam.1",
+            "App.0 ×2",
+            "App.1 ×2",
+            "PLam.1",
+            "Comp.1",
+            "Tube.1",
+            "Tube.0",
+            "PApp.0",
+            "App.1",
+            "PLam.1"
+          ],
+          "kinds": {"App":7161,"Lam":2098,"Var":1648,"Comp":783,"Pi":681,"Tube":400,"Pair":390,"List":350}
         }
       },
-      "maxRssMiB": {"median":198.5,"min":197.5,"max":199.9,"samples":3}
+      "maxRssMiB": {"median":323.3,"min":322.3,"max":327.3,"samples":5}
     },
     {
       "id": "euclid-4-prime-print",
-      "series": "kernel",
       "contract": "print",
-      "setup": "import euclid; use unat;",
+      "setup": "import euclid; use nat;",
       "entry": "print(evaluate(euclid(4).1));",
       "outcome": {"status":"value","text":"5","length":1,"sha256":"ef2d127de37b942b"},
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1589.233,"min":1380.828,"max":1622.931,"samples":3}
+        "instructions": 235246,
+        "rejected": 307,
+        "instructionSteps": 489521,
+        "queries": 14378,
+        "querySteps": 180611,
+        "nodes": 20319,
+        "ms": {"median":1401.277,"min":1373.51,"max":1528.54,"samples":5}
       },
-      "total": {"instructions":14,"instructionSteps":54,"queries":2,"querySteps":2,"nodes":16,"peakNodes":3703,"peakBytes":1377024},
-      "runtime": {"steps":469175,"allocatedCells":267045,"forces":64884,"hits":12799,"beta":19508,"iota":6552,"maxFrames":364,"snapshotNodes":2929},
-      "ms": {"cold":{"median":97.235,"min":82.447,"max":163.099,"samples":3},"unobserved":65.677,"warm":{"median":47,"min":25.255,"max":75.523,"samples":9}},
+      "total": {"instructions":107,"instructionSteps":466,"queries":12,"querySteps":56373,"nodes":15622,"peakNodes":35941,"peakBytes":5117952},
+      "runtime": {"steps":3938,"allocatedCells":3804,"forces":465,"hits":17,"beta":127,"iota":26,"maxFrames":113,"snapshotNodes":384,"snapshotDefinitions":21},
+      "ms": {"cold":{"median":10.714,"min":9.963,"max":10.852,"samples":5},"unobserved":12.094,"warm":{"median":2.727,"min":2.527,"max":4.567,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":13,"instructionSteps":53,"queries":1,"querySteps":1,"nodes":15,"coldMs":2.679,"warmMs":0.482},
-        "check": {"calls":1,"instructions":1,"instructionSteps":1,"nodes":1,"coldMs":0.028,"warmMs":0.009},
-        "inventory": {"calls":1,"coldMs":0.14,"warmMs":0.019},
-        "demand": {"calls":1,"queries":1,"querySteps":1,"coldMs":0.072,"warmMs":0.031},
-        "runtime": {"calls":7,"coldMs":75.053,"warmMs":38.539},
-        "render": {"calls":1,"coldMs":1.118,"warmMs":0.375},
-        "other": {"calls":1,"coldMs":2.754,"warmMs":0.876}
+        "check": {"calls":2,"instructions":4,"instructionSteps":30,"nodes":6,"coldMs":0.095,"warmMs":0.018},
+        "inventory": {"calls":2,"coldMs":0.092,"warmMs":0.028},
+        "normalize": {"calls":1,"queries":1,"querySteps":1145,"nodes":205,"coldMs":0.099,"warmMs":0.012},
+        "decode": {"calls":1,"coldMs":0.005,"warmMs":0.003},
+        "elaborate": {"calls":1,"instructions":103,"instructionSteps":436,"queries":7,"querySteps":129,"nodes":152,"coldMs":3.357,"warmMs":1.575},
+        "runtime": {"calls":2,"failures":1,"coldMs":1.532,"warmMs":0.225},
+        "demand": {"calls":4,"queries":4,"querySteps":55099,"nodes":15259,"coldMs":3.444,"warmMs":0.014},
+        "render": {"calls":1,"coldMs":0.133,"warmMs":0.072},
+        "other": {"calls":1,"coldMs":1.719,"warmMs":0.806}
       },
       "depth": {
-        "check": {"depth":8,"allocated":1,"chain":["Fst.0","App.1 ×4","App.0","Con.0","Sort"],"kinds":{"Fst":1}}
+        "check": {"depth":14,"allocated":1,"chain":["Fst.0","App.1","App.0","App.1 ×2","App.0","App.1 ×5","App.0","Con.0","Sort"],"kinds":{"Fst":1}},
+        "normalize": {
+          "depth": 86,
+          "allocated": 205,
+          "chain": [
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "Lam.1",
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "App.1",
+            "App.0",
+            "Elim.1",
+            "List.1",
+            "List.0",
+            "Lam.1 ×3",
+            "App.0",
+            "Elim.1",
+            "List.0"
+          ],
+          "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
+        }
       },
-      "maxRssMiB": {"median":188.2,"min":186.6,"max":191.2,"samples":3}
+      "maxRssMiB": {"median":323.2,"min":313,"max":325.9,"samples":5}
     },
     {
       "id": "euclid-4-prime-print-normal",
-      "series": "kernel",
       "contract": "printNormal",
-      "setup": "import euclid; use unat;",
+      "setup": "import euclid; use nat;",
       "entry": "print(evaluate(!!!euclid(4).1));",
-      "outcome": {"status":"error","code":"K344","text":"K344: Native prototype syntax depth exceeds 512.","length":48,"sha256":"5e7e4ab653bb0f92"},
+      "outcome": {"status":"value","text":"5","length":1,"sha256":"ef2d127de37b942b","normal":"f124cdfe51dff23e"},
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1501.128,"min":1404.264,"max":1544.957,"samples":3}
+        "instructions": 235246,
+        "rejected": 307,
+        "instructionSteps": 489521,
+        "queries": 14378,
+        "querySteps": 180611,
+        "nodes": 20319,
+        "ms": {"median":1435.16,"min":1422.1,"max":1542.417,"samples":5}
       },
-      "total": {
-        "instructions": 14,
-        "instructionSteps": 54,
-        "queries": 2,
-        "failedQueries": 1,
-        "querySteps": 655035,
-        "nodes": 136150,
-        "peakNodes": 139837,
-        "peakBytes": 19530496
-      },
-      "ms": {
-        "cold": {"median":183.547,"min":148.894,"max":228.598,"samples":3},
-        "unobserved": 164.055,
-        "warm": {"median":1.542,"min":0.92,"max":10.67,"samples":9}
-      },
+      "total": {"instructions":107,"instructionSteps":466,"queries":9,"querySteps":56389,"nodes":15622,"peakNodes":35941,"peakBytes":5117952},
+      "ms": {"cold":{"median":8.293,"min":8.161,"max":8.372,"samples":5},"unobserved":7.284,"warm":{"median":2.384,"min":2.248,"max":3.153,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":13,"instructionSteps":53,"queries":1,"querySteps":1,"nodes":15,"coldMs":0.902,"warmMs":0.442},
-        "check": {"calls":1,"instructions":1,"instructionSteps":1,"nodes":1,"coldMs":0.024,"warmMs":0.011},
-        "inventory": {"calls":1,"coldMs":0.055,"warmMs":0.022},
-        "normalize": {"calls":1,"failures":1,"queries":1,"failedQueries":1,"querySteps":655034,"nodes":136134,"coldMs":166.124,"warmMs":0.228},
-        "other": {"calls":1,"coldMs":40.037,"warmMs":0.837}
+        "check": {"calls":2,"instructions":4,"instructionSteps":30,"nodes":6,"coldMs":0.098,"warmMs":0.02},
+        "inventory": {"calls":2,"coldMs":0.097,"warmMs":0.03},
+        "normalize": {"calls":2,"queries":2,"querySteps":56260,"nodes":15464,"coldMs":3.453,"warmMs":0.01},
+        "decode": {"calls":2,"coldMs":0.023,"warmMs":0.007},
+        "elaborate": {"calls":1,"instructions":103,"instructionSteps":436,"queries":7,"querySteps":129,"nodes":152,"coldMs":3.143,"warmMs":1.537},
+        "render": {"calls":1,"coldMs":0.107,"warmMs":0.074},
+        "other": {"calls":1,"coldMs":1.36,"warmMs":0.712}
       },
       "depth": {
-        "check": {"depth":8,"allocated":1,"chain":["Fst.0","App.1 ×4","App.0","Con.0","Sort"],"kinds":{"Fst":1}},
+        "check": {"depth":14,"allocated":1,"chain":["Fst.0","App.1","App.0","App.1 ×2","App.0","App.1 ×5","App.0","Con.0","Sort"],"kinds":{"Fst":1}},
         "normalize": {
-          "depth": 512,
-          "allocated": 136134,
-          "chain": ["App.0","App.1","Fst.0","App.1","Pair.2","App.1","Pair.2","App.0","Lam.0","Sigma.1","Pi.1","Pi.0","App.1","Fst.0","App.1","Pair.2"],
-          "kinds": {"App":47695,"Lam":23175,"Pi":15597,"Sum":11002,"Var":10507,"Path":8420,"Inr":4102,"SumRec":2935}
+          "depth": 124,
+          "allocated": 15259,
+          "chain": [
+            "App.1",
+            "SumRec.2",
+            "Lam.1",
+            "SumRec.2",
+            "Lam.1",
+            "App.0",
+            "Lam.1",
+            "App.0 ×2",
+            "App.1 ×2",
+            "PLam.1",
+            "Comp.1",
+            "Tube.1",
+            "Tube.0",
+            "PApp.0",
+            "App.1",
+            "PLam.1"
+          ],
+          "kinds": {"App":7161,"Lam":2098,"Var":1648,"Comp":783,"Pi":681,"Tube":400,"Pair":390,"List":350}
         }
       },
-      "maxRssMiB": {"median":197.8,"min":194.1,"max":198.6,"samples":3}
+      "maxRssMiB": {"median":324.6,"min":322,"max":324.9,"samples":5}
     },
     {
       "id": "euclid-5-prime",
-      "series": "kernel",
       "contract": "repl",
-      "setup": "import euclid; use unat;",
+      "setup": "import euclid; use nat;",
       "entry": "evaluate euclid(5).1;",
       "outcome": {"status":"value","text":"11","length":2,"sha256":"4fc82b26aecb47d2"},
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1435.858,"min":1322.247,"max":1440.752,"samples":3}
+        "instructions": 235246,
+        "rejected": 307,
+        "instructionSteps": 489521,
+        "queries": 14378,
+        "querySteps": 180611,
+        "nodes": 20319,
+        "ms": {"median":1691.897,"min":1546.2,"max":1868.311,"samples":5}
       },
-      "total": {"instructions":15,"instructionSteps":57,"queries":2,"querySteps":2,"nodes":17,"peakNodes":3704,"peakBytes":1377024},
-      "runtime": {"steps":28187952,"allocatedCells":15566553,"forces":3968762,"hits":818034,"beta":1214194,"iota":410831,"maxFrames":1744,"snapshotNodes":2930},
-      "ms": {
-        "cold": {"median":1976.97,"min":1910.591,"max":2250.865,"samples":3},
-        "unobserved": 1958.944,
-        "warm": {"median":1918.199,"min":1754.662,"max":2392.299,"samples":9}
-      },
+      "total": {"instructions":108,"instructionSteps":469,"queries":13,"querySteps":159499,"nodes":40698,"peakNodes":61017,"peakBytes":5117952},
+      "runtime": {"steps":4177,"allocatedCells":3945,"forces":499,"hits":21,"beta":136,"iota":29,"maxFrames":122,"snapshotNodes":385,"snapshotDefinitions":21},
+      "ms": {"cold":{"median":18.853,"min":16.952,"max":19.902,"samples":5},"unobserved":13.985,"warm":{"median":3.788,"min":3.016,"max":6.95,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":14,"instructionSteps":56,"queries":1,"querySteps":1,"nodes":16,"coldMs":0.863,"warmMs":0.411},
-        "check": {"calls":1,"instructions":1,"instructionSteps":1,"nodes":1,"coldMs":0.024,"warmMs":0.009},
-        "inventory": {"calls":1,"coldMs":0.05,"warmMs":0.019},
-        "demand": {"calls":1,"queries":1,"querySteps":1,"coldMs":0.047,"warmMs":0.074},
-        "runtime": {"calls":13,"coldMs":1961.368,"warmMs":1913.997},
-        "render": {"calls":1,"coldMs":0.839,"warmMs":0.442},
-        "other": {"calls":1,"coldMs":6.904,"warmMs":1.048}
+        "check": {"calls":2,"instructions":4,"instructionSteps":30,"nodes":6,"coldMs":0.127,"warmMs":0.021},
+        "inventory": {"calls":2,"coldMs":0.115,"warmMs":0.037},
+        "normalize": {"calls":1,"queries":1,"querySteps":1145,"nodes":205,"coldMs":0.132,"warmMs":0.019},
+        "decode": {"calls":1,"coldMs":0.006,"warmMs":0.003},
+        "elaborate": {"calls":1,"instructions":104,"instructionSteps":439,"queries":7,"querySteps":129,"nodes":152,"coldMs":3.868,"warmMs":1.975},
+        "runtime": {"calls":2,"failures":1,"coldMs":1.749,"warmMs":0.288},
+        "demand": {"calls":5,"queries":5,"querySteps":158225,"nodes":40335,"coldMs":10.599,"warmMs":0.02},
+        "render": {"calls":1,"coldMs":0.177,"warmMs":0.109},
+        "other": {"calls":1,"coldMs":2.177,"warmMs":1.021}
       },
       "depth": {
-        "check": {"depth":9,"allocated":1,"chain":["Fst.0","App.1 ×5","App.0","Con.0","Sort"],"kinds":{"Fst":1}}
+        "check": {"depth":15,"allocated":1,"chain":["Fst.0","App.1","App.0","App.1 ×2","App.0","App.1 ×6","App.0","Con.0","Sort"],"kinds":{"Fst":1}},
+        "normalize": {
+          "depth": 86,
+          "allocated": 205,
+          "chain": [
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "Lam.1",
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "App.1",
+            "App.0",
+            "Elim.1",
+            "List.1",
+            "List.0",
+            "Lam.1 ×3",
+            "App.0",
+            "Elim.1",
+            "List.0"
+          ],
+          "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
+        }
       },
-      "maxRssMiB": {"median":743.7,"min":726.7,"max":1175,"samples":3}
+      "maxRssMiB": {"median":326.1,"min":322.2,"max":327.9,"samples":5}
     },
     {
       "id": "euclid-5-prime-normal",
-      "series": "kernel",
       "contract": "replNormal",
-      "setup": "import euclid; use unat;",
+      "setup": "import euclid; use nat;",
       "entry": "evaluate !!!euclid(5).1;",
+      "outcome": {"status":"value","text":"11","length":2,"sha256":"4fc82b26aecb47d2","normal":"587eb98d9a7d0d75"},
+      "deterministic": true,
+      "import": {
+        "instructions": 235246,
+        "rejected": 307,
+        "instructionSteps": 489521,
+        "queries": 14378,
+        "querySteps": 180611,
+        "nodes": 20319,
+        "ms": {"median":1457.224,"min":1428.992,"max":1497.818,"samples":5}
+      },
+      "total": {"instructions":108,"instructionSteps":469,"queries":9,"querySteps":159517,"nodes":40698,"peakNodes":61017,"peakBytes":5117952},
+      "ms": {"cold":{"median":14.235,"min":13.594,"max":17.29,"samples":5},"unobserved":15.803,"warm":{"median":2.453,"min":2.265,"max":3.783,"samples":15}},
+      "phases": {
+        "check": {"calls":2,"instructions":4,"instructionSteps":30,"nodes":6,"coldMs":0.098,"warmMs":0.018},
+        "inventory": {"calls":2,"coldMs":0.1,"warmMs":0.034},
+        "normalize": {"calls":2,"queries":2,"querySteps":159388,"nodes":40540,"coldMs":8.931,"warmMs":0.013},
+        "decode": {"calls":2,"coldMs":0.026,"warmMs":0.008},
+        "elaborate": {"calls":1,"instructions":104,"instructionSteps":439,"queries":7,"querySteps":129,"nodes":152,"coldMs":3.167,"warmMs":1.575},
+        "render": {"calls":1,"coldMs":0.117,"warmMs":0.08},
+        "other": {"calls":1,"coldMs":1.531,"warmMs":0.739}
+      },
+      "depth": {
+        "check": {"depth":15,"allocated":1,"chain":["Fst.0","App.1","App.0","App.1 ×2","App.0","App.1 ×6","App.0","Con.0","Sort"],"kinds":{"Fst":1}},
+        "normalize": {
+          "depth": 228,
+          "allocated": 40335,
+          "chain": [
+            "App.1",
+            "SumRec.2",
+            "Lam.1",
+            "SumRec.2",
+            "Lam.1",
+            "App.0",
+            "Lam.1",
+            "App.0 ×2",
+            "App.1 ×2",
+            "PLam.1",
+            "Comp.1",
+            "Tube.1",
+            "Tube.0",
+            "PApp.0",
+            "App.1",
+            "PLam.1"
+          ],
+          "kinds": {"App":18986,"Var":5178,"Lam":5009,"Comp":1998,"Pi":1833,"Pair":1142,"Tube":1001,"List":819}
+        }
+      },
+      "maxRssMiB": {"median":323.5,"min":319.8,"max":325.6,"samples":5}
+    },
+    {
+      "id": "euclid-7-prime",
+      "contract": "repl",
+      "setup": "import euclid; use nat;",
+      "entry": "evaluate euclid(7).1;",
       "outcome": {"status":"error","code":"K344","text":"K344: Native prototype syntax depth exceeds 512.","length":48,"sha256":"5e7e4ab653bb0f92"},
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1499.176,"min":1403.753,"max":1503.552,"samples":3}
+        "instructions": 235246,
+        "rejected": 307,
+        "instructionSteps": 489521,
+        "queries": 14378,
+        "querySteps": 180611,
+        "nodes": 20319,
+        "ms": {"median":1649.77,"min":1528.094,"max":1682.463,"samples":5}
       },
       "total": {
-        "instructions": 15,
-        "instructionSteps": 57,
-        "queries": 2,
+        "instructions": 110,
+        "instructionSteps": 475,
+        "queries": 9,
         "failedQueries": 1,
-        "querySteps": 887731,
-        "nodes": 231050,
-        "peakNodes": 234737,
-        "peakBytes": 19530496
+        "querySteps": 654611,
+        "nodes": 135550,
+        "peakNodes": 155869,
+        "peakBytes": 18487296
       },
-      "ms": {
-        "cold": {"median":331.518,"min":234.844,"max":359.388,"samples":3},
-        "unobserved": 370.827,
-        "warm": {"median":2.468,"min":2.129,"max":20.237,"samples":9}
-      },
+      "runtime": {"steps":4655,"allocatedCells":4227,"forces":567,"hits":29,"beta":154,"iota":35,"maxFrames":140,"snapshotNodes":387,"snapshotDefinitions":21},
+      "ms": {"cold":{"median":43.792,"min":42.726,"max":46.342,"samples":5},"unobserved":40.308,"warm":{"median":3.608,"min":2.71,"max":4.982,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":14,"instructionSteps":56,"queries":1,"querySteps":1,"nodes":16,"coldMs":0.882,"warmMs":0.401},
-        "check": {"calls":1,"instructions":1,"instructionSteps":1,"nodes":1,"coldMs":0.023,"warmMs":0.009},
-        "inventory": {"calls":1,"coldMs":0.063,"warmMs":0.02},
-        "normalize": {"calls":1,"failures":1,"queries":1,"failedQueries":1,"querySteps":887730,"nodes":231033,"coldMs":293.143,"warmMs":1.274},
-        "other": {"calls":1,"coldMs":12.762,"warmMs":0.8}
+        "check": {"calls":2,"instructions":4,"instructionSteps":30,"nodes":6,"coldMs":0.115,"warmMs":0.018},
+        "inventory": {"calls":2,"coldMs":0.105,"warmMs":0.035},
+        "normalize": {"calls":1,"queries":1,"querySteps":1145,"nodes":205,"coldMs":0.128,"warmMs":0.019},
+        "decode": {"calls":1,"coldMs":0.005,"warmMs":0.003},
+        "elaborate": {"calls":1,"instructions":106,"instructionSteps":445,"queries":7,"querySteps":129,"nodes":152,"coldMs":3.336,"warmMs":1.856},
+        "runtime": {"calls":2,"failures":1,"coldMs":1.637,"warmMs":0.289},
+        "demand": {"calls":1,"failures":1,"queries":1,"failedQueries":1,"querySteps":653337,"nodes":135187,"coldMs":36.301,"warmMs":0.05},
+        "other": {"calls":1,"coldMs":2.317,"warmMs":1.147}
       },
       "depth": {
-        "check": {"depth":9,"allocated":1,"chain":["Fst.0","App.1 ×5","App.0","Con.0","Sort"],"kinds":{"Fst":1}},
+        "check": {"depth":17,"allocated":1,"chain":["Fst.0","App.1","App.0","App.1 ×2","App.0","App.1 ×8","App.0","Con.0","Sort"],"kinds":{"Fst":1}},
         "normalize": {
-          "depth": 512,
-          "allocated": 231033,
+          "depth": 86,
+          "allocated": 205,
           "chain": [
-            "SumRec.2",
+            "App.0",
+            "Elim.1",
+            "List.0",
             "Lam.1",
+            "App.0",
+            "Elim.1",
+            "List.0",
             "App.1",
-            "Inr.1",
+            "App.0",
+            "Elim.1",
+            "List.1",
+            "List.0",
             "Lam.1 ×3",
-            "SumRec.1",
-            "Lam.1",
-            "App.0 ×3",
-            "Lam.1 ×3",
-            "SumRec.1",
-            "Lam.1",
-            "App.0 ×3",
-            "Lam.1 ×3",
-            "SumRec.1",
-            "Lam.1",
-            "App.0 ×3"
+            "App.0",
+            "Elim.1",
+            "List.0"
           ],
-          "kinds": {"App":82111,"Lam":38741,"Pi":26745,"Sum":19874,"Var":17294,"Path":14744,"Inr":7498,"Sigma":4919}
+          "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
         }
       },
-      "maxRssMiB": {"median":201.7,"min":198.3,"max":203.3,"samples":3}
+      "maxRssMiB": {"median":339.5,"min":337.2,"max":339.9,"samples":5}
+    },
+    {
+      "id": "euclid-7-prime-normal",
+      "contract": "replNormal",
+      "setup": "import euclid; use nat;",
+      "entry": "evaluate !!!euclid(7).1;",
+      "outcome": {"status":"error","code":"K344","text":"K344: Native prototype syntax depth exceeds 512.","length":48,"sha256":"5e7e4ab653bb0f92"},
+      "deterministic": true,
+      "import": {
+        "instructions": 235246,
+        "rejected": 307,
+        "instructionSteps": 489521,
+        "queries": 14378,
+        "querySteps": 180611,
+        "nodes": 20319,
+        "ms": {"median":1526.663,"min":1512.753,"max":1690.14,"samples":5}
+      },
+      "total": {
+        "instructions": 110,
+        "instructionSteps": 475,
+        "queries": 9,
+        "failedQueries": 1,
+        "querySteps": 654611,
+        "nodes": 135550,
+        "peakNodes": 155869,
+        "peakBytes": 18487296
+      },
+      "ms": {
+        "cold": {"median":40.97,"min":39.789,"max":45.017,"samples":5},
+        "unobserved": 45.864,
+        "warm": {"median":2.993,"min":2.444,"max":11.563,"samples":15}
+      },
+      "phases": {
+        "check": {"calls":2,"instructions":4,"instructionSteps":30,"nodes":6,"coldMs":0.12,"warmMs":0.019},
+        "inventory": {"calls":2,"coldMs":0.115,"warmMs":0.036},
+        "normalize": {"calls":2,"failures":1,"queries":2,"failedQueries":1,"querySteps":654482,"nodes":135392,"coldMs":35.186,"warmMs":0.065},
+        "decode": {"calls":1,"coldMs":0.005,"warmMs":0.003},
+        "elaborate": {"calls":1,"instructions":106,"instructionSteps":445,"queries":7,"querySteps":129,"nodes":152,"coldMs":3.537,"warmMs":1.81},
+        "other": {"calls":1,"coldMs":1.887,"warmMs":1.05}
+      },
+      "depth": {
+        "check": {"depth":17,"allocated":1,"chain":["Fst.0","App.1","App.0","App.1 ×2","App.0","App.1 ×8","App.0","Con.0","Sort"],"kinds":{"Fst":1}},
+        "normalize": {
+          "depth": 512,
+          "allocated": 135187,
+          "chain": [
+            "PLam.1",
+            "Comp.1",
+            "Tube.1",
+            "Tube.0",
+            "PApp.0",
+            "App.1",
+            "PLam.1",
+            "Comp.1",
+            "Tube.1",
+            "Tube.0",
+            "PApp.0",
+            "Comp.1",
+            "Tube.0",
+            "Comp.1",
+            "Tube.0",
+            "App.1"
+          ],
+          "kinds": {"App":66738,"Var":19765,"Lam":15697,"Pi":6289,"Comp":5458,"Pair":3714,"Tube":2827,"List":2339}
+        }
+      },
+      "maxRssMiB": {"median":339.7,"min":339.3,"max":341.4,"samples":5}
     },
     {
       "id": "factorial-4",
-      "series": "kernel",
       "contract": "repl",
-      "setup": "import euclid; use unat;",
+      "setup": "import euclid; use nat;",
       "entry": "evaluate factorial(4);",
       "outcome": {"status":"value","text":"24","length":2,"sha256":"c2356069e9d1e79c"},
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1365.802,"min":1360.978,"max":1417.144,"samples":3}
+        "instructions": 235246,
+        "rejected": 307,
+        "instructionSteps": 489521,
+        "queries": 14378,
+        "querySteps": 180611,
+        "nodes": 20319,
+        "ms": {"median":1502.364,"min":1420.786,"max":1689.625,"samples":5}
       },
-      "total": {"instructions":12,"instructionSteps":43,"queries":1,"querySteps":4,"nodes":12,"peakNodes":3699,"peakBytes":1377024},
-      "runtime": {"steps":3912,"allocatedCells":2364,"forces":512,"hits":130,"beta":137,"iota":62,"maxFrames":65,"snapshotNodes":71},
-      "ms": {"cold":{"median":37.85,"min":32.984,"max":51.156,"samples":3},"unobserved":7.147,"warm":{"median":1.721,"min":1.498,"max":3.933,"samples":9}},
+      "total": {"instructions":87,"instructionSteps":406,"queries":13,"querySteps":13649,"nodes":3848,"peakNodes":24167,"peakBytes":3151872},
+      "runtime": {"steps":3350,"allocatedCells":3204,"forces":388,"hits":15,"beta":106,"iota":26,"maxFrames":69,"snapshotNodes":321,"snapshotDefinitions":15},
+      "ms": {"cold":{"median":7.682,"min":7.573,"max":9.263,"samples":5},"unobserved":6.97,"warm":{"median":3.372,"min":2.707,"max":4.327,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":11,"instructionSteps":36,"nodes":10,"coldMs":0.716,"warmMs":0.272},
-        "check": {"calls":1,"instructions":1,"instructionSteps":7,"nodes":2,"coldMs":0.041,"warmMs":0.01},
-        "inventory": {"calls":1,"coldMs":0.052,"warmMs":0.019},
-        "demand": {"calls":1,"queries":1,"querySteps":4,"coldMs":0.051,"warmMs":0.013},
-        "runtime": {"calls":26,"coldMs":26.929,"warmMs":0.444},
-        "render": {"calls":1,"coldMs":1.709,"warmMs":0.436},
-        "other": {"calls":1,"coldMs":3.489,"warmMs":0.535}
+        "check": {"calls":2,"instructions":4,"instructionSteps":32,"nodes":6,"coldMs":0.119,"warmMs":0.019},
+        "inventory": {"calls":2,"coldMs":0.116,"warmMs":0.033},
+        "normalize": {"calls":1,"queries":1,"querySteps":1145,"nodes":205,"coldMs":0.118,"warmMs":0.013},
+        "decode": {"calls":1,"coldMs":0.005,"warmMs":0.003},
+        "elaborate": {"calls":1,"instructions":83,"instructionSteps":374,"queries":6,"querySteps":128,"nodes":133,"coldMs":2.959,"warmMs":1.731},
+        "runtime": {"calls":2,"failures":1,"coldMs":1.511,"warmMs":0.231},
+        "demand": {"calls":6,"queries":6,"querySteps":12376,"nodes":3504,"coldMs":0.965,"warmMs":0.027},
+        "render": {"calls":1,"coldMs":0.166,"warmMs":0.106},
+        "other": {"calls":1,"coldMs":1.837,"warmMs":1.013}
       },
       "depth": {
-        "check": {"depth":7,"allocated":2,"chain":["App.1 ×4","App.0","Con.0","Sort"],"kinds":{"App":2}}
-      },
-      "maxRssMiB": {"median":177.7,"min":176.3,"max":178.4,"samples":3}
-    },
-    {
-      "id": "factorial-4-normal",
-      "series": "kernel",
-      "contract": "replNormal",
-      "setup": "import euclid; use unat;",
-      "entry": "evaluate !!!factorial(4);",
-      "outcome": {"status":"value","text":"24","length":2,"sha256":"c2356069e9d1e79c","normal":"56a31fe9c4ec097a"},
-      "deterministic": true,
-      "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1455.11,"min":1364.269,"max":1502.041,"samples":3}
-      },
-      "total": {"instructions":12,"instructionSteps":43,"queries":1,"querySteps":2104,"nodes":813,"peakNodes":4500,"peakBytes":1377024},
-      "ms": {"cold":{"median":2.227,"min":2.178,"max":21.207,"samples":3},"unobserved":1.888,"warm":{"median":1.313,"min":0.701,"max":43.466,"samples":9}},
-      "phases": {
-        "elaborate": {"calls":1,"instructions":11,"instructionSteps":36,"nodes":10,"coldMs":0.656,"warmMs":0.329},
-        "check": {"calls":1,"instructions":1,"instructionSteps":7,"nodes":2,"coldMs":0.035,"warmMs":0.01},
-        "inventory": {"calls":1,"coldMs":0.052,"warmMs":0.022},
-        "normalize": {"calls":1,"queries":1,"querySteps":2104,"nodes":801,"coldMs":0.308,"warmMs":0.006},
-        "decode": {"calls":1,"coldMs":0.066,"warmMs":0.003},
-        "render": {"calls":1,"coldMs":0.312,"warmMs":0.297},
-        "other": {"calls":1,"coldMs":0.824,"warmMs":0.591}
-      },
-      "depth": {
-        "check": {"depth":7,"allocated":2,"chain":["App.1 ×4","App.0","Con.0","Sort"],"kinds":{"App":2}},
+        "check": {"depth":13,"allocated":1,"chain":["App.1","App.0","App.1 ×2","App.0","App.1 ×5","App.0","Con.0","Sort"],"kinds":{"App":1}},
         "normalize": {
-          "depth": 26,
-          "allocated": 801,
+          "depth": 86,
+          "allocated": 205,
           "chain": [
             "App.0",
-            "App.1 ×3",
+            "Elim.1",
+            "List.0",
+            "Lam.1",
             "App.0",
             "Elim.1",
             "List.0",
-            "App.0",
-            "Elim.1",
-            "List.1",
-            "List.0",
-            "Lam.1 ×2",
-            "App.0",
             "App.1",
             "App.0",
             "Elim.1",
             "List.1",
+            "List.0",
+            "Lam.1 ×3",
+            "App.0",
+            "Elim.1",
             "List.0"
           ],
-          "kinds": {"App":479,"Var":203,"Pi":47,"Lam":40,"List":18,"Elim":14}
+          "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
         }
       },
-      "maxRssMiB": {"median":180.1,"min":179.2,"max":180.2,"samples":3}
+      "maxRssMiB": {"median":322.1,"min":314.7,"max":323.9,"samples":5}
+    },
+    {
+      "id": "factorial-4-normal",
+      "contract": "replNormal",
+      "setup": "import euclid; use nat;",
+      "entry": "evaluate !!!factorial(4);",
+      "outcome": {"status":"value","text":"24","length":2,"sha256":"c2356069e9d1e79c","normal":"ecdaf4456b908a19"},
+      "deterministic": true,
+      "import": {
+        "instructions": 235246,
+        "rejected": 307,
+        "instructionSteps": 489521,
+        "queries": 14378,
+        "querySteps": 180611,
+        "nodes": 20319,
+        "ms": {"median":1537.256,"min":1477.412,"max":1579.357,"samples":5}
+      },
+      "total": {"instructions":87,"instructionSteps":406,"queries":8,"querySteps":13673,"nodes":3852,"peakNodes":24171,"peakBytes":3151872},
+      "ms": {"cold":{"median":5.978,"min":5.647,"max":6.987,"samples":5},"unobserved":4.62,"warm":{"median":2.725,"min":2.169,"max":3.552,"samples":15}},
+      "phases": {
+        "check": {"calls":2,"instructions":4,"instructionSteps":32,"nodes":6,"coldMs":0.123,"warmMs":0.017},
+        "inventory": {"calls":2,"coldMs":0.104,"warmMs":0.033},
+        "normalize": {"calls":2,"queries":2,"querySteps":13545,"nodes":3713,"coldMs":1.072,"warmMs":0.013},
+        "decode": {"calls":2,"coldMs":0.032,"warmMs":0.008},
+        "elaborate": {"calls":1,"instructions":83,"instructionSteps":374,"queries":6,"querySteps":128,"nodes":133,"coldMs":3.092,"warmMs":1.705},
+        "render": {"calls":1,"coldMs":0.119,"warmMs":0.087},
+        "other": {"calls":1,"coldMs":1.464,"warmMs":0.784}
+      },
+      "depth": {
+        "check": {"depth":13,"allocated":1,"chain":["App.1","App.0","App.1 ×2","App.0","App.1 ×5","App.0","Con.0","Sort"],"kinds":{"App":1}},
+        "normalize": {
+          "depth": 86,
+          "allocated": 205,
+          "chain": [
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "Lam.1",
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "App.1",
+            "App.0",
+            "Elim.1",
+            "List.1",
+            "List.0",
+            "Lam.1 ×3",
+            "App.0",
+            "Elim.1",
+            "List.0"
+          ],
+          "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
+        }
+      },
+      "maxRssMiB": {"median":320.6,"min":320,"max":322.1,"samples":5}
     },
     {
       "id": "factorial-5-print",
-      "series": "kernel",
       "contract": "print",
-      "setup": "import euclid; use unat;",
+      "setup": "import euclid; use nat;",
       "entry": "print(evaluate(factorial(5)));",
       "outcome": {"status":"value","text":"120","length":3,"sha256":"2abaca4911e68fa9"},
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1448.936,"min":1408.124,"max":1538.857,"samples":3}
+        "instructions": 235246,
+        "rejected": 307,
+        "instructionSteps": 489521,
+        "queries": 14378,
+        "querySteps": 180611,
+        "nodes": 20319,
+        "ms": {"median":1448.389,"min":1410.661,"max":1504.311,"samples":5}
       },
-      "total": {"instructions":13,"instructionSteps":46,"queries":1,"querySteps":4,"nodes":13,"peakNodes":3700,"peakBytes":1377024},
-      "runtime": {"steps":11063,"allocatedCells":6325,"forces":1464,"hits":487,"beta":407,"iota":194,"maxFrames":80,"snapshotNodes":72},
-      "ms": {"cold":{"median":63.94,"min":44.232,"max":76.237,"samples":3},"unobserved":29.997,"warm":{"median":7.399,"min":3.546,"max":48.579,"samples":9}},
+      "total": {"instructions":88,"instructionSteps":409,"queries":15,"querySteps":16989,"nodes":4770,"peakNodes":25089,"peakBytes":3151872},
+      "runtime": {"steps":3589,"allocatedCells":3345,"forces":422,"hits":19,"beta":115,"iota":29,"maxFrames":78,"snapshotNodes":322,"snapshotDefinitions":15},
+      "ms": {"cold":{"median":7.527,"min":7.375,"max":8.581,"samples":5},"unobserved":5.775,"warm":{"median":3.405,"min":2.68,"max":3.838,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":12,"instructionSteps":39,"nodes":11,"coldMs":0.655,"warmMs":0.411},
-        "check": {"calls":1,"instructions":1,"instructionSteps":7,"nodes":2,"coldMs":0.13,"warmMs":0.011},
-        "inventory": {"calls":1,"coldMs":0.14,"warmMs":0.02},
-        "demand": {"calls":1,"queries":1,"querySteps":4,"coldMs":0.118,"warmMs":0.035},
-        "runtime": {"calls":122,"coldMs":22.536,"warmMs":1.682},
-        "render": {"calls":1,"coldMs":5.32,"warmMs":2.676},
-        "other": {"calls":1,"coldMs":8.472,"warmMs":1.828}
+        "check": {"calls":2,"instructions":4,"instructionSteps":32,"nodes":6,"coldMs":0.103,"warmMs":0.018},
+        "inventory": {"calls":2,"coldMs":0.1,"warmMs":0.033},
+        "normalize": {"calls":1,"queries":1,"querySteps":1145,"nodes":205,"coldMs":0.102,"warmMs":0.011},
+        "decode": {"calls":1,"coldMs":0.005,"warmMs":0.003},
+        "elaborate": {"calls":1,"instructions":84,"instructionSteps":377,"queries":6,"querySteps":128,"nodes":133,"coldMs":2.77,"warmMs":1.733},
+        "runtime": {"calls":2,"failures":1,"coldMs":1.466,"warmMs":0.224},
+        "demand": {"calls":8,"queries":8,"querySteps":15716,"nodes":4426,"coldMs":1.124,"warmMs":0.021},
+        "render": {"calls":1,"coldMs":0.197,"warmMs":0.134},
+        "other": {"calls":1,"coldMs":1.706,"warmMs":0.944}
       },
       "depth": {
-        "check": {"depth":8,"allocated":2,"chain":["App.1 ×5","App.0","Con.0","Sort"],"kinds":{"App":2}}
+        "check": {"depth":14,"allocated":1,"chain":["App.1","App.0","App.1 ×2","App.0","App.1 ×6","App.0","Con.0","Sort"],"kinds":{"App":1}},
+        "normalize": {
+          "depth": 86,
+          "allocated": 205,
+          "chain": [
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "Lam.1",
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "App.1",
+            "App.0",
+            "Elim.1",
+            "List.1",
+            "List.0",
+            "Lam.1 ×3",
+            "App.0",
+            "Elim.1",
+            "List.0"
+          ],
+          "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
+        }
       },
-      "maxRssMiB": {"median":181.1,"min":178.7,"max":181.4,"samples":3}
+      "maxRssMiB": {"median":320.9,"min":308.5,"max":324.6,"samples":5}
     },
     {
       "id": "factorial-5-print-normal",
-      "series": "kernel",
       "contract": "printNormal",
-      "setup": "import euclid; use unat;",
+      "setup": "import euclid; use nat;",
       "entry": "print(evaluate(!!!factorial(5)));",
-      "outcome": {"status":"value","text":"120","length":3,"sha256":"2abaca4911e68fa9","normal":"a54ba0b59aba65f2"},
+      "outcome": {"status":"value","text":"120","length":3,"sha256":"2abaca4911e68fa9","normal":"dbe9a178d20ca486"},
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1534.304,"min":1463.195,"max":1652.716,"samples":3}
+        "instructions": 235246,
+        "rejected": 307,
+        "instructionSteps": 489521,
+        "queries": 14378,
+        "querySteps": 180611,
+        "nodes": 20319,
+        "ms": {"median":1503.346,"min":1458.587,"max":1592.003,"samples":5}
       },
-      "total": {"instructions":13,"instructionSteps":46,"queries":1,"querySteps":6386,"nodes":2669,"peakNodes":6356,"peakBytes":1377024},
-      "ms": {"cold":{"median":4.09,"min":3.605,"max":18.26,"samples":3},"unobserved":27.17,"warm":{"median":1.563,"min":1.206,"max":23.602,"samples":9}},
+      "total": {"instructions":88,"instructionSteps":409,"queries":8,"querySteps":17019,"nodes":4776,"peakNodes":25095,"peakBytes":3151872},
+      "ms": {"cold":{"median":5.891,"min":5.442,"max":9.091,"samples":5},"unobserved":4.061,"warm":{"median":2.796,"min":2.306,"max":3.681,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":12,"instructionSteps":39,"nodes":11,"coldMs":0.716,"warmMs":0.252},
-        "check": {"calls":1,"instructions":1,"instructionSteps":7,"nodes":2,"coldMs":0.041,"warmMs":0.01},
-        "inventory": {"calls":1,"coldMs":0.052,"warmMs":0.019},
-        "normalize": {"calls":1,"queries":1,"querySteps":6386,"nodes":2656,"coldMs":0.705,"warmMs":0.005},
-        "decode": {"calls":1,"coldMs":0.314,"warmMs":0.002},
-        "render": {"calls":1,"coldMs":1.101,"warmMs":0.722},
-        "other": {"calls":1,"coldMs":1.095,"warmMs":0.396}
+        "check": {"calls":2,"instructions":4,"instructionSteps":32,"nodes":6,"coldMs":0.111,"warmMs":0.018},
+        "inventory": {"calls":2,"coldMs":0.106,"warmMs":0.034},
+        "normalize": {"calls":2,"queries":2,"querySteps":16891,"nodes":4637,"coldMs":1.244,"warmMs":0.014},
+        "decode": {"calls":2,"coldMs":0.037,"warmMs":0.01},
+        "elaborate": {"calls":1,"instructions":84,"instructionSteps":377,"queries":6,"querySteps":128,"nodes":133,"coldMs":2.91,"warmMs":1.749},
+        "render": {"calls":1,"coldMs":0.128,"warmMs":0.101},
+        "other": {"calls":1,"coldMs":1.421,"warmMs":0.807}
       },
       "depth": {
-        "check": {"depth":8,"allocated":2,"chain":["App.1 ×5","App.0","Con.0","Sort"],"kinds":{"App":2}},
+        "check": {"depth":14,"allocated":1,"chain":["App.1","App.0","App.1 ×2","App.0","App.1 ×6","App.0","Con.0","Sort"],"kinds":{"App":1}},
         "normalize": {
-          "depth": 122,
-          "allocated": 2656,
-          "chain": ["App.1 ×119","App.0","Con.0","Sort"],
-          "kinds": {"App":1651,"Var":713,"Pi":173,"Lam":74,"List":25,"Elim":20}
+          "depth": 86,
+          "allocated": 205,
+          "chain": [
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "Lam.1",
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "App.1",
+            "App.0",
+            "Elim.1",
+            "List.1",
+            "List.0",
+            "Lam.1 ×3",
+            "App.0",
+            "Elim.1",
+            "List.0"
+          ],
+          "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
         }
       },
-      "maxRssMiB": {"median":179.6,"min":179.4,"max":181.5,"samples":3}
+      "maxRssMiB": {"median":320.2,"min":319.8,"max":320.3,"samples":5}
     },
     {
       "id": "divides-3-6",
-      "series": "kernel",
       "contract": "repl",
-      "setup": "import euclid; use unat;",
-      "entry": "evaluate nontrivial_divisibility_decidable(1, 6);",
+      "setup": "import euclid; use nat;",
+      "entry": "evaluate divides_decide(3, 6);",
       "outcome": {"status":"value","text":"left((2, <path>))","length":17,"sha256":"d5c4e7c34b9f3c06"},
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1502.08,"min":1378.056,"max":1503.382,"samples":3}
+        "instructions": 235246,
+        "rejected": 307,
+        "instructionSteps": 489521,
+        "queries": 14378,
+        "querySteps": 180611,
+        "nodes": 20319,
+        "ms": {"median":1455.058,"min":1436.463,"max":1543.055,"samples":5}
       },
-      "total": {"instructions":15,"instructionSteps":242,"queries":1,"querySteps":4,"nodes":73,"peakNodes":3760,"peakBytes":1377024},
-      "runtime": {"steps":9623,"allocatedCells":9432,"forces":662,"hits":82,"beta":173,"iota":49,"maxFrames":72,"snapshotNodes":1379},
-      "ms": {"cold":{"median":39.994,"min":12.757,"max":55.527,"samples":3},"unobserved":4.869,"warm":{"median":2.459,"min":1.821,"max":47.041,"samples":9}},
+      "total": {"instructions":145,"instructionSteps":600,"queries":9,"querySteps":1751,"nodes":541,"peakNodes":20860,"peakBytes":3151872},
+      "runtime": {
+        "steps": 11340,
+        "allocatedCells": 8499,
+        "forces": 1478,
+        "hits": 111,
+        "beta": 378,
+        "iota": 110,
+        "maxFrames": 167,
+        "snapshotNodes": 545,
+        "snapshotDefinitions": 24
+      },
+      "ms": {"cold":{"median":9.076,"min":8.979,"max":9.974,"samples":5},"unobserved":8.819,"warm":{"median":4.64,"min":4.145,"max":6.772,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":13,"instructionSteps":42,"nodes":12,"coldMs":0.978,"warmMs":0.528},
-        "check": {"calls":1,"instructions":2,"instructionSteps":200,"nodes":61,"coldMs":0.587,"warmMs":0.01},
-        "inventory": {"calls":1,"coldMs":0.262,"warmMs":0.039},
-        "demand": {"calls":1,"queries":1,"querySteps":4,"coldMs":0.098,"warmMs":0.009},
-        "runtime": {"calls":7,"coldMs":9.289,"warmMs":1.262},
-        "render": {"calls":1,"coldMs":0.215,"warmMs":0.124},
-        "other": {"calls":1,"coldMs":2.778,"warmMs":0.519}
+        "check": {"calls":3,"instructions":6,"instructionSteps":58,"nodes":14,"coldMs":0.141,"warmMs":0.031},
+        "inventory": {"calls":3,"coldMs":0.131,"warmMs":0.052},
+        "normalize": {"calls":2,"queries":2,"querySteps":1568,"nodes":328,"coldMs":0.149,"warmMs":0.017},
+        "decode": {"calls":2,"coldMs":0.008,"warmMs":0.004},
+        "elaborate": {"calls":1,"instructions":139,"instructionSteps":542,"queries":7,"querySteps":183,"nodes":199,"coldMs":4.599,"warmMs":3.138},
+        "runtime": {"calls":7,"coldMs":2.26,"warmMs":0.369},
+        "render": {"calls":1,"coldMs":0.132,"warmMs":0.073},
+        "other": {"calls":1,"coldMs":1.716,"warmMs":0.883}
       },
       "depth": {
-        "check": {
-          "depth": 22,
-          "allocated": 61,
-          "chain": ["App.0","Lam.0","App.0","Lam.1","Sum.0","Sigma.1 ×3","Pi.1 ×2","Pi.0","App.0","Lam.1","Path.2","App.1 ×5","App.0","Con.0","Sort"],
-          "kinds": {"App":26,"Pi":15,"Lam":8,"Sigma":6,"Sum":4,"Path":2}
+        "check": {"depth":16,"allocated":8,"chain":["App.1 ×2","App.0","App.1 ×2","App.0","App.1 ×7","App.0","Con.0","Sort"],"kinds":{"App":7,"Pi":1}},
+        "normalize": {
+          "depth": 86,
+          "allocated": 205,
+          "chain": [
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "Lam.1",
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "App.1",
+            "App.0",
+            "Elim.1",
+            "List.1",
+            "List.0",
+            "Lam.1 ×3",
+            "App.0",
+            "Elim.1",
+            "List.0"
+          ],
+          "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
         }
       },
-      "maxRssMiB": {"median":179.2,"min":178.9,"max":180.5,"samples":3}
+      "maxRssMiB": {"median":319.9,"min":317.7,"max":323.7,"samples":5}
     },
     {
       "id": "divides-3-6-normal",
-      "series": "kernel",
       "contract": "replNormal",
-      "setup": "import euclid; use unat;",
-      "entry": "evaluate !!!nontrivial_divisibility_decidable(1, 6);",
-      "outcome": {"status":"value","text":"left((2, refl(6)))","length":18,"sha256":"6e03f6289c8328db","normal":"d71fe6ebcafc0a0f"},
+      "setup": "import euclid; use nat;",
+      "entry": "evaluate !!!divides_decide(3, 6);",
+      "outcome": {"status":"value","text":"left((2, refl(6)))","length":18,"sha256":"6e03f6289c8328db","normal":"f2b26adff7e23af9"},
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1495.365,"min":1491.369,"max":1566.05,"samples":3}
+        "instructions": 235246,
+        "rejected": 307,
+        "instructionSteps": 489521,
+        "queries": 14378,
+        "querySteps": 180611,
+        "nodes": 20319,
+        "ms": {"median":1465.771,"min":1397.109,"max":1718.785,"samples":5}
       },
-      "total": {"instructions":15,"instructionSteps":242,"queries":1,"querySteps":10508,"nodes":2745,"peakNodes":6432,"peakBytes":1377024},
-      "ms": {"cold":{"median":13.069,"min":3.928,"max":55.593,"samples":3},"unobserved":3.581,"warm":{"median":1.455,"min":1.341,"max":8.973,"samples":9}},
+      "total": {"instructions":145,"instructionSteps":600,"queries":10,"querySteps":24167,"nodes":6608,"peakNodes":26927,"peakBytes":3151872},
+      "ms": {"cold":{"median":9.485,"min":8.686,"max":11.158,"samples":5},"unobserved":7.872,"warm":{"median":4.973,"min":4.284,"max":7.097,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":13,"instructionSteps":42,"nodes":12,"coldMs":0.954,"warmMs":0.389},
-        "check": {"calls":1,"instructions":2,"instructionSteps":200,"nodes":61,"coldMs":0.285,"warmMs":0.01},
-        "inventory": {"calls":1,"coldMs":0.154,"warmMs":0.039},
-        "normalize": {"calls":1,"queries":1,"querySteps":10508,"nodes":2672,"coldMs":0.942,"warmMs":0.004},
-        "decode": {"calls":1,"coldMs":0.107,"warmMs":0.002},
-        "render": {"calls":1,"coldMs":0.997,"warmMs":0.658},
-        "other": {"calls":1,"coldMs":2.625,"warmMs":0.358}
+        "check": {"calls":3,"instructions":6,"instructionSteps":58,"nodes":14,"coldMs":0.156,"warmMs":0.031},
+        "inventory": {"calls":3,"coldMs":0.142,"warmMs":0.052},
+        "normalize": {"calls":3,"queries":3,"querySteps":23984,"nodes":6395,"coldMs":1.503,"warmMs":0.024},
+        "decode": {"calls":3,"coldMs":0.173,"warmMs":0.007},
+        "elaborate": {"calls":1,"instructions":139,"instructionSteps":542,"queries":7,"querySteps":183,"nodes":199,"coldMs":4.948,"warmMs":3.127},
+        "render": {"calls":1,"coldMs":1.034,"warmMs":0.808},
+        "other": {"calls":1,"coldMs":1.4,"warmMs":0.866}
       },
       "depth": {
-        "check": {
-          "depth": 22,
-          "allocated": 61,
-          "chain": ["App.0","Lam.0","App.0","Lam.1","Sum.0","Sigma.1 ×3","Pi.1 ×2","Pi.0","App.0","Lam.1","Path.2","App.1 ×5","App.0","Con.0","Sort"],
-          "kinds": {"App":26,"Pi":15,"Lam":8,"Sigma":6,"Sum":4,"Path":2}
-        },
+        "check": {"depth":16,"allocated":8,"chain":["App.1 ×2","App.0","App.1 ×2","App.0","App.1 ×7","App.0","Con.0","Sort"],"kinds":{"App":7,"Pi":1}},
         "normalize": {
-          "depth": 98,
-          "allocated": 2672,
-          "chain": ["App.1","Inl.1","App.1","Pair.2","Fst.0","Snd.0 ×2","App.1","Pair.2","App.1","Pair.2","App.0","Lam.0","Sigma.1","Pi.1","Pi.0","App.1"],
-          "kinds": {"App":958,"Lam":419,"Pi":340,"Sigma":181,"Sum":155,"Var":148,"Path":92,"Pair":64}
+          "depth": 86,
+          "allocated": 205,
+          "chain": [
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "Lam.1",
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "App.1",
+            "App.0",
+            "Elim.1",
+            "List.1",
+            "List.0",
+            "Lam.1 ×3",
+            "App.0",
+            "Elim.1",
+            "List.0"
+          ],
+          "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
         }
       },
-      "maxRssMiB": {"median":178.6,"min":176.2,"max":179.8,"samples":3}
+      "maxRssMiB": {"median":320.5,"min":319.7,"max":323.7,"samples":5}
     },
     {
       "id": "divides-4-6",
-      "series": "kernel",
       "contract": "repl",
-      "setup": "import euclid; use unat;",
-      "entry": "evaluate nontrivial_divisibility_decidable(2, 6);",
+      "setup": "import euclid; use nat;",
+      "entry": "evaluate divides_decide(4, 6);",
       "outcome": {"status":"value","text":"right(<fun>)","length":12,"sha256":"6cfe59cf29046830"},
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1545.955,"min":1422.643,"max":1696.733,"samples":3}
+        "instructions": 235246,
+        "rejected": 307,
+        "instructionSteps": 489521,
+        "queries": 14378,
+        "querySteps": 180611,
+        "nodes": 20319,
+        "ms": {"median":1552.089,"min":1438.533,"max":1694.423,"samples":5}
       },
-      "total": {"instructions":15,"instructionSteps":242,"queries":1,"querySteps":4,"nodes":73,"peakNodes":3760,"peakBytes":1377024},
-      "runtime": {"steps":16503,"allocatedCells":13262,"forces":1620,"hits":256,"beta":473,"iota":147,"maxFrames":72,"snapshotNodes":1379},
-      "ms": {"cold":{"median":51.806,"min":50.126,"max":53.58,"samples":3},"unobserved":31.31,"warm":{"median":3.247,"min":1.88,"max":29.564,"samples":9}},
+      "total": {"instructions":145,"instructionSteps":600,"queries":9,"querySteps":1751,"nodes":541,"peakNodes":20860,"peakBytes":3151872},
+      "runtime": {"steps":9523,"allocatedCells":7628,"forces":1196,"hits":82,"beta":304,"iota":95,"maxFrames":174,"snapshotNodes":575,"snapshotDefinitions":25},
+      "ms": {"cold":{"median":9.576,"min":8.717,"max":10.321,"samples":5},"unobserved":7.943,"warm":{"median":5.178,"min":4.304,"max":7.234,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":13,"instructionSteps":42,"nodes":12,"coldMs":1.026,"warmMs":0.435},
-        "check": {"calls":1,"instructions":2,"instructionSteps":200,"nodes":61,"coldMs":1.654,"warmMs":0.01},
-        "inventory": {"calls":1,"coldMs":0.24,"warmMs":0.04},
-        "demand": {"calls":1,"queries":1,"querySteps":4,"coldMs":0.114,"warmMs":0.018},
-        "runtime": {"calls":3,"coldMs":13.222,"warmMs":1.634},
-        "render": {"calls":1,"coldMs":0.086,"warmMs":0.066},
-        "other": {"calls":1,"coldMs":2.002,"warmMs":0.63}
+        "check": {"calls":3,"instructions":6,"instructionSteps":58,"nodes":14,"coldMs":0.156,"warmMs":0.029},
+        "inventory": {"calls":3,"coldMs":0.15,"warmMs":0.056},
+        "normalize": {"calls":2,"queries":2,"querySteps":1568,"nodes":328,"coldMs":0.179,"warmMs":0.023},
+        "decode": {"calls":2,"coldMs":0.008,"warmMs":0.005},
+        "elaborate": {"calls":1,"instructions":139,"instructionSteps":542,"queries":7,"querySteps":183,"nodes":199,"coldMs":5.086,"warmMs":3.522},
+        "runtime": {"calls":3,"coldMs":2.043,"warmMs":0.525},
+        "render": {"calls":1,"coldMs":0.061,"warmMs":0.023},
+        "other": {"calls":1,"coldMs":1.734,"warmMs":0.973}
       },
       "depth": {
         "check": {
-          "depth": 22,
-          "allocated": 61,
-          "chain": ["Pi.1","App.0","Lam.0","App.0","Lam.1","Sum.0","Sigma.1 ×3","Pi.1 ×2","Pi.0","App.0","Lam.1","Path.1","App.1 ×4","App.0","Con.0","Sort"],
-          "kinds": {"App":26,"Pi":15,"Lam":8,"Sigma":6,"Sum":4,"Path":2}
+          "depth": 16,
+          "allocated": 8,
+          "chain": ["Pi.1","App.1","App.0","App.1","App.0","App.1 ×2","App.0","App.1 ×5","App.0","Con.0","Sort"],
+          "kinds": {"App":7,"Pi":1}
+        },
+        "normalize": {
+          "depth": 86,
+          "allocated": 205,
+          "chain": [
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "Lam.1",
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "App.1",
+            "App.0",
+            "Elim.1",
+            "List.1",
+            "List.0",
+            "Lam.1 ×3",
+            "App.0",
+            "Elim.1",
+            "List.0"
+          ],
+          "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
         }
       },
-      "maxRssMiB": {"median":180.2,"min":179.6,"max":181.8,"samples":3}
+      "maxRssMiB": {"median":323.1,"min":320.1,"max":323.9,"samples":5}
     },
     {
       "id": "divides-4-6-normal",
-      "series": "kernel",
       "contract": "replNormal",
-      "setup": "import euclid; use unat;",
-      "entry": "evaluate !!!nontrivial_divisibility_decidable(2, 6);",
+      "setup": "import euclid; use nat;",
+      "entry": "evaluate !!!divides_decide(4, 6);",
       "outcome": {
         "status": "value",
-        "text": "right(fun (w : exists q : UNat. (induction q return UNat { zero => 0; succ y6 => succ(succ(succ(succ(y6)))); }) = 6) => match (induction w.1 as a2_ return fora…",
+        "text": "right(fun (multiple : exists q3 : BNat. (match q3 return BNat { b_zero => 0; b_positive(p87) => b_positive(induction p87 return BPositive { bp_one => bp_even(b…",
         "length": 1000,
-        "sha256": "bc51d4f27100e750",
-        "normal": "f64ff42f6ac5243f"
+        "sha256": "0a6e39b2e73636ea",
+        "normal": "e1f49866916e6785"
       },
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1581.767,"min":1483.465,"max":1678.798,"samples":3}
+        "instructions": 235246,
+        "rejected": 307,
+        "instructionSteps": 489521,
+        "queries": 14378,
+        "querySteps": 180611,
+        "nodes": 20319,
+        "ms": {"median":1455.098,"min":1436.767,"max":1589.366,"samples":5}
       },
-      "total": {"instructions":15,"instructionSteps":242,"queries":1,"querySteps":30484,"nodes":8555,"peakNodes":12242,"peakBytes":1835776},
-      "ms": {"cold":{"median":73.177,"min":42.091,"max":103.56,"samples":3},"unobserved":59.643,"warm":{"median":36.851,"min":6.98,"max":81.09,"samples":9}},
+      "total": {"instructions":145,"instructionSteps":600,"queries":10,"querySteps":98016,"nodes":28207,"peakNodes":48526,"peakBytes":5117952},
+      "ms": {
+        "cold": {"median":37.462,"min":35.221,"max":41.283,"samples":5},
+        "unobserved": 33.468,
+        "warm": {"median":21.381,"min":18.03,"max":24.676,"samples":15}
+      },
       "phases": {
-        "elaborate": {"calls":1,"instructions":13,"instructionSteps":42,"nodes":12,"coldMs":1.075,"warmMs":1.038},
-        "check": {"calls":1,"instructions":2,"instructionSteps":200,"nodes":61,"coldMs":0.569,"warmMs":0.023},
-        "inventory": {"calls":1,"coldMs":4.505,"warmMs":0.043},
-        "normalize": {"calls":1,"queries":1,"querySteps":30484,"nodes":8482,"coldMs":18.317,"warmMs":0.008},
-        "decode": {"calls":1,"coldMs":2.097,"warmMs":0.004},
-        "render": {"calls":1,"coldMs":25.638,"warmMs":29.402},
-        "other": {"calls":1,"coldMs":1.69,"warmMs":0.973}
+        "check": {"calls":3,"instructions":6,"instructionSteps":58,"nodes":14,"coldMs":0.144,"warmMs":0.033},
+        "inventory": {"calls":3,"coldMs":0.135,"warmMs":0.06},
+        "normalize": {"calls":3,"queries":3,"querySteps":97833,"nodes":27994,"coldMs":5.978,"warmMs":0.043},
+        "decode": {"calls":3,"coldMs":3.251,"warmMs":0.009},
+        "elaborate": {"calls":1,"instructions":139,"instructionSteps":542,"queries":7,"querySteps":183,"nodes":199,"coldMs":4.706,"warmMs":3.974},
+        "render": {"calls":1,"coldMs":21.637,"warmMs":14.805},
+        "other": {"calls":1,"coldMs":1.668,"warmMs":1.192}
       },
       "depth": {
         "check": {
-          "depth": 22,
-          "allocated": 61,
-          "chain": ["Pi.1","App.0","Lam.0","App.0","Lam.1","Sum.0","Sigma.1 ×3","Pi.1 ×2","Pi.0","App.0","Lam.1","Path.1","App.1 ×4","App.0","Con.0","Sort"],
-          "kinds": {"App":26,"Pi":15,"Lam":8,"Sigma":6,"Sum":4,"Path":2}
+          "depth": 16,
+          "allocated": 8,
+          "chain": ["Pi.1","App.1","App.0","App.1","App.0","App.1 ×2","App.0","App.1 ×5","App.0","Con.0","Sort"],
+          "kinds": {"App":7,"Pi":1}
         },
         "normalize": {
-          "depth": 80,
-          "allocated": 8482,
+          "depth": 115,
+          "allocated": 27666,
           "chain": [
-            "App.1",
             "Inr.1",
             "Lam.1",
-            "App.0 ×3",
-            "Lam.1 ×3",
-            "SumRec.1",
-            "Lam.1",
-            "App.0 ×3",
-            "Lam.1 ×3",
-            "SumRec.1",
-            "Lam.1",
-            "App.0 ×3",
-            "Lam.1 ×3",
-            "SumRec.1",
-            "Lam.1",
-            "App.0 ×3"
+            "Comp.0",
+            "App.1 ×2",
+            "PApp.0",
+            "Abort.1",
+            "Comp.0",
+            "App.1 ×2",
+            "Comp.1",
+            "Tube.1",
+            "Tube.0",
+            "Comp.2",
+            "App.1",
+            "PApp.0",
+            "SumRec.2",
+            "Lam.1"
           ],
-          "kinds": {"App":3328,"Lam":1458,"Pi":711,"Var":501,"Path":461,"Sum":424,"PApp":305,"PLam":219}
+          "kinds": {"App":11103,"Tube":2904,"Lam":2687,"Var":2230,"Path":1360,"PApp":1356,"Comp":1268,"PLam":822}
         }
       },
-      "maxRssMiB": {"median":185.3,"min":185.1,"max":188.5,"samples":3}
+      "maxRssMiB": {"median":364.7,"min":363.6,"max":369.4,"samples":5}
     },
     {
       "id": "divides-5-121",
-      "series": "kernel",
       "contract": "repl",
-      "setup": "import euclid; use unat;",
-      "entry": "evaluate nontrivial_divisibility_decidable(3, 121);",
+      "setup": "import euclid; use nat;",
+      "entry": "evaluate divides_decide(5, 121);",
       "outcome": {"status":"value","text":"right(<fun>)","length":12,"sha256":"6cfe59cf29046830"},
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1726.882,"min":1726.244,"max":1880.604,"samples":3}
+        "instructions": 235246,
+        "rejected": 307,
+        "instructionSteps": 489521,
+        "queries": 14378,
+        "querySteps": 180611,
+        "nodes": 20319,
+        "ms": {"median":1458.096,"min":1381.696,"max":1695.117,"samples":5}
       },
-      "total": {"instructions":130,"instructionSteps":702,"queries":1,"querySteps":4,"nodes":188,"peakNodes":3875,"peakBytes":1377024},
-      "runtime": {"steps":3131659,"allocatedCells":1733349,"forces":440261,"hits":90559,"beta":134664,"iota":45552,"maxFrames":1111,"snapshotNodes":1494},
-      "ms": {
-        "cold": {"median":311.676,"min":259.959,"max":391.921,"samples":3},
-        "unobserved": 361.211,
-        "warm": {"median":243.499,"min":146.705,"max":372.636,"samples":9}
+      "total": {"instructions":148,"instructionSteps":608,"queries":9,"querySteps":2482,"nodes":761,"peakNodes":21080,"peakBytes":3151872},
+      "runtime": {
+        "steps": 15622,
+        "allocatedCells": 11467,
+        "forces": 2036,
+        "hits": 163,
+        "beta": 525,
+        "iota": 163,
+        "maxFrames": 329,
+        "snapshotNodes": 687,
+        "snapshotDefinitions": 27
       },
+      "ms": {"cold":{"median":11.327,"min":9.627,"max":11.78,"samples":5},"unobserved":7.525,"warm":{"median":5.909,"min":4.819,"max":7.372,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":128,"instructionSteps":387,"nodes":127,"coldMs":1.87,"warmMs":0.915},
-        "check": {"calls":1,"instructions":2,"instructionSteps":315,"nodes":61,"coldMs":0.256,"warmMs":0.016},
-        "inventory": {"calls":1,"coldMs":0.128,"warmMs":0.071},
-        "demand": {"calls":1,"queries":1,"querySteps":4,"coldMs":0.037,"warmMs":0.022},
-        "runtime": {"calls":3,"coldMs":295.337,"warmMs":210.51},
-        "render": {"calls":1,"coldMs":0.082,"warmMs":0.085},
-        "other": {"calls":1,"coldMs":1.319,"warmMs":1.303}
+        "check": {"calls":3,"instructions":6,"instructionSteps":58,"nodes":14,"coldMs":0.156,"warmMs":0.034},
+        "inventory": {"calls":3,"coldMs":0.151,"warmMs":0.055},
+        "normalize": {"calls":2,"queries":2,"querySteps":2298,"nodes":549,"coldMs":0.288,"warmMs":0.023},
+        "decode": {"calls":2,"coldMs":0.009,"warmMs":0.005},
+        "elaborate": {"calls":1,"instructions":142,"instructionSteps":550,"queries":7,"querySteps":184,"nodes":198,"coldMs":6.349,"warmMs":3.84},
+        "runtime": {"calls":3,"coldMs":2.384,"warmMs":0.591},
+        "render": {"calls":1,"coldMs":0.058,"warmMs":0.023},
+        "other": {"calls":1,"coldMs":1.634,"warmMs":0.94}
       },
       "depth": {
         "check": {
-          "depth": 137,
-          "allocated": 61,
-          "chain": ["App.0","Lam.0","App.0","Lam.1","Sum.0","Sigma.1 ×3","Pi.1 ×2","Pi.0","App.0","Lam.1","Path.2","App.1 ×120","App.0","Con.0","Sort"],
-          "kinds": {"App":26,"Pi":15,"Lam":8,"Sigma":6,"Sum":4,"Path":2}
+          "depth": 17,
+          "allocated": 8,
+          "chain": ["Pi.1","App.1","App.0","App.1","App.0","App.1 ×2","App.0","App.1 ×6","App.0","Con.0","Sort"],
+          "kinds": {"App":7,"Pi":1}
+        },
+        "normalize": {
+          "depth": 86,
+          "allocated": 205,
+          "chain": [
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "Lam.1",
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "App.1",
+            "App.0",
+            "Elim.1",
+            "List.1",
+            "List.0",
+            "Lam.1 ×3",
+            "App.0",
+            "Elim.1",
+            "List.0"
+          ],
+          "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
         }
       },
-      "maxRssMiB": {"median":326,"min":312.5,"max":351,"samples":3}
+      "maxRssMiB": {"median":323.3,"min":319.3,"max":325.4,"samples":5}
     },
     {
       "id": "divides-5-121-normal",
-      "series": "kernel",
       "contract": "replNormal",
-      "setup": "import euclid; use unat;",
-      "entry": "evaluate !!!nontrivial_divisibility_decidable(3, 121);",
-      "outcome": {"status":"error","code":"K344","text":"K344: Native prototype syntax depth exceeds 512.","length":48,"sha256":"5e7e4ab653bb0f92"},
+      "setup": "import euclid; use nat;",
+      "entry": "evaluate !!!divides_decide(5, 121);",
+      "outcome": {
+        "status": "value",
+        "text": "right(fun (multiple : exists q3 : BNat. (match q3 return BNat { b_zero => 0; b_positive(p87) => b_positive(induction p87 return BPositive { bp_one => bp_odd(bp…",
+        "length": 1000,
+        "sha256": "531632d860d131aa",
+        "normal": "c0baac9c69126623"
+      },
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1603.325,"min":1515.201,"max":1670.562,"samples":3}
+        "instructions": 235246,
+        "rejected": 307,
+        "instructionSteps": 489521,
+        "queries": 14378,
+        "querySteps": 180611,
+        "nodes": 20319,
+        "ms": {"median":1436.637,"min":1397.82,"max":1488.763,"samples":5}
       },
-      "total": {
-        "instructions": 130,
-        "instructionSteps": 702,
-        "queries": 1,
-        "failedQueries": 1,
-        "querySteps": 862974,
-        "nodes": 263713,
-        "peakNodes": 267400,
-        "peakBytes": 34210560
-      },
+      "total": {"instructions":148,"instructionSteps":608,"queries":10,"querySteps":1354892,"nodes":573637,"peakNodes":593956,"peakBytes":71964672},
       "ms": {
-        "cold": {"median":325.071,"min":226.336,"max":417.771,"samples":3},
-        "unobserved": 316.709,
-        "warm": {"median":8.572,"min":1.91,"max":46.484,"samples":9}
+        "cold": {"median":148.109,"min":141.799,"max":167.151,"samples":5},
+        "unobserved": 149.382,
+        "warm": {"median":25.49,"min":21.785,"max":29.397,"samples":15}
       },
       "phases": {
-        "elaborate": {"calls":1,"instructions":128,"instructionSteps":387,"nodes":127,"coldMs":2.233,"warmMs":1.84},
-        "check": {"calls":1,"instructions":2,"instructionSteps":315,"nodes":61,"coldMs":0.283,"warmMs":0.035},
-        "inventory": {"calls":1,"coldMs":0.136,"warmMs":0.14},
-        "normalize": {"calls":1,"failures":1,"queries":1,"failedQueries":1,"querySteps":862974,"nodes":263525,"coldMs":308.931,"warmMs":0.895},
-        "other": {"calls":1,"coldMs":28.756,"warmMs":1.286}
+        "check": {"calls":3,"instructions":6,"instructionSteps":58,"nodes":14,"coldMs":0.16,"warmMs":0.04},
+        "inventory": {"calls":3,"coldMs":0.135,"warmMs":0.073},
+        "normalize": {"calls":3,"queries":3,"querySteps":1354708,"nodes":573425,"coldMs":105.482,"warmMs":0.047},
+        "decode": {"calls":3,"coldMs":11.092,"warmMs":0.008},
+        "elaborate": {"calls":1,"instructions":142,"instructionSteps":550,"queries":7,"querySteps":184,"nodes":198,"coldMs":5.444,"warmMs":6.479},
+        "render": {"calls":1,"coldMs":23.67,"warmMs":16.953},
+        "other": {"calls":1,"coldMs":1.655,"warmMs":1.11}
       },
       "depth": {
         "check": {
-          "depth": 137,
-          "allocated": 61,
-          "chain": ["App.0","Lam.0","App.0","Lam.1","Sum.0","Sigma.1 ×3","Pi.1 ×2","Pi.0","App.0","Lam.1","Path.2","App.1 ×120","App.0","Con.0","Sort"],
-          "kinds": {"App":26,"Pi":15,"Lam":8,"Sigma":6,"Sum":4,"Path":2}
+          "depth": 17,
+          "allocated": 8,
+          "chain": ["Pi.1","App.1","App.0","App.1","App.0","App.1 ×2","App.0","App.1 ×6","App.0","Con.0","Sort"],
+          "kinds": {"App":7,"Pi":1}
         },
         "normalize": {
-          "depth": 512,
-          "allocated": 263525,
-          "chain": [
-            "Pair.2",
-            "App.1",
-            "Pair.2",
-            "App.1",
-            "Pair.2",
-            "Lam.1 ×3",
-            "SumRec.1",
-            "Lam.1",
-            "App.0 ×3",
-            "Lam.1 ×3",
-            "SumRec.1",
-            "Lam.1",
-            "App.0 ×3",
-            "Lam.1 ×3",
-            "SumRec.1",
-            "Lam.1"
-          ],
-          "kinds": {"App":94227,"Lam":44817,"Pi":29705,"Sum":23453,"Var":19508,"Path":18408,"Inr":9027,"SumRec":5253}
+          "depth": 402,
+          "allocated": 572876,
+          "chain": ["App.1","Fst.0","Comp.1","Tube.1","Tube.0","Pair.1","Fst.0","Comp.1","Tube.1","Tube.0","Pair.1","Fst.0","Comp.2","Pair.1","Fst.0","Comp.2"],
+          "kinds": {"Comp":103011,"Tube":93406,"App":88142,"Fst":64954,"Pair":64176,"Var":58434,"Snd":44002,"Pi":24862}
         }
       },
-      "maxRssMiB": {"median":215.4,"min":211.6,"max":217.4,"samples":3}
+      "maxRssMiB": {"median":424.6,"min":424,"max":427.9,"samples":5}
     },
     {
       "id": "multiply-12-12",
-      "series": "kernel",
       "contract": "repl",
-      "setup": "import euclid; use unat;",
+      "setup": "import unat; use unat;",
       "entry": "evaluate 12 * 12;",
       "outcome": {"status":"value","text":"144","length":3,"sha256":"5ec1a0c99d428601"},
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1882.624,"min":1676.796,"max":2051.122,"samples":3}
+        "instructions": 22480,
+        "rejected": 49,
+        "instructionSteps": 44140,
+        "queries": 1263,
+        "querySteps": 7851,
+        "nodes": 2358,
+        "ms": {"median":199.131,"min":192.044,"max":210.989,"samples":5}
       },
-      "total": {"instructions":21,"instructionSteps":66,"queries":1,"querySteps":1,"nodes":20,"peakNodes":3707,"peakBytes":1377024},
-      "runtime": {"steps":9897,"allocatedCells":5683,"forces":1288,"hits":453,"beta":351,"iota":169,"maxFrames":15,"snapshotNodes":62},
-      "ms": {"cold":{"median":49.174,"min":27.04,"max":53.63,"samples":3},"unobserved":32.308,"warm":{"median":47.622,"min":3.829,"max":88.812,"samples":9}},
+      "total": {"instructions":21,"instructionSteps":66,"nodes":21,"peakNodes":2379,"peakBytes":1147648},
+      "runtime": {"steps":9776,"allocatedCells":5623,"forces":1288,"hits":453,"beta":351,"iota":169,"maxFrames":15,"snapshotNodes":50,"snapshotDefinitions":2},
+      "ms": {"cold":{"median":8.262,"min":7.967,"max":8.921,"samples":5},"unobserved":6.487,"warm":{"median":3.653,"min":3.339,"max":5.959,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":19,"instructionSteps":60,"nodes":18,"coldMs":1.018,"warmMs":1.057},
-        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.048,"warmMs":0.019},
-        "inventory": {"calls":1,"coldMs":0.17,"warmMs":0.042},
-        "demand": {"calls":1,"queries":1,"querySteps":1,"coldMs":0.076,"warmMs":0.034},
-        "runtime": {"calls":146,"coldMs":3.535,"warmMs":1.708},
-        "render": {"calls":1,"coldMs":2.73,"warmMs":1.801},
-        "other": {"calls":1,"coldMs":3.815,"warmMs":3.241}
+        "elaborate": {"calls":1,"instructions":19,"instructionSteps":60,"nodes":19,"coldMs":0.824,"warmMs":0.319},
+        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.033,"warmMs":0.007},
+        "inventory": {"calls":1,"coldMs":0.047,"warmMs":0.015},
+        "runtime": {"calls":146,"coldMs":2.441,"warmMs":0.634},
+        "render": {"calls":1,"coldMs":2.801,"warmMs":1.435},
+        "other": {"calls":1,"coldMs":2.102,"warmMs":1.141}
       },
       "depth": {
         "check": {"depth":16,"allocated":2,"chain":["App.0","App.1 ×12","App.0","Con.0","Sort"],"kinds":{"App":2}}
       },
-      "maxRssMiB": {"median":180,"min":177.4,"max":180.3,"samples":3}
+      "maxRssMiB": {"median":134.7,"min":134.2,"max":134.8,"samples":5}
     },
     {
       "id": "multiply-12-12-normal",
-      "series": "kernel",
       "contract": "replNormal",
-      "setup": "import euclid; use unat;",
+      "setup": "import unat; use unat;",
       "entry": "evaluate !!!12 * 12;",
       "outcome": {"status":"value","text":"144","length":3,"sha256":"5ec1a0c99d428601","normal":"06f934007d1af842"},
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1670.489,"min":1665.918,"max":1691.997,"samples":3}
+        "instructions": 22480,
+        "rejected": 49,
+        "instructionSteps": 44140,
+        "queries": 1263,
+        "querySteps": 7851,
+        "nodes": 2358,
+        "ms": {"median":197.688,"min":196.635,"max":210.734,"samples":5}
       },
-      "total": {"instructions":21,"instructionSteps":66,"queries":1,"querySteps":5287,"nodes":2316,"peakNodes":6003,"peakBytes":1377024},
-      "ms": {"cold":{"median":5.873,"min":4.318,"max":42.712,"samples":3},"unobserved":3.291,"warm":{"median":2.273,"min":1.545,"max":69.6,"samples":9}},
+      "total": {"instructions":21,"instructionSteps":66,"queries":1,"querySteps":5307,"nodes":2317,"peakNodes":4675,"peakBytes":1377024},
+      "ms": {"cold":{"median":3.712,"min":3.627,"max":4.226,"samples":5},"unobserved":2.846,"warm":{"median":1.251,"min":1.151,"max":2.559,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":19,"instructionSteps":60,"nodes":18,"coldMs":1.674,"warmMs":0.544},
-        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.047,"warmMs":0.01},
-        "inventory": {"calls":1,"coldMs":0.062,"warmMs":0.022},
-        "normalize": {"calls":1,"queries":1,"querySteps":5287,"nodes":2296,"coldMs":0.655,"warmMs":0.007},
-        "decode": {"calls":1,"coldMs":0.372,"warmMs":0.003},
-        "render": {"calls":1,"coldMs":1.295,"warmMs":0.929},
-        "other": {"calls":1,"coldMs":1.316,"warmMs":0.574}
+        "elaborate": {"calls":1,"instructions":19,"instructionSteps":60,"nodes":19,"coldMs":0.821,"warmMs":0.269},
+        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.032,"warmMs":0.008},
+        "inventory": {"calls":1,"coldMs":0.047,"warmMs":0.017},
+        "normalize": {"calls":1,"queries":1,"querySteps":5307,"nodes":2296,"coldMs":0.451,"warmMs":0.003},
+        "decode": {"calls":1,"coldMs":0.352,"warmMs":0.002},
+        "render": {"calls":1,"coldMs":1.192,"warmMs":0.648},
+        "other": {"calls":1,"coldMs":0.821,"warmMs":0.32}
       },
       "depth": {
         "check": {"depth":16,"allocated":2,"chain":["App.0","App.1 ×12","App.0","Con.0","Sort"],"kinds":{"App":2}},
@@ -1332,77 +1881,80 @@
           "kinds": {"App":1448,"Var":637,"Pi":156,"Lam":28,"List":14,"Elim":13}
         }
       },
-      "maxRssMiB": {"median":178.6,"min":177.1,"max":180.5,"samples":3}
+      "maxRssMiB": {"median":134.1,"min":133.7,"max":134.3,"samples":5}
     },
     {
       "id": "multiply-2-254",
-      "series": "kernel",
       "contract": "repl",
-      "setup": "import euclid; use unat;",
+      "setup": "import unat; use unat;",
       "entry": "evaluate 2 * 254;",
       "outcome": {"status":"value","text":"508","length":3,"sha256":"ecac903ea62dc1d5"},
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1468.534,"min":1423.974,"max":1557.383,"samples":3}
+        "instructions": 22480,
+        "rejected": 49,
+        "instructionSteps": 44140,
+        "queries": 1263,
+        "querySteps": 7851,
+        "nodes": 2358,
+        "ms": {"median":200.552,"min":197.961,"max":203.432,"samples":5}
       },
-      "total": {"instructions":263,"instructionSteps":792,"queries":1,"querySteps":1,"nodes":262,"peakNodes":3949,"peakBytes":1377024},
-      "runtime": {"steps":32307,"allocatedCells":19261,"forces":4120,"hits":1273,"beta":1029,"iota":513,"maxFrames":15,"snapshotNodes":304},
+      "total": {"instructions":263,"instructionSteps":792,"nodes":263,"peakNodes":2621,"peakBytes":1147648},
+      "runtime": {
+        "steps": 31702,
+        "allocatedCells": 19201,
+        "forces": 4120,
+        "hits": 1273,
+        "beta": 1029,
+        "iota": 513,
+        "maxFrames": 15,
+        "snapshotNodes": 292,
+        "snapshotDefinitions": 2
+      },
       "ms": {
-        "cold": {"median":103.362,"min":80.785,"max":126.524,"samples":3},
-        "unobserved": 85.139,
-        "warm": {"median":52.094,"min":11.466,"max":115.589,"samples":9}
+        "cold": {"median":20.131,"min":20.056,"max":20.956,"samples":5},
+        "unobserved": 16.72,
+        "warm": {"median":12.745,"min":10.565,"max":20.425,"samples":15}
       },
       "phases": {
-        "elaborate": {"calls":1,"instructions":261,"instructionSteps":786,"nodes":260,"coldMs":3.03,"warmMs":0.728},
-        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.088,"warmMs":0.013},
-        "inventory": {"calls":1,"coldMs":0.126,"warmMs":0.054},
-        "demand": {"calls":1,"queries":1,"querySteps":1,"coldMs":0.057,"warmMs":0.017},
-        "runtime": {"calls":510,"coldMs":5.452,"warmMs":3.443},
-        "render": {"calls":1,"coldMs":67.818,"warmMs":9.487},
-        "other": {"calls":1,"coldMs":11.633,"warmMs":3.368}
+        "elaborate": {"calls":1,"instructions":261,"instructionSteps":786,"nodes":261,"coldMs":2.522,"warmMs":0.582},
+        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.039,"warmMs":0.01},
+        "inventory": {"calls":1,"coldMs":0.126,"warmMs":0.051},
+        "runtime": {"calls":510,"coldMs":4.366,"warmMs":1.784},
+        "render": {"calls":1,"coldMs":9.348,"warmMs":7.507},
+        "other": {"calls":1,"coldMs":3.934,"warmMs":2.945}
       },
       "depth": {
         "check": {"depth":257,"allocated":2,"chain":["App.1 ×254","App.0","Con.0","Sort"],"kinds":{"App":2}}
       },
-      "maxRssMiB": {"median":184.9,"min":181.1,"max":185.3,"samples":3}
+      "maxRssMiB": {"median":138.1,"min":137.8,"max":138.5,"samples":5}
     },
     {
       "id": "multiply-2-254-normal",
-      "series": "kernel",
       "contract": "replNormal",
-      "setup": "import euclid; use unat;",
+      "setup": "import unat; use unat;",
       "entry": "evaluate !!!2 * 254;",
       "outcome": {"status":"value","text":"508","length":3,"sha256":"ecac903ea62dc1d5","normal":"3a85e06ce3f17383"},
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1532.417,"min":1496.657,"max":1562.822,"samples":3}
+        "instructions": 22480,
+        "rejected": 49,
+        "instructionSteps": 44140,
+        "queries": 1263,
+        "querySteps": 7851,
+        "nodes": 2358,
+        "ms": {"median":199.589,"min":194.446,"max":203.689,"samples":5}
       },
-      "total": {"instructions":263,"instructionSteps":792,"queries":1,"querySteps":18222,"nodes":7938,"peakNodes":11625,"peakBytes":1835776},
-      "ms": {
-        "cold": {"median":10.607,"min":10.485,"max":50.072,"samples":3},
-        "unobserved": 91.002,
-        "warm": {"median":5.567,"min":2.757,"max":40.194,"samples":9}
-      },
+      "total": {"instructions":263,"instructionSteps":792,"queries":1,"querySteps":17852,"nodes":7939,"peakNodes":10297,"peakBytes":1835776},
+      "ms": {"cold":{"median":9.464,"min":9.225,"max":9.572,"samples":5},"unobserved":8.036,"warm":{"median":3.591,"min":2.336,"max":5.007,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":261,"instructionSteps":786,"nodes":260,"coldMs":2.984,"warmMs":0.863},
-        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.079,"warmMs":0.016},
-        "inventory": {"calls":1,"coldMs":0.124,"warmMs":0.087},
-        "normalize": {"calls":1,"queries":1,"querySteps":18222,"nodes":7676,"coldMs":1.55,"warmMs":0.007},
-        "decode": {"calls":1,"coldMs":0.609,"warmMs":0.003},
-        "render": {"calls":1,"coldMs":4.108,"warmMs":2.85},
-        "other": {"calls":1,"coldMs":0.982,"warmMs":0.6}
+        "elaborate": {"calls":1,"instructions":261,"instructionSteps":786,"nodes":261,"coldMs":2.535,"warmMs":0.512},
+        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.04,"warmMs":0.009},
+        "inventory": {"calls":1,"coldMs":0.128,"warmMs":0.055},
+        "normalize": {"calls":1,"queries":1,"querySteps":17852,"nodes":7676,"coldMs":1.173,"warmMs":0.004},
+        "decode": {"calls":1,"coldMs":1.052,"warmMs":0.002},
+        "render": {"calls":1,"coldMs":3.589,"warmMs":2.614},
+        "other": {"calls":1,"coldMs":0.845,"warmMs":0.381}
       },
       "depth": {
         "check": {"depth":257,"allocated":2,"chain":["App.1 ×254","App.0","Con.0","Sort"],"kinds":{"App":2}},
@@ -1413,73 +1965,80 @@
           "kinds": {"App":4856,"Var":2043,"Pi":510,"Lam":260,"List":4,"Elim":3}
         }
       },
-      "maxRssMiB": {"median":178.9,"min":177.8,"max":180.2,"samples":3}
+      "maxRssMiB": {"median":136.4,"min":136.2,"max":137,"samples":5}
     },
     {
       "id": "multiply-2-255",
-      "series": "kernel",
       "contract": "repl",
-      "setup": "import euclid; use unat;",
+      "setup": "import unat; use unat;",
       "entry": "evaluate 2 * 255;",
       "outcome": {"status":"value","text":"510","length":3,"sha256":"5e5c743a015ff8d8"},
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1572.181,"min":1525.715,"max":1575.895,"samples":3}
+        "instructions": 22480,
+        "rejected": 49,
+        "instructionSteps": 44140,
+        "queries": 1263,
+        "querySteps": 7851,
+        "nodes": 2358,
+        "ms": {"median":194.829,"min":193.893,"max":198.659,"samples":5}
       },
-      "total": {"instructions":264,"instructionSteps":795,"queries":1,"querySteps":1,"nodes":263,"peakNodes":3950,"peakBytes":1377024},
-      "runtime": {"steps":32432,"allocatedCells":19335,"forces":4136,"hits":1278,"beta":1033,"iota":515,"maxFrames":15,"snapshotNodes":305},
+      "total": {"instructions":264,"instructionSteps":795,"nodes":264,"peakNodes":2622,"peakBytes":1147648},
+      "runtime": {
+        "steps": 31825,
+        "allocatedCells": 19275,
+        "forces": 4136,
+        "hits": 1278,
+        "beta": 1033,
+        "iota": 515,
+        "maxFrames": 15,
+        "snapshotNodes": 293,
+        "snapshotDefinitions": 2
+      },
       "ms": {
-        "cold": {"median":100.307,"min":86.148,"max":205.818,"samples":3},
-        "unobserved": 108.473,
-        "warm": {"median":48.085,"min":12.965,"max":88.953,"samples":9}
+        "cold": {"median":21.088,"min":20.258,"max":21.281,"samples":5},
+        "unobserved": 17.599,
+        "warm": {"median":12.819,"min":10.7,"max":15.02,"samples":15}
       },
       "phases": {
-        "elaborate": {"calls":1,"instructions":262,"instructionSteps":789,"nodes":261,"coldMs":44.179,"warmMs":0.823},
-        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.222,"warmMs":0.013},
-        "inventory": {"calls":1,"coldMs":0.333,"warmMs":0.062},
-        "demand": {"calls":1,"queries":1,"querySteps":1,"coldMs":0.088,"warmMs":0.022},
-        "runtime": {"calls":512,"coldMs":36.076,"warmMs":3.384},
-        "render": {"calls":1,"coldMs":44.147,"warmMs":7.623},
-        "other": {"calls":1,"coldMs":16.756,"warmMs":3.421}
+        "elaborate": {"calls":1,"instructions":262,"instructionSteps":789,"nodes":262,"coldMs":2.495,"warmMs":0.595},
+        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.036,"warmMs":0.01},
+        "inventory": {"calls":1,"coldMs":0.11,"warmMs":0.052},
+        "runtime": {"calls":512,"coldMs":4.637,"warmMs":1.59},
+        "render": {"calls":1,"coldMs":9.621,"warmMs":7.244},
+        "other": {"calls":1,"coldMs":3.98,"warmMs":3.016}
       },
       "depth": {
         "check": {"depth":258,"allocated":2,"chain":["App.1 ×255","App.0","Con.0","Sort"],"kinds":{"App":2}}
       },
-      "maxRssMiB": {"median":183.5,"min":180.7,"max":184.3,"samples":3}
+      "maxRssMiB": {"median":138.1,"min":137.7,"max":138.5,"samples":5}
     },
     {
       "id": "multiply-2-255-normal",
-      "series": "kernel",
       "contract": "replNormal",
-      "setup": "import euclid; use unat;",
+      "setup": "import unat; use unat;",
       "entry": "evaluate !!!2 * 255;",
       "outcome": {"status":"value","text":"510","length":3,"sha256":"5e5c743a015ff8d8","normal":"8c76dcfb64c4ebb0"},
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1317.819,"min":1287.693,"max":1536.293,"samples":3}
+        "instructions": 22480,
+        "rejected": 49,
+        "instructionSteps": 44140,
+        "queries": 1263,
+        "querySteps": 7851,
+        "nodes": 2358,
+        "ms": {"median":200.244,"min":191.353,"max":213.85,"samples":5}
       },
-      "total": {"instructions":264,"instructionSteps":795,"queries":1,"querySteps":18292,"nodes":7969,"peakNodes":11656,"peakBytes":1835776},
-      "ms": {"cold":{"median":38.461,"min":11.304,"max":53.323,"samples":3},"unobserved":8.366,"warm":{"median":3.303,"min":2.697,"max":22.509,"samples":9}},
+      "total": {"instructions":264,"instructionSteps":795,"queries":1,"querySteps":17924,"nodes":7970,"peakNodes":10328,"peakBytes":1835776},
+      "ms": {"cold":{"median":9.587,"min":9.312,"max":10.362,"samples":5},"unobserved":7.835,"warm":{"median":3.579,"min":2.321,"max":4.514,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":262,"instructionSteps":789,"nodes":261,"coldMs":3.173,"warmMs":0.724},
-        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.068,"warmMs":0.015},
-        "inventory": {"calls":1,"coldMs":0.135,"warmMs":0.06},
-        "normalize": {"calls":1,"queries":1,"querySteps":18292,"nodes":7706,"coldMs":1.561,"warmMs":0.006},
-        "decode": {"calls":1,"coldMs":0.621,"warmMs":0.003},
-        "render": {"calls":1,"coldMs":4.284,"warmMs":1.998},
-        "other": {"calls":1,"coldMs":1.295,"warmMs":0.543}
+        "elaborate": {"calls":1,"instructions":262,"instructionSteps":789,"nodes":262,"coldMs":2.581,"warmMs":0.513},
+        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.042,"warmMs":0.01},
+        "inventory": {"calls":1,"coldMs":0.137,"warmMs":0.058},
+        "normalize": {"calls":1,"queries":1,"querySteps":17924,"nodes":7706,"coldMs":1.193,"warmMs":0.004},
+        "decode": {"calls":1,"coldMs":1.131,"warmMs":0.002},
+        "render": {"calls":1,"coldMs":3.678,"warmMs":2.639},
+        "other": {"calls":1,"coldMs":0.863,"warmMs":0.398}
       },
       "depth": {
         "check": {"depth":258,"allocated":2,"chain":["App.1 ×255","App.0","Con.0","Sort"],"kinds":{"App":2}},
@@ -1490,73 +2049,80 @@
           "kinds": {"App":4875,"Var":2051,"Pi":512,"Lam":261,"List":4,"Elim":3}
         }
       },
-      "maxRssMiB": {"median":180.1,"min":179.5,"max":184.8,"samples":3}
+      "maxRssMiB": {"median":136.5,"min":136.1,"max":136.8,"samples":5}
     },
     {
       "id": "multiply-2-255-print",
-      "series": "kernel",
       "contract": "print",
-      "setup": "import euclid; use unat;",
+      "setup": "import unat; use unat;",
       "entry": "print(evaluate(2 * 255));",
       "outcome": {"status":"value","text":"510","length":3,"sha256":"5e5c743a015ff8d8"},
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1384.193,"min":1353.862,"max":1405.324,"samples":3}
+        "instructions": 22480,
+        "rejected": 49,
+        "instructionSteps": 44140,
+        "queries": 1263,
+        "querySteps": 7851,
+        "nodes": 2358,
+        "ms": {"median":198.308,"min":193.191,"max":199.721,"samples":5}
       },
-      "total": {"instructions":264,"instructionSteps":795,"queries":1,"querySteps":1,"nodes":263,"peakNodes":3950,"peakBytes":1377024},
-      "runtime": {"steps":32432,"allocatedCells":19335,"forces":4136,"hits":1278,"beta":1033,"iota":515,"maxFrames":15,"snapshotNodes":305},
+      "total": {"instructions":264,"instructionSteps":795,"nodes":264,"peakNodes":2622,"peakBytes":1147648},
+      "runtime": {
+        "steps": 31825,
+        "allocatedCells": 19275,
+        "forces": 4136,
+        "hits": 1278,
+        "beta": 1033,
+        "iota": 515,
+        "maxFrames": 15,
+        "snapshotNodes": 293,
+        "snapshotDefinitions": 2
+      },
       "ms": {
-        "cold": {"median":101.44,"min":71.219,"max":113.743,"samples":3},
-        "unobserved": 117.163,
-        "warm": {"median":38.523,"min":11.549,"max":72.631,"samples":9}
+        "cold": {"median":20.594,"min":20.282,"max":20.941,"samples":5},
+        "unobserved": 16.77,
+        "warm": {"median":12.982,"min":10.498,"max":14.161,"samples":15}
       },
       "phases": {
-        "elaborate": {"calls":1,"instructions":262,"instructionSteps":789,"nodes":261,"coldMs":2.983,"warmMs":0.755},
-        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.063,"warmMs":0.013},
-        "inventory": {"calls":1,"coldMs":0.134,"warmMs":0.055},
-        "demand": {"calls":1,"queries":1,"querySteps":1,"coldMs":0.055,"warmMs":0.017},
-        "runtime": {"calls":512,"coldMs":11.374,"warmMs":2.874},
-        "render": {"calls":1,"coldMs":53.958,"warmMs":7.618},
-        "other": {"calls":1,"coldMs":5.802,"warmMs":3.205}
+        "elaborate": {"calls":1,"instructions":262,"instructionSteps":789,"nodes":262,"coldMs":2.5,"warmMs":0.596},
+        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.037,"warmMs":0.011},
+        "inventory": {"calls":1,"coldMs":0.108,"warmMs":0.054},
+        "runtime": {"calls":512,"coldMs":4.456,"warmMs":1.666},
+        "render": {"calls":1,"coldMs":9.432,"warmMs":7.359},
+        "other": {"calls":1,"coldMs":3.862,"warmMs":2.868}
       },
       "depth": {
         "check": {"depth":258,"allocated":2,"chain":["App.1 ×255","App.0","Con.0","Sort"],"kinds":{"App":2}}
       },
-      "maxRssMiB": {"median":185.3,"min":184.6,"max":185.6,"samples":3}
+      "maxRssMiB": {"median":138.3,"min":137.8,"max":138.8,"samples":5}
     },
     {
       "id": "multiply-2-255-print-normal",
-      "series": "kernel",
       "contract": "printNormal",
-      "setup": "import euclid; use unat;",
+      "setup": "import unat; use unat;",
       "entry": "print(evaluate(!!!2 * 255));",
       "outcome": {"status":"value","text":"510","length":3,"sha256":"5e5c743a015ff8d8","normal":"8c76dcfb64c4ebb0"},
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1466.155,"min":1331.043,"max":1827.953,"samples":3}
+        "instructions": 22480,
+        "rejected": 49,
+        "instructionSteps": 44140,
+        "queries": 1263,
+        "querySteps": 7851,
+        "nodes": 2358,
+        "ms": {"median":197.955,"min":192.281,"max":211.478,"samples":5}
       },
-      "total": {"instructions":264,"instructionSteps":795,"queries":1,"querySteps":18292,"nodes":7969,"peakNodes":11656,"peakBytes":1835776},
-      "ms": {"cold":{"median":13.457,"min":10.317,"max":31.368,"samples":3},"unobserved":8.555,"warm":{"median":4.237,"min":2.86,"max":42.615,"samples":9}},
+      "total": {"instructions":264,"instructionSteps":795,"queries":1,"querySteps":17924,"nodes":7970,"peakNodes":10328,"peakBytes":1835776},
+      "ms": {"cold":{"median":9.341,"min":9.253,"max":9.896,"samples":5},"unobserved":7.748,"warm":{"median":3.556,"min":2.303,"max":4.57,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":262,"instructionSteps":789,"nodes":261,"coldMs":3.039,"warmMs":0.945},
-        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.074,"warmMs":0.016},
-        "inventory": {"calls":1,"coldMs":0.119,"warmMs":0.086},
-        "normalize": {"calls":1,"queries":1,"querySteps":18292,"nodes":7706,"coldMs":1.556,"warmMs":0.007},
-        "decode": {"calls":1,"coldMs":0.668,"warmMs":0.003},
-        "render": {"calls":1,"coldMs":4.292,"warmMs":2.519},
-        "other": {"calls":1,"coldMs":2.816,"warmMs":0.647}
+        "elaborate": {"calls":1,"instructions":262,"instructionSteps":789,"nodes":262,"coldMs":2.495,"warmMs":0.505},
+        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.04,"warmMs":0.01},
+        "inventory": {"calls":1,"coldMs":0.106,"warmMs":0.054},
+        "normalize": {"calls":1,"queries":1,"querySteps":17924,"nodes":7706,"coldMs":1.189,"warmMs":0.004},
+        "decode": {"calls":1,"coldMs":0.524,"warmMs":0.002},
+        "render": {"calls":1,"coldMs":4.137,"warmMs":2.596},
+        "other": {"calls":1,"coldMs":0.812,"warmMs":0.379}
       },
       "depth": {
         "check": {"depth":258,"allocated":2,"chain":["App.1 ×255","App.0","Con.0","Sort"],"kinds":{"App":2}},
@@ -1567,13 +2133,12 @@
           "kinds": {"App":4875,"Var":2051,"Pi":512,"Lam":261,"List":4,"Elim":3}
         }
       },
-      "maxRssMiB": {"median":183.6,"min":179,"max":183.8,"samples":3}
+      "maxRssMiB": {"median":136.8,"min":136.6,"max":137.1,"samples":5}
     },
     {
       "id": "multiply-2-256-print",
-      "series": "kernel",
       "contract": "print",
-      "setup": "import euclid; use unat;",
+      "setup": "import unat; use unat;",
       "entry": "print(evaluate(2 * 256));",
       "outcome": {
         "status": "value",
@@ -1583,60 +2148,68 @@
       },
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1614.212,"min":1416.282,"max":1738.386,"samples":3}
+        "instructions": 22480,
+        "rejected": 49,
+        "instructionSteps": 44140,
+        "queries": 1263,
+        "querySteps": 7851,
+        "nodes": 2358,
+        "ms": {"median":216.493,"min":193.985,"max":236.737,"samples":5}
       },
-      "total": {"instructions":265,"instructionSteps":798,"queries":1,"querySteps":1,"nodes":264,"peakNodes":3951,"peakBytes":1377024},
-      "runtime": {"steps":32514,"allocatedCells":19391,"forces":4145,"hits":1280,"beta":1037,"iota":515,"maxFrames":15,"snapshotNodes":306},
+      "total": {"instructions":265,"instructionSteps":798,"nodes":265,"peakNodes":2623,"peakBytes":1147648},
+      "runtime": {
+        "steps": 31905,
+        "allocatedCells": 19331,
+        "forces": 4145,
+        "hits": 1280,
+        "beta": 1037,
+        "iota": 515,
+        "maxFrames": 15,
+        "snapshotNodes": 294,
+        "snapshotDefinitions": 2
+      },
       "ms": {
-        "cold": {"median":118.599,"min":88.81,"max":171.684,"samples":3},
-        "unobserved": 152.539,
-        "warm": {"median":70.851,"min":15.302,"max":117.505,"samples":9}
+        "cold": {"median":26.416,"min":24.455,"max":27.26,"samples":5},
+        "unobserved": 21.829,
+        "warm": {"median":17.682,"min":13.185,"max":23.584,"samples":15}
       },
       "phases": {
-        "elaborate": {"calls":1,"instructions":263,"instructionSteps":792,"nodes":262,"coldMs":2.928,"warmMs":0.728},
-        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.065,"warmMs":0.013},
-        "inventory": {"calls":1,"coldMs":0.118,"warmMs":0.063},
-        "demand": {"calls":1,"queries":1,"querySteps":1,"coldMs":0.253,"warmMs":0.027},
-        "runtime": {"calls":513,"coldMs":8.547,"warmMs":2.664},
-        "render": {"calls":1,"coldMs":75.534,"warmMs":59.889},
-        "other": {"calls":1,"coldMs":31.764,"warmMs":3.318}
+        "elaborate": {"calls":1,"instructions":263,"instructionSteps":792,"nodes":263,"coldMs":2.607,"warmMs":0.726},
+        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.035,"warmMs":0.01},
+        "inventory": {"calls":1,"coldMs":0.128,"warmMs":0.051},
+        "runtime": {"calls":513,"coldMs":4.3,"warmMs":1.579},
+        "render": {"calls":1,"coldMs":14.383,"warmMs":10.817},
+        "other": {"calls":1,"coldMs":4.362,"warmMs":2.872}
       },
       "depth": {
         "check": {"depth":259,"allocated":2,"chain":["App.1 ×256","App.0","Con.0","Sort"],"kinds":{"App":2}}
       },
-      "maxRssMiB": {"median":185.7,"min":182.1,"max":185.8,"samples":3}
+      "maxRssMiB": {"median":139.3,"min":138.8,"max":142.4,"samples":5}
     },
     {
       "id": "multiply-2-256-print-normal",
-      "series": "kernel",
       "contract": "printNormal",
-      "setup": "import euclid; use unat;",
+      "setup": "import unat; use unat;",
       "entry": "print(evaluate(!!!2 * 256));",
       "outcome": {"status":"error","code":"K344","text":"K344: Native prototype syntax depth exceeds 512.","length":48,"sha256":"5e7e4ab653bb0f92"},
       "deterministic": true,
       "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":1449.981,"min":1386.14,"max":1520.579,"samples":3}
+        "instructions": 22480,
+        "rejected": 49,
+        "instructionSteps": 44140,
+        "queries": 1263,
+        "querySteps": 7851,
+        "nodes": 2358,
+        "ms": {"median":213.174,"min":208.378,"max":217.509,"samples":5}
       },
-      "total": {"instructions":265,"instructionSteps":798,"queries":1,"failedQueries":1,"querySteps":18368,"nodes":7998,"peakNodes":11685,"peakBytes":1835776},
-      "ms": {"cold":{"median":6.077,"min":6.015,"max":17.266,"samples":3},"unobserved":70.346,"warm":{"median":1.818,"min":1.118,"max":64.737,"samples":9}},
+      "total": {"instructions":265,"instructionSteps":798,"queries":1,"failedQueries":1,"querySteps":17989,"nodes":7999,"peakNodes":10357,"peakBytes":1835776},
+      "ms": {"cold":{"median":5.444,"min":5.06,"max":6.086,"samples":5},"unobserved":4.189,"warm":{"median":1.041,"min":0.803,"max":3.166,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":263,"instructionSteps":792,"nodes":262,"coldMs":3.025,"warmMs":0.894},
-        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.065,"warmMs":0.02},
-        "inventory": {"calls":1,"coldMs":0.121,"warmMs":0.099},
-        "normalize": {"calls":1,"failures":1,"queries":1,"failedQueries":1,"querySteps":18368,"nodes":7734,"coldMs":1.568,"warmMs":0.048},
-        "other": {"calls":1,"coldMs":1.336,"warmMs":0.807}
+        "elaborate": {"calls":1,"instructions":263,"instructionSteps":792,"nodes":263,"coldMs":2.786,"warmMs":0.504},
+        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.068,"warmMs":0.011},
+        "inventory": {"calls":1,"coldMs":0.118,"warmMs":0.054},
+        "normalize": {"calls":1,"failures":1,"queries":1,"failedQueries":1,"querySteps":17989,"nodes":7734,"coldMs":1.282,"warmMs":0.013},
+        "other": {"calls":1,"coldMs":1.128,"warmMs":0.45}
       },
       "depth": {
         "check": {"depth":259,"allocated":2,"chain":["App.1 ×256","App.0","Con.0","Sort"],"kinds":{"App":2}},
@@ -1647,38 +2220,37 @@
           "kinds": {"App":4892,"Var":2059,"Pi":514,"Lam":262,"List":4,"Elim":3}
         }
       },
-      "maxRssMiB": {"median":177.6,"min":177.4,"max":180.1,"samples":3}
+      "maxRssMiB": {"median":135,"min":134.8,"max":135.2,"samples":5}
     },
     {
       "id": "transport-closed",
-      "series": "kernel",
       "contract": "repl",
       "setup": "import circle; use unat;",
       "entry": "evaluate transport(fun (n : UNat) => UNat, 3 + 0, 3, unat_add_zero(3), 5);",
       "outcome": {"status":"value","text":"5","length":1,"sha256":"ef2d127de37b942b"},
       "deterministic": true,
       "import": {
-        "instructions": 175868,
-        "rejected": 356,
-        "instructionSteps": 453465,
-        "queries": 9010,
+        "instructions": 183388,
+        "rejected": 397,
+        "instructionSteps": 468077,
+        "queries": 9302,
         "failedQueries": 25,
-        "querySteps": 221126,
+        "querySteps": 222540,
         "exhausted": 25,
-        "nodes": 15733,
-        "ms": {"median":4497.149,"min":4250.834,"max":4932.655,"samples":3}
+        "nodes": 16229,
+        "ms": {"median":1026.825,"min":984.382,"max":1141.866,"samples":5}
       },
-      "total": {"instructions":57,"instructionSteps":146,"queries":8,"querySteps":153,"nodes":111,"peakNodes":15844,"peakBytes":3020800},
-      "runtime": {"steps":311,"allocatedCells":414,"forces":1,"hits":0,"beta":0,"iota":0,"maxFrames":1,"snapshotNodes":81},
-      "ms": {"cold":{"median":35.691,"min":35.334,"max":38.213,"samples":3},"unobserved":8.879,"warm":{"median":2.85,"min":2.67,"max":60.417,"samples":9}},
+      "total": {"instructions":57,"instructionSteps":146,"queries":7,"querySteps":148,"nodes":111,"peakNodes":16340,"peakBytes":3020800},
+      "runtime": {"steps":7,"allocatedCells":9,"forces":1,"hits":0,"beta":0,"iota":0,"maxFrames":1,"snapshotNodes":1,"snapshotDefinitions":0},
+      "ms": {"cold":{"median":5.948,"min":5.478,"max":7.284,"samples":5},"unobserved":4.01,"warm":{"median":2.802,"min":2.443,"max":3.971,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":37,"instructionSteps":97,"queries":1,"querySteps":1,"nodes":17,"coldMs":30.837,"warmMs":1.647},
-        "check": {"calls":1,"instructions":20,"instructionSteps":49,"nodes":15,"coldMs":0.421,"warmMs":0.06},
-        "inventory": {"calls":1,"coldMs":0.075,"warmMs":0.033},
-        "demand": {"calls":7,"queries":7,"querySteps":152,"nodes":79,"coldMs":0.204,"warmMs":0.03},
-        "runtime": {"calls":2,"failures":1,"coldMs":0.73,"warmMs":0.13},
-        "render": {"calls":1,"coldMs":0.203,"warmMs":0.153},
-        "other": {"calls":1,"coldMs":2.965,"warmMs":0.801}
+        "elaborate": {"calls":1,"instructions":37,"instructionSteps":97,"queries":1,"querySteps":1,"nodes":17,"coldMs":2.455,"warmMs":1.565},
+        "check": {"calls":1,"instructions":20,"instructionSteps":49,"nodes":15,"coldMs":0.235,"warmMs":0.042},
+        "inventory": {"calls":1,"coldMs":0.062,"warmMs":0.022},
+        "runtime": {"calls":2,"failures":1,"coldMs":0.545,"warmMs":0.056},
+        "demand": {"calls":6,"queries":6,"querySteps":147,"nodes":79,"coldMs":0.117,"warmMs":0.016},
+        "render": {"calls":1,"coldMs":0.21,"warmMs":0.16},
+        "other": {"calls":1,"coldMs":2.003,"warmMs":0.92}
       },
       "depth": {
         "check": {
@@ -1688,37 +2260,36 @@
           "kinds": {"App":6,"PApp":4,"Comp":2,"Lam":1,"Var":1,"Pi":1}
         }
       },
-      "maxRssMiB": {"median":288,"min":285.4,"max":288.9,"samples":3}
+      "maxRssMiB": {"median":287.8,"min":286.7,"max":288.5,"samples":5}
     },
     {
       "id": "transport-closed-normal",
-      "series": "kernel",
       "contract": "replNormal",
       "setup": "import circle; use unat;",
       "entry": "evaluate !!!transport(fun (n : UNat) => UNat, 3 + 0, 3, unat_add_zero(3), 5);",
       "outcome": {"status":"value","text":"5","length":1,"sha256":"ef2d127de37b942b","normal":"f5a7e9b964d426a4"},
       "deterministic": true,
       "import": {
-        "instructions": 175868,
-        "rejected": 356,
-        "instructionSteps": 453465,
-        "queries": 9010,
+        "instructions": 183388,
+        "rejected": 397,
+        "instructionSteps": 468077,
+        "queries": 9302,
         "failedQueries": 25,
-        "querySteps": 221126,
+        "querySteps": 222540,
         "exhausted": 25,
-        "nodes": 15733,
-        "ms": {"median":4020.141,"min":3694.288,"max":4180.337,"samples":3}
+        "nodes": 16229,
+        "ms": {"median":885.912,"min":878.54,"max":902.208,"samples":5}
       },
-      "total": {"instructions":57,"instructionSteps":146,"queries":2,"querySteps":164,"nodes":111,"peakNodes":15844,"peakBytes":3020800},
-      "ms": {"cold":{"median":4.826,"min":4.805,"max":5.049,"samples":3},"unobserved":19.266,"warm":{"median":3.012,"min":2.584,"max":50.266,"samples":9}},
+      "total": {"instructions":57,"instructionSteps":146,"queries":2,"querySteps":163,"nodes":111,"peakNodes":16340,"peakBytes":3020800},
+      "ms": {"cold":{"median":4.212,"min":4.162,"max":5.516,"samples":5},"unobserved":3.969,"warm":{"median":2.33,"min":2.14,"max":3.501,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":37,"instructionSteps":97,"queries":1,"querySteps":1,"nodes":17,"coldMs":2.792,"warmMs":1.846},
-        "check": {"calls":1,"instructions":20,"instructionSteps":49,"nodes":15,"coldMs":0.289,"warmMs":0.063},
-        "inventory": {"calls":1,"coldMs":0.063,"warmMs":0.027},
-        "normalize": {"calls":1,"queries":1,"querySteps":163,"nodes":79,"coldMs":0.106,"warmMs":0.007},
+        "elaborate": {"calls":1,"instructions":37,"instructionSteps":97,"queries":1,"querySteps":1,"nodes":17,"coldMs":2.285,"warmMs":1.429},
+        "check": {"calls":1,"instructions":20,"instructionSteps":49,"nodes":15,"coldMs":0.216,"warmMs":0.038},
+        "inventory": {"calls":1,"coldMs":0.053,"warmMs":0.018},
+        "normalize": {"calls":1,"queries":1,"querySteps":162,"nodes":79,"coldMs":0.091,"warmMs":0.005},
         "decode": {"calls":1,"coldMs":0.005,"warmMs":0.002},
-        "render": {"calls":1,"coldMs":0.165,"warmMs":0.141},
-        "other": {"calls":1,"coldMs":1.418,"warmMs":0.9}
+        "render": {"calls":1,"coldMs":0.168,"warmMs":0.108},
+        "other": {"calls":1,"coldMs":1.398,"warmMs":0.704}
       },
       "depth": {
         "check": {
@@ -1734,150 +2305,150 @@
           "kinds": {"Comp":22,"Var":11,"Pair":10,"Fst":10,"Snd":10,"Pi":5,"App":5,"Tube":5}
         }
       },
-      "maxRssMiB": {"median":284.5,"min":283.1,"max":286.3,"samples":3}
+      "maxRssMiB": {"median":287.8,"min":286.5,"max":295.5,"samples":5}
     },
     {
       "id": "winding-2",
-      "series": "kernel",
       "contract": "repl",
       "setup": "import circle; use unat;",
       "entry": "evaluate winding(concatenate(U1, S1, base, base, base, loop, loop));",
       "outcome": {"status":"value","text":"left(2)","length":7,"sha256":"a0505c06c572b7a2"},
       "deterministic": true,
       "import": {
-        "instructions": 175868,
-        "rejected": 356,
-        "instructionSteps": 453465,
-        "queries": 9010,
+        "instructions": 183388,
+        "rejected": 397,
+        "instructionSteps": 468077,
+        "queries": 9302,
         "failedQueries": 25,
-        "querySteps": 221126,
+        "querySteps": 222540,
         "exhausted": 25,
-        "nodes": 15733,
-        "ms": {"median":3335.821,"min":3162.083,"max":3465.539,"samples":3}
+        "nodes": 16229,
+        "ms": {"median":940.396,"min":873.376,"max":957.079,"samples":5}
       },
-      "total": {"instructions":31,"instructionSteps":164,"queries":5,"querySteps":55025,"nodes":16149,"peakNodes":31882,"peakBytes":3020800},
-      "runtime": {"steps":4050,"allocatedCells":5299,"forces":9,"hits":0,"beta":3,"iota":0,"maxFrames":7,"snapshotNodes":1045},
-      "ms": {"cold":{"median":47.153,"min":19.059,"max":54.883,"samples":3},"unobserved":52.023,"warm":{"median":2.445,"min":1.72,"max":39.039,"samples":9}},
+      "total": {"instructions":31,"instructionSteps":164,"queries":4,"querySteps":53181,"nodes":16132,"peakNodes":32361,"peakBytes":3020800},
+      "runtime": {"steps":75,"allocatedCells":82,"forces":9,"hits":0,"beta":3,"iota":0,"maxFrames":7,"snapshotNodes":9,"snapshotDefinitions":2},
+      "ms": {"cold":{"median":7.437,"min":6.938,"max":8.137,"samples":5},"unobserved":6.365,"warm":{"median":1.404,"min":1.098,"max":2.336,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":29,"instructionSteps":153,"nodes":39,"coldMs":1.265,"warmMs":0.464},
-        "check": {"calls":1,"instructions":2,"instructionSteps":11,"nodes":3,"coldMs":0.122,"warmMs":0.009},
-        "inventory": {"calls":1,"coldMs":0.063,"warmMs":0.027},
-        "demand": {"calls":5,"queries":5,"querySteps":55025,"nodes":16107,"coldMs":8.176,"warmMs":0.036},
-        "runtime": {"calls":2,"failures":1,"coldMs":6.717,"warmMs":0.533},
-        "render": {"calls":1,"coldMs":0.163,"warmMs":0.109},
-        "other": {"calls":1,"coldMs":3.254,"warmMs":1}
+        "elaborate": {"calls":1,"instructions":29,"instructionSteps":153,"nodes":39,"coldMs":1.066,"warmMs":0.347},
+        "check": {"calls":1,"instructions":2,"instructionSteps":11,"nodes":3,"coldMs":0.092,"warmMs":0.007},
+        "inventory": {"calls":1,"coldMs":0.053,"warmMs":0.017},
+        "runtime": {"calls":2,"failures":1,"coldMs":0.655,"warmMs":0.063},
+        "demand": {"calls":4,"queries":4,"querySteps":53181,"nodes":16090,"coldMs":3.618,"warmMs":0.018},
+        "render": {"calls":1,"coldMs":0.165,"warmMs":0.105},
+        "other": {"calls":1,"coldMs":1.712,"warmMs":0.791}
       },
       "depth": {
         "check": {"depth":10,"allocated":3,"chain":["App.1","PApp.0","App.0 ×6","LApp.0","DefRef"],"kinds":{"App":2,"PApp":1}}
       },
-      "maxRssMiB": {"median":283.6,"min":283.5,"max":284.8,"samples":3}
+      "maxRssMiB": {"median":287.6,"min":287.5,"max":288.9,"samples":5}
     },
     {
       "id": "winding-2-normal",
-      "series": "kernel",
       "contract": "replNormal",
       "setup": "import circle; use unat;",
       "entry": "evaluate !!!winding(concatenate(U1, S1, base, base, base, loop, loop));",
       "outcome": {"status":"value","text":"left(2)","length":7,"sha256":"a0505c06c572b7a2","normal":"0ce04406ace41ba6"},
       "deterministic": true,
       "import": {
-        "instructions": 175868,
-        "rejected": 356,
-        "instructionSteps": 453465,
-        "queries": 9010,
+        "instructions": 183388,
+        "rejected": 397,
+        "instructionSteps": 468077,
+        "queries": 9302,
         "failedQueries": 25,
-        "querySteps": 221126,
+        "querySteps": 222540,
         "exhausted": 25,
-        "nodes": 15733,
-        "ms": {"median":3358.025,"min":3272.25,"max":3637.087,"samples":3}
+        "nodes": 16229,
+        "ms": {"median":924.847,"min":919.314,"max":995.187,"samples":5}
       },
-      "total": {"instructions":31,"instructionSteps":164,"queries":1,"querySteps":57844,"nodes":16135,"peakNodes":31868,"peakBytes":3020800},
-      "ms": {"cold":{"median":10.896,"min":7.394,"max":22.796,"samples":3},"unobserved":36.612,"warm":{"median":1.648,"min":1.077,"max":36.746,"samples":9}},
+      "total": {"instructions":31,"instructionSteps":164,"queries":1,"querySteps":53197,"nodes":16134,"peakNodes":32363,"peakBytes":3020800},
+      "ms": {"cold":{"median":6.161,"min":6.061,"max":7.236,"samples":5},"unobserved":5.28,"warm":{"median":1.096,"min":1.017,"max":1.421,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":29,"instructionSteps":153,"nodes":39,"coldMs":1.259,"warmMs":0.47},
-        "check": {"calls":1,"instructions":2,"instructionSteps":11,"nodes":3,"coldMs":0.116,"warmMs":0.009},
-        "inventory": {"calls":1,"coldMs":0.071,"warmMs":0.023},
-        "normalize": {"calls":1,"queries":1,"querySteps":57844,"nodes":16093,"coldMs":4.295,"warmMs":0.01},
-        "decode": {"calls":1,"coldMs":0.038,"warmMs":0.002},
-        "render": {"calls":1,"coldMs":0.19,"warmMs":0.122},
-        "other": {"calls":1,"coldMs":1.52,"warmMs":0.939}
+        "elaborate": {"calls":1,"instructions":29,"instructionSteps":153,"nodes":39,"coldMs":1.028,"warmMs":0.302},
+        "check": {"calls":1,"instructions":2,"instructionSteps":11,"nodes":3,"coldMs":0.092,"warmMs":0.007},
+        "inventory": {"calls":1,"coldMs":0.049,"warmMs":0.016},
+        "normalize": {"calls":1,"queries":1,"querySteps":53197,"nodes":16092,"coldMs":3.511,"warmMs":0.003},
+        "decode": {"calls":1,"coldMs":0.017,"warmMs":0.002},
+        "render": {"calls":1,"coldMs":0.169,"warmMs":0.104},
+        "other": {"calls":1,"coldMs":1.302,"warmMs":0.67}
       },
       "depth": {
         "check": {"depth":10,"allocated":3,"chain":["App.1","PApp.0","App.0 ×6","LApp.0","DefRef"],"kinds":{"App":2,"PApp":1}},
         "normalize": {
           "depth": 340,
-          "allocated": 16093,
+          "allocated": 16092,
           "chain": ["App.1","Fst.0","Comp.2","Pair.1","Fst.0","Comp.2","Pair.1","Fst.0","Comp.2","Pair.1","Fst.0","Comp.2","Pair.1","Fst.0","Comp.2","Pair.1"],
           "kinds": {"App":2119,"Comp":2112,"Var":1821,"Tube":1527,"Pi":1457,"Path":1376,"Sigma":1058,"Pair":878}
         }
       },
-      "maxRssMiB": {"median":285.5,"min":285,"max":288.3,"samples":3}
+      "maxRssMiB": {"median":288.1,"min":286.9,"max":289.1,"samples":5}
     },
     {
       "id": "winding-minus-2",
-      "series": "kernel",
       "contract": "repl",
       "setup": "import circle; use unat;",
       "entry": "evaluate winding(integer_loop(negative(2)));",
       "outcome": {"status":"value","text":"right(2)","length":8,"sha256":"f9dd55cdff01f601"},
       "deterministic": true,
       "import": {
-        "instructions": 175868,
-        "rejected": 356,
-        "instructionSteps": 453465,
-        "queries": 9010,
+        "instructions": 183388,
+        "rejected": 397,
+        "instructionSteps": 468077,
+        "queries": 9302,
         "failedQueries": 25,
-        "querySteps": 221126,
+        "querySteps": 222540,
         "exhausted": 25,
-        "nodes": 15733,
-        "ms": {"median":2960.369,"min":2870.658,"max":3319.123,"samples":3}
+        "nodes": 16229,
+        "ms": {"median":948.945,"min":899.27,"max":997.516,"samples":5}
       },
-      "total": {"instructions":15,"instructionSteps":54,"queries":5,"querySteps":109815,"nodes":29300,"peakNodes":45033,"peakBytes":4855808},
-      "runtime": {"steps":4158,"allocatedCells":5442,"forces":9,"hits":0,"beta":3,"iota":0,"maxFrames":7,"snapshotNodes":1073},
-      "ms": {"cold":{"median":62.718,"min":24.182,"max":85.901,"samples":3},"unobserved":24.592,"warm":{"median":2.128,"min":1.705,"max":9.528,"samples":9}},
+      "total": {"instructions":15,"instructionSteps":54,"queries":4,"querySteps":108878,"nodes":29284,"peakNodes":45513,"peakBytes":5380096},
+      "runtime": {"steps":75,"allocatedCells":82,"forces":9,"hits":0,"beta":3,"iota":0,"maxFrames":7,"snapshotNodes":9,"snapshotDefinitions":2},
+      "ms": {
+        "cold": {"median":11.117,"min":10.802,"max":11.798,"samples":5},
+        "unobserved": 11.211,
+        "warm": {"median":1.385,"min":1.168,"max":1.777,"samples":15}
+      },
       "phases": {
-        "elaborate": {"calls":1,"instructions":13,"instructionSteps":42,"nodes":10,"coldMs":3.025,"warmMs":0.558},
-        "check": {"calls":1,"instructions":2,"instructionSteps":12,"nodes":3,"coldMs":0.149,"warmMs":0.008},
-        "inventory": {"calls":1,"coldMs":0.075,"warmMs":0.028},
-        "demand": {"calls":5,"queries":5,"querySteps":109815,"nodes":29287,"coldMs":46.104,"warmMs":0.036},
-        "runtime": {"calls":2,"failures":1,"coldMs":11.866,"warmMs":0.538},
-        "render": {"calls":1,"coldMs":0.348,"warmMs":0.112},
-        "other": {"calls":1,"coldMs":4.111,"warmMs":0.84}
+        "elaborate": {"calls":1,"instructions":13,"instructionSteps":42,"nodes":10,"coldMs":0.985,"warmMs":0.404},
+        "check": {"calls":1,"instructions":2,"instructionSteps":12,"nodes":3,"coldMs":0.093,"warmMs":0.007},
+        "inventory": {"calls":1,"coldMs":0.049,"warmMs":0.016},
+        "runtime": {"calls":2,"failures":1,"coldMs":0.66,"warmMs":0.063},
+        "demand": {"calls":4,"queries":4,"querySteps":108878,"nodes":29271,"coldMs":7.228,"warmMs":0.017},
+        "render": {"calls":1,"coldMs":0.176,"warmMs":0.105},
+        "other": {"calls":1,"coldMs":1.819,"warmMs":0.772}
       },
       "depth": {
         "check": {"depth":8,"allocated":3,"chain":["App.1","PApp.0","App.1 ×3","App.0","Con.0","Sort"],"kinds":{"App":2,"PApp":1}}
       },
-      "maxRssMiB": {"median":288.3,"min":286.8,"max":294.8,"samples":3}
+      "maxRssMiB": {"median":290.1,"min":288.6,"max":291,"samples":5}
     },
     {
       "id": "winding-minus-2-normal",
-      "series": "kernel",
       "contract": "replNormal",
       "setup": "import circle; use unat;",
       "entry": "evaluate !!!winding(integer_loop(negative(2)));",
       "outcome": {"status":"value","text":"right(2)","length":8,"sha256":"f9dd55cdff01f601","normal":"3423ecd641ebdabd"},
       "deterministic": true,
       "import": {
-        "instructions": 175868,
-        "rejected": 356,
-        "instructionSteps": 453465,
-        "queries": 9010,
+        "instructions": 183388,
+        "rejected": 397,
+        "instructionSteps": 468077,
+        "queries": 9302,
         "failedQueries": 25,
-        "querySteps": 221126,
+        "querySteps": 222540,
         "exhausted": 25,
-        "nodes": 15733,
-        "ms": {"median":2360.62,"min":2136.23,"max":2602.615,"samples":3}
+        "nodes": 16229,
+        "ms": {"median":917.355,"min":907.799,"max":961.633,"samples":5}
       },
-      "total": {"instructions":15,"instructionSteps":54,"queries":1,"querySteps":107477,"nodes":29285,"peakNodes":45018,"peakBytes":4855808},
-      "ms": {"cold":{"median":13.641,"min":10.895,"max":14.968,"samples":3},"unobserved":10.14,"warm":{"median":1.773,"min":1.111,"max":14.121,"samples":9}},
+      "total": {"instructions":15,"instructionSteps":54,"queries":1,"querySteps":108892,"nodes":29285,"peakNodes":45514,"peakBytes":5380096},
+      "ms": {"cold":{"median":9.945,"min":9.351,"max":11.54,"samples":5},"unobserved":9.526,"warm":{"median":1.125,"min":1.071,"max":1.524,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":13,"instructionSteps":42,"nodes":10,"coldMs":1.048,"warmMs":0.598},
-        "check": {"calls":1,"instructions":2,"instructionSteps":12,"nodes":3,"coldMs":0.121,"warmMs":0.009},
-        "inventory": {"calls":1,"coldMs":0.061,"warmMs":0.023},
-        "normalize": {"calls":1,"queries":1,"querySteps":107477,"nodes":29272,"coldMs":10.143,"warmMs":0.006},
-        "decode": {"calls":1,"coldMs":0.04,"warmMs":0.003},
-        "render": {"calls":1,"coldMs":0.186,"warmMs":0.122},
-        "other": {"calls":1,"coldMs":1.555,"warmMs":0.948}
+        "elaborate": {"calls":1,"instructions":13,"instructionSteps":42,"nodes":10,"coldMs":0.937,"warmMs":0.372},
+        "check": {"calls":1,"instructions":2,"instructionSteps":12,"nodes":3,"coldMs":0.085,"warmMs":0.006},
+        "inventory": {"calls":1,"coldMs":0.046,"warmMs":0.016},
+        "normalize": {"calls":1,"queries":1,"querySteps":108892,"nodes":29272,"coldMs":6.926,"warmMs":0.003},
+        "decode": {"calls":1,"coldMs":0.013,"warmMs":0.002},
+        "render": {"calls":1,"coldMs":0.174,"warmMs":0.107},
+        "other": {"calls":1,"coldMs":1.445,"warmMs":0.644}
       },
       "depth": {
         "check": {"depth":8,"allocated":3,"chain":["App.1","PApp.0","App.1 ×3","App.0","Con.0","Sort"],"kinds":{"App":2,"PApp":1}},
@@ -1888,123 +2459,7 @@
           "kinds": {"App":3987,"Comp":3371,"Var":3332,"Tube":3158,"Pi":2787,"Path":2644,"Sigma":2004,"Pair":1426}
         }
       },
-      "maxRssMiB": {"median":286.2,"min":285.9,"max":288.3,"samples":3}
-    },
-    {
-      "id": "scratch-euclid-3-prime",
-      "series": "scratch",
-      "contract": "scratch",
-      "setup": "import euclid; use unat;",
-      "entry": "def probe := euclid(3);",
-      "outcome": {"status":"value","text":"7","length":1,"sha256":"7902699be42c8a8e"},
-      "deterministic": true,
-      "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":701.487,"min":668.656,"max":770.205,"samples":3}
-      },
-      "stage": "readback",
-      "stats": {"thunks":17689,"forces":13210,"hits":1918,"beta":3298,"iota":1042,"depth":120},
-      "kernel": {},
-      "definition": {"instructions":32,"instructionSteps":76,"nodes":7,"ms":{"median":2.766,"min":2.656,"max":9.026,"samples":3}},
-      "ms": {
-        "execute": {"median":0.184,"min":0.177,"max":0.192,"samples":3},
-        "readback": {"median":14.665,"min":4.123,"max":22.737,"samples":3},
-        "warmExecute": 0.03,
-        "warmReadback": 6.892
-      },
-      "maxRssMiB": {"median":177.8,"min":177.1,"max":180,"samples":3}
-    },
-    {
-      "id": "scratch-euclid-4-prime",
-      "series": "scratch",
-      "contract": "scratch",
-      "setup": "import euclid; use unat;",
-      "entry": "def probe := euclid(4);",
-      "outcome": {"status":"value","text":"5","length":1,"sha256":"ef2d127de37b942b"},
-      "deterministic": true,
-      "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":678.312,"min":653.875,"max":679.617,"samples":3}
-      },
-      "stage": "readback",
-      "stats": {"thunks":100701,"forces":75342,"hits":12799,"beta":19508,"iota":6552,"depth":352},
-      "kernel": {},
-      "definition": {"instructions":34,"instructionSteps":80,"nodes":8,"ms":{"median":2.812,"min":2.741,"max":14.253,"samples":3}},
-      "ms": {
-        "execute": {"median":0.191,"min":0.19,"max":0.434,"samples":3},
-        "readback": {"median":46.841,"min":37.911,"max":51.57,"samples":3},
-        "warmExecute": 0.014,
-        "warmReadback": 36.442
-      },
-      "maxRssMiB": {"median":229,"min":200.5,"max":241.6,"samples":3}
-    },
-    {
-      "id": "scratch-euclid-5-prime",
-      "series": "scratch",
-      "contract": "scratch",
-      "setup": "import euclid; use unat;",
-      "entry": "def probe := euclid(5);",
-      "outcome": {"status":"value","text":"11","length":2,"sha256":"4fc82b26aecb47d2"},
-      "deterministic": true,
-      "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":568.85,"min":514.215,"max":596.651,"samples":3}
-      },
-      "stage": "readback",
-      "stats": {"thunks":6144919,"forces":4561663,"hits":818034,"beta":1214194,"iota":410831,"depth":1648},
-      "kernel": {},
-      "definition": {"instructions":36,"instructionSteps":84,"nodes":9,"ms":{"median":4.954,"min":4.772,"max":10.871,"samples":3}},
-      "ms": {
-        "execute": {"median":0.204,"min":0.183,"max":0.398,"samples":3},
-        "readback": {"median":2071.019,"min":1916.742,"max":2149.969,"samples":3},
-        "warmExecute": 0.013,
-        "warmReadback": 1912.797
-      },
-      "maxRssMiB": {"median":1440.8,"min":1396.8,"max":1719.4,"samples":3}
-    },
-    {
-      "id": "scratch-euclid-6-prime",
-      "series": "scratch",
-      "contract": "scratch",
-      "setup": "import euclid; use unat;",
-      "entry": "def probe := euclid(6);",
-      "outcome": {"status":"error","code":null,"text":"Maximum call stack size exceeded","length":32,"sha256":"56b0561120d14a7d"},
-      "deterministic": true,
-      "import": {
-        "instructions": 29466,
-        "rejected": 19,
-        "instructionSteps": 60793,
-        "queries": 1960,
-        "querySteps": 15028,
-        "nodes": 3687,
-        "ms": {"median":603.546,"min":539.032,"max":673.825,"samples":3}
-      },
-      "stage": "readback",
-      "stats": {"thunks":13611,"forces":11861,"hits":3922,"beta":3288,"iota":1624,"depth":2837},
-      "kernel": {},
-      "definition": {"instructions":38,"instructionSteps":88,"nodes":10,"ms":{"median":4.534,"min":2.775,"max":8.279,"samples":3}},
-      "ms": {
-        "execute": {"median":0.2,"min":0.191,"max":0.402,"samples":3},
-        "readback": {"median":11.847,"min":9.783,"max":13.969,"samples":3},
-        "warmExecute": 0.031,
-        "warmReadback": 7.895
-      },
-      "maxRssMiB": {"median":179.4,"min":179.1,"max":181.8,"samples":3}
+      "maxRssMiB": {"median":290.6,"min":289.2,"max":290.9,"samples":5}
     }
   ]
 }

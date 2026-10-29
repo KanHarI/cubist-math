@@ -39,11 +39,12 @@ def redundant : (forall x : Unit. Unit) := fun (x : Unit) => tt;
 });
 
 test("exact assumptions include type dependencies and exclude bound hypotheses",async t=>{
-  const {report}=await checked(t,`# test(bound) # expect_axioms([])
+  const {report}=await checked(t,`import classical_axioms;
+# test(bound) # expect_axioms([])
 def local(A : U0, assumption : A) : A := assumption;
-# test(type_dependencies) # expect_axioms([Truncate])
-def identity(A : U0, value : Truncate(U0,A)) : Truncate(U0,A) := value;
-# test(transitive) # expect_axioms([Truncate])
+# test(type_dependencies) # expect_axioms([LEM])
+def identity(value : LEM(U0) = LEM(U0)) : LEM(U0) = LEM(U0) := value;
+# test(transitive) # expect_axioms([LEM])
 def alias := identity;`);
   assert.deepEqual(report.prerequisites,[]);
   assert.deepEqual(report.failures,[]);
@@ -78,14 +79,16 @@ for(const [label,sources] of [
   assert.ok(report.prerequisites.length);
 });
 
+// The legacy builtins are the archive's, as its classical module uses them.
 test("assumption expectations name axioms and legacy builtins by their labels",async t=>{
   for(const source of [`import classical_axioms;
 # test(library) # expect_axioms([LEM])
 def excluded := LEM(U0);
 def Pointed := axiom UNat;
 # test(qualified) # expect_axioms([Choice, main::Pointed])
-def both : AxiomOfChoice(U0) and UNat := (Choice(U0), Pointed);`,`# test(legacy) # expect_axioms([LEM[Truncate], Truncate])
-def excluded := LEM(U0);`]) {
+def both : AxiomOfChoice(U0) and UNat := (Choice(U0), Pointed);`,`import classical;
+# test(legacy) # expect_axioms([LEM[Truncate], Truncate, TruncateElim])
+def excluded := classical::double_negation;`]) {
     const {report}=await checked(t,`import unat;\n${source}`);
     assert.deepEqual(report.prerequisites,[]);
     assert.deepEqual(report.failures,[]);
@@ -120,7 +123,7 @@ test("directive contracts observe successful evaluations and exactly owned refus
 
 test("an imported positive contract is a prerequisite of selected local cases",async t=>{
   const {program,result}=await checkProgram(t,"import dependency; # test(root) def x := tt;",{module,
-    reader:async()=>"# test(imported) # expect_axioms([]) def x := Truncate(U0,Unit);",options:{testMode:true}});
+    reader:async()=>"# test(imported) # expect_axioms([]) def x := axiom Unit;",options:{testMode:true}});
   assert.ok(observeTestCases(program,result).prerequisites.some(message=>message.startsWith("imported:")));
 });
 

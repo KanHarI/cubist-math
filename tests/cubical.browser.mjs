@@ -24,11 +24,11 @@ await browserTest(async ({ browser, base }) => {
   assert.match(await page.locator("#status").textContent(), /Cubical C · checked/);
   await page.locator("#reuse-checks").check(); await idle();
   assert.match(await page.locator("#kernel-view-note").textContent(), /Checked cubical terms/);
-  await page.locator('.source-line [data-name="prime_divisor_exists"]').first().click();
+  await page.locator('.source-line [data-name="least_divisor"]').first().click();
   await idle();
   await page.locator("#view-source").click();
   await idle();
-  assert.match(page.url(), /proof=primes/);
+  assert.match(page.url(), /proof=prime_numbers/);
   await page.locator("#back").click(); await idle();
   assert.match(page.url(), /proof=euclid/);
   await page.locator('.source-line [data-name="n"]').first().click(); await idle();

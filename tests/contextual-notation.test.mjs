@@ -291,3 +291,37 @@ test("a lazy selector keeps the passed notation distinct from the rule's source 
   await query(session,"let saved := m.(1)","defined");
   await query(session,"typed(saved = numeric.(1), refl(saved))","error");
 });
+
+// A numeral abbreviation printed in a contextual query reads back in that
+// query's scope: the scope's lexical context decides what name.(…) selects
+// (notationForScope), so a named notation that takes a reader's or a model's
+// name keeps the exact form.
+test("contextual numeral displays check what each qualifier selects in the query's scope",async t=>{
+  const shown=async(source,marker,input)=>{
+    const program=new CubicalProgram(module,sourceReader(),{collectScopes:true});
+    t.after(()=>program.dispose());
+    const result=await program.check(source,"main");
+    assert.deepEqual(result.gaps,[],JSON.stringify(result.gaps));
+    const start=source.lastIndexOf(marker),end=start+marker.replace(/;$/,"").length;
+    const points=[...program.scopePoints.values()].filter(point=>point.origin.module==="main"
+      &&point.origin.start===start&&point.origin.end===end&&point.phase==="expression"&&point.available);
+    assert.ok(points.length);
+    const session=new ContextualSession(program,points[0].id);
+    t.after(()=>session.dispose());
+    const [answer]=await session.run(input);
+    assert.equal(answer.kind,"type",JSON.stringify(answer));
+    return answer.text;
+  };
+  const bits="typeof refl(b_positive(bp_odd(bp_one)))";
+  assert.equal(await shown("import bnat;\ndef anchor(x : BNat) : BNat := x;","x;",bits),
+    "bnat_numerals.(3) = bnat_numerals.(3)");
+  assert.equal(await shown("import bnat;\nnotation bnat_numerals { numeral(n : BNat) := b_zero; }\ndef anchor(x : BNat) : BNat := x;","x;",bits),
+    "b_positive(bp_odd(bp_one)) = b_positive(bp_odd(bp_one))");
+  // A theory whose numeral operation reads binary naturals.
+  const theory="import bnat;\ntheory Pointed(U < UU0) { M : U; point : M; def of_nat(n : BNat) : M := point notation numeral; }\n";
+  const generic="typeof refl(A.of_nat(bnat_numerals.(6)))";
+  assert.equal(await shown(`${theory}def anchor(A : Pointed(U0)) : A.M := A.point;`,"A.point",generic),
+    "A.(6) = A.(6)");
+  assert.equal(await shown(`${theory}notation A { numeral(n : BNat) := n; }\ndef anchor(A : Pointed(U0)) : A.M := A.point;`,"A.point",generic),
+    "Pointed.of_nat{{U0}}(A, bnat_numerals.(6)) = Pointed.of_nat{{U0}}(A, bnat_numerals.(6))");
+});

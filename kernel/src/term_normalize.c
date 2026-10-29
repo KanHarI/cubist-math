@@ -307,12 +307,10 @@ cc_term ck_whnf(cc_kernel *k, cc_term term) {
         return 0;
     if (k->weak_cache[term])
         return k->weak_cache[term];
-    if (++k->recursion > 1024) {
-        --k->recursion;
-        return ck_fail_as(k, CC_ERROR_RESOURCE, "Native reduction recursion depth exceeded."), 0;
-    }
+    if (!ck_enter(k, "Native reduction recursion depth exceeded."))
+        return 0;
     cc_term result = weak_tails(k, term);
-    --k->recursion;
+    ck_leave(k);
     return result;
 }
 
@@ -460,10 +458,8 @@ static cc_term folding_head(cc_kernel *k, cc_term term, cc_term *spine, cc_term 
     *spine = 0;
     if (!ck_tick(k))
         return 0;
-    if (++k->recursion > 1024) {
-        --k->recursion;
-        return ck_fail_as(k, CC_ERROR_RESOURCE, "Native reduction recursion depth exceeded."), 0;
-    }
+    if (!ck_enter(k, "Native reduction recursion depth exceeded."))
+        return 0;
     cc_term result = 0;
     for (;;) {
         if (!*spine && definition_spine(k, term))
@@ -479,7 +475,7 @@ static cc_term folding_head(cc_kernel *k, cc_term term, cc_term *spine, cc_term 
             break;
         }
     }
-    --k->recursion;
+    ck_leave(k);
     return k->error[0] ? 0 : result;
 }
 
@@ -528,10 +524,8 @@ static cc_term normal(cc_kernel *k, cc_term term, bool fold) {
         return ck_tick(k) ? CACHE[term] : 0;
     /* Protect any re-entry through other, still recursive reducer APIs.
      * Traversing normal-form children does not consume native stack depth. */
-    if (++k->recursion > 1024) {
-        --k->recursion;
-        return ck_fail_as(k, CC_ERROR_RESOURCE, "Native normal-form depth exceeded."), 0;
-    }
+    if (!ck_enter(k, "Native normal-form depth exceeded."))
+        return 0;
     normal_stack stack = {.capacity = NORMAL_LOCAL_FRAMES};
     stack.frames = stack.local;
     normal_push(k, &stack, term, false);
@@ -709,7 +703,7 @@ failed:
 cleanup:
     if (stack.frames != stack.local)
         free(stack.frames);
-    --k->recursion;
+    ck_leave(k);
     return result;
 #undef CACHE
 }
@@ -744,12 +738,10 @@ static bool normal_agree(cc_kernel *k, cc_term a, cc_term b) {
     uint64_t cached;
     if (ck_memo_get(k, 5, a, 0, b, &cached))
         return cached != 0;
-    if (++k->recursion > 1024) {
-        --k->recursion;
-        return ck_fail_as(k, CC_ERROR_RESOURCE, "Native reduction recursion depth exceeded.");
-    }
+    if (!ck_enter(k, "Native reduction recursion depth exceeded."))
+        return false;
     bool agrees = parts_agree(k, a, b);
-    --k->recursion;
+    ck_leave(k);
     if (!k->error[0])
         ck_memo_put(k, 5, a, 0, b, agrees);
     return agrees && !k->error[0];
@@ -793,12 +785,10 @@ static cc_term glue_step(cc_kernel *k, cc_term term);
  * conversion still decides no step. Returns b, the term itself when a side
  * condition fails, or 0 on error. */
 cc_term ck_glue_step(cc_kernel *k, cc_term term) {
-    if (++k->recursion > 1024) {
-        --k->recursion;
-        return ck_fail_as(k, CC_ERROR_RESOURCE, "Native reduction recursion depth exceeded."), 0;
-    }
+    if (!ck_enter(k, "Native reduction recursion depth exceeded."))
+        return 0;
     cc_term result = glue_step(k, term);
-    --k->recursion;
+    ck_leave(k);
     return result;
 }
 

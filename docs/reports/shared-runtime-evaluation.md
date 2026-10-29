@@ -9,8 +9,23 @@ Update of 2026-10-26: the REPLs and `print(evaluate(e))` now compute value
 forms through this query ([REPL integration](runtime-repl-evaluation.md)),
 which adds a synchronous `observeNow` and extends the observations below to
 the kernel's weak head: η, partially applied constructors with their arity,
-level functions, path abstractions and types. The rest of this report
-describes the query as #289 added it.
+level functions, path abstractions and types. Update of 2026-10-28: the
+supported signature fragment includes the point constructors of higher and
+truncated declared types, with their eliminators' clauses for them, by the
+same descriptors and the same elimination rule as ordinary data
+([higher sorts' point constructors](runtime-repl-evaluation.md#higher-sorts-point-constructors));
+path constructors, the squash among them, stay unsupported. Since
+[#324](https://github.com/KanHarI/cubist-math/pull/324) the query copies
+no closure when it is made: it reads each node, definition and signature
+from the kernel when its walk first demands it, counted in its work and
+cells, and definition and constructor types are no longer copied for
+typed readback. It holds the kernel to do so, and a read after any call
+that can move the kernel's handles (a checkpoint's rollback or commit, or
+freeing the session, however it is made, as the bridge's `cb_generation`
+tells) fails as `expired`; what it copied and computed before stays
+observable
+([report](runtime-repl-evaluation.md#the-query-copies-only-what-the-walk-reaches)).
+The rest of this report describes the query as #289 added it.
 
 ## Boundary and representation
 
@@ -150,6 +165,11 @@ Tractable observations are compared against native full reduction.
 
 Run `node tools/shared-evaluation-probe.mjs` to measure each of the unchanged
 archive workloads in a fresh Node process (or pass `4`, `5` or `6` for one).
+(Update of 2026-10-28: the archive's Euclid was deleted, and this probe with
+it, in EVAL7's part two ([report](binary-euclid.md#part-two)); the library's
+Euclid, over binary `Nat`, falls back from the runtime at NUM1's
+compositions. The figures below remain as measured; the probe runs in a
+checkout from before the deletion, such as `27c0cc38`.)
 The tool records the revision, a modified-tree flag including untracked files,
 runtime/kernel source hashes, Node/platform, separate
 checking/snapshot/observation times, work, allocations, retained objects,

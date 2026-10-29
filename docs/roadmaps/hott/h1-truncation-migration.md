@@ -8,8 +8,13 @@ archive's retirement, as [Removing the legacy assumptions](#removing-the-legacy-
 plans. On 2026-10-26 its [steps](#steps) 1–4 were scheduled alongside the
 runtime phase, starting with `axiom` definitions. Step 1 is implemented
 (2026-10-26): excluded middle and choice are the library's axioms, and the
-legacy builtins are labelled `LEM[Truncate]` and `Choice[Truncate]`. Steps 2–4
-are not implemented yet, and step 5 waits for the archive's deletion. The
+legacy builtins are labelled `LEM[Truncate]` and `Choice[Truncate]`. Steps 2
+and 3 are implemented (2026-10-28): no fixture outside the archive invokes the
+legacy builtins itself, and the reference and guides teach `Trunc` and the
+library's axioms, keeping the legacy builtins to notes on the archive. Step 4
+is implemented (2026-10-28): the legacy builtins are accepted only in an
+archive module, read unedited from the archive, and refused anywhere else.
+Step 5 waits for the archive's deletion. The
 [ledger](h1-truncation-ledger.json) pins 12 checked public changes against
 `f4d1961`, rebased from `cc6b50f` on 2026-10-05, and records 5 more of two
 comparisons that step 1 retired, with the revision at which they last
@@ -62,7 +67,8 @@ Step 1 retired that form: `library/classical_axioms.cubist` states
 listed as `LEM` and `Choice`. They keep their non-computing status. Where
 nothing binds `LEM` or `Choice`, the old `LEM(U, ...)` and `Choice(U, ...)`
 keep their archived signatures, listed as `LEM[Truncate]` and
-`Choice[Truncate]`, and can coexist with the axioms in the same session. A
+`Choice[Truncate]`, in an archive module only since step 4, and can coexist
+with the axioms in the same session. A
 ledger records a replacement of a legacy builtin by the axiom of its name
 explicitly.
 
@@ -146,6 +152,8 @@ comparisons pass; no mathematical source was changed.
 and its retired comparisons, coexistence of the library's `LEM` with the
 archive's `LEM[Truncate]`, and the CLI's refusal of another baseline, of a
 retired comparison and of a module without a baseline.
+`tests/truncation-confinement.test.mjs` checks step 4's confinement in each
+place a source can come from.
 Compared modules require a baseline at the requested Git revision in
 `library/` or `archive/first-library/`; an untracked new module cannot supply
 its own baseline. `tests/proof-migration.test.mjs` checks listed/unlisted G4 changes,
@@ -287,7 +295,7 @@ def Choice := axiom AxiomOfChoice;
   for now, by direction of 2026-10-20; changing it is later work and no part
   of this plan.
 
-### Continuum hypotheses: checked statements, planned assumptions
+### Continuum hypotheses: checked statements, optional assumptions
 
 Added on 2026-10-21, with no assumptions:
 
@@ -311,8 +319,10 @@ Added on 2026-10-21, with no assumptions:
   records the constructive binary-sequence formulation, with
   `Cantor := DecidablePowerSet(U0, Nat)`.
 
-With axiom expressions, implemented in step 1, optional assumptions can reuse
-these type families in the same way:
+Admitted on 2026-10-28, by the decision of 2026-10-26 below that
+user-supplied axioms are allowed and the continuum hypothesis is to be
+introduced so, `library/continuum_axioms.cubist` assumes four of these type
+families with axiom expressions, implemented in step 1:
 
 ```text
 def CH := axiom ContinuumHypothesis;
@@ -321,18 +331,82 @@ def GCH := axiom GeneralizedContinuumHypothesis;
 def DecidableGCH := axiom DecidableGeneralizedContinuumHypothesis;
 ```
 
-These lines are currently comments in the library, not admitted assumptions.
-`cubist-tests/continuum_axioms.cubist` checks that a module importing
-`continuum_hypothesis` can assume `CH` and `GCH` so, with the families over
-`U < UU0` whose bodies live in `next(next(U))`, and that every result that
-uses one lists it; there they are labelled `continuum_axioms::CH` and
-`continuum_axioms::GCH`. Admitted in the library, they would be labelled
-`CH` and `GCH`, by the label rule below.
-The targets `DecidableCH -> LEM` and `DecidableGCH -> Choice` are follow-up
-proofs. [Kirst and Rech's HoTT mechanization](https://hott-uf.github.io/2021/HoTTUF_2021_paper_4.pdf)
+Each family is over `U < UU0` with its body in `next(next(U))`, and each
+axiom is one assumption of that body for every `U`. They live in a module of
+their own, not in `continuum_hypothesis`, so that a module that imports the
+statements and the conditional proofs has none of the assumptions in scope;
+importing `continuum_axioms` is the visible step that admits them. Merely
+importing never makes a result rely on an axiom: each result lists exactly
+the axioms it uses. Excluded middle and choice, the standard classical
+principles, are stated beside their assumptions in `classical_axioms`; the
+continuum hypotheses are kept apart from their statements because a module
+may as well assume CH's negation, or leave CH open, with the same statements
+and conditional proofs.
+By the label rule below they are labelled `CH`, `DecidableCH`, `GCH` and
+`DecidableGCH`, which `tests/library.test.mjs` keeps distinct from every
+other library axiom. `tests/fixtures/contracts/continuum_axiom_contracts.cubist`
+states the axioms each result lists, `DecidableGCH` alone for both
+`DecidableGCH -> GCH -> CH` and `DecidableGCH -> DecidableCH -> CH` applied
+to it and none for the conditional proof that takes it as a parameter, and
+the refusals by `computable` (E330) and `evaluate` (E324);
+`cubist-tests/continuum_assumptions.cubist` shows their types and the
+refusals' messages. #317's `cubist-tests/continuum_axioms.cubist` assumed
+`CH` and `GCH` in the test module itself, labelled `continuum_axioms::CH` and
+`continuum_axioms::GCH`; it became that module, which imports the library's,
+since a test module may not share a library module's name.
+No axiom assumes `CantorContinuumHypothesis`.
+The target `DecidableCH -> LEM` is checked since 2026-10-28, with no
+resizing ([below](#excluded-middle-from-the-decidable-continuum-hypothesis)).
+`DecidableGCH -> Choice` remains a follow-up proof.
+[Kirst and Rech's HoTT mechanization](https://hott-uf.github.io/2021/HoTTUF_2021_paper_4.pdf)
 uses propositional resizing; adapting it must account explicitly for that
-requirement at these universe levels. No implication to LEM or choice is
-claimed as checked here.
+requirement at these universe levels. No implication to choice is claimed
+as checked here.
+
+#### Excluded middle from the decidable continuum hypothesis
+
+Added on 2026-10-28, with no assumptions, `continuum_classical.cubist`
+proves, for every `U < UU0`,
+
+```text
+computable def decidable_ch_excluded_middle(U < UU0, ch : DecidableContinuumHypothesis(U)) :
+  ExcludedMiddle(U)
+```
+
+and `decidable_gch_excluded_middle` from
+`DecidableGeneralizedContinuumHypothesis(U)` through it. The universes line
+up without resizing. For a proposition `P : U`, the subsets of `Nat` that
+are singletons or for which `P` holds,
+`SingletonsOrAll(U, Nat, nat_is_set, P)`, are pairs of an
+`S : PowerSet(U, Nat)` and `Trunc(next(U), P or IsSingleton(U, Nat, nat_is_set, S))`,
+in `next(U)`, where `DecidableContinuumHypothesis(U)` quantifies its
+intermediate sets; and the powerset's subsets take their propositions from
+`U`, the universe that `ExcludedMiddle(U)` is about.
+
+The proof holds for any set `A` and its powerset (`dichotomy_decides`):
+
+- `A` injects into the type by singletons, which determine their elements
+  (`powersets`' `singleton_injective`), and the type injects into
+  `PowerSet(U, A)` by the first projection, since its condition is a
+  proposition (`hlevels`' `subtype_injective`); it is a set.
+- The dichotomy merely gives an equivalence to `A` or to the powerset. The
+  decision of `P` is a proposition, so the truncations are eliminated.
+- Equivalent to `A`, the type refutes `P`: with `P` every subset belongs to
+  it, so the inverse of the equivalence, followed by the first projection,
+  reaches the diagonal subset of that very map, against Cantor's diagonal
+  argument (`powersets`' `cantor_diagonal`).
+- Equivalent to the powerset by `e`, the type proves `P`: the element that
+  `e` sends to the diagonal subset of `a ↦ e({a})` is no singleton `{k}`,
+  since `e({k})` would then be that diagonal, so its condition gives `P`.
+
+Deciding `Trunc(U, A)` for each `A : U` then gives excluded middle at `U`
+(`excluded_middle_from_decisions`). The module imports `classical_axioms`
+only for the statement `ExcludedMiddle`; its results list no assumption,
+and all are computable.
+`tests/fixtures/contracts/continuum_classical_contracts.cubist` keeps the
+conditional theorems axiom-free and computable, with `continuum_axioms` in
+scope, and applied to `continuum_axioms`' `DecidableCH` the theorem lists
+exactly `DecidableCH` (and `DecidableGCH` alone for the generalized one).
 
 ### Steps
 
@@ -489,6 +563,51 @@ transition land together.
    that construct legacy baselines run them as archive sources, or retire
    before confinement. Cost baselines invalidated by either transition are
    regenerated or marked historical in that transition.
+
+   **Done on 2026-10-28.** No fixture outside the archive invokes a legacy
+   builtin itself. Each is restated, keeping what it tests, or, where a
+   legacy builtin is its subject, reaches it through an archive source:
+   - `universe_generic_builtins` imports `classical_axioms`. `D4`'s
+     `LEM(UU0, …)` is refused as any generic definition's universe argument
+     is (E518), where the builtin's own check gave E407, and `D4_small`'s
+     `LEM(U1, …)` is accepted. `universe_generic`'s D6 case uses the
+     library's `LEM` at `U0` and `U1`, one assumption.
+   - `inductive_assumptions`' E507 cases put a path between two uses of
+     `LEM` or `Choice` where they put `Truncate`: in a parameter, a generic
+     parameter, a constructor's argument and a constructor's type.
+   - `program_assumptions` relies on `LEM` and `Choice` for its explicit and
+     minimal lists; its replay of the export asks which sources are the
+     library's, as the workbench does, so their labels survive the replay.
+     `assembly_generic_assumptions` lists the library's `Choice`, one kernel
+     entry at two levels, and prints `Trunc(U1, U0) : U1`, where the
+     archive's `Truncate` resized into `U0`. `inspection_axiom_labels`
+     inspects the library's `LEM`, and the legacy `‖A‖` notation hook is
+     checked on the archive's own `truncation.Mere`.
+   - The computability fixtures, `computability` and
+     `computability_evaluation`, and the command line's and the REPL's E324
+     probes import `h1_classical` in place of the archive's `classical`; they
+     depend on `LEM`, by `double_negation (h1_classical) → LEM`.
+   - Cases that used a legacy builtin as a convenient assumption use the
+     library's axioms, or an axiom of their own where a test's reader has no
+     library: the contract expectations of type dependencies and of an
+     imported or benchmarked `expect_axioms([])`, the nonempty and empty
+     contracts' assumptions in a type and in evidence, delta reduction over
+     an assumption, and the demand-marks ordering test. The demand-marks
+     corpus restates B95–B97 so, and records B98's weak head as its probe
+     finds it, a lambda, as for the others.
+   - Where a legacy builtin is the subject, an archive source invokes it:
+     the declarations tests of a builtin without a definition site and of
+     the assumption mark import the archive's `truncation`, and the label
+     check of `tests/test-contracts.test.mjs` its `classical`, as
+     `truncation_rebuilt_classical` does. The ledger tests that construct
+     legacy baselines read them from the archive (`legacyBaseline` in
+     `tests/proof-migration.test.mjs`), as step 1's replacement test does;
+     their pins and assumption lists are unchanged, and none retires.
+   - Expectations over archive modules keep the legacy labels: the six
+     `*_invalid_*` goldens and the mathematical tests.
+   - No cost baseline changes: none measures a migrated fixture, and step 1
+     marked the capture-bindings baselines' labels historical. The saved
+     benchmark reports (`web/benchmark-results*.json`) are dated snapshots.
 3. **Remaining reference and guides.** Complete the documentation migration
    after the signature, label and checked-example updates of step 1. The
    assumptions chapter sends truncation to the cubical chapter's declaration
@@ -497,6 +616,25 @@ transition land together.
    quick-reference example to import `classical_axioms` and use `Trunc`
    and `merely` before step 4 confines its old builtin calls. The guide lists
    `Trunc` and the two library axioms among its principles.
+
+   **Done on 2026-10-28** (`web/proof.html`'s example moved in step 1). The
+   cubical chapter declares the library's truncation (`#trunc`): `Trunc`'s
+   declaration quoted from `h1_truncation`, its point, `Trunc.squash` and
+   `mere_eliminate`, with a checked example. The assumptions chapter's
+   truncation section sends there and keeps the archive's `Truncate`, its
+   four assumptions and the `LEM[Truncate]` and `Choice[Truncate]` labels
+   to one note, for the archive's modules only; its universes section
+   states the axioms' universes, and that `Trunc` keeps its universe, with
+   library examples. The legacy builtins' accepted examples are gone. E406
+   and E407 are explained as the archive's legacy assumptions' errors, each
+   shown by one refused example in that note, and E403 by `ua` given one
+   argument too many. Step 4's refusal outside the archive will answer those
+   two examples first, so E406 and E407 then join E404, which only the
+   legacy builtins raise, in the code list without a shown example. `docs/guides/cubist.md` lists `Trunc`, `merely`,
+   `Trunc.squash` and `mere_eliminate` with `LEM` and `Choice` among the
+   library's principles, states `Trunc`'s universe, and keeps the archive's
+   truncation to one paragraph. The keyword and regression-contract guides
+   already name the legacy builtins only as the archive's.
 4. **Confinement.** `Truncate`, `TruncateIntro`, `TruncateProp`,
    `TruncateElim` and the builtin `LEM(U, …)` and `Choice(U, …)` are
    accepted only in archive modules, which the module reader distinguishes by
@@ -514,6 +652,157 @@ transition land together.
    same step, recording their last passing revision. The alternative to a
    translator check, a source test over the roots, is weaker: it reports
    after the fact and says nothing to a REPL entry.
+
+   **Done on 2026-10-28.** The translator refuses each legacy builtin
+   written outside an archive module: a call of `Truncate`,
+   `TruncateIntro`, `TruncateProp` or `TruncateElim`, or of `LEM` or
+   `Choice` where nothing binds them (the handler in
+   `web/translator/builtins.mjs`), and such a name unbound and not called
+   (`Translator.term`'s name case), which was E343's unknown name before.
+   The refusal is E491 (`legacyConfinement`): "LEM is the archive's legacy
+   builtin, accepted only in archive modules: elsewhere use the library's
+   Trunc, from h1_truncation, and its axioms LEM and Choice, from
+   classical_axioms." A REPL or console entry meets it as a file does.
+   - **Provenance.** An archive module is text read unedited from a file
+     that really lives in the archive's root, by its real path, under any
+     name (`fromArchive` in `web/module-resolution.mjs`, beside
+     `fromLibrary`), as `CubicalProgram.discover` asks and the program's
+     `archiveSources` records for the translator. The module reader keeps
+     the file each module was read from apart from its place, where its
+     imports resolve, and its name: `read` answers with the file it read,
+     `{ text, root, file }`, and a checked file brings its own
+     (`sourceReader` in `tools/module-sources.mjs`); an answer of text alone
+     vouches for its place's own file of that name, as the browser's and
+     the verifier's readers read. A module's name vouches for nothing, and
+     nor does a place given to a source for its imports alone, as the
+     audit's, the fingerprint's and the benchmark's synthetic modules have
+     one, nor a file elsewhere aliased into the archive's place, as the
+     fingerprint's `--examples` alias documentation examples. A link into
+     the archive is the archive's, renamed or not, and a copy outside it is
+     not. A real path spells each name as its directory entry does
+     (`realpathSync.native`), so on a case-insensitive file system a path
+     in another case, `archive/first-library/CLASSICAL.cubist` or
+     `ARCHIVE/FIRST-LIBRARY/classical.cubist`, is the archive's
+     `classical.cubist`, recorded as the root lists it for a transfer.
+     A path is resolved as the operating system reads it, never collapsed
+     as text first, so `link/..` leaves the link's target, and the text is
+     read through that same real path (`fileAt` in
+     `tools/module-sources.mjs`; the command line and the verifier read
+     their files through `canonicalFile`): what is read and the file it is
+     vouched for are one file. That path is resolved once and never again
+     after the read: the root is taken from it as text, and if it is no
+     longer the file that was read (a link swapped in, or another file put
+     there, by its device and inode), no root vouches for the text. Unlike the library's labels, provenance is not transitive, so a
+     module of the user's may import the archive and use its declarations
+     over the builtins.
+   - **Where written.** A builtin is the archive's when the module its
+     syntax was written in is: the origin every syntax node carries names
+     its authored module, through every expansion (`writtenInArchive`). So
+     a notation's rule written outside the archive and expanded in an
+     archive module is refused there: a named notation's operator, numeral,
+     literal and unary minus rules, selected by `use` or applied qualified
+     or as an operator section, and a model's attached notation. A theory's
+     fields, its parents' and its derived definitions are elaborated in the
+     theory's own module, which refuses them there; an initial or free
+     model's declared type uses no assumption at all (E850, E507), so its
+     generated members never carry a builtin. Syntax the archive writes
+     stays the archive's wherever it is expanded, as its declarations do.
+   - **A refusal is no failed attempt.** Where elaboration tries an
+     argument speculatively, to infer its type for an implicit parameter, a
+     hole, a constructor's parameters or a literal rule's parse, a failure
+     is a reason to try something else or to say that nothing determines
+     the parameter (E388). The confinement's refusal is a `SourceRefusal`
+     (`web/translator/control.mjs`), which those attempts report as it is:
+     `propagateLimit` rethrows it, as it rethrows running out, and a
+     recursive match keeps it rather than trying its second elaboration.
+   - **The library's labels had the same flaw**, fixed the same way: a file
+     elsewhere aliased into the library's place took bare labels. The
+     library also requires its file of the module's own name, since a bare
+     label is a name: a library file checked under another name, through a
+     link, would give a second assumption the same label.
+   - **A program checked again** reuses a module only from the same text,
+     the same provenance, library and archive, and the same file: text its
+     root no longer holds, or holds in another file, is checked again
+     (`CubicalProgram.check`), so an export names the file it was read from.
+   - **An edited archive module is not the archive's**, in the workspace or
+     as a file outside the root: the archive is frozen until it retires,
+     with no in-place remedies (I0.5), so an edit is a module of the user's
+     that spells an archive module's name. A rule by name or by place
+     would let any workspace module named as an archive module, which the
+     page places in the archive, use the builtins, adding consumers that
+     step 5 must remove; and it is #317's rule for the library's labels. The
+     archive's files as the repository holds them are the archive's text,
+     edited or not, as library/'s are the library's: an edit there is
+     reviewed and audited. So the migration verifier counts an edited
+     module read from the archive's own files as the archive's
+     (`readEdited.placeOf` in `tools/proof-migration.mjs`), as it compares
+     edits of the archive in place, and its baselines read from the archive
+     at their revision.
+   - **Replays keep it.** `ReplayInputs` records each module's archive
+     provenance with its library provenance, so the workspace console's
+     replay of an archive module checks it with its builtins; the console's
+     own entries are modules of their own, never the archive's. A
+     transfer carries the file each source was read from
+     (`CubicalProgram.export`'s `files`), and the workbench authenticates
+     that file (`archiveProvenance`, as `libraryProvenance` for the
+     library's labels): a module read under another name, through an alias
+     or a link, replays as the archive's when its file is a file the
+     archive lists and its text is that file's. Without that provenance, a
+     transfer of an archive declaration does not replay completely and is
+     refused.
+   - The labels `LEM[Truncate]` and `Choice[Truncate]` stay, so
+     `truncation_rebuilt_classical`'s `both` lists `LEM` and
+     `LEM[Truncate]`. `universe_generic_builtins` invokes no legacy builtin.
+   - `tests/truncation-confinement.test.mjs` covers each place: the
+     archive's three call sites and `classical` from the command line, by
+     path and by name, keep the builtins; the test fixture
+     `truncation_legacy_confined` refuses each of the six, called or named,
+     and uses the archive's `Mere`; a library module, read unedited from a
+     reader's library root, is refused; from the command line, a file of
+     the user's and a copy of `classical.cubist` outside the archive are
+     refused, and a link into the archive, renamed or not, is not; a file
+     aliased into the archive's place is refused, and the archive's own
+     file aliased under another name is not; each notation mechanism above
+     is refused where an archive module expands a rule written outside the
+     archive, and accepted for one the archive writes, and a theory's
+     parent and derived definition are refused where the theory is
+     written, beside an initial model of it that verifies either way; the
+     refusal is reported through an implicit parameter's, a hole's, a
+     named argument's, a constructor's and a literal rule's inference; a
+     workbench transfer of a declaration over an aliased or renamed archive
+     file replays as the archive's, and one naming a file the archive does
+     not hold is refused; a program checked again refuses the builtins, and gives a
+     library axiom its qualified label, once the root no longer holds the
+     same text; with the browser's
+     reader, the unedited archive module checks, and an edited one, a
+     module the page places in the archive and a listed name with other
+     text are refused; so are REPL entries, over an archive module or not,
+     and a console entry in an archive module's scope; a workbench
+     transfer of an archive declaration loads only with the archive's
+     provenance and its text; and the migration verifier keeps the
+     builtins for an archive baseline and an edit in place, not for an
+     edit elsewhere.
+   - **Reference and guides.** The assumptions chapter's note confines the
+     legacy builtins to the archive's modules as the archive holds them,
+     and shows E491 by `LEM(U0, A, nn)` without `classical_axioms`, in place
+     of step 3's E406 and E407 examples, which the confinement now answers
+     first. E406 and E407, which only the legacy builtins raise, in archive
+     modules, joined E404 in the code list without a shown example; the
+     errors chapter explains E491. `docs/guides/cubist.md`,
+     `docs/guides/keywords.md` and `docs/guides/regression-contracts.md`
+     state the confinement.
+   - `Truncate`, `TruncateIntro`, `TruncateProp` and `TruncateElim` stay
+     reserved, so that a source using them meets E491 rather than an
+     unknown name (Decisions, reserved names).
+   - **The `‖A‖` notation hook stays as it is.** It renders the legacy
+     `Truncate` assumption, which only an archive module can now introduce,
+     but an archive declaration's type is shown wherever it is used, in an
+     importer's types and the inspector, so the hook keys on the assumption,
+     not on the module; it leaves with the builtins in step 5.
+   - **No ledger comparison retires.** The field-logic and Cauchy
+     comparisons read their baselines from the archive at `f4d1961`, which
+     keep the builtins, and their edited sources use none; both pass with
+     their pins unchanged (2026-10-28).
 5. **Removal, with the archive** ([I0.5](../archive-retirement.md), R5).
    `web/cubical-assumptions.mjs` goes entirely: the four truncation types, the
    legacy `LEM`/`Choice` signatures, their builtins, the notation hook and the
@@ -539,13 +828,15 @@ transition land together.
   result that wants a classical hypothesis still takes it as a parameter, as
   `h1_classical`'s statements allow. `classical_axioms` supplies the standard
   LEM and choice assumptions; optional CH/GCH assumptions require explicit
-  declarations and reviewed expectation lists. The newly added continuum
-  modules currently admit none. The library tests continue checking each
-  module's exact assumption list.
+  declarations and reviewed expectation lists. Since 2026-10-28
+  `continuum_axioms` admits `CH`, `DecidableCH`, `GCH` and `DecidableGCH`
+  so ([above](#continuum-hypotheses-checked-statements-optional-assumptions)),
+  and `continuum_hypothesis` still admits none. The library tests continue
+  checking each module's exact assumption list.
 - **Labels.** **Decided on 2026-10-26** (the user): every library axiom is
-  labelled by its bare name, `LEM` and `Choice` and later `CH`, `GCH` and
-  the like, wherever its module and every module it imports are read
-  unedited from `library/`; user and
+  labelled by its bare name, `LEM` and `Choice`, and since 2026-10-28 `CH`,
+  `GCH` and their dichotomy forms, wherever its module and every module it
+  imports are read unedited from `library/`; user and
   other non-library axioms display their module-qualified names,
   `module::Name`. This replaced a table of `classical_axioms`'s two names.
   The library's axiom names are distinct, which `tests/library.test.mjs`
@@ -564,7 +855,7 @@ transition land together.
   remains unsupported.
   That step also permits ordinary declarations of `LEM` and `Choice`, with
   imported bindings resolved before the legacy builtin fallback. Step 4
-  restricts that fallback to archive modules.
+  restricted that fallback to archive modules (2026-10-28).
   `Truncate`, `TruncateIntro`, `TruncateProp` and `TruncateElim` stay
   reserved through step 4, so that a historical source fails with the
   retirement error rather than an unknown name, and are freed in step 5.

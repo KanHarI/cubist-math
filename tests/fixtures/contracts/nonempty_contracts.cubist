@@ -1,10 +1,11 @@
 // Inhabitation checks explicit, assumption-free evidence without comparing proofs.
 import propositions;
+import classical_axioms;
 use unat;
 
-def ConstantUnit(A : U0) : U0 := Unit;
+def ConstantUnit(A : U1) : U0 := Unit;
 
-def ConstantVoid(A : U0) : U0 := Void;
+def ConstantVoid(A : U1) : U0 := Void;
 
 # test(nonempty.unit)
 evaluate nonempty Unit by tt;
@@ -46,16 +47,15 @@ evaluate nonempty tt by tt;
 
 # test(nonempty.assumption_in_type)
 # expect_error(E324)
-// Error: E324: The evaluated term depends on non-computing assumptions: Truncate. Path to Truncate:
-//   Truncate.
-evaluate nonempty ConstantUnit(Truncate(U0, Unit)) by tt;
+// Error: E324: The evaluated term depends on non-computing assumptions: LEM. Path to LEM: LEM.
+evaluate nonempty ConstantUnit(LEM(U0) = LEM(U0)) by tt;
 
 # test(nonempty.assumption_in_evidence)
 # expect_error(E324)
-// Error: E324: The evaluated term depends on non-computing assumptions: Truncate, TruncateElim,
-//   TruncateIntro. Path to Truncate: Truncate.
-evaluate nonempty ((Unit -> Void) -> Void) by fun (no : Unit -> Void) => TruncateElim(
-  U0, Unit, Void, fun (a, b : Void) => absurd(a), no, TruncateIntro(U0, Unit, tt)
+// Error: E324: The evaluated term depends on non-computing assumptions: LEM. Path to LEM: LEM.
+evaluate nonempty ((Unit -> Void) -> Void) by fun (no : Unit -> Void) => mere_eliminate(
+  U0, U0, Unit, Void, fun (a, b : Void) => absurd(a), no,
+  LEM(U0, Unit, fun (k : Unit -> Void) => k(tt))
 );
 
 # test(nonempty.after_refusals)
@@ -99,16 +99,16 @@ evaluate empty tt by fun (x : Void) => x;
 
 # test(empty.assumption_in_type)
 # expect_error(E324)
-// Error: E324: The evaluated term depends on non-computing assumptions: Truncate. Path to Truncate:
-//   Truncate.
-evaluate empty ConstantVoid(Truncate(U0, Unit)) by fun (x : Void) => x;
+// Error: E324: The evaluated term depends on non-computing assumptions: Choice. Path to Choice:
+//   Choice.
+evaluate empty ConstantVoid(Choice(U0) = Choice(U0)) by fun (x : Void) => x;
 
 # test(empty.assumption_in_evidence)
 # expect_error(E324)
-// Error: E324: The evaluated term depends on non-computing assumptions: Truncate, TruncateElim,
-//   TruncateIntro. Path to Truncate: Truncate.
-evaluate empty (Unit -> Void) by fun (no : Unit -> Void) => TruncateElim(
-  U0, Unit, Void, fun (a, b : Void) => absurd(a), no, TruncateIntro(U0, Unit, tt)
+// Error: E324: The evaluated term depends on non-computing assumptions: LEM. Path to LEM: LEM.
+evaluate empty (Unit -> Void) by fun (no : Unit -> Void) => mere_eliminate(
+  U0, U0, Unit, Void, fun (a, b : Void) => absurd(a), no,
+  LEM(U0, Unit, fun (k : Unit -> Void) => k(tt))
 );
 
 # test(empty.after_refusals)

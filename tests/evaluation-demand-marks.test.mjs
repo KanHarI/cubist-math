@@ -51,7 +51,9 @@ function recordedProgram(t) {
   };
   checker.evaluated = function (term, ...rest) {
     const result = evaluated.call(this, term, ...rest);
-    if (term.tag === "DefRef") evaluations.push({ name: term.name, handle: result.expression, normalized: false, heads: [] });
+    // A handle number can be reused after a rollback: the evaluation's
+    // queries are the ones asked from here on.
+    if (term.tag === "DefRef") evaluations.push({ name: term.name, handle: result.expression, normalized: false, heads: [], asked: asked.length });
     return result;
   };
   kernel.head = function (handle) {
@@ -161,8 +163,9 @@ evaluate far
 
 test("an exact expected value or a printed normal form is computed before the assumptions are checked, and a pattern or a value form after", async t => {
   const { result } = await checkProgram(t, `import unat;
+import classical_axioms;
 use unat;
-def mixed := TruncateIntro(U0, UNat, 2 * 256);
+def mixed := LEM(U0, UNat, fun (no : UNat -> Void) => no(2 * 256));
 evaluate mixed expecting mixed;
 evaluate mixed expecting !_;
 print(evaluate(!!mixed));
@@ -264,33 +267,29 @@ evaluate typed(Glue(Unit, face_when(0, Unit, id_contr_equiv(U0, Unit))), glue(tt
 });
 
 test("an ignored component whose weak head fails does not fail the pattern", async t => {
-  // The prime of euclid(4) has two successor heads, and its third is too deep
-  // to compute (K344): any query of the ignored part, however indirect,
-  // fails the evaluation.
+  // The prime of euclid(7) is the least divisor of 7! + 1 = 71 * 71, and the
+  // search's 70 candidates make its weak head too deep to compute (K344):
+  // any query of the ignored part fails the evaluation.
   const { result } = await checkProgram(t, `import euclid;
-use unat;
-def pred(n : UNat) : UNat := match n {
-  zero => zero;
-  succ(k) => k;
-};
-def value : UNat and UNat := (1, pred(pred(euclid(4).1)));
+use nat;
+def value : Nat and Nat := (1, euclid(7).1);
 evaluate value expecting (1, _);
 evaluate value expecting (!_, _);
 evaluate value expecting (_, !_);
 `, { module });
-  assert.deepEqual(result.evaluations.map(evaluation => evaluation.value), ["(1, <unevaluated>)", "(succ(<unevaluated>), <unevaluated>)"]);
+  assert.deepEqual(result.evaluations.map(evaluation => evaluation.value), ["(1, <unevaluated>)", "(b_positive(<unevaluated>), <unevaluated>)"]);
   assert.deepEqual(result.gaps.map(gap => gap.code), ["K344"]);
 });
 
 test("an unobserved part is asked nothing: no query reaches a pair's ignored component", async t => {
   for (const pattern of ["(7, _)", "(!_, _)", "!(7, _)"]) {
     const { program, evaluations, asked } = recordedProgram(t);
-    const result = await program.check(`import euclid;\nuse unat;\ndef value := euclid(3);\nevaluate value expecting ${pattern};`, "main");
+    const result = await program.check(`import euclid;\nuse nat;\ndef value := euclid(3);\nevaluate value expecting ${pattern};`, "main");
     assert.deepEqual(result.gaps.map(gap => gap.reason), [], pattern);
     const [evaluation] = evaluations.filter(item => item.name === "main__value");
     // The evaluated term's weak head is the pair; its second component is
     // never asked for, and the whole term is never normalized.
-    const first = asked.findIndex(item => item.query === "head" && item.handle === evaluation.handle);
+    const first = asked.findIndex((item, index) => index >= evaluation.asked && item.query === "head" && item.handle === evaluation.handle);
     const pair = program.kernel.node(asked[first].result);
     assert.equal(pair.kind, "Pair", pattern);
     const ignored = pair.children[2];
@@ -372,16 +371,16 @@ test("a field the printer does not reach is not computed, though the kernel hold
 use unat;
 inductive Tree : U0 {
   leaf;
-  node(l : Tree, datum : UNat, r : Tree);
+  node(l : Tree, datum : Nat, r : Tree);
 }
 def grow(n : UNat) : Tree := match n {
   zero => leaf;
-  succ(k) => node(grow(k), 0, grow(k));
+  succ(k) => node(grow(k), nat.(0), grow(k));
 };
-def far : (Tree and Tree) and UNat := ((grow(10), grow(9)), euclid(4).1);
-print(evaluate(node(grow(12), euclid(4).1, leaf)));
+def far : (Tree and Tree) and Nat := ((grow(10), grow(9)), euclid(nat.(7)).1);
+print(evaluate(node(grow(12), euclid(nat.(7)).1, leaf)));
 print(evaluate(far));`, { module, options: { runtimeEvaluation: false } });
-  // euclid(4)'s prime has a weak head too deep for the kernel to build
+  // euclid(7)'s prime has a weak head too deep for the kernel to build
   // (K344), and neither print reaches it.
   assert.deepEqual(result.gaps.map(gap => gap.reason), []);
   assert.equal(result.prints.length, 2);
@@ -452,9 +451,7 @@ print(evaluate(hundreds(250)));`, { module, options: { runtimeEvaluation } });
     assert.ok(spent.at(-1) <= 4100, `the walk asked ${spent.at(-1)} queries`);
     assert.match(result.prints[0].text, /^cons\(100, cons\(100, /);
   }
-  // The runtime's walk asks the type's weak head first, which decides
-  // whether the runtime is asked at all.
-  assert.equal(spent[0], spent[1] + 1);
+  assert.equal(spent[0], spent[1]);
 });
 
 test("the value form shows no part deeper than the kernel's terms, however deep the value", async t => {
@@ -500,7 +497,7 @@ test("the REPL reads the marks after evaluate and before a term alone", async ()
 
 test("an unobserved part is not computed: the queries a pattern asks cost what it observes", async t => {
   const ticks = async source => {
-    const { program, result } = await checkProgram(t, `import euclid;\nuse unat;\ndef value := euclid(3);\n${source}`, { module });
+    const { program, result } = await checkProgram(t, `import euclid;\nuse nat;\ndef value := euclid(3);\n${source}`, { module });
     assert.deepEqual(result.gaps.map(gap => gap.reason), [], source);
     return Number(program.kernel.work().querySteps);
   };
@@ -708,8 +705,8 @@ for (const setup of Object.keys(corpus.setups)) {
         const by = computed.get(runtime);
         if (by.by === "runtime") valueForms.runtime++;
         else valueForms.unsupported[by.unsupported] = (valueForms.unsupported[by.unsupported] ?? 0) + 1;
-        // A fallback decided from the type takes no snapshot.
-        if (by.by === "kernel" && !by.runtime) valueForms.early++;
+        // No type decides a fallback: the runtime met the demand itself.
+        if (by.by === "kernel") assert.ok(by.runtime, `${item.id}: the fallback follows a runtime query`);
         continue;
       }
       assert.equal(typeof value, "string", `${item.id} ${mark}: ${JSON.stringify(value)}`);
@@ -755,21 +752,23 @@ for (const setup of Object.keys(corpus.setups)) {
 }
 // What computed the value forms above, the runtime or, for the demand it
 // reports unsupported, the kernel's head queries. The four assumptions are
-// refused before anything is computed. Of the fallbacks at a higher or
-// truncated sort, 18 are values of such a sort, decided from their types
-// before any snapshot, and 16 contain one.
-const valueForms = { runtime: 0, unsupported: {}, early: 0 };
-test("the runtime computes the value forms of the constructs on ordinary data", () => {
-  assert.equal(valueForms.runtime, 135);
+// refused before anything is computed. The runtime executes the point
+// constructors of higher and truncated sorts too, and their eliminators'
+// point clauses: of the 34 constructs it refused at such a sort before, it
+// computes 21, such as a circle's base, a quotient's class and a match on
+// them, and meets a path constructor in 8, a path applied in 2 and a
+// transport's composition in 3.
+const valueForms = { runtime: 0, unsupported: {} };
+test("the runtime computes the value forms of the constructs on data, ordinary and higher", () => {
+  assert.equal(valueForms.runtime, 156);
   assert.deepEqual(valueForms.unsupported, {
-    "Higher and truncated data execution is not implemented.": 34,
-    "Runtime execution of Comp is not implemented.": 17,
-    "Runtime execution of PApp is not implemented.": 2,
+    "Runtime execution of PApp is not implemented.": 4,
     "Runtime η of a path abstraction is not implemented.": 3,
+    "Runtime execution of Comp is not implemented.": 20,
+    "Execution of a path constructor is not implemented.": 8,
     "Runtime execution of Glue is not implemented.": 1,
     "Runtime execution of Unglue is not implemented.": 1,
   });
-  assert.equal(valueForms.early, 18);
 });
 
 // The acceptance report (docs/roadmaps/historical/evaluation-demand-marks/

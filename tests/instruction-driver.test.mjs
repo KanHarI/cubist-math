@@ -43,9 +43,11 @@ test("the first proof and unat, trans included, derive in instruction mode, at t
   assert.deepEqual(derived, ["unat__add", "unat__mul", "unat__le", "unat__isLt", "unat__unat_zero_add",
     "unat__unat_add_zero", "unat__unat_add_succ", "unat__unat_add_assoc", "unat__unat_add_comm", "unat__unat_add_left_comm",
     "unat__unat_add_interchange", "unat__pred", "unat__unat_succ_injective", "unat__unat_is_zero", "unat__unat_zero_ne_succ",
-    "unat__unat_add_cancel", "unat__unat_mul_zero", "unat__unat_mul_succ", "unat__unat_one_mul", "unat__unat_mul_one",
-    "unat__unat_mul_comm", "unat__unat_add_mul", "unat__unat_mul_add", "unat__unat_mul_assoc", "unat__unat_mul_cancel",
-    "unat__Trichotomy", "unat__unat_trichotomy", "unat__unat_le_refl",
+    "unat__unat_decide", "unat__unat_add_cancel", "unat__unat_mul_zero", "unat__unat_mul_succ", "unat__unat_one_mul",
+    "unat__unat_mul_one", "unat__unat_mul_comm", "unat__unat_add_mul", "unat__unat_mul_add", "unat__unat_mul_assoc",
+    "unat__unat_mul_cancel", "unat__Trichotomy", "unat__unat_trichotomy", "unat__unat_le_refl", "unat__unat_le_zero",
+    "unat__unat_le_step", "unat__unat_le_trans", "unat__unat_le_total", "unat__unat_le_succ_split", "unat__unat_le_add",
+    "unat__unat_add_positive",
     "driver_first_proof__lt", "driver_first_proof__lt_succ", "driver_first_proof__exists_greater_number"]);
 });
 
@@ -126,11 +128,13 @@ test("a definition's body is derived on request, as its lookup's premise", async
   assert.ok(listing.rows.length > folded.rows.length);
 });
 
+// The library's Euclid over binary Nat (library/euclid.cubist), with NUM1's
+// recursion and its transports, and unat's laws beneath the binary ones.
 test("every definition behind Euclid's theorem derives in instruction mode", async t => {
-  const readArchive = sourceReader();
-  const program = new CubicalProgram(await createCubical(), readArchive);
+  const readSource = sourceReader();
+  const program = new CubicalProgram(await createCubical(), readSource);
   t.after(() => program.dispose());
-  await program.check(await readArchive("euclid"), "euclid");
+  await program.check(await readSource("euclid"), "euclid");
   const kernel = program.kernel, failures = [];
   for (const [name, reference] of kernel.definitions) {
     const { value, type } = kernel.definition(reference);
@@ -156,6 +160,109 @@ test("every definition behind Euclid's theorem derives in instruction mode", asy
     stack.push(...judgement.premises);
   }
   for (const rule of ["pathAt", "system", "systemTube", "comp"]) assert.ok(rules.has(rule), rule);
+});
+
+// A system's face can mention a dimension that no tube does, as a
+// composition at an endpoint of NUM1's transports does: alpha equality
+// keeps that dimension's renaming when it compares the face.
+test("alpha equality renames a bound dimension that only a face mentions", async t => {
+  const kernel = new CubicalKernel(await createCubical());
+  t.after(() => kernel.dispose());
+  const unit = kernel.term("Unit"), point = kernel.term("Point");
+  // The face where every dimension of `dims` is 0.
+  const zero = (...dims) => kernel.formula("face", [[0n, dims.reduce((mask, dim) => mask | 1n << BigInt(dim), 0n)]]);
+  const comp = (bind, ...face) => kernel.term("Comp", bind, unit, kernel.term("Tube", zero(...face), point, 0), point);
+  const plam = (bind, body) => kernel.term("PLam", bind, unit, body);
+  const alpha = (a, b) => new InstructionDriver(kernel).alpha(a, b);
+  for (const [left, right, equal, label] of [
+    [plam(2, comp(3, 2)), plam(1, comp(2, 1)), true, "the same binders, renamed"],
+    [plam(2, plam(3, comp(4, 2))), plam(1, plam(2, comp(4, 2))), false, "the outer binder against the inner one"],
+    [plam(2, comp(3, 2)), plam(1, comp(3, 2)), false, "a bound dimension against a free one of its index"],
+    // Renaming the right side's bound 1 to 2 must not merge it with its free 2.
+    [plam(2, comp(3, 2)), plam(1, comp(3, 1, 2)), false, "a bound dimension against itself and a free one"],
+  ]) {
+    assert.equal(kernel.alphaEqual(left, right), equal, `the kernel: ${label}`);
+    assert.equal(alpha(left, right), equal, label);
+  }
+});
+
+// The driver's alpha equality is the kernel's, over random terms whose path
+// abstractions and compositions bind dimensions that faces and path
+// applications mention, beside free ones, all from a few indices so that
+// binders shadow each other and capture free dimensions. Each term is
+// compared with itself under an independent choice of every binder's index.
+test("alpha equality over binders and faces agrees with the kernel's", async t => {
+  const kernel = new CubicalKernel(await createCubical());
+  t.after(() => kernel.dispose());
+  // mulberry32, seeded: the same terms on every run.
+  let seed = 20261028;
+  const random = n => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let x = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    x = x + Math.imul(x ^ x >>> 7, 61 | x) ^ x;
+    return ((x ^ x >>> 14) >>> 0) % n;
+  };
+  const unit = kernel.term("Unit"), point = kernel.term("Point"), path = kernel.term("Var", 7);
+  const indices = [1, 2, 3, 4];
+  // A formula over the binders in scope and free dimensions: clauses of
+  // distinct dimensions, each 0 or 1.
+  const formula = scope => Array.from({ length: 1 + random(2) }, () => {
+    const literals = new Map();
+    for (let i = 1 + random(2); i > 0; i--) {
+      const dim = scope.length && random(3) ? { binder: scope[random(scope.length)] } : { free: indices[random(indices.length)] };
+      literals.set(JSON.stringify(dim), { dim, positive: random(2) === 1 });
+    }
+    return [...literals.values()];
+  });
+  let binders = 0;
+  const shape = (scope, depth) => {
+    const pick = depth > 0 ? random(6) : random(2);
+    if (pick === 0) return { kind: "Point" };
+    if (pick === 1) return { kind: "PApp", arg: formula(scope) };
+    const binder = binders++, inner = [...scope, binder];
+    if (pick === 2) return { kind: "PLam", binder, body: shape(inner, depth - 1) };
+    // A transport's family is under its binder, its face outside it.
+    if (pick === 3) return { kind: "Trans", binder, family: shape(inner, depth - 1), face: formula(scope), base: shape(scope, depth - 1) };
+    // A composition's tubes are under its binder, their faces outside it;
+    // a homogeneous one's family is outside it too.
+    return { kind: pick === 4 ? "Comp" : "HComp", binder, family: shape(pick === 4 ? inner : scope, depth - 1),
+      tubes: Array.from({ length: 1 + random(2) }, () => ({ face: formula(scope), body: shape(inner, depth - 1) })),
+      base: shape(scope, depth - 1) };
+  };
+  // The shape as kernel syntax, each binder at the index `at` gives it.
+  const realize = (node, at) => {
+    const mask = (literals, positive) => literals.filter(literal => literal.positive === positive)
+      .reduce((m, { dim }) => m | 1n << BigInt(dim.free ?? at[dim.binder]), 0n);
+    const clauses = clauses => clauses.map(literals => [mask(literals, true), mask(literals, false)]);
+    switch (node.kind) {
+      case "Point": return point;
+      case "PApp": return kernel.term("PApp", kernel.formula("interval", clauses(node.arg)), path);
+      case "PLam": return kernel.term("PLam", at[node.binder], unit, realize(node.body, at));
+      case "Trans": {
+        // The face descriptor carries the base, as web/cubical-syntax.mjs writes it.
+        const base = realize(node.base, at);
+        return kernel.term("Trans", at[node.binder], realize(node.family, at), kernel.term("Tube", kernel.formula("face", clauses(node.face)), base, 0), base);
+      }
+      default: {
+        let tubes = 0;
+        for (const tube of [...node.tubes].reverse())
+          tubes = kernel.term("Tube", kernel.formula("face", clauses(tube.face)), realize(tube.body, at), tubes);
+        return kernel.term(node.kind, at[node.binder], realize(node.family, at), tubes, realize(node.base, at));
+      }
+    }
+  };
+  const counts = { true: 0, false: 0 };
+  for (let sample = 0; sample < 400; sample++) {
+    binders = 0;
+    const term = shape([], 3), choose = () => Array.from({ length: binders }, () => indices[random(indices.length)]);
+    const left = realize(term, choose()), right = realize(term, choose());
+    let native;
+    // A clause the kernel finds contradictory, or an empty system, is not a term.
+    try { native = kernel.alphaEqual(left, right); } catch { continue; }
+    assert.equal(new InstructionDriver(kernel).alpha(left, right), native, `sample ${sample}`);
+    counts[native]++;
+  }
+  assert.ok(counts.true > 50 && counts.false > 50, `both answers occur: ${JSON.stringify(counts)}`);
 });
 
 test("a derived term is its source: a constructor at a type that reduces keeps that type", async t => {

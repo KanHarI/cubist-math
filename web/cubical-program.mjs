@@ -1,5 +1,5 @@
 import { sourceStatement } from "./cubical-statement.mjs";
-import { CubicalKernel } from "./cubical-kernel.mjs";
+import { CubicalKernel, moduleFault } from "./cubical-kernel.mjs";
 import { NativeCubicalElaborator, printedLabels } from "./cubical-elaborator.mjs";
 import {SourceUnit} from "./translator/elaboration.mjs";
 import { Translator } from "./translator/translate.mjs";
@@ -92,6 +92,11 @@ export class CubicalProgram {
     this.sourceAsts = new Map();
     this.simpRegistries = new Map();
     this.gaps = []; this.evaluations = []; this.prints = []; this.links = []; this.sources = {}; this.completed = 0;
+    // The root's file each module was read from, by its path there, when its
+    // text is that file's (module-resolution.mjs, fileOf). A module checked
+    // again from another file, though of the same text, is checked afresh
+    // (check), so that an export names the file it was read from.
+    this.sourceFiles = new Map();
     // What each directive (evaluate, print, simp_rule, simp_set) spent (fuel.mjs).
     this.directiveFuel = [];
     // Proof statements of each checked module, with their goals (see steps()).
@@ -99,6 +104,10 @@ export class CubicalProgram {
     this.failedImports = new Map();
     // Whether each module checked is the library's, imports included.
     this.libraryModules = new Map();
+    // Whether each module checked is the archive's own text: syntax written
+    // in one may use the archive's legacy builtins (builtins.mjs,
+    // writtenInArchive).
+    this.archiveSources = new Map();
   }
   dispose() { this.scopeReady=false; this.kernel.dispose(); }
   // Each assumption, as the pages and the inspector show it. An axiom's is
@@ -151,7 +160,16 @@ export class CubicalProgram {
       // qualified labels, and is never lost for it.
       let own = false;
       try { own = await this.readSource.fromLibrary?.(name, text) ?? false; } catch { own = false; }
-      const entry = { text, ast, library: false };
+      // Whether it is the archive's, as the archive holds it: only then may
+      // it use the archive's legacy builtins (builtins.mjs,
+      // legacyConfinement). That is the module's own text, whatever it
+      // imports, since the builtins are refused where they are written.
+      let archive = false, file = null;
+      try { archive = await this.readSource.fromArchive?.(name, text) ?? false; } catch { archive = false; }
+      // The root's file it was read from, which an export carries so that a
+      // transfer's receiver authenticates the same file (export).
+      try { file = await this.readSource.fileOf?.(name, text) ?? null; } catch { file = null; }
+      const entry = { text, ast, library: false, archive, file };
       prepared.set(name, entry);
       if(!this.modules.has(name))discovery.total += ast.declarations.length;
       onProgress({ completed: this.completed, total: null, current: name,
@@ -340,8 +358,13 @@ export class CubicalProgram {
     // Rechecking an edited module invalidates every dependent artifact and
     // native handle. The discovered source graph, rather than aliases or a
     // cached successful module, determines whether the session is reusable.
+    // A module's provenance is part of what it was checked from: the same
+    // text from another file, or no longer what its root holds, names its
+    // axioms otherwise or may no longer use the archive's legacy builtins.
     const invalidated=(collectScopes&&this.modules.size>0)||[...prepared].some(([name,entry])=>{
-      if(this.modules.has(name))return entry.error||entry.text!==this.sources[name];
+      if(this.modules.has(name))return entry.error||entry.text!==this.sources[name]
+        ||entry.library!==this.libraryModules.get(name)||entry.archive!==this.archiveSources.get(name)
+        ||(entry.file??null)!==(this.sourceFiles.get(name)??null);
       // A failed read must be retried through its importers. An interrupted
       // load may also have committed declarations before the active group.
       return !reuseModules&&(this.failedImports.has(name)||this.sources[name]!==undefined);
@@ -373,13 +396,16 @@ export class CubicalProgram {
       if (visiting.has(name)) throw new Error(`Cyclic source import: ${name}`);
       if (this.modules.has(name)) return this.modules.get(name);
       visiting.add(name);
-      let ast, library;
+      let ast, library, archive;
       try {
         const entry = prepared.get(name);
         if (!entry) throw new Error(`Source was not discovered: ${name}`);
         if (entry.error) throw entry.error;
-        ({ text, ast, library } = entry);
+        ({ text, ast, library, archive } = entry);
         this.libraryModules.set(name, library);
+        this.archiveSources.set(name, archive);
+        if (entry.file) this.sourceFiles.set(name, entry.file);
+        else this.sourceFiles.delete(name);
       }
       catch (error) {
         if (name === main) throw error;
@@ -410,7 +436,7 @@ export class CubicalProgram {
       let current = null;
       // A module of a revision before L2.10j, as the migration verifier reads
       // one, keeps its name-based operators and numerals (translate.mjs).
-      const translator = new Translator({ normalize: false, checker,definitionModule:name,libraryModule:library,testMode:!!this.options.testMode,simpRegistry,moduleName:name,sources:this.sources,collectGeneration:this.collectGeneration,
+      const translator = new Translator({ normalize: false, checker,definitionModule:name,libraryModule:library,archiveSources:this.archiveSources,testMode:!!this.options.testMode,simpRegistry,moduleName:name,sources:this.sources,collectGeneration:this.collectGeneration,
         scopePoints:scopeRecorder,compilationBindings:this.compilationBindings,
         onDirectiveStart:collectScopes?directive=>{
           this.onDirectiveStart?.(name,directive);
@@ -437,6 +463,10 @@ export class CubicalProgram {
             phase: "checked", unit: "declarations", instructions: checker.steps });
         },
         onDeclarationStart: declaration => {
+          // A failed kernel instance ends the check: what comes after it
+          // computed nothing, and is not reported as checked or refused.
+          const fault = moduleFault(this.kernel.module);
+          if (fault) throw fault;
           current = declaration.name.text;
           publication.beginDeclaration();
           this.onDeclarationStart?.(name, declaration, checker);
@@ -466,6 +496,8 @@ export class CubicalProgram {
       return result.env;
     };
     await load(main, source);
+    const fault = moduleFault(this.kernel.module);
+    if (fault) throw fault;
     if(collectScopes)this.scopeReady=true;
     const all = Object.values(this.symbols), outputs = all.filter(d => !d.sourceModule);
     // A check is complete when every declaration of every module it holds
@@ -838,8 +870,10 @@ export class CubicalProgram {
   }
   export(binding = null, side = "expression") {
     const view = binding ? this.inspect(binding) : null;
+    // Each source's file goes with it, so that the receiver authenticates
+    // what the check did (module-resolution.mjs, rootProvenance).
     return { format: "thth-cubical", version: 1, main: this.main,
-      source: this.metadata.source, sources: this.sources, binding, side,
+      source: this.metadata.source, sources: this.sources, files: Object.fromEntries(this.sourceFiles), binding, side,
       // Syntax is informational. Import must replay the supplied source first.
       ...(view ? { expression: view.expression, type: view.type, context: view.context } : {}) };
   }

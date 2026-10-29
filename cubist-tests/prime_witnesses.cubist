@@ -1,0 +1,44 @@
+// The library's Euclid and least divisor search over binary Nat, shown as
+// values (library/euclid.cubist, library/prime_numbers.cubist). Euclid's
+// witness for n is the least divisor of n! + 1 above one. The exact values
+// are also checked in the Euclid source contracts.
+import euclid;
+use nat;
+
+// Output: 2
+print(evaluate(euclid(0).1));
+
+// Output: 2
+print(evaluate(euclid(1).1));
+
+// Output: 3
+print(evaluate(euclid(2).1));
+
+// Output: 7
+print(evaluate(euclid(3).1));
+
+// Output: 5
+print(evaluate(euclid(4).1));
+
+// Output: 11
+print(evaluate(euclid(5).1));
+
+// A value form computes the data and marks the certificate's function.
+// Output: (5, (tt, <fun>), tt)
+print(evaluate(euclid(4)));
+
+// The folded normal form keeps the search's certificate named.
+// Output: (7, (tt, fun (d : Nat, above : 1 < d, below : d < 7, divides : Divides(d, 7)) =>
+//   least_divisor(7, tt).2.2.2(d, above, below, (1 * divides.1, path i => compose j in BNat from
+//   nat_mul_assoc(1, divides.1, d) @ i { on i = 0 => 1 * divides.1 * d; on i = 1 => compose k in
+//   BNat from bnat.(1 * divides.2 @ j) { on j = 0 => bnat.(1 * nat.(divides.1 * d)); on j = 1 => 7;
+//   }; }))), tt)
+print(evaluate(!!euclid(3)));
+
+// Past the square root of 97, the search ends at 97 itself.
+// Output: 97
+print(evaluate(least_divisor(97, tt).1));
+
+// A positive decision carries the quotient.
+// Output: left((11, <path>))
+print(evaluate(divides_decide(11, 121)));

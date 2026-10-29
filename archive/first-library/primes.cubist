@@ -1,156 +1,12 @@
 import unat;
 use unat;
 
-// Prime numbers and the order on the natural numbers, over unat's arithmetic.
+// What remains of the first library's prime numbers, over unat's arithmetic
+// and order: a bounded search for the least witness of a decidable
+// predicate, and the unary factorial. Divisibility, primality and Euclid's
+// theorem are the library's (divisibility, prime_numbers, euclid).
 // Every definition below is checked from source. No axioms and no imported
 // instruction snapshots.
-
-def unat_zero_ne_succ(n : UNat, p : (0 = succ(n))) :=
-  path_induction(
-    UNat,
-    (
-      fun (x : UNat) => (
-        fun (y : UNat) => (
-          fun (path_ : (x = y)) => ((fun (n2 : UNat) => induction n2 as k return U0 {
-                zero => Unit;
-                succ h => Void;
-              })(x) -> (fun (n2 : UNat) => induction n2 as k return U0 {
-                zero => Unit;
-                succ h => Void;
-              })(y))
-        )
-      )
-    ), (fun (x : UNat) => (fun (t : (fun (n2 : UNat) => induction n2 as k return U0 {
-              zero => Unit;
-              succ h => Void;
-            })(x)) => t)), 0, succ(n), p
-  )(tt);
-
-def nat_le_zero(n : UNat) := induction n as k return ((k <= 0) -> (k = 0)) {
-    zero => (fun (x : Unit) => refl(0));
-    succ ignored => (fun (h : Void) => typed((succ(k) = 0), absurd(h)));
-  };
-
-def nat_le_step(a : UNat) :=
-  induction a as a2 return (forall c : UNat. ((a2 <= c) -> (a2 <= succ(c)))) {
-    zero => (fun (c : UNat) => (fun (x : Unit) => tt));
-    succ h => (
-      fun (c : UNat) => induction c as k return ((succ(a2) <= k) -> (succ(a2) <= succ(k))) {
-        zero => (fun (v : Void) => typed((succ(a2) <= 1), absurd(v)));
-        succ ignored => (fun (v : (a2 <= k)) => h(k, v));
-      }
-    );
-  };
-
-def nat_le_trans(a : UNat) :=
-  induction a as a2 return (
-    forall c : UNat. (forall d : UNat. ((a2 <= c) -> ((c <= d) -> (a2 <= d))))
-  ) {
-    zero => (fun (c : UNat) => (fun (d : UNat) => (fun (x : Unit) => (fun (x2 : (c <= d)) => tt))));
-    succ h => (
-      fun (c : UNat) => induction c as k return (
-        forall d : UNat. ((succ(a2) <= k) -> ((k <= d) -> (succ(a2) <= d)))
-      ) {
-        zero => (
-          fun (d : UNat) => (
-            fun (v : Void) => (fun (x : Unit) => typed((succ(a2) <= d), absurd(v)))
-          )
-        );
-        succ ignored => (
-          fun (d : UNat) => induction d as k2 return (
-            (a2 <= k) -> ((succ(k) <= k2) -> (succ(a2) <= k2))
-          ) {
-            zero => (fun (x : (a2 <= k)) => (fun (v : Void) => typed((succ(a2) <= 0), absurd(v))));
-            succ ignored2 => (fun (ac : (a2 <= k)) => (fun (cd : (k <= k2)) => h(k, k2, ac, cd)));
-          }
-        );
-      }
-    );
-  };
-
-// Compare two naturals.
-// Either a <= b or b < a, with evidence for the selected case.
-def nat_le_total(a : UNat) :=
-  induction a as a2 return (forall c : UNat. ((a2 <= c) or (succ(c) <= a2))) {
-    zero => (fun (c : UNat) => typed(((0 <= c) or (succ(c) <= 0)), left(tt)));
-    succ h => (
-      fun (c : UNat) => induction c as k return ((succ(a2) <= k) or (succ(k) <= succ(a2))) {
-        zero => typed(((succ(a2) <= 0) or (1 <= succ(a2))), right(tt));
-        succ ignored => h(k);
-      }
-    );
-  };
-
-def nat_le_succ_split(a : UNat) :=
-  induction a as a2 return (forall c : UNat. ((a2 <= succ(c)) -> ((a2 <= c) or (a2 = succ(c))))) {
-    zero => (fun (c : UNat) => (fun (x : Unit) => typed(((0 <= c) or (0 = succ(c))), left(tt))));
-    succ h => (
-      fun (c : UNat) => induction c as k return (
-        (succ(a2) <= succ(k)) -> ((succ(a2) <= k) or (succ(a2) = succ(k)))
-      ) {
-        zero => (
-          fun (v : (a2 <= 0)) => typed(
-            ((succ(a2) <= 0) or (succ(a2) = 1)),
-            right(cong((fun (n : UNat) => succ(n)), nat_le_zero(a2, v)))
-          )
-        );
-        succ ignored => (
-          fun (v : (a2 <= succ(k))) => match h(k, v) return (
-            (succ(a2) <= succ(k)) or (succ(a2) = succ(succ(k)))
-          ) {
-            left ac => typed(((succ(a2) <= succ(k)) or (succ(a2) = succ(succ(k)))), left(ac));
-            right ac => typed(
-              ((succ(a2) <= succ(k)) or (succ(a2) = succ(succ(k)))),
-              right(cong((fun (n : UNat) => succ(n)), ac))
-            );
-          }
-        );
-      }
-    );
-  };
-
-def nat_le_add(a : UNat) := induction a as a2 return (forall c : UNat. (c <= (a2 + c))) {
-    zero => (fun (c : UNat) => unat_le_refl(c));
-    succ h => (fun (c : UNat) => nat_le_step(c, (a2 + c), h(c)));
-  };
-
-def nat_eq_decidable(a : UNat) :=
-  induction a as a2 return (forall c : UNat. ((a2 = c) or ((a2 = c) -> Void))) {
-    zero => (fun (c : UNat) => induction c as k return ((0 = k) or ((0 = k) -> Void)) {
-        zero => typed(((0 = 0) or ((0 = 0) -> Void)), left(refl(0)));
-        succ ignored => typed(
-          ((0 = succ(k)) or ((0 = succ(k)) -> Void)), right(unat_zero_ne_succ(k))
-        );
-      });
-    succ h => (
-      fun (c : UNat) => induction c as k return ((succ(a2) = k) or ((succ(a2) = k) -> Void)) {
-        zero => typed(
-          ((succ(a2) = 0) or ((succ(a2) = 0) -> Void)),
-          right((fun (p : (succ(a2) = 0)) => unat_zero_ne_succ(a2, sym(p))))
-        );
-        succ ignored => match h(k) return ((succ(a2) = succ(k)) or ((succ(a2) = succ(k)) -> Void)) {
-          left p => typed(
-            ((succ(a2) = succ(k)) or ((succ(a2) = succ(k)) -> Void)),
-            left(cong((fun (n : UNat) => succ(n)), p))
-          );
-          right np => typed(
-            ((succ(a2) = succ(k)) or ((succ(a2) = succ(k)) -> Void)),
-            right((fun (p : (succ(a2) = succ(k))) => np(unat_succ_injective(a2, k, p))))
-          );
-        };
-      }
-    );
-  };
-
-def nat_quotient_bound(d, q : UNat) := induction q as q2 return (q2 <= (q2 * succ(succ(d)))) {
-    zero => tt;
-    succ h => nat_le_trans(
-      q2, (q2 * succ(succ(d))), succ((d + (q2 * succ(succ(d))))), h,
-      nat_le_step(
-        (q2 * succ(succ(d))), (d + (q2 * succ(succ(d)))), nat_le_add(d, (q2 * succ(succ(d))))
-      )
-    );
-  };
 
 def bounded_least_search(
   P : (UNat -> U0), dec : (forall n : UNat. (P(n) or (P(n) -> Void))), n : UNat
@@ -221,7 +77,7 @@ def bounded_least_search(
                       fun (x : UNat) => (
                         fun (y : UNat) => (fun (path_ : (x = y)) => (P(x) -> P(y)))
                       )
-                    ), (fun (x : UNat) => (fun (t : P(x)) => t)), j, 0, nat_le_zero(j, bound)
+                    ), (fun (x : UNat) => (fun (t : P(x)) => t)), j, 0, unat_le_zero(j, bound)
                   )(p)
                 )
               )
@@ -287,7 +143,7 @@ def bounded_least_search(
                         and (P(i) and (forall j : UNat. ((succ(j) <= i) -> (P(j) -> Void))))
                       ),
                       (
-                        nat_le_step(i, n2, bound),
+                        unat_le_step(i, n2, bound),
                         typed(
                           (P(i) and (forall j : UNat. ((succ(j) <= i) -> (P(j) -> Void)))),
                           (proof, minimal)
@@ -355,7 +211,7 @@ def bounded_least_search(
             (
               fun (j : UNat) => (
                 fun (bound : (j <= succ(n2))) => (
-                  fun (p : P(j)) => match nat_le_succ_split(j, n2, bound) return Void {
+                  fun (p : P(j)) => match unat_le_succ_split(j, n2, bound) return Void {
                     left small => oldNone(j, small, p);
                     right same => np(
                       path_induction(
@@ -392,105 +248,6 @@ def least_bounded_witness(
     );
   };
 
-// Divisibility.
-// Divides(d, n) means exists k : UNat. k * d = n.
-def Divides(d, n : UNat) := (exists q : UNat. ((q * d) = n));
-
-def nontrivial_divisibility_decidable(d, n : UNat) :=
-  match bounded_least_search(
-    (fun (q : UNat) => ((q * succ(succ(d))) = n)),
-    (fun (q : UNat) => nat_eq_decidable((q * succ(succ(d))), n)), n
-  ) return (Divides(succ(succ(d)), n) or (Divides(succ(succ(d)), n) -> Void)) {
-    left witness_ => unpack witness_ as (i, data) return (
-      Divides(succ(succ(d)), n) or (Divides(succ(succ(d)), n) -> Void)
-    ) {
-      unpack data as (bound, rest) return (
-        Divides(succ(succ(d)), n) or (Divides(succ(succ(d)), n) -> Void)
-      ) {
-        unpack rest as (proof, minimal) return (
-          Divides(succ(succ(d)), n) or (Divides(succ(succ(d)), n) -> Void)
-        ) {
-          typed(
-            (Divides(succ(succ(d)), n) or (Divides(succ(succ(d)), n) -> Void)),
-            left(typed(Divides(succ(succ(d)), n), (i, proof)))
-          );
-        };
-      };
-    };
-    right empty_ => typed(
-      (Divides(succ(succ(d)), n) or (Divides(succ(succ(d)), n) -> Void)),
-      right((fun (w : Divides(succ(succ(d)), n)) => unpack w as (q, p) return Void {
-            empty_(
-              q,
-              path_induction(
-                UNat,
-                (
-                  fun (x : UNat) => (
-                    fun (y : UNat) => (fun (path_ : (x = y)) => ((q <= x) -> (q <= y)))
-                  )
-                ), (fun (x : UNat) => (fun (t : (q <= x)) => t)), (q * succ(succ(d))), n, p
-              )(nat_quotient_bound(d, q)), p
-            );
-          }))
-    );
-  };
-
-def divides_transitive(d, m, n : UNat, dm : Divides(d, m), mn : Divides(m, n)) :=
-  unpack dm as (k, pk) return Divides(d, n) {
-    unpack mn as (l, pl) return Divides(d, n) {
-      typed(
-        Divides(d, n),
-        ((l * k), trans(unat_mul_assoc(l, k, d), trans(cong((fun (x : UNat) => (l * x)), pk), pl)))
-      );
-    };
-  };
-
-def multiples_not_adjacent(d, k : UNat) :=
-  induction k as k2 return (
-    forall l : UNat. (((l * succ(succ(d))) = succ((k2 * succ(succ(d))))) -> Void)
-  ) {
-    zero => (
-      fun (l : UNat) => induction l as k2 return (
-        ((k2 * succ(succ(d))) = succ((0 * succ(succ(d))))) -> Void
-      ) {
-        zero => unat_zero_ne_succ(0);
-        succ ignored => (
-          fun (p : ((succ(k2) * succ(succ(d))) = 1)) => unat_zero_ne_succ(
-            (d + (k2 * succ(succ(d)))),
-            sym(unat_succ_injective(succ((d + (k2 * succ(succ(d))))), 0, p))
-          )
-        );
-      }
-    );
-    succ ih => (
-      fun (l : UNat) => induction l as k3 return (
-        ((k3 * succ(succ(d))) = succ((succ(k2) * succ(succ(d))))) -> Void
-      ) {
-        zero => unat_zero_ne_succ((succ(k2) * succ(succ(d))));
-        succ ignored => (
-          fun (p : ((succ(k3) * succ(succ(d))) = succ((succ(k2) * succ(succ(d)))))) => ih(
-            k3,
-            unat_add_cancel(
-              succ(succ(d)), (k3 * succ(succ(d))), succ((k2 * succ(succ(d)))),
-              trans(p, sym(unat_add_succ(succ(succ(d)), (k2 * succ(succ(d))))))
-            )
-          )
-        );
-      }
-    );
-  };
-
-// No consecutive multiples.
-// A number at least two cannot divide both n and n+1.
-def nontrivial_divisor_not_consecutive(
-  d, n : UNat, dn : Divides(succ(succ(d)), n), dsn : Divides(succ(succ(d)), succ(n))
-) :=
-  unpack dn as (k, pk) return Void {
-    unpack dsn as (l, pl) return Void {
-      multiples_not_adjacent(d, k, l, trans(pl, sym(cong((fun (n2 : UNat) => succ(n2)), pk))));
-    };
-  };
-
 // Factorial.
 // factorial(0) = 1; factorial(succ(n)) = succ(n) * factorial(n).
 // Keep calls folded so a theorem can mention a large factorial without
@@ -498,140 +255,4 @@ def nontrivial_divisor_not_consecutive(
 def factorial(n : UNat) := induction n as k return UNat {
     zero => 1;
     succ h => (succ(k) * h);
-  };
-
-def nat_add_positive(x : UNat) :=
-  induction x as k return (forall y : UNat. ((1 <= k) -> (1 <= (k + y)))) {
-    zero => (fun (y : UNat) => (fun (v : Void) => typed((1 <= y), absurd(v))));
-    succ ignored => (fun (y : UNat) => (fun (x2 : Unit) => tt));
-  };
-
-// Positive factorial.
-// Every factorial is at least one.
-def factorial_positive(n : UNat) := induction n as n2 return (1 <= factorial(n2)) {
-    zero => tt;
-    succ h => nat_add_positive(factorial(n2), (n2 * factorial(n2)), h);
-  };
-
-// Divisor of a factorial.
-// Every number from 2 through n divides factorial(n).
-def bounded_divisor_of_factorial(d, n : UNat) :=
-  induction n as n2 return ((succ(succ(d)) <= n2) -> Divides(succ(succ(d)), factorial(n2))) {
-    zero => (fun (v : Void) => typed(Divides(succ(succ(d)), 1), absurd(v)));
-    succ ih => (
-      fun (bound : (succ(succ(d)) <= succ(n2))) => match nat_le_succ_split(succ(succ(d)), n2, bound) return Divides(
-        succ(succ(d)), factorial(succ(n2))
-      ) {
-        left small => divides_transitive(
-          succ(succ(d)), factorial(n2), factorial(succ(n2)), ih(small),
-          typed(Divides(factorial(n2), factorial(succ(n2))), (succ(n2), refl(factorial(succ(n2)))))
-        );
-        right same => typed(
-          Divides(succ(succ(d)), factorial(succ(n2))),
-          (
-            factorial(n2),
-            trans(
-              cong((fun (x : UNat) => (factorial(n2) * x)), same),
-              unat_mul_comm(factorial(n2), succ(n2))
-            )
-          )
-        );
-      }
-    );
-  };
-
-// Prime number.
-// Prime(p) means exists i : UNat. (p = 2 + i) and forall j : UNat. j < i -> Divides(2 + j, p) ->
-// Void.
-def Prime(p : UNat) := (
-  exists i : UNat.
-  (
-    (p = succ(succ(i)))
-    and (forall j : UNat. ((succ(j) <= i) -> (Divides(succ(succ(j)), p) -> Void)))
-  )
-);
-
-// Prime divisor.
-// A least divisor of m greater than one is prime. The returned i names p = 2+i.
-def prime_divisor_exists(n : UNat) :=
-  induction n as k return (
-    (2 <= k) -> (exists i : UNat. (Prime(succ(succ(i))) and Divides(succ(succ(i)), k)))
-  ) {
-    zero => (
-      fun (v : Void) => typed(
-        (exists i : UNat. (Prime(succ(succ(i))) and Divides(succ(succ(i)), 0))), absurd(v)
-      )
-    );
-    succ ignored => induction k as k2 return (
-      (2 <= succ(k2))
-      -> (exists i : UNat. (Prime(succ(succ(i))) and Divides(succ(succ(i)), succ(k2))))
-    ) {
-      zero => (
-        fun (v : Void) => typed(
-          (exists i : UNat. (Prime(succ(succ(i))) and Divides(succ(succ(i)), 1))), absurd(v)
-        )
-      );
-      succ ignored2 => (
-        fun (x : Unit) => unpack least_bounded_witness(
-          (fun (i : UNat) => Divides(succ(succ(i)), succ(succ(k2)))),
-          (fun (i : UNat) => nontrivial_divisibility_decidable(i, succ(succ(k2)))), k2,
-          typed(Divides(succ(succ(k2)), succ(succ(k2))), (1, unat_add_zero(succ(succ(k2)))))
-        ) as (i, data) return (
-          exists i : UNat. (Prime(succ(succ(i))) and Divides(succ(succ(i)), succ(succ(k2))))
-        ) {
-          unpack data as (bound, rest) return (
-            exists i2 : UNat. (Prime(succ(succ(i2))) and Divides(succ(succ(i2)), succ(succ(k2))))
-          ) {
-            unpack rest as (proof, minimal) return (
-              exists i2 : UNat. (Prime(succ(succ(i2))) and Divides(succ(succ(i2)), succ(succ(k2))))
-            ) {
-              typed(
-                (
-                  exists i2 : UNat.
-                  (Prime(succ(succ(i2))) and Divides(succ(succ(i2)), succ(succ(k2))))
-                ),
-                (
-                  i,
-                  typed(
-                    (Prime(succ(succ(i))) and Divides(succ(succ(i)), succ(succ(k2)))),
-                    (
-                      typed(
-                        Prime(succ(succ(i))),
-                        (
-                          i,
-                          typed(
-                            (
-                              (succ(succ(i)) = succ(succ(i)))
-                              and (
-                                forall j : UNat.
-                                ((succ(j) <= i) -> (Divides(succ(succ(j)), succ(succ(i))) -> Void))
-                              )
-                            ),
-                            (
-                              refl(succ(succ(i))),
-                              (
-                                fun (j : UNat) => (
-                                  fun (smaller : (succ(j) <= i)) => (
-                                    fun (dp : Divides(succ(succ(j)), succ(succ(i)))) => minimal(
-                                      j, smaller,
-                                      divides_transitive(
-                                        succ(succ(j)), succ(succ(i)), succ(succ(k2)), dp, proof
-                                      )
-                                    )
-                                  )
-                                )
-                              )
-                            )
-                          )
-                        )
-                      ), proof
-                    )
-                  )
-                )
-              );
-            };
-          };
-        }
-      );
-    };
   };

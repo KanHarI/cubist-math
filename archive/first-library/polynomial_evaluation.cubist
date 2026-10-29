@@ -188,7 +188,7 @@ def polynomial_eval_add(
   let bound := add_count(m, n);
   let sf :=
     support_weaken(K, f, m, bound, natural_le_add_left(m, n), polynomial_cutoff_support(K, p));
-  let sg := support_weaken(K, g, n, bound, nat_le_add(m, n), polynomial_cutoff_support(K, q));
+  let sg := support_weaken(K, g, n, bound, unat_le_add(m, n), polynomial_cutoff_support(K, q));
   exact trans(
     polynomial_eval_bound(
       K, L, e, polynomial_add(K, p, q), x, bound, support_add_same(K, f, g, bound, sf, sg)

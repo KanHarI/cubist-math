@@ -372,25 +372,23 @@ export const archiveModules = [
   "group_univalence",
   "circle_group_identity",
   "cubical_paths",
-  // Entry points, which no module imports.
+  // An entry point, which no module imports.
   "basics",
-  "euclid",
 ];
 
 // Modules of the rebuilt library, served from library/. A name here shadows an
 // archive module of the same name. The first, nat, is the natural numbers,
 // which a module imports to use them.
-export const libraryModules = ["nat", "unat", "bnat", "bnat_equality", "bnat_notation", "bnat_unary", "bnat_arithmetic", "bnat_order", "semirings", "unat_models", "bnat_semiring", "bnat_models", "bnat_transport", "bnat_peano", "bnat_recursion", "classical_axioms", "universe_automorphisms", "hlevels",
+export const libraryModules = ["nat", "unat", "bnat", "bnat_equality", "bnat_notation", "bnat_unary", "bnat_arithmetic", "bnat_order", "semirings", "unat_models", "bnat_semiring", "bnat_models", "bnat_transport", "bnat_peano", "bnat_recursion", "bnat_order_laws", "bnat_division", "divisibility", "prime_numbers", "euclid", "classical_axioms", "universe_automorphisms", "hlevels",
   "h1_truncation", "h1_classical", "contractible_maps", "univalence", "universe_smallness", "propositions",
-  "finite_sets", "binary", "powersets", "continuum_hypothesis",
-  "lists", "lexemes", "quotients", "algebra", "ordered_algebra", "differences", "integers", "binary_integers", "fractions", "rationals", "binary_rationals", "squares"];
+  "finite_sets", "binary", "powersets", "continuum_hypothesis", "continuum_classical", "continuum_axioms", "lists", "lexemes", "quotients", "algebra", "ring_numerals", "ordered_algebra", "differences", "binary_integers", "integers", "fractions", "binary_rationals", "rationals", "squares"];
 
 // The Cubist sources the test suite checks (cubist-tests/), each a module the
 // workspace opens as proof.html?proof=NAME. tests/module-resolution.test.mjs
 // checks that every file is listed.
 export const cubistTestModules = [
   "arguments", "implicit_parameters", "patterns", "sum_match", "glue_", "face_restriction", "declared_match", "declared_induction", "automatic_clauses",
-  "automatic_clauses_groupoid", "automatic_clauses_without_hlevels", "quotient_effectiveness", "theories", "theories_without_hlevels", "theory_morphisms", "theory_sections", "theory_headers", "theory_variance", "theory_families", "theory_independent", "theory_use", "initial_models", "notation_views", "notation_operators", "notation_literals", "notation_printing", "notation_pilots", "algebra_models", "binary_natural_foundation", "default_naturals", "binary_semiring", "binary_transport", "binary_equality", "binary_recursion", "integer_examples", "binary_integer_ring", "rational_examples", "hlevel_lemmas", "hlevel_tactic", "hlevel_rules",
+  "automatic_clauses_groupoid", "automatic_clauses_without_hlevels", "quotient_effectiveness", "theories", "theories_without_hlevels", "theory_morphisms", "theory_sections", "theory_headers", "theory_variance", "theory_families", "theory_independent", "theory_use", "initial_models", "notation_views", "notation_operators", "notation_literals", "notation_printing", "notation_pilots", "algebra_models", "binary_natural_foundation", "default_naturals", "default_numbers", "binary_semiring", "binary_transport", "binary_equality", "binary_recursion", "prime_witnesses", "integer_examples", "binary_integer_ring", "ring_numeral_display", "numeral_display_scopes", "rational_examples", "hlevel_lemmas", "hlevel_tactic", "hlevel_rules",
   "hlevel_without_import", "h1_acceptance_levels", "h1_acceptance_formers", "h1_acceptance_instances",
   "h1_acceptance_paths", "program_types", "program_types_nat_as_name", "program_types_constructor_shadowing",
   "projections", "projections_archive_helpers", "let_statements", "path_operators", "universe_generic",
@@ -436,11 +434,12 @@ export const cubistTestModules = [
   "quotient_groups_quotient_regression", "quotient_universal_hom_universe_regression",
   "quotient_universal_regression", "quotient_universal_bad_factorization", "h1_cauchy_quotient", "h1_zorn_step",
   "truncation_small_mere", "truncation_cauchy_same", "truncation_resize", "truncation_strict_successor",
-  "truncation_rebuilt_classical", "printer_lint", "translation_failed_proofs", "translation_path_induction",
+  "truncation_rebuilt_classical", "truncation_legacy_confined", "printer_lint", "translation_failed_proofs",
+  "translation_path_induction",
   "translation_weak_j", "mismatch_source_syntax", "mismatch_calc_naming", "source_text_messages",
   "inspection_declared_types", "inspection_shadowed_nat", "inspection_axiom_labels", "inspection_let_alias",
   "inspection_square_boundary", "assembly_fixture", "assembly_generic_assumptions", "glue_printed",
   "admission_two", "reduction_demo", "f4_extension_loops", "f4_extension_loops_false", "fingerprint_fixture",
   "documentation_helper", "documentation_use", "declared_match_operator_call", "declarations_definitions",
-  "declarations_axioms", "continuum_axioms", "match_hypotheses"
+  "declarations_axioms", "continuum_assumptions", "match_hypotheses"
 ];

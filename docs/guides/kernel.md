@@ -874,7 +874,7 @@ The kernel separates **trusted equality steps** (invoked explicitly by `cc_instr
 
 ### 2. Weak-head normal form (`ck_whnf` in `term_normalize.c`)
 
-`ck_whnf(k, term)` reduces a term to its weak-head normal form by call-by-name, memoized by exact handle in `k->weak_cache`. The worker `weak` performs one head step and either returns a final head or hands back a continuation term, which the driver loop `weak_tails` reduces next; the loop records the terms it passes through, up to `WEAK_MAX_TAILS` (`16384`) of them, so that the final head is cached for all of those; later tails still reduce but are not cached. Reducing the head of an eliminated subterm (the function of `CC_APP`/`CC_LAPP`, the pair of `CC_FST`/`CC_SND`, the path of `CC_PAPP`, the scrutinee of a recursor) is a recursive `ck_whnf` call bounded by the `k->recursion` guard (`1024`); there is no explicit stack of elimination frames:
+`ck_whnf(k, term)` reduces a term to its weak-head normal form by call-by-name, memoized by exact handle in `k->weak_cache`. The worker `weak` performs one head step and either returns a final head or hands back a continuation term, which the driver loop `weak_tails` reduces next; the loop records the terms it passes through, up to `WEAK_MAX_TAILS` (`16384`) of them, so that the final head is cached for all of those; later tails still reduce but are not cached. Reducing the head of an eliminated subterm (the function of `CC_APP`/`CC_LAPP`, the pair of `CC_FST`/`CC_SND`, the path of `CC_PAPP`, the scrutinee of a recursor) is a recursive `ck_whnf` call, a step of the recursion guard `ck_enter` (see [Verification and limits](#verification-and-limits)); there is no explicit stack of elimination frames:
 
 1. **Definitions:** `CC_DEFREF(idx)` unfolds to `k->definitions[idx].value`.
 2. **Eliminations:** `CC_APP(f, a)` reduces $f$ to WHNF; on `CC_LAM(x, A, body)` it continues with `ck_substitute(k, body, x, a)`, on `CC_ELIM(sig, M, clauses)` it runs `ck_eliminate(k, Elim(sig, M, clauses), a, true, &reduced)` (`weak = true`, which reduces `a` to WHNF first), and otherwise it returns the neutral application. `CC_LAPP(f, l)` reduces $f$ and, on `CC_LLAM(x, B, body)`, continues with `ck_level_instantiate(k, body, x, l)`. `CC_FST`/`CC_SND` reduce the pair and, on `CC_PAIR(T, a, b)`, continue with `a` or `b`.
@@ -1040,4 +1040,88 @@ not retry these failures. The elaborator preserves an unresolved limit through
 inference and proof search, and negative-test contracts cannot count it as an
 expected refusal. Bounded conversion shortcuts may still use a cheaper
 alternative; a successful answer requires the ordinary checked derivation.
+
+Native recursion is bounded by `ck_enter` (`term_store.c`). Each recursive
+step of `ck_whnf`, `folding_head`, `normal`, `normal_agree` and `ck_glue_step`
+(`term_normalize.c`), `canonical_traverse` (`levels.c`), `alpha`
+(`term_conversion.c`) and `rebuild` (`instruction_equality.c`) is entered
+through it and left through `ck_leave`. The outermost step records its frame's
+address in `k->stack_base`, and `k->recursion` counts the steps entered. A
+step fails with `CC_ERROR_RESOURCE` and its caller's message (`K336` for
+reduction, `K337` normal forms, `K326` comparison, `K322` levels, `K207`
+positions) when `CC_RECURSION_LIMIT` (`448`) steps are already entered, or when
+its frame is more than `CC_STACK_BUDGET` (4 MiB) from the base. A nested step
+never moves the base, and a failed step is not entered. An operation's start,
+and a rollback, set `k->recursion` to `0`, so the next step records the base
+again. The
+bytes bound the stack the kernel runs on, whatever a cycle's frames cost: a
+native main thread's 8 MiB, and the WebAssembly build's (`-sSTACK_SIZE` in the
+`Makefile`). The steps bound a stack the kernel cannot measure: under
+WebAssembly the engine keeps frames on its own stack, about 0.5 MiB in a
+Chromium worker, and the cycles measured take 0.6 to 0.9 KiB of it a step,
+so their 448 steps end before it does. In a Chromium worker nested declared
+eliminators ran out of that stack at 622 steps and nested unit eliminations
+at 708, so the limit is 28% and 37% under them; in Node they ran out at
+about 1,100 and 1,686. The test suite and the library need at most 320
+steps.
+
+On 2026-10-28 the user decided the guard's three open questions: the step
+bound stays beside the byte bound, since no byte budget alone stops every
+cycle before an engine's stack runs out; the limit is 448 steps, for margin
+in a Chromium worker; and it holds on every platform, native included, so
+that a recursion is refused at the same depth wherever it is checked.
+
+An exception out of a WebAssembly export is never the kernel's answer: the
+engine's own stack ran out (a `RangeError`), or the instance trapped (a
+`WebAssembly.RuntimeError`). It unwinds the kernel's frames without running
+them to their end, so the instance's memory may be half changed. The
+JavaScript driver therefore never enters such an instance again: `guardModule`
+(`web/cubical-kernel.mjs`) wraps each export, and after the first exception
+every call throws `KernelFault` (`E668`) without entering. An argument the
+engine could not convert (a BigInt, a Symbol or an object) is refused before
+the call and ends nothing: the exports take 32-bit integers and doubles, so
+an exception from a call whose arguments convert came from the instance, or
+from the engine refusing to enter it for want of stack. A check on a failed
+instance ends at its next declaration, and a runtime query on it
+(`web/cubical-runtime.mjs`) publishes nothing more.
+
+The command line replaces the instance itself: it checks its last source
+again and replays the REPL session's entries on the new instance, each as
+the entry it was, and says what was restored and what not (`restartNote` in
+`web/repl-session.mjs`). In the browser a failed instance ends its worker
+instead: the worker answers the request with the failure, marked fatal, and
+stops, and `WorkerRequests` (`web/worker-requests.mjs`) fails every other
+request it held and tells the page. The page starts a new worker and builds
+again, by its usual paths, what it held. The proof page checks the current
+source again, as after a compiler update, or the latest example its
+reference page sent meanwhile, restores its console's session, and reads its
+result, inspector, contexts and generated declarations from that check.
+Every start or replacement of the page's worker (the first, after a
+compiler update, after a failure, and the reader's retry), and every restore
+of a console's session however it starts, is maintenance of the worker
+(`workerMaintenance` in `web/worker-maintenance.mjs`): it runs once the
+requests already sent have settled, decides then whether it is still
+wanted, and every other request waits until it is done and is sent only
+then, so that none runs out its deadline behind it and nothing replaces a
+worker while a restore runs on it. A compiler update, like a failure,
+checks the source again and restores the session. A REPL keeps the record
+its worker returns with each entry (`ReplSession.record`): the statements
+that extended its session, each with the entry `repl_N` it was checked as.
+On a new worker the record is
+restored (`recordedSession` in `web/repl-console.mjs`): each recorded
+statement is checked again as that entry, and nothing else, so what was
+refused stays refused, and each statement that no longer checks is named.
+A session over a proof is restored once the new worker has checked the
+proof; until then an entry is refused and the record kept, and a Restart
+meanwhile forgets it for good.
+The reference examples check each example on a new worker. A check that
+failed so is not checked again, and a new worker that cannot load is
+reported as at startup. A page replaces a worker so once for each thing the
+reader does: should the new worker fail too before the reader does anything
+else, the proof page starts no other and says so (`E258`), and the reader's
+next check starts one. The workbench's worker reports the failure as fatal
+and closes, as for a trap. A worker installs a check's program only once its
+reply is made, and clones each reply before sending it, so that a part read
+lazily, as a check's steps, reads the kernel where a failure is caught.
+
 Full cubical canonicity for every implemented constructor is not claimed by this project.

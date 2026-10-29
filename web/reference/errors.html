@@ -278,9 +278,8 @@
             <div class="table-scroll"><table>
               <thead><tr><th>Code</th><th>Message</th><th>Meaning and fix</th><th>Example</th></tr></thead>
               <tbody>
-                <tr id="E406"><td class="code"><code>E406</code></td><td data-message="Logical assumptions require a universe and an explicit native context.">“Logical assumptions require a universe and an explicit native context.”</td><td>A library assumption was used without its universe argument. Write <code>Truncate(U0, A)</code>.</td><td><a href="assumptions.html#assumption-universes">universes</a></td></tr>
-                <tr id="E407"><td class="code"><code>E407</code></td><td data-message="holds only for universes below UU0.">“<var>name</var> holds only for universes below UU0.”</td><td>One of the archive’s assumptions, <code>Truncate</code> or its builtins, was used at <code>UU0</code> or above. Each is generic over the universes below <code>UU0</code> only.</td><td><a href="assumptions.html#assumption-universes">universes</a></td></tr>
-                <tr id="E403"><td class="code"><code>E403</code></td><td data-message="Too many arguments to">“Too many arguments to <var>name</var>.”</td><td>A library assumption got more arguments than its type allows.</td><td><a href="assumptions.html#assumption-universes">universes</a></td></tr>
+                <tr id="E491"><td class="code"><code>E491</code></td><td data-message="is the archive's legacy builtin, accepted only in archive modules">“<var>name</var> is the archive's legacy builtin, accepted only in archive modules: elsewhere use the library's Trunc, from h1_truncation, and its axioms LEM and Choice, from classical_axioms.”</td><td>One of the archive’s legacy builtins, <code>Truncate</code>, <code>TruncateIntro</code>, <code>TruncateProp</code> or <code>TruncateElim</code>, or <code>LEM</code> or <code>Choice</code> where nothing binds them, was used outside the archive. Only a module read unchanged from the archive may use them. For a truncation, use the library’s <code>Trunc</code>; for excluded middle or choice, <code>import classical_axioms;</code>, whose <code>LEM</code> and <code>Choice</code> then name its axioms over <code>Trunc</code>.</td><td><a href="assumptions.html#truncation">truncation</a></td></tr>
+                <tr id="E403"><td class="code"><code>E403</code></td><td data-message="Too many arguments to">“Too many arguments to <var>name</var>.”</td><td><code>ua</code>, <code>UnivalenceBeta</code> or, in an archive module, one of the archive’s legacy builtins got more arguments than its type allows.</td><td><a href="assumptions.html#generic-library">univalence</a></td></tr>
                 <tr id="E330"><td class="code"><code>E330</code></td><td data-message="This computable declaration depends on non-computing assumptions:">“This computable declaration depends on non-computing assumptions: …”</td><td>The declaration uses an assumption, directly or through a definition. The message names the chain. Replace that step, or drop <code>computable</code>.</td><td><a href="assumptions.html#computable">computable</a></td></tr>
                 <tr id="E324"><td class="code"><code>E324</code></td><td data-message="The evaluated term depends on non-computing assumptions:">“The evaluated term depends on non-computing assumptions: …”</td><td><code>evaluate</code> accepts only terms that use no assumption.</td><td><a href="assumptions.html#evaluate">evaluate</a></td></tr>
                 <tr id="E326"><td class="code"><code>E326</code> <code>E477</code></td><td data-message="The term evaluates to">“The term evaluates to <var>a</var>, not <var>b</var>.”, “The term evaluates to <var>a</var>, which does not match <var>p</var>: <var>c</var> is not <var>q</var>.”</td><td>The normal forms differ; the message shows both. Against a pattern, it names the first part of the value that does not match, and the part of the pattern it fails; the value is shown as far as the pattern computed it, <code>&lt;unevaluated&gt;</code> marking a part it did not.</td><td><a href="assumptions.html#evaluate">evaluate</a></td></tr>
@@ -513,6 +512,7 @@ def mixed(a, b : UNat, h : a = b) : a &lt;= b {
                 <tr id="E255"><td><code>E255</code></td><td>… is declared below its use: a declaration uses only the declarations above it.</td></tr>
                 <tr id="E256"><td><code>E256</code></td><td>…::… and …::… would be one identity, …: rename one of them.</td></tr>
                 <tr id="E257"><td><code>E257</code></td><td>The transfer did not replay completely: …</td></tr>
+                <tr id="E258"><td><code>E258</code></td><td>The kernel failed again in the checking worker that replaced a failed one, so no other starts on its own: check the source to start one.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e3">Terms</h3>
@@ -628,8 +628,8 @@ def mixed(a, b : UNat, h : a = b) : a &lt;= b {
                 <tr><td><a href="#E403"><code>E403</code></a></td><td>Too many arguments to ….</td></tr>
                 <tr id="E404"><td><code>E404</code></td><td>… needs a universe argument.</td></tr>
                 <tr id="E405"><td><code>E405</code></td><td>… with a truncation former needs a universe argument. (retired)</td></tr>
-                <tr><td><a href="#E406"><code>E406</code></a></td><td>Logical assumptions require a universe and an explicit native context.</td></tr>
-                <tr><td><a href="#E407"><code>E407</code></a></td><td>… holds only for universes below UU0.</td></tr>
+                <tr id="E406"><td><code>E406</code></td><td>Logical assumptions require a universe and an explicit native context.</td></tr>
+                <tr id="E407"><td><code>E407</code></td><td>… holds only for universes below UU0.</td></tr>
                 <tr id="E408"><td><code>E408</code></td><td>Invalid arguments to ….</td></tr>
                 <tr id="E409"><td><code>E409</code></td><td>A composition wall has syntax face(i, 0 or 1, fun (j : Interval) =&gt; ...).</td></tr>
                 <tr id="E410"><td><code>E410</code></td><td>A composition face needs an outer interval coordinate and endpoint 0 or 1.</td></tr>
@@ -713,6 +713,7 @@ def mixed(a, b : UNat, h : a = b) : a &lt;= b {
                 <tr id="E488"><td><code>E488</code></td><td>The runtime's evaluation of the value form exhausted its allocation budget of … cells.</td></tr>
                 <tr id="E489"><td><code>E489</code></td><td>The runtime's evaluation of the value form exceeded its time limit.</td></tr>
                 <tr id="E490"><td><code>E490</code></td><td>The runtime failed to evaluate the value form: …</td></tr>
+                <tr><td><a href="#E491"><code>E491</code></a></td><td>… is the archive's legacy builtin, accepted only in archive modules: elsewhere use the library's Trunc, from h1_truncation, and its axioms LEM and Choice, from classical_axioms.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e5">Inductive types and matching</h3>
@@ -866,6 +867,8 @@ def mixed(a, b : UNat, h : a = b) : a &lt;= b {
                 <tr id="E664"><td><code>E664</code></td><td>A transport's face is a face formula; found an interval point.</td></tr>
                 <tr id="E665"><td><code>E665</code></td><td>A partial element's face is a face formula; found an interval point.</td></tr>
                 <tr id="E666"><td><code>E666</code></td><td>An axiom states a type, or a family of types: axiom T; or axiom F; where F(x) is a type.</td></tr>
+                <tr id="E667"><td><code>E667</code></td><td>This cubical kernel module has no handle generations. Rebuild it with `make wasm`.</td></tr>
+                <tr id="E668"><td><code>E668</code></td><td>The kernel's WebAssembly instance failed (…), and is not used again: nothing computed after the failure is kept.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e7">Arguments and their inference</h3>
@@ -927,8 +930,8 @@ def mixed(a, b : UNat, h : a = b) : a &lt;= b {
                 <tr id="E843"><td><code>E843</code></td><td>A model's notation is its theory's; …'s adds only a numeral or a literal rule.</td></tr>
                 <tr id="E844"><td><code>E844</code></td><td>A literal rule reads a Lexeme: import lexemes, which defines ….</td></tr>
                 <tr id="E845"><td><code>E845</code></td><td>… is recursive, and a field's type cannot unfold it: state the law over a model, outside the theory.</td></tr>
-                <tr id="E846"><td><code>E846</code></td><td>notation numeral reads a plain numeral: it marks a derived operation of one natural number, as def of_nat(n : UNat) : R := … notation numeral.</td></tr>
-                <tr id="E847"><td><code>E847</code></td><td>A numeral rule reads a unary natural number: import unat.</td></tr>
+                <tr id="E846"><td><code>E846</code></td><td>notation numeral reads a plain numeral: it marks a derived operation of one natural number, as def of_nat(n : BNat) : R := … notation numeral.</td></tr>
+                <tr id="E847"><td><code>E847</code></td><td>A numeral rule reads a … natural number: import ….</td></tr>
                 <tr id="E848"><td><code>E848</code></td><td>…'s label would be …, which is reserved: label it, as in other : ….</td></tr>
                 <tr id="E850"><td><code>E850</code></td><td>… takes a theory at its universes and parameters, as …; … is none.</td></tr>
                 <tr id="E851"><td><code>E851</code></td><td>… takes … argument…, its universes and parameters; this gives ….</td></tr>

@@ -75,9 +75,9 @@ test("beta avoids free interval capture and evaluates path application in its cu
 
 test("delta retains explicit assumption arguments rather than opening an unbound body", async t => {
   const program = await programFor(t);
-  await program.check("def Mere(A : U1) := Truncate(U1, A);", "truncation");
-  const before = program.inspect("truncation__Mere");
-  const view = { ...before, expression: app({ tag: "DefRef", name: "truncation__Mere" }, variable(before.context[0].name)) };
+  await program.check("import classical_axioms;\ndef Excluded(A : U0) := LEM(U0, A);", "excluded");
+  const before = program.inspect("excluded__Excluded");
+  const view = { ...before, expression: app({ tag: "DefRef", name: "excluded__Excluded" }, variable(before.context[0].name)) };
   const reduced = reduceView(program, view, "expression", "delta");
   assert.equal(reduced.view.expression.fn.tag, "Lam");
   assert.deepEqual(reduced.view.context, view.context);

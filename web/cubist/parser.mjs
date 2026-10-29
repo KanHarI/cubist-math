@@ -66,9 +66,10 @@ export const builtinNames = new Set([
   "FunExt", "Truncate", "TruncateIntro", "TruncateProp", "TruncateElim", "UnivalenceBeta", "ua",
 ]);
 // Excluded middle and choice are the library's axioms, LEM and Choice of
-// classical_axioms, and ordinary names. Where nothing binds them, they fall
-// back to the archive's legacy builtins over Truncate, labelled LEM[Truncate]
-// and Choice[Truncate] (docs/roadmaps/hott/h1-truncation-migration.md).
+// classical_axioms, and ordinary names. Where nothing binds them, in an
+// archive module, they fall back to the archive's legacy builtins over
+// Truncate, labelled LEM[Truncate] and Choice[Truncate]; anywhere else they
+// are refused (docs/roadmaps/hott/h1-truncation-migration.md, step 4).
 export const legacyBuiltinNames = new Set(["LEM", "Choice"]);
 export const generatedNames = new Set([
   "Hom", "Iso", "cat", "equality", "make", "map", "id", "inverse", "compose", "to", "from", "from_to", "to_from",

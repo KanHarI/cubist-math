@@ -1,9 +1,9 @@
 // Module sources on disk, resolved by the shared contract in
 // web/module-resolution.mjs. The CLI, the test runner and the tests read
 // imports through sourceReader, so each resolves them as the others do.
-import { realpathSync } from "node:fs";
-import { readFile } from "node:fs/promises";
-import { basename, dirname, join, relative, resolve, sep } from "node:path";
+import { lstatSync, realpathSync } from "node:fs";
+import { open } from "node:fs/promises";
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { moduleListing } from "../web/module-listing.mjs";
 import { moduleReader, moduleRoots, placeOfPath } from "../web/module-resolution.mjs";
@@ -16,23 +16,68 @@ export const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 export const moduleFiles = place => [...moduleListing[place]].sort()
   .map(name => join(projectRoot, moduleRoots[place], `${name}.cubist`));
 
-const text = async path => {
-  try { return await readFile(path, "utf8"); }
-  catch (error) { if (error.code === "ENOENT") return null; throw error; }
-};
+// A path made absolute as the operating system reads a relative one, from
+// the working directory, and nothing more: path.resolve would also drop each
+// `name/..` pair as text, so that `link/..` named the link's own directory
+// where reading it leaves the link's target, another file.
+const absolute = path => isAbsolute(path) ? path : `${process.cwd()}${sep}${path}`;
+// A path below a directory, as the operating system reads it: join would
+// drop a `link/..` in the directory as text too.
+const below = (directory, path) => `${directory}${sep}${path}`;
 
-// A path with every symbolic link resolved, as reading the file resolves them.
-// A path that does not exist stays as written; reading it reports the error.
+// A path as the operating system reads it: every symbolic link resolved in
+// order, a `..` after one leaving its target, and each name spelled as its
+// directory entry is, so that on a case-insensitive file system
+// archive/first-library/CLASSICAL.cubist and
+// ARCHIVE/FIRST-LIBRARY/classical.cubist are the archive's classical.cubist,
+// which provenance and a transfer's file name as the root lists it. The
+// operating system's realpath gives that path; Node's own keeps the caller's
+// spelling. A path that does not exist stays as written; reading it reports
+// the error.
 const real = path => {
-  try { return realpathSync(resolve(path)); }
+  try { return realpathSync.native(absolute(path)); }
   catch (error) { if (error.code === "ENOENT") return resolve(path); throw error; }
 };
+// The path the file at `path` is read through, the one its provenance names.
+export const canonicalFile = path => real(path);
 
 // The place of the file at `path`: archive, library or local. It is decided by
 // where the file really is, so a link to an archive module elsewhere is still
 // an archive module, and a link into the archive from elsewhere is too.
-export const placeOfFile = (path, root = projectRoot) =>
-  placeOfPath(relative(real(root), real(path)).split(sep).join("/"));
+const realPath = (path, root) => relative(real(root), real(path)).split(sep).join("/");
+export const placeOfFile = (path, root = projectRoot) => placeOfPath(realPath(path, root));
+
+// The file at `path` as moduleReader's provenance takes it
+// (web/module-resolution.mjs): its text, the root it really lives in and its
+// path there, whatever place or name it is read under. The path is resolved
+// once, the text read from that real path, and the root and the path there
+// taken from it as text, never by resolving it again: what is read and the
+// file it is vouched for are one file. If that real path is no longer the
+// file that was read, a link swapped in or the file replaced while it was
+// read, no root vouches for the text. A missing file is null, or,
+// `required`, an error.
+const fileAt = async (path, root, { required = false } = {}) => {
+  let canonical;
+  try { canonical = realpathSync.native(absolute(path)); }
+  catch (error) { if (error.code === "ENOENT" && !required) return null; throw error; }
+  const handle = await open(canonical, "r");
+  let content, opened;
+  try { opened = await handle.stat(); content = await handle.readFile("utf8"); }
+  finally { await handle.close(); }
+  let unchanged = false;
+  try {
+    const entry = lstatSync(canonical);
+    unchanged = entry.isFile() && entry.dev === opened.dev && entry.ino === opened.ino
+      && realpathSync.native(canonical) === canonical;
+  } catch { unchanged = false; }
+  if (!unchanged) return { text: content, root: "local", file: null };
+  const there = relative(real(root), canonical).split(sep).join("/"), place = placeOfPath(there);
+  return { text: content, root: place, file: place === "local" ? null : there };
+};
+// A file read as its provenance takes it: its text, and the root it really
+// lives in, for a tool that reads a file itself, as the migration verifier
+// reads an edited one. A missing file is an error.
+export const readFileAt = (path, root = projectRoot) => fileAt(path, root, { required: true });
 
 // A readSource for CubicalProgram. With `path`, it checks that file: the file
 // is placed where it really lives, so an archive file is checked
@@ -51,13 +96,16 @@ export const moduleOfFile = path => basename(path, ".cubist").replace(/[^A-Za-z0
 
 export function sourceReader({ path = null, root = projectRoot, files = new Map() } = {}) {
   const local = path === null ? null : dirname(real(path));
-  const readSource = moduleReader((place, name) => {
+  // Each answer names the file it read, so that an alias or a link is
+  // authenticated by the file it reaches, not by the place it stands in.
+  const readSource = moduleReader(async (place, name) => {
     const file = files.get(`${place}/${name}`);
-    if (file !== undefined) return readFile(file, "utf8");
-    return place === "local" ? (local === null ? null : text(join(local, `${name}.cubist`)))
-      : text(join(root, moduleRoots[place], `${name}.cubist`));
+    if (file !== undefined) return fileAt(file, root, { required: true });
+    const at = place === "local" ? (local === null ? null : below(local, `${name}.cubist`)) : below(root, `${moduleRoots[place]}${name}.cubist`);
+    return at === null ? null : fileAt(at, root);
   });
-  if (path !== null) readSource.place(moduleOfFile(path), placeOfFile(path, root));
+  // The checked file comes from itself, whatever its name.
+  if (path !== null) readSource.place(moduleOfFile(path), placeOfFile(path, root), () => fileAt(path, root));
   return readSource;
 }
 

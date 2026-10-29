@@ -52,7 +52,8 @@ are not tagged.
 ## Numbers and counting
 
 - ★ **Euclid's theorem.** For every natural number there is a larger prime.
-  [C]
+  [C] Rebuilt in the library on 2026-10-28, over binary numbers
+  ([`euclid`](../library/euclid.cubist)); the archive's proof was deleted.
 - **Integers.** The integers form a set, and successor is an equivalence of
   them. [C]
 - ★ **Numerals by univalence.** Binary numbers and positional numerals in
@@ -231,7 +232,7 @@ For reference only. Names are module names in the archived library.
 | Area | Modules |
 | --- | --- |
 | Foundations | `sets`, `equivalence_from_inverse`, `structured_sets`, `set_quotients`, `quotient_descent`, `quotient_sets`, `surjections` |
-| Numbers and counting | `euclid`, `integers`, `binary_*`, `radix_*`, `finite_cancellation`, `function_counting`, `permutations`, `binomial_*`, `finite_dependent_counts` |
+| Numbers and counting | `integers`, `binary_*`, `radix_*`, `finite_cancellation`, `function_counting`, `permutations`, `binomial_*`, `finite_dependent_counts` |
 | Order and sets | `schroeder_bernstein`, `bourbaki_witt`, `zorn_chain_complete` |
 | Groups | `group_univalence`, `subgroup_*`, `normal_subgroups`, `group_cosets`, `quotient_group_universal`, `group_first_isomorphism`, `non_normal_subgroup` |
 | Homotopy types | `circle`, `circle_group_identity`, `circle_degree`, `bouquet_*`, `puncture_*` |

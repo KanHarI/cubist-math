@@ -40,7 +40,8 @@ http://127.0.0.1:8088/files.html, shows the same tree with each file's summary
 and source.
 
 Click a lemma, then **View source**, to open its definition. Clicking the module
-name in `import primes` opens the foundation source. Click a line number in a
+name in an import, such as Euclid's `import prime_numbers`, opens that module's
+source. Click a line number in a
 structured proof block to inspect its goal and local assumptions. The inspector's
 Back button retraces inspections; browser Back retraces source navigation.
 
@@ -134,7 +135,7 @@ component of a tuple `(a, b, c)` is `.2.2`.
 `x = x`; `absurd(impossible)` eliminates a proof of `Void` into the expected type.
 
 Blocks support `intro`, `let`, `obtain`, `cases`, and `exact`. See
-[Euclid](../../archive/first-library/euclid.cubist) for the complete short argument.
+[Euclid](../../library/euclid.cubist) for the complete short argument.
 `let name := term;` names a term, `let name : T := term;` checks it against
 `T`, and `let name : T { … }` proves `T` in a nested block; the checker sees
 through every form. To restate the goal, prove the restated form in a `let`
@@ -178,9 +179,9 @@ induction and introduce no axiom. `refl(x)` supplies the reflexive path `x = x`.
 
 Equality induction is available as
 `path_induction(A, motive, reflexive_case, x, y, equality)`, where the motive is a
-function of two endpoints and their equality proof. The foundational symmetry,
-transitivity, and congruence proofs in [primes.cubist](../../archive/first-library/primes.cubist)
-show its use. The lower-level `induct`, `cases`, and `unpack` function forms remain
+function of two endpoints and their equality proof. The bounded least-witness
+search in [primes.cubist](../../archive/first-library/primes.cubist) uses it to
+carry a predicate along an equality of numbers. The lower-level `induct`, `cases`, and `unpack` function forms remain
 available for proof-producing source tools.
 
 ## Modules and validation
@@ -198,14 +199,16 @@ and `fun (U < UU0) => t` bind a universe variable in a type or a term. See the
 [Universes chapter](../../web/reference/universes.html).
 
 The following functions are the library principles and their derived
-operations, each generic over `U < UU0`. See
+operations, each generic over `U < UU0`. `Trunc`, the propositional
+truncation, and its operations come from `h1_truncation`; `LEM` and `Choice`
+are the two axioms of `classical_axioms`, which imports it. See
 [the single-axiom univalence development](../tactical/univalence.md).
 
 ```text
-Truncate(U, A)
-TruncateIntro(U, A, a)
-TruncateProp(U, A)
-TruncateElim(U, A, P, proposition_proof, map)
+Trunc(U, A)
+merely(U, A, a)
+Trunc.squash(x, y)
+mere_eliminate(U, V, A, P, proposition_proof, map, t)
 FunExt(U, A, B, f, g, pointwise_equality)
 Choice(U)(A, B, setA, setFibers, inhabited)
 LEM(U)(A, double_negation)
@@ -216,8 +219,12 @@ UnivalenceBeta(U)(A, B, equivalence, x)
 UnivalenceEta(U)(A, B, path)
 ```
 
-Each instance at a universe is a first-class function. The two application
-styles above are interchangeable. `Choice` still requires setness of the
+Each instance at a universe is a first-class function, except `Trunc`, which
+takes both its arguments. The two application styles above are
+interchangeable. `Trunc` is a declared type, no assumption:
+`merely` is its point `point(a)` and computes, and `Trunc.squash` identifies
+any two of its elements. `LEM` and `Choice` are assumptions, listed with
+every result that uses them. `Choice` still requires setness of the
 index type and every fiber and returns only a truncated section.
 `Univalence` asserts that the canonical `idtoequiv` map is an equivalence.
 `ua` is its derived inverse: it accepts `Equiv(U, A, B)` and returns
@@ -230,26 +237,38 @@ universe-parameterized definitions. `x =[T] y` explicitly selects the carrier
 of equality; both endpoints are checked against `T`. Plain `x = y` still
 infers the carrier. Neither notation asserts definitional equality.
 
-`A` and the elimination target `P` must belong to `U`; `B` is a family
-`A -> U`. Smaller types can be lifted, but larger types cannot be lowered.
-For example, `Truncate(U1, U0)` is valid and
-`Truncate(U0, U0)` is rejected. A family may need an explicit lift,
-such as `fun (a : A) => typed(U1, Unit)`.
+`A` must belong to `U`; `B` is a family `A -> U`. Smaller types can be
+lifted, but larger types cannot be lowered. `Trunc(U, A)` is a proposition in
+`A`'s own universe `U`: `Trunc(U1, U0)` is valid, a type in `U1`, and
+`Trunc(U0, U0)` is rejected. `mere_eliminate` maps a truncation in `U` into a
+proposition `P` of any universe `V`, given evidence that `P` is a
+proposition; nothing resizes a truncation into a smaller universe. A family
+may need an explicit lift, such as `fun (a : A) => typed(U1, Unit)`.
 
-The existing library truncation constructor returns U0 even when its input is
-large. These wrappers preserve that signature; they do not promise
-universe-preserving truncation. Elimination still requires evidence that its
-target is a proposition. See the [real-number foundation notes](../roadmaps/mathematics/reals-roadmap.md) for
-the implications and current development status.
+The archive's modules use an older truncation, `Truncate`, `TruncateIntro`,
+`TruncateProp` and `TruncateElim`, four assumptions that resize every
+truncation into `U0`, with excluded middle and choice over it, `LEM(U, …)`
+and `Choice(U, …)` where nothing binds those names, listed as
+`LEM[Truncate]` and `Choice[Truncate]`. Only an archive module, read
+unedited from `archive/first-library/`, may use them, until the archive
+retires ([K2.5](../roadmaps/hott/h1-truncation-migration.md#removing-the-legacy-assumptions)).
+Anywhere else, in a library module, a test, a file of your own, an edited
+archive module, the workspace or the REPL, each is refused, called or
+named, with an error that names `Trunc` and the axioms of
+`classical_axioms` (E491).
+The [real-number foundation notes](../roadmaps/mathematics/reals-roadmap.md)
+discuss what working without resizing implies for the reals.
 
 ### Source checking
 
-`import primes;` parses and checks the entire mathematical foundation source.
-It does not trust a saved proof snapshot. Human-readable interface signatures are
-also checked against the resulting definitions before use. All 42 declarations
-in that module are axiom-free. `euclid.cubist` owns both the proposition
-`InfinitelyManyPrimes` and its proof `euclid`; neither is imported from `primes`. A regression test checks that the high-level Euclid
-proposition matches the independently saved original proposition after reduction.
+`import euclid;` parses and checks the library's Euclid and every module beneath
+it from source. It does not trust a saved proof snapshot. Human-readable interface
+signatures are also checked against the resulting definitions before use.
+`euclid.cubist` owns both the proposition `InfinitelyManyPrimes` and its proof
+`euclid`, which uses no assumption: its source contracts
+([`euclid_contracts`](../../tests/fixtures/contracts/euclid_contracts.cubist))
+state `expect_axioms([])` for the theorem, the least divisor search and the
+divisibility decision.
 
 The mathematical source backend in `tools/proofs/readable_backend.mjs` migrated
 proof-producing combinators into mathematical syntax. Its output is independently
@@ -298,9 +317,9 @@ calculation blocks, implicit arguments, and editor completion are future work.
 A named proposition can be used directly as a definition's result type:
 
 ```text
-def InfinitelyManyPrimes = forall n : UNat. exists p : UNat. Prime(p) and n < p;
+computable def InfinitelyManyPrimes : U0 := forall n : Nat. exists p : Nat. Prime(p) and n < p;
 
-def euclid : InfinitelyManyPrimes {
+computable def euclid : InfinitelyManyPrimes {
   intro n;
   // Construct a prime above n, then finish with exact.
 }

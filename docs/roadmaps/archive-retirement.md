@@ -24,11 +24,13 @@ library module.
 [Results of the first library](../library-results.md) records what it proved,
 in statements independent of its encodings, and names the modules that hold
 each area. What the library already builds has left the archive: `nat`'s
-arithmetic (from `primes`) and `sets` (for `hlevels`). What the library builds
-differently remains and is not migrated in place: `truncation` and
-`classical` rest on the legacy `Truncate` assumptions, `set_quotients` are
-predicate quotients over them, and `equivalences` are bijections and
-half-adjoint equivalences where the library has contractible maps.
+arithmetic and, by NT1, the unary order lemmas (both from `primes`); by
+NT2, `euclid` and `primes`' divisibility and primality; and `sets` (for
+`hlevels`). What the library builds differently remains and is
+not migrated in place: `truncation` and `classical` rest on the legacy
+`Truncate` assumptions, `set_quotients` are predicate quotients over them,
+and `equivalences` are bijections and half-adjoint equivalences where the
+library has contractible maps.
 
 ## What depends on it
 
@@ -85,7 +87,9 @@ decisions of R3 recorded before the deletion.
 
 **Scheduled early, on 2026-10-26.** Two parts no longer wait for the runtime
 phase to end: R2 (K2.5's steps 1–4) runs alongside it, and so does the
-archive's number theory, below.
+archive's number theory, below. R2 is done (2026-10-28): the legacy
+builtins are accepted only in an archive module, read unedited from the
+archive's root, and refused anywhere else.
 
 ## Number theory in the library
 
@@ -97,9 +101,9 @@ every module that reaches a definition, not only direct importers.
 
 | Archive source | What it holds and who uses it | In the library |
 | --- | --- | --- |
-| `primes` (637 lines): divisibility and primality | `Divides`, its decision and lemmas, `Prime`, `prime_divisor_exists`, `factorial_positive`, `bounded_divisor_of_factorial`. Among Cubist sources only `euclid` uses them; JavaScript tests, the evaluation baseline and the Cubist guide name some of them | EVAL7: remainder-based divisibility, primality and least-prime-divisor search over binary `Nat`, with `nat`'s binary factorial |
-| `euclid` (25 lines) | Euclid's theorem ★; the showcase example of the site, the reference and many tests, and the evaluation baseline's workload | EVAL7's checked binary Euclid |
-| `primes`: nine unary order and equality lemmas | `unat_zero_ne_succ`, `nat_le_zero`, `nat_le_step`, `nat_le_trans`, `nat_le_total`, `nat_le_succ_split`, `nat_le_add`, `nat_eq_decidable`, `nat_add_positive`. Used by polynomial, linear-algebra, Galois, analysis and radix modules, and the `h1_cauchy_quotient` fixture | `unat`, which already holds `unat_zero_ne_succ`; the archive imports them from there, as it did `nat`'s arithmetic |
+| `primes` (637 lines): divisibility and primality | `Divides`, its decision and lemmas, `Prime`, `prime_divisor_exists`, `factorial_positive`, `bounded_divisor_of_factorial`. Among Cubist sources only `euclid` uses them; JavaScript tests, the evaluation baseline and the Cubist guide name some of them | **Done** (NT2): EVAL7's remainder-based divisibility, primality and least-prime-divisor search over binary `Nat` (`divisibility`, `prime_numbers`), with `nat`'s binary factorial; deleted from `primes`, which keeps 258 lines |
+| `euclid` (25 lines) | Euclid's theorem ★; the showcase example of the site, the reference and many tests, and the evaluation baseline's workload | **Done** (NT2): the library's `euclid` over binary `Nat`; every consumer moved to it, and the archive's is deleted |
+| `primes`: nine unary order and equality lemmas | `unat_zero_ne_succ`, `nat_le_zero`, `nat_le_step`, `nat_le_trans`, `nat_le_total`, `nat_le_succ_split`, `nat_le_add`, `nat_eq_decidable`, `nat_add_positive`. Used by polynomial, linear-algebra, Galois, analysis and radix modules, and the `h1_cauchy_quotient` fixture | **Done** (NT1): `unat`'s `unat_zero_ne_succ`, `unat_le_zero`, `unat_le_step`, `unat_le_trans`, `unat_le_total`, `unat_le_succ_split`, `unat_le_add` and `unat_add_positive`, and `unat_decide`, which moved from `hlevels` to `unat`; the archive imports them from there, as it did `nat`'s arithmetic |
 | `primes`: bounded least-witness search; `natural_minimum` (72 lines) | Least elements of decidable predicates; `polynomial_degree` and `artin_degree` import `natural_minimum` | A library module over binary `Nat`, with a unary form if those two still need one |
 | `primes`: unary `factorial` | Used by four binary and radix transfer modules | `nat`'s binary factorial, with the numerals below |
 | `binary_*` (6 modules, 672 lines) | Binary numerals: induction, arithmetic, equivalence with unary, correctness and the 10! transfer. Helper imports from the fixtures `wasm_binary_literal`, `computability_evaluation` and `wasm_bad_factorial` | Mostly rebuilt by NUM0/NUM1 (`bnat_*`). Check each result against them and add what is missing, such as 10! carried by transport |
@@ -109,11 +113,11 @@ Steps, each one or a few pull requests:
 
 | Step | Work |
 | --- | --- |
-| NT1 | The unary order and equality lemmas move to `unat`; the archive's users import them there |
-| NT2 | EVAL7: divisibility, primality and Euclid in the library; every consumer of `euclid` moves to it |
+| NT1 | The unary order and equality lemmas move to `unat`; the archive's users import them there. **Done** on 2026-10-28: `primes` keeps none of them, its users name the `unat_*` lemmas, and `nat_eq_decidable`'s users take `unat_decide`, or `unat_is_set` where they rebuilt it with Hedberg |
+| NT2 | EVAL7: divisibility, primality and Euclid in the library; every consumer of `euclid` moves to it. **Done** on 2026-10-28 ([report](../reports/binary-euclid.md)): the library modules `bnat_order_laws`, `bnat_division`, `divisibility`, `prime_numbers` and `euclid` (named `binary_euclid` until the archive's was deleted); the site, reference, tests, evaluation baseline (version 10) and probes moved to it; the archive's `euclid` and `primes`' divisibility and primality deleted, and Euclid's theorem recorded as rebuilt in the catalog |
 | NT3 | Least elements: the bounded search and `natural_minimum` in the library; `polynomial_degree` and `artin_degree` import it |
 | NT4 | Numerals: the binary results checked against `bnat_*` and completed; radix numerals rebuilt over binary `Nat`; the helper fixtures moved |
-| NT5 | Delete `primes`, `euclid`, `natural_minimum`, `binary_*` and `radix_*` (20 modules) from the archive, update the catalog's module table and record the rebuilt results |
+| NT5 | Delete `primes`, `natural_minimum`, `binary_*` and `radix_*` (19 modules) from the archive, update the catalog's module table and record the rebuilt results |
 
 **Open:** whether the counting results of the same catalog area count as
 number theory here: finite cardinalities, counting functions and
@@ -127,7 +131,8 @@ They stay in the archive until decided.
   archive's 47 resizing-dependent declarations are rebuilt or recorded by R3,
   not migrated in place.
 - I1.1, module resolution: the archive root is the last fallback and the only
-  one that goes.
+  one that goes. It also vouches for the only modules that may use the
+  legacy builtins (`fromArchive`, K2.5 step 4), which go with it.
 - The [instruction coverage report](work-plan.md#the-instruction-kernel-and-this-plan):
   archive coverage is replaced by library and fixture coverage as evidence.
 - The [mathematics roadmaps](README.md#mathematics) and the tactical

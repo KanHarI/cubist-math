@@ -111,6 +111,13 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
   // An original module read from library/ is the library's (its axioms'
   // labels); an edited shadow never is.
   readSource.fromLibrary = async (name, text) => !shadowModule(name) && (await readOriginal.fromLibrary?.(name, text) ?? false);
+  // An original module read from the archive is the archive's, and may use
+  // its legacy builtins; so is an edited one read from the archive's own
+  // files (readEdited.placeOf), an edit of the archive in place, since the
+  // verifier compares such edits with their baseline. An edited module
+  // from anywhere else is not.
+  readSource.fromArchive = async (name, text) => shadowModule(name) ? readEdited.placeOf?.(shadowModule(name)) === "archive"
+    : (await readOriginal.fromArchive?.(name, text) ?? false);
   readSource.checkImports = (importer, imports) => readOriginal.checkImports?.(importer, imports.filter(name => !shadowModule(name)));
   // An original module of a revision before L2.10j is read as it was then.
   readSource.nameBased = name => !shadowModule(name) && (readOriginal.nameBased?.(name) ?? false);
@@ -244,8 +251,12 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
     };
     return { definitions: { ...definitions, type: read("type"), value: read("value") }, symbols: {}, dimensions: [] };
   };
+  // Snapshot text is read where unat's notation is selected: numerals print
+  // bare, as the ledger pins them.
+  const unatView = {symbols:{unat__UNat:{printing:[{notation:"unat",identity:"unat",identityNumeral:true}]}},
+    context:{selection:"unat",selectionIdentity:"unat",reads:name => name === "unat" ? "unat" : null,opens:() => false}};
   const snapshot = (term, edited = false) => ({hash:snapshotHash(term),
-    text:sourceText(forSource([readableBindings(term)],snapshotNaming(edited))[0],{},4000,{selection:"unat"})});
+    text:sourceText(forSource([readableBindings(term)],snapshotNaming(edited))[0],unatView.symbols,4000,unatView.context)});
   const localReferences = (module, ...terms) => {
     const found = new Set(), seen = new WeakSet();
     const visit = node => {

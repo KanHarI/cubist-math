@@ -1,11 +1,11 @@
 // The notation roadmap's pilots (L2.10e): its proposed examples on the
 // library's integers, rationals and algebra, checked. Each qualifier a
 // pilot needs is counted in the roadmap.
+import integers;
+import rationals;
 import unat;
 import hlevels;
 import algebra;
-import integers;
-import rationals;
 use unat;
 
 // The integers, selected for a statement and its proof.
@@ -13,7 +13,7 @@ def add_comm(x, y : Z) : integers.(x + y = y + x) := int_add_comm(x, y);
 
 // Mixed arithmetic: int's arguments are natural numbers, so inside the
 // integers' notation they are qualified.
-def mixed(n : UNat, x : Z) : Z := integers.(x * int(unat.(n + 1), unat.(0)));
+def mixed(n : Nat, x : Z) : Z := integers.(x * int(nat.(n + 1), nat.(0)));
 
 // One literal, read by the rationals' parser, and a sum of two.
 def half : Q := rationals.(1/2);

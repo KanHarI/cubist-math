@@ -21,10 +21,6 @@ const cold = async id => {
   return runs.get(id);
 };
 const recordOf = id => recorded.workloads.find(workload => workload.id === id);
-// Recorded by the harness, not run here: the experiment takes a second and
-// 1.2 GiB for euclid(5), and how deep it gets on euclid(6) before the host's
-// stack overflows depends on how far the JIT has compiled it.
-const recordedOnly = new Set(["scratch-euclid-5-prime", "scratch-euclid-6-prime"]);
 // Growth allowed in a deterministic counter: a quarter, and a little for small counts.
 const bound = value => Math.ceil(value * 1.25) + 64;
 const counters = ["instructions", "instructionSteps", "queries", "querySteps", "failedQueries", "nodes"];
@@ -50,15 +46,8 @@ test("the recorded baseline covers every workload, at this version, each determi
 });
 
 test("each workload's outcome, normalizations and comparisons are the recorded ones; its work grows by at most a quarter", async () => {
-  for (const workload of workloads.filter(workload => !recordedOnly.has(workload.id))) {
+  for (const workload of workloads) {
     const live = await cold(workload.id), record = recordOf(workload.id), label = workload.id;
-    if (workload.series === "scratch") {
-      sameOutcome(live.outcome, record.outcome, label);
-      assert.equal(live.stage, record.stage, label);
-      if (record.outcome.status === "value") for (const [counter, value] of Object.entries(record.stats))
-        assert.ok(live.stats[counter] <= bound(value), `${label}: ${counter}`);
-      continue;
-    }
     sameOutcome(live.outcome, record.outcome, label);
     for (const phase of ["normalize", "compare"]) {
       const figures = live.phases[phase], expected = record.phases[phase];
@@ -77,63 +66,74 @@ test("each workload's outcome, normalizations and comparisons are the recorded o
   }
 });
 
-test("REPL evaluation and print show the value form, normalizing nothing", async () => {
+// The library's Euclid computes by NUM1's strong recursion, whose
+// compositions the runtime does not execute: it reports the demand
+// unsupported, and the kernel's head queries compute the value form again.
+// Its argument is a binary literal, which elaboration normalizes once.
+test("REPL evaluation and print show the value form, normalizing only the literal", async () => {
   const repl = await cold("euclid-3"), print = await cold("euclid-3-print"), normal = await cold("euclid-3-normal");
   assert.equal(repl.outcome.sha256, print.outcome.sha256);
-  assert.match(repl.outcome.text, /^\(7, /);
-  assert.match(repl.outcome.text, /<fun>/);
+  assert.equal(repl.outcome.text, "(7, (tt, <fun>), tt)");
   assert.equal(repl.outcome.normal, undefined);
   for (const run of [repl, print]) {
-    assert.equal(run.phases.normalize, undefined);
+    assert.equal(run.phases.normalize.calls, 1);
     assert.equal(run.phases.compare, undefined);
-    // The runtime observes it, asking the kernel for one weak head, the
-    // type's, which decides whether to ask the runtime.
-    assert.ok(run.phases.runtime.calls > 0 && run.runtime.steps > 0);
-    assert.equal(run.phases.demand.calls, 1);
+    // The runtime is asked first; its one failure is the fallback.
+    assert.ok(run.phases.runtime.failures === 1 && run.runtime.steps > 0);
+    assert.equal(run.phases.runtime.nodes, 0, "the runtime builds no kernel syntax");
+    assert.ok(run.phases.demand.calls > 0);
     assert.ok(run.entry.querySteps < normal.entry.querySteps, "the value form costs less than the normal form");
   }
+  // A divisibility decision is ordinary data: the runtime computes it,
+  // asking the kernel for no weak head.
+  const decided = await cold("divides-3-6");
+  assert.equal(decided.outcome.text, "left((2, <path>))");
+  assert.ok(decided.phases.runtime.calls > 0 && !decided.phases.runtime.failures);
+  assert.equal(decided.phases.demand, undefined);
 });
 
-test("REPL evaluation of !!e normalizes once without self-comparison and agrees with print", async () => {
+test("REPL evaluation of !!!e normalizes once without self-comparison and agrees with print", async () => {
   const repl = await cold("euclid-3-normal"), print = await cold("euclid-3-print-normal");
   assert.equal(repl.outcome.sha256, print.outcome.sha256);
   assert.ok(repl.outcome.normal);
   assert.equal(repl.outcome.normal, print.outcome.normal);
   // Shown, the value is cut; its normal form is far larger.
   assert.equal(repl.outcome.length, 1000);
-  assert.match(repl.outcome.text, /^\(7, /);
-  assert.equal(repl.phases.normalize.calls, 1);
+  assert.match(repl.outcome.text, /^\(7, \(tt, fun /);
+  // The literal's normalization, and the term's.
+  assert.equal(repl.phases.normalize.calls, 2);
   assert.equal(repl.phases.compare, undefined);
-  assert.equal(print.phases.normalize.calls, 1);
+  assert.equal(print.phases.normalize.calls, 2);
   assert.equal(print.phases.compare, undefined);
-  assert.ok(repl.entry.instructions < 100);
+  assert.ok(repl.entry.instructions < 150);
   assert.equal(repl.entry.instructions, print.entry.instructions);
   // A stated expected value still gets its own normalization and comparisons.
   const expected = await cold("euclid-3-prime-expected");
-  assert.equal(expected.phases.normalize.calls, 2);
+  assert.equal(expected.phases.normalize.calls, 4);
   assert.equal(expected.phases.compare.calls, 2);
 });
 
 test("the depth failures are reproduced, with the work done before them", async () => {
-  for (const id of ["euclid-4-normal", "euclid-4-pattern", "euclid-4-pattern-normal", "euclid-4-prime-normal",
-    "euclid-4-prime-print-normal", "euclid-5-prime-normal"]) {
-    const run = await cold(id);
-    assert.equal(run.outcome.code, "K344", id);
-    assert.equal(run.phases.normalize.failures, 1, id);
-    assert.ok(run.phases.normalize.querySteps > 0 && run.phases.normalize.nodes > 10000, `${id} counts the failed normalization's work`);
-    assert.equal(run.phases.compare, undefined, `${id} fails before any comparison`);
+  // 7! + 1 = 71 * 71: the least divisor search's 70 candidates pass the
+  // kernel's syntax depth guard, in the normal form and in the weak heads
+  // the value form asks after the runtime's fallback.
+  const normal = await cold("euclid-7-prime-normal"), shown = await cold("euclid-7-prime");
+  for (const [run, phase] of [[normal, "normalize"], [shown, "demand"]]) {
+    assert.equal(run.outcome.code, "K344", phase);
+    assert.equal(run.phases[phase].failures, 1, phase);
+    assert.ok(run.phases[phase].querySteps > 0 && run.phases[phase].nodes > 10000, `${phase} counts the failed query's work`);
+    assert.equal(run.phases.compare, undefined, `${phase} fails before any comparison`);
   }
-  // The kernel's head queries fail at the prime, a head too deep to build;
-  // the runtime builds no syntax and shows it, the certificate's path and
-  // function as such.
-  for (const [id, value] of [["euclid-4", "(5, (3, <path>, <fun>), tt)"], ["euclid-4-prime", "5"], ["euclid-4-prime-print", "5"],
-    ["euclid-5-prime", "11"]]) {
+  assert.equal(shown.phases.runtime.failures, 1);
+  // Below that depth the kernel's queries compute the library's values that
+  // the archive's unary Euclid could not: its K344 began at euclid(4).
+  for (const [id, value] of [["euclid-4", "(5, (tt, <fun>), tt)"], ["euclid-4-prime", "5"], ["euclid-4-prime-print", "5"],
+    ["euclid-5-prime", "11"], ["euclid-4-pattern", "(5, <unevaluated>)"], ["euclid-5-prime-normal", "11"]]) {
     const run = await cold(id);
     assert.equal(run.outcome.text, value, id);
-    assert.equal(run.phases.demand.calls, 1, `${id}: the type's weak head`);
-    assert.equal(run.phases.normalize, undefined, id);
-    assert.equal(run.phases.runtime.nodes, 0, `${id}: the runtime builds no kernel syntax`);
+    assert.equal(run.outcome.status, "value", id);
   }
+  assert.match((await cold("euclid-4-pattern-normal")).outcome.text, /^\(5, \(tt, fun /);
   // A unary 510 fits at the syntax-depth limit. Plain evaluation must not
   // introduce another wrapper through a redundant equality comparison.
   const printed = await cold("multiply-2-255-print-normal"), evaluated = await cold("multiply-2-255-normal");
@@ -155,26 +155,10 @@ test("the depth failures are reproduced, with the work done before them", async 
 });
 
 test("counters are deterministic: a new program repeats a run's", async () => {
-  for (const id of ["euclid-4-prime", "divides-3-6", "scratch-euclid-3-prime"]) {
+  for (const id of ["euclid-4-prime", "divides-3-6", "multiply-2-255"]) {
     const again = (await measureWorkload(module, workloads.find(workload => workload.id === id))).cold;
     assert.deepEqual(deterministic(again), deterministic(await cold(id)), id);
   }
-});
-
-test("the closure experiment is a separate, untrusted series that asks the kernel nothing", async () => {
-  const expected = { 3: "7", 4: "5" };
-  for (const [n, prime] of Object.entries(expected)) {
-    const id = `scratch-euclid-${n}-prime`, run = await cold(id);
-    assert.equal(contractOf(workloads.find(workload => workload.id === id)), "scratch");
-    assert.deepEqual([run.outcome.status, run.outcome.text], ["value", prime], id);
-    assert.deepEqual([run.kernel.instructions, run.kernel.queries, run.kernel.nodes], [0, 0, 0], id);
-    assert.ok(run.stats.forces > 0 && run.stats.hits > 0, id);
-  }
-  assert.equal(recordOf("scratch-euclid-5-prime").outcome.text, "11");
-  // It recurses on the host's stack, and overflows it: no controlled diagnostic yet (EVAL4).
-  const overflow = recordOf("scratch-euclid-6-prime");
-  assert.equal(overflow.outcome.status, "error");
-  assert.match(overflow.outcome.text, /call stack/);
 });
 
 test("the normal-form digest covers the whole term, up to renaming", () => {

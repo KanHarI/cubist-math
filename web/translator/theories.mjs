@@ -9,9 +9,9 @@ import {selectionEffects,fileSelectionEffects} from "../cubist/scopes.mjs";
 import {substituteTerm,alphaKey,isTerm} from "./core.mjs";
 import {failureRoot,untranslated,sourceFailure} from "./declarations.mjs";
 import {projectedResolution,failedResolution} from "../cubist/bindings.mjs";
-import {modelNotations,modelOperandRecipes,recordOf,notationAlternative,notationPrintingRecipe} from "./model-notation.mjs";
+import {modelNotations,modelOperandRecipes,recordOf,notationAlternative,notationPrintingRecipe,notationPrintingViews} from "./model-notation.mjs";
 export {recordOf} from "./model-notation.mjs";
-import {operatorBinding,SELECTION,bindNotationContext} from "./notation-context.mjs";
+import {operatorBinding,SELECTION,bindNotationContext,notationBinding,selectionTarget} from "./notation-context.mjs";
 import {retainedNotationReceipt,registerRetainedNotationPrinting,retainSourceNotation} from "./named-notation.mjs";
 import {lowerBindingReference} from "../cubist/binding-syntax.mjs";
 import {retainedTheoryDeclarations} from "./retained-theories.mjs";
@@ -24,7 +24,7 @@ export const theoryBinding = name => "\u0000theory " + name;
 // scope's key for the selected notation: its name and the operators it
 // binds. A selection is complete: an operator it does not bind is an error,
 // never an earlier selection's or a function named add.
-export const notationBinding = name => "\u0000notation " + name;
+export {notationBinding};
 // A theory's records, by the binding of its type of models, and its
 // projections, which print as m.f.
 export function registerTheoryDeclaration(t,d) {
@@ -45,13 +45,16 @@ export function registerTheoryDeclaration(t,d) {
   }
   if(d.generated?.role==="projection")(t.checker.theoryProjections??=new Map()).set(binding,d.generated.field);
   // A projection whose field a notation names prints with that operator
-  // where its model is selected (L2.10d), each operand in its view.
+  // where its model is selected (L2.10d), each operand in its view; the
+  // derived operation that reads numerals prints back as the numeral
+  // (cubical-source-text.mjs).
   if(d.theory)for(const [operator,rule] of Object.entries(d.theory.notationBindings??{}))
-    if(!["unary -","numeral"].includes(operator)) {
+    if(operator!=="unary -") {
       const record=t.checker.theories.get(binding),field=[...record.fields,...record.derived].find(field=>field.id===rule.field);
       const projection=t.compilationBindings.table.get(field.projectionId).label;
       (t.checker.notationPrinting??=new Map()).set(t.bindingName(projection),
-        [{operator,model:true,recipe:notationPrintingRecipe(rule.recipe)}]);
+        [operator==="numeral"?{theoryNumeral:true}
+          :{operator,model:true,recipe:notationPrintingRecipe(rule.recipe),views:notationPrintingViews(rule.recipe)}]);
     }
 }
 
@@ -169,7 +172,7 @@ function checkedOpening(t,scope,node,{complete=true,effects=selectionEffects.all
   // The model's notation is the selection (L2.10a), complete: an operator
   // it does not bind is an error, except in a module of a revision before
   // L2.10j, whose sections read one by name (sectionScope).
-  if(effects.notation)added.push([SELECTION,{name:spelling??"this model",recipes:modelOperandRecipes(t,receiverScope,receiver,record),complete,numeral,literal:null,
+  if(effects.notation)added.push([SELECTION,{name:spelling??"this model",receiver,recipes:modelOperandRecipes(t,receiverScope,receiver,record),complete,numeral,literal:null,
     operators:new Set([...notations.keys(),...Object.keys(record.ambiguousNotations??{})])}]);
   return {scope,added,record,receiver,effects};
 }
@@ -287,9 +290,10 @@ export function selected(t,scope,node,{effects=selectionEffects.all,activation=n
     return scope.withSlotOutcomes(effects.labels?scope.slotOutcomes.selectNamespace(activation.bindingId)
       :scope.slotOutcomes.activate(activation.bindingId,[]));
   }
-  const key=referenceKey(node),notation=key?receiverScope.env.get(notationBinding(key)):null;
-  if(notation?.tag==="Notation"&&!notation.model) {
-    const inner=effects.notation?notationSelected(scope,notation):scope;
+  // The printer resolves a qualifier by this same target (notation-context.mjs).
+  const key=referenceKey(node),target=key?selectionTarget(receiverScope.env,key):null;
+  if(target?.named) {
+    const notation=target.named,inner=effects.notation?notationSelected(scope,notation):scope;
     if(!activation)return inner;
     let activated=inner.withSlotOutcomes(inner.slotOutcomes.activate(activation.bindingId,[]));
     if(effects.notation)activated=bindNotationContext(activated,t.identityAdapter.key(activation.bindingId));
@@ -298,8 +302,8 @@ export function selected(t,scope,node,{effects=selectionEffects.all,activation=n
   const receiver=t.term(node,receiverScope,null),inner=opened(t,scope,node,{effects,receiver,receiverScope,activation});
   // A model's notation with the literal rules its module added, where the
   // name is still that model.
-  if(effects.notation&&inner&&notation?.model&&receiverScope.env.get(key)===notation.model) {
-    const selection=inner.env.get(SELECTION);
+  if(effects.notation&&inner&&target?.attached) {
+    const notation=target.attached,selection=inner.env.get(SELECTION);
     const extended=inner.alias(SELECTION,{...selection,extension:notation.bindingId??null,
       numeral:notation.rules.get("numeral")??selection.numeral??null,
       literal:notation.rules.get("literal")??selection.literal??null});

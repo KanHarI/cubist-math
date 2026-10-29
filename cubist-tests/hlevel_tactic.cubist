@@ -183,7 +183,7 @@ def nested(A, B : U0) : IsSet(U0, A -> (UNat and B)) {
   hlevel;
 }
 
-// Error: E366: hlevel could not prove IsProp(U0, forall x : A. B(x)): it needs B(x) to be a
+// Error: E366: hlevel could not prove IsProp(U0, forall x1 : A. B(x1)): it needs B(x) to be a
 //   proposition for every x : A; no local evidence, hint or rule gives that.
 def dependent(A : U0, B : A -> U0) : IsProp(U0, forall x : A. B(x)) {
   hlevel;
@@ -229,7 +229,7 @@ def without_hint(A : U0, B : A -> U0, h : forall x : A. IsProp(U0, B(x)), a : A)
   hlevel;
 }
 
-// Error: E366: hlevel could not prove IsProp(U0, forall x : A. Unit and B(x)): it needs Unit and
+// Error: E366: hlevel could not prove IsProp(U0, forall x1 : A. Unit and B(x1)): it needs Unit and
 //   B(x) to be a proposition for every x : A, which needs B(x) to be a proposition; no local
 //   evidence, hint or rule gives that.
 def nested_names(A : U0, B : A -> U0) : IsProp(U0, forall x : A. Unit and B(x)) {

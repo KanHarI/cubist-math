@@ -1,7 +1,7 @@
 import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -193,20 +193,20 @@ test("two modules' declarations that would share one identity: the later is refu
   assert.match(program.gaps.find(gap => gap.directive)?.reason ?? "", /depends on non-computing assumptions: a::b__c/);
 });
 
-// The continuum hypotheses will be assumed so (h1-truncation-migration.md,
-// "Continuum hypotheses"); cubist-tests/continuum_axioms.cubist assumes them
-// in a module of its own, which states every refusal in its comments.
-test("a module assumes the continuum hypotheses, and every result that uses one lists it", async t => {
-  const { program, result } = await checkTestModule(t, "continuum_axioms");
-  const used = name => labelsOf(result, result.outputs.find(output => output.name === name));
-  assert.deepEqual(used("CH"), ["continuum_axioms::CH"]);
-  assert.deepEqual(used("ch_from_gch"), ["continuum_axioms::GCH"]);
-  for (const name of ["both", "at_zero"]) assert.deepEqual(used(name), ["continuum_axioms::CH", "continuum_axioms::GCH"], name);
+// The library's continuum_axioms assumes the continuum hypotheses
+// (h1-truncation-migration.md, "Continuum hypotheses");
+// cubist-tests/continuum_assumptions.cubist uses them, and states every
+// output and refusal in its comments, and
+// tests/fixtures/contracts/continuum_axiom_contracts.cubist the axioms that
+// each result lists.
+test("the library assumes each continuum hypothesis once, for every universe, under its bare name", async t => {
+  const { program } = await checkTestModule(t, "continuum_assumptions");
   // One entry generic over U < UU0, whose body is the statement at U.
-  const type = program.checker.assumptions.get(program.checker.axioms.get("continuum_axioms__CH"));
-  assert.deepEqual([type.tag, type.body.tag], ["LPi", "Pi"]);
-  assert.match(result.outputs.find(output => output.name === "computed").reason,
-    /^This computable declaration depends on non-computing assumptions: continuum_axioms::CH\./);
+  for (const name of ["CH", "DecidableCH", "GCH", "DecidableGCH"]) {
+    const assumption = program.checker.axioms.get(`continuum_axioms__${name}`);
+    const type = program.checker.assumptions.get(assumption);
+    assert.deepEqual([type.tag, type.body.tag, program.checker.assumptionLabels.get(assumption)], ["LPi", "Pi", name], name);
+  }
 });
 
 // An axiom's assumption never takes a binder's name: an earlier binder's
@@ -255,11 +255,12 @@ test("an inspected assumption states its own axiom, whatever else its label spel
 // An assumption is published with the site of its axiom definition, found
 // through its recorded origin, so every link to it can show the source: in
 // the check's symbols, which the axiom list reads, and in an inspection's,
-// which the inspector reads. A legacy builtin has no source (#317's review
-// round 6, finding 3).
+// which the inspector reads. A legacy builtin, which only the archive uses,
+// as its truncation module does, has no source (#317's review round 6,
+// finding 3).
 test("an assumption is published with its axiom definition's site", async t => {
   const { program, result } = await checkProgram(t,
-    "import classical_axioms;\ndef P := axiom Unit;\ndef used : ExcludedMiddle(U0) and Unit := (LEM(U0), P);\ndef legacy := Truncate(U0, Unit);", { module: await createCubical() });
+    "import classical_axioms;\nimport truncation;\ndef P := axiom Unit;\ndef used : ExcludedMiddle(U0) and Unit := (LEM(U0), P);\ndef legacy := truncation::Mere(Unit);", { module: await createCubical() });
   assert.equal(result.complete, true, JSON.stringify(program.gaps));
   const published = binding => result.symbols.find(symbol => symbol.binding === binding);
   for (const [declaration, module] of [["classical_axioms__LEM", "classical_axioms"], ["main__P", "main"]]) {
@@ -290,14 +291,17 @@ test("a refused declaration never overwrites the records of the identity it clas
 test("assumption names live where no declaration, constructor, binder or generated name can", async t => {
   const modules = inMemory({ a: "def b__c := axiom Unit;\ndef d := b__c;\n", a__b: "def e := tt;\n" });
   const fallback = sourceReader();
-  const source = "import classical_axioms;\nimport a;\nimport a__b;\n"
+  // The archive's truncation uses the legacy builtins, which only the
+  // archive does.
+  const source = "import classical_axioms;\nimport a;\nimport a__b;\nimport truncation;\n"
     + "def F(m__A : Unit) : Unit := m__A;\ndef A1 := axiom Void;\ndef A1_ := tt;\n"
     + "def G(m__A1 : Unit, x : Unit) : Unit := (fun (y : Unit) => m__A1)(x);\n"
     + "inductive T { c; A1__(t : T); }\ntheory Th(U < UU0) { M : U; point : M; }\n"
     + "def poly(U < UU0, A : U, a : A) : A := a;\ndef applied := poly(U1, U0, Unit);\n"
-    + "def lem : ExcludedMiddle(U0) := LEM(U0);\ndef legacy := Truncate(U0, Unit);\ndef qualified := a::b__c;\n";
+    + "def lem : ExcludedMiddle(U0) := LEM(U0);\ndef legacy := truncation::Mere(Unit);\ndef qualified := a::b__c;\n";
   const reader = async (name, importer) => await modules(name) ?? fallback(name, importer);
   reader.fromLibrary = fallback.fromLibrary;
+  reader.fromArchive = fallback.fromArchive;
   const { program, result, get } = await checkProgram(t, source, { name: "m", module: await createCubical(), reader });
   assert.equal(result.complete, true, JSON.stringify(program.gaps));
   // The review's case: inspect A1_ shows the definition, and A1 the axiom.
@@ -382,17 +386,22 @@ test("a library axiom whose module reads an edited library module is labelled as
 // bare name (the user's decision of 2026-10-26); the same module from
 // anywhere else is listed by its module and name. Module names are user
 // text: one named as an object's property reaches no prototype (finding 5).
+// The library is the file a module was read from, by its real path: a file
+// elsewhere aliased into the library's place is not (#332's review, finding 1).
 test("a library module's axioms take their bare names, and the same module elsewhere its qualified ones", async t => {
   const directory = await mkdtemp(join(tmpdir(), "cubist-axiom-modules-"));
   t.after(() => rm(directory, { recursive: true, force: true }));
   const sources = [["constructor", "def X := axiom Unit;\n"], ["toString", "def Y := axiom Unit;\n"]];
   const files = new Map();
+  await mkdir(join(directory, "library"));
   for (const [name, source] of sources) {
+    await writeFile(join(directory, "library", `${name}.cubist`), source);
     await writeFile(join(directory, `${name}.cubist`), source);
     files.set(`library/${name}`, join(directory, `${name}.cubist`));
   }
   const module = await createCubical(), main = "import constructor;\nimport toString;\ndef both : Unit and Unit := (X, Y);";
-  for (const [reader, labels] of [[sourceReader({ files }), ["X", "Y"]], [inMemory(Object.fromEntries(sources)), ["constructor::X", "toString::Y"]]]) {
+  for (const [reader, labels] of [[sourceReader({ root: directory }), ["X", "Y"]], [sourceReader({ root: directory, files }), ["constructor::X", "toString::Y"]],
+    [inMemory(Object.fromEntries(sources)), ["constructor::X", "toString::Y"]]]) {
     const { result } = await checkProgram(t, main, { module, reader });
     assert.deepEqual(result.imports.map(output => [output.binding, labelsOf(result, output)]),
       [["constructor__X", [labels[0]]], ["toString__Y", [labels[1]]]]);
