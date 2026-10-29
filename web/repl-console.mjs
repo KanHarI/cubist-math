@@ -3,8 +3,10 @@
 // line; ↑ and ↓ recall earlier entries. `run(text)` returns the results of
 // a ReplSession (see repl-session.mjs).
 import { scan, tokenStyle, numeralAt } from "./source-tokens.mjs";
-import { replStatements, consoleCommands } from "./repl-session.mjs";
+import { replStatements, consoleCommands, restartNote } from "./repl-session.mjs";
 import { WorkerRequests } from "./worker-requests.mjs";
+import { workerMaintenance } from "./worker-maintenance.mjs";
+import { withCode } from "./diagnostics.mjs";
 
 const element = (tag, className, text) => {
   const node = document.createElement(tag);
@@ -146,16 +148,91 @@ export function createReplConsole(root, { run, reset, greeting = [], label = "RE
     load: text => execute(text, { echo: false }) };
 }
 
+// A REPL's session, kept by its page as the record its worker returns with
+// each entry (ReplSession.record): what extended the session, statement by
+// statement, each with the entry repl_N it was checked as. A kernel failure
+// stops the worker (a fatal reply, WorkerRequests), and a new one starts,
+// whose number `generation()` gives. On it the record is restored
+// (repl-restore): each recorded statement is checked again as the entry it
+// was, and nothing else, so what was refused stays refused, and a query is
+// not run again. What no longer checks is named, statement by statement,
+// and when the record cannot be restored the session is gone; the note says
+// which (restartNote). The entry that failed is not run again.
+//
+// Every restore is maintenance of the page's worker (`maintain`,
+// worker-maintenance.mjs), so the page's other requests wait for it: one
+// that the page's rebuild after a failure makes, with the rebuild's own
+// `send`; one before the next entry; and, with `restoreAfterFault`, one a
+// REPL with a worker of its own makes at once after its entry failed so.
+// Whether to restore is decided when the restore runs: not again on a
+// worker restored already, and not yet while the worker cannot
+// (`restorable`), as a new worker before it has checked the proof the
+// session is over, when an entry is refused and the record kept. A reset
+// forgets the session, and what a restore or an entry begun before it
+// answers is not kept (`epoch`).
+export function recordedSession(request, { fresh = false, generation = () => 0, restoreAfterFault = true,
+  restorable = () => true, maintain = work => work(request) } = {}) {
+  let record = null, at = generation(), epoch = 0;
+  async function restoreWith(send) {
+    if (generation() === at || !record || !restorable()) return [];
+    const kept = record, begun = epoch;
+    record = null;
+    try {
+      const restored = await send("repl-restore", { fresh, record: kept });
+      if (begun !== epoch) return [];
+      record = restored.record;
+      return [{ kind: "info", text: restartNote({ replayed: true, session: restored }) }];
+    } catch (error) {
+      if (begun !== epoch) return [];
+      return [{ kind: "error", text: withCode(error.message) }, { kind: "info", text: restartNote({ replayed: true }) }];
+    } finally { if (begun === epoch) at = generation(); }
+  }
+  const restore = send => send ? restoreWith(send) : maintain(restoreWith);
+  // A new worker, and nothing recorded to restore on it.
+  const nothingToRestore = () => { if (generation() !== at && !record) at = generation(); };
+  return {
+    reset() { record = null; at = generation(); epoch++; },
+    restore,
+    async run(input) {
+      const begun = epoch;
+      nothingToRestore();
+      const restored = generation() !== at ? await restore() : [];
+      // A record the worker could not restore yet waits, and so does the entry.
+      if (generation() !== at && record) throw new Error("Check a proof first.");
+      try {
+        const answer = await request("repl", { input, fresh, record: true });
+        if (begun === epoch) { record = answer.record; at = generation(); }
+        return [...restored, ...answer.results];
+      } catch (error) {
+        if (!error.fatal && !restored.length) throw error;
+        const failed = [...restored, { kind: "error", text: withCode(error.message) }];
+        return error.fatal && restoreAfterFault ? [...failed, ...await restore()] : failed;
+      }
+    },
+  };
+}
+
 // A REPL with its own worker and an empty program, for pages without a proof.
-// The worker starts on first use.
+// The worker starts on first use, and again after a kernel failure stops it;
+// such a failure begins the next generation. A worker starts only as a
+// request is sent, and each request goes through the REPL's maintenance
+// (worker-maintenance.mjs), as on the proof page: the restore of its
+// session is maintenance, and nothing else is sent, or starts a worker,
+// while it runs.
 export function standaloneRepl() {
-  let worker = null;
-  const request = (command, args) => {
-    worker ??= new WorkerRequests(new Worker(new URL("./cubical-worker.mjs", import.meta.url), { type: "module" }));
+  let worker = null, workers = 0;
+  const upkeep = workerMaintenance();
+  const send = (command, args) => () => {
+    worker ??= new WorkerRequests(new Worker(new URL("./cubical-worker.mjs", import.meta.url), { type: "module" }),
+      { onError: error => { if (error.fatal) { worker = null; workers++; } } });
     return worker.request(command, args);
   };
+  const request = (command, args) => upkeep.request(send(command, args));
+  const internal = (command, args) => upkeep.internal(send(command, args));
+  const session = recordedSession(request, { fresh: true, generation: () => workers,
+    maintain: work => upkeep.run(() => work(internal)) });
   return {
-    run: input => request("repl", { input, fresh: true }),
-    reset: () => request("repl-reset", { fresh: true }),
+    run: session.run,
+    reset: () => { session.reset(); return request("repl-reset", { fresh: true }); },
   };
 }

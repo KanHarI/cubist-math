@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { proofRequestWatchdog } from "../web/proof-watchdog.mjs";
+import { readFileSync } from "node:fs";
+import { proofRequestWatchdog, checkingCommands, queryCommands } from "../web/proof-watchdog.mjs";
 
 function fakeClock() {
   let now = 0;
@@ -82,6 +83,26 @@ test("module and contextual queries share the finite checking timeout", () => {
     clock.advance(299999);
     assert.equal(expired, 0, command);
     request.progress({ instructions: 1000, completed: 1 });
+    clock.advance(1);
+    assert.equal(expired, 1, command);
+  }
+});
+
+// Every command the worker answers is checking work or a query: a session's
+// restore on a new worker checks its entries again, imports among them, so
+// it has the time an entry has (proof-watchdog.mjs).
+test("every worker command is classified, and a session's restore is checking work", () => {
+  const worker = readFileSync(new URL("../web/cubical-worker.mjs", import.meta.url), "utf8");
+  const commands = new Set(worker.split("\n").filter(line => /\bcommand\b/.test(line))
+    .flatMap(line => [...line.matchAll(/"([a-z-]+)"/g)].map(match => match[1])));
+  assert.deepEqual([...commands].sort(), [...checkingCommands, ...queryCommands].sort());
+  assert.deepEqual([...checkingCommands].filter(command => queryCommands.has(command)), []);
+  for (const command of ["repl-restore", "elaborate"]) {
+    const clock = fakeClock();
+    let expired = 0;
+    proofRequestWatchdog(command, () => expired++, clock);
+    clock.advance(299999);
+    assert.equal(expired, 0, command);
     clock.advance(1);
     assert.equal(expired, 1, command);
   }

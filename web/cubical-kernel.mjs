@@ -39,6 +39,66 @@ export class KernelError extends Error {
   }
 }
 
+// An exception out of a kernel export is never the kernel's answer, which
+// the export returns: the engine ran out of its own stack (a RangeError), or
+// the instance trapped (a WebAssembly.RuntimeError). It unwound the kernel's
+// C frames without running them to their end, so the instance's memory may
+// be half changed, and its stack pointer was not restored. guardModule makes
+// the instance's first such failure its last: no call enters it again, and
+// each throws this. Whoever owns the module replaces it.
+const faultMessage = cause => `The kernel's WebAssembly instance failed (${cause?.message ?? cause}), and is not used again: nothing computed after the failure is kept.`;
+export class KernelFault extends Error {
+  constructor(cause) {
+    super(faultMessage(cause), { cause });
+    this.kind = "fault";
+  }
+}
+// Each guarded instance's state, { failed, cause }: whether it failed, and
+// with what. One object per instance, shared by everything that holds it.
+const instances = new WeakMap();
+// The state of a module's instance, for a reader that outlives a call, as a
+// runtime query does: it reads `failed` before going on.
+export const faultToken = module => instances.get(guardModule(module));
+// A KernelFault for the failure that ended a module instance, or null.
+export const moduleFault = module => {
+  const state = instances.get(module);
+  return state?.failed ? new KernelFault(state.cause) : null;
+};
+// Whether a value reaches the instance as an argument without throwing. The
+// bridge's exports take 32-bit integers and doubles (wasm/cubical_bridge.c),
+// and converting any primitive but a BigInt or a Symbol to one cannot throw;
+// an object's conversion runs its own code. So an exception out of a call
+// whose arguments all pass came from the instance, or from the engine
+// refusing to enter it for want of stack, and either ends the instance.
+const enters = value => {
+  const type = typeof value;
+  return type !== "bigint" && type !== "symbol" && type !== "function" && (type !== "object" || value === null);
+};
+// Wrap each export of a module instance, once, so that an exception poisons
+// the instance before it reaches any caller. An argument that could not be
+// converted is refused before the call, and poisons nothing. Every caller
+// calls an export through the module object, as CubicalKernel and the
+// instruction graph do.
+export function guardModule(module) {
+  if (instances.has(module)) return module;
+  const state = { failed: false, cause: null };
+  instances.set(module, state);
+  for (const name of Object.keys(module)) {
+    const call = module[name];
+    if (!name.startsWith("_cb_") || typeof call !== "function") continue;
+    module[name] = (...args) => {
+      if (state.failed) throw new KernelFault(state.cause);
+      if (!args.every(enters)) throw new TypeError(`The kernel export ${name} takes numbers.`);
+      try { return call(...args); }
+      catch (error) {
+        Object.assign(state, { failed: true, cause: error });
+        throw new KernelFault(error);
+      }
+    };
+  }
+  return module;
+}
+
 function uint32(value, label) {
   if (!Number.isInteger(value) || value < 0 || value > 0xffffffff)
     throw new TypeError(`${label} must be an unsigned 32-bit integer.`);
@@ -47,6 +107,7 @@ function uint32(value, label) {
 
 export class CubicalKernel {
   constructor(module) {
+    guardModule(module);
     const version = module._cb_abi_version?.();
     if (version !== CUBICAL_ABI_VERSION)
       throw new Error(`The cubical kernel module encodes syntax as ABI version ${version ?? 1}, `
@@ -189,8 +250,9 @@ export class CubicalKernel {
     this.module._cb_clear_error(this.handle);
     return error;
   }
+  // A failed instance is not entered to free a session: it is dropped whole.
   dispose() {
-    if (this.handle) this.module._cb_free(this.handle);
+    if (this.handle && !moduleFault(this.module)) this.module._cb_free(this.handle);
     this.handle = 0;
   }
   symbol(name) {
