@@ -37,8 +37,10 @@ test("the complete canonical .cubist corpus checks with the sole native kernel",
   // retirement) added 8 and removed hlevels' decision and primes' 9 copies;
   // hlevels' subtype_injective added 1; and the library's Euclid (NT2)
   // removed the entry point euclid's 2 and primes' 10 of divisibility and
-  // primality.
+  // primality; and least elements (NT3) added unat's 2 order laws, the
+  // library's unat_least_elements (12) and polynomial_degree's
+  // classical_least.
   assert.deepEqual(report.importErrors, []);
-  assert.equal(report.declarations.length, 3844, "The corpus must not silently lose modules.");
+  assert.equal(report.declarations.length, 3859, "The corpus must not silently lose modules.");
   t.diagnostic(JSON.stringify(report.counts));
 });

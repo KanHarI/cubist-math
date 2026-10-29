@@ -284,6 +284,25 @@ computable def unat_le_trans(a, b, c : UNat, ab : a <= b, bc : b <= c) : a <= c 
   }
 }
 
+// Order is antisymmetric.
+computable def unat_le_antisymmetric(a, b : UNat, ab : a <= b, ba : b <= a) : a = b := match a, b {
+    zero, zero => refl(0);
+    zero, succ(j) => absurd(ba);
+    succ(i), zero => absurd(ab);
+    succ(i), succ(j) => cong(succ, unat_le_antisymmetric(i, j, ab, ba));
+  };
+
+// Order is a proposition: two proofs of a <= b are equal, since a <= b
+// computes to Unit or Void.
+computable def unat_le_is_prop(a, b : UNat, x, y : a <= b) : x = y := match a, b {
+    zero,
+    _ => unit_induction(
+      fun (v : Unit) => x = v, unit_induction(fun (v : Unit) => v = tt, refl(tt), x), y
+    );
+    succ(i), zero => absurd(x);
+    succ(i), succ(j) => unat_le_is_prop(i, j, x, y);
+  };
+
 // Order is total: of two naturals, the first is at most the second or
 // exceeds it.
 computable def unat_le_total(a, b : UNat) : (a <= b) or (b < a) := match a, b {
