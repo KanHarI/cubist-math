@@ -374,6 +374,12 @@ mention it differ for ever.
 
 The driver caches judgement reads, scopes and derivations; the kernel indexes
 entries by symbol. Together, these took the archive from 457 s to 14 s.
+A derivation is cached by the part of its scope it reads
+(`InstructionDriver.narrow`): the entries of its free variables, the live
+dimensions, the faces and the dimensions the scope's types mention, so a
+subterm met under many binders it does not mention, as a folded normal
+form's closed parts are, is derived once
+([report](../../reports/driver-derivation-sharing.md)).
 Since 2026-10-06 the kernel wrapper also keeps each node read and each weak
 head for the declaration, and keeps reads of settled nodes from one
 declaration to the next.
