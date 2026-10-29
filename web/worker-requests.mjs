@@ -17,8 +17,13 @@ export class WorkerRequests {
       if (!waiting) return;
       if (data.progress) { waiting.progress?.(data.progress); return; }
       this.#pending.delete(data.id);
-      if (data.error) waiting.reject(Object.assign(new Error(data.error.message), data.error));
-      else waiting.resolve(data.result);
+      if (!data.error) { waiting.resolve(data.result); return; }
+      const error = Object.assign(new Error(data.error.message), data.error, { command: waiting.command });
+      waiting.reject(error);
+      // A fatal reply: the worker's kernel instance failed, and the worker
+      // stopped. Every other request fails with it, and the owner starts a
+      // new worker if it will (onError, with error.fatal set).
+      if (error.fatal) { this.terminate(error); onError(error); }
     };
     worker.onerror = event => {
       if (this.#stopped) return;
@@ -32,7 +37,7 @@ export class WorkerRequests {
     if (this.#stopped) return Promise.reject(this.#stopped);
     const id = ++this.#serial;
     return new Promise((resolve, reject) => {
-      this.#pending.set(id, { resolve, reject, progress });
+      this.#pending.set(id, { command, resolve, reject, progress });
       this.ready.then(() => {
         if (!this.#pending.has(id)) return;
         try { this.worker.postMessage({ id, command, args }); }

@@ -193,6 +193,7 @@ export const diagnostics = [
   ["E255", "… is declared below its use: a declaration uses only the declarations above it."],
   ["E256", "…::… and …::… would be one identity, …: rename one of them."],
   ["E257", "The transfer did not replay completely: …"],
+  ["E258", "The kernel failed again in the checking worker that replaced a failed one, so no other starts on its own: check the source to start one."],
   // Terms
   ["E301", "Expected cubical syntax."],
   ["E302", "Expected a dimension binder."],
@@ -527,6 +528,7 @@ export const diagnostics = [
   ["E665", "A partial element's face is a face formula; found an interval point."],
   ["E666", "An axiom states a type, or a family of types: axiom T; or axiom F; where F(x) is a type."],
   ["E667", "This cubical kernel module has no handle generations. Rebuild it with `make wasm`."],
+  ["E668", "The kernel's WebAssembly instance failed (…), and is not used again: nothing computed after the failure is kept."],
   // Arguments and their inference
   ["E701", "… has no implicit parameters: give its arguments in parentheses, as …(…)."],
   ["E702", "… has … implicit parameter…, …; the double braces give …."],

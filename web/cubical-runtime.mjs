@@ -2,6 +2,7 @@
 // never kernel evidence or a full typed normal form. Cubical execution and
 // complete typed readback remain separate EVAL8 integration work.
 import { InstructionGraph } from "./cubical-instructions.mjs";
+import { KernelFault, faultToken } from "./cubical-kernel.mjs";
 
 export class RuntimeError extends Error {
   constructor(kind, message) { super(message); this.kind = kind; }
@@ -119,8 +120,13 @@ export class RuntimeQuery {
   #image; #budget; #root; #type; #definitions = new Map();
   #handles = new WeakMap(); #wrapped = new WeakMap();
   #running = false; #disposed = false;
+  // The kernel instance's fault state (faultToken): a query whose instance
+  // failed publishes nothing more, as nothing computed after a failure is
+  // kept, though its snapshot was copied before.
+  #fault;
   constructor(kernel, judgement, options = {}) {
     this.#budget = new Budget(options);
+    this.#fault = faultToken(kernel.module);
     try {
       this.#budget.start(options);
       this.#image = judged(kernel, judgement, this.#budget);
@@ -131,7 +137,12 @@ export class RuntimeQuery {
   get stats() { return { ...this.#budget.stats }; }
   get root() { this.#open(); return this.#wrap(this.#root); }
   get type() { this.#open(); return this.#wrap(this.#type); }
-  #open() { if (this.#disposed) fail("disposed", "Runtime query has been disposed."); }
+  // Every operation starts here, a machine resumes here after each slice,
+  // and an observation passes here before it is published.
+  #open() {
+    if (this.#disposed) fail("disposed", "Runtime query has been disposed.");
+    if (this.#fault.failed) throw new KernelFault(this.#fault.cause);
+  }
   #cell(value) { this.#budget.allocate(); return value; }
   #delay(code, env) { return this.#cell({ state: 0, operation: "syntax", code, env }); }
   #apply(fn, argument) { return this.#cell({ state: 0, operation: "apply", fn, argument }); }
