@@ -47,12 +47,14 @@ test("G7: no_maximal_strict_successor applies double negation at U1 and retains 
 });
 
 // K2.5 step 1 retired the Zorn and classical comparisons, whose pins it
-// invalidated; each records the last revision at which it passed.
-test("G4: the checked migration ledger has exact pins, records its retired comparisons and defers the H2 tower declarations",async()=>{
+// invalidated, and step 5 the field-logic and Cauchy comparisons, whose
+// baselines use the removed legacy builtins; each records the last revision
+// at which it passed, and its pinned changes.
+test("G4: the checked migration ledger records its retired comparisons and defers the H2 tower declarations",async()=>{
   const ledger=JSON.parse(await readFile(new URL("../docs/roadmaps/hott/h1-truncation-ledger.json",import.meta.url),"utf8"));
-  assert.equal(validateLedger(ledger).size,12);
+  assert.equal(validateLedger(ledger).size,0);
   assert.deepEqual(ledger.retired.map(record=>[record.comparison,record.lastPassing,record.changes.length]),
-    [["zorn_chain_complete","21f55b55",1],["classical_axioms","21f55b55",4]]);
+    [["zorn_chain_complete","21f55b55",1],["classical_axioms","21f55b55",4],["field_logic","7896d18a",1],["cauchy_quotient","7896d18a",11]]);
   assert.deepEqual(ledger.deferred,["tower_induction_large","tower_relative_induction"]);
   assert.throws(()=>validateLedger({...ledger,changes:[...ledger.changes,ledger.retired[0].changes[0]]}),
     /belongs to the retired zorn_chain_complete comparison/);
@@ -89,16 +91,16 @@ test("the library's axiom modules verify unchanged against their committed basel
   assert.match(report,/3 modules \(0 dependents\), 0 failures/);
 });
 
-test("both remaining documented ledger comparisons verify their pinned changes and local public dependencies",()=>{
+test("the CLI refuses the field-logic and Cauchy comparisons, retired with the legacy builtins",()=>{
   const cases = [
-    ["cauchy_quotient","cubist-tests/h1_cauchy_quotient.cubist",null,11],
-    ["field_logic","docs/examples/h1/migrations/field_logic.cubist","FieldProp,small_mere_eliminate",1],
+    ["cauchy_quotient","cubist-tests/h1_cauchy_quotient.cubist",null],
+    ["field_logic","docs/examples/h1/migrations/field_logic.cubist","FieldProp,small_mere_eliminate"],
   ];
-  for (const [module,file,scope,count] of cases) {
+  for (const [module,file,scope] of cases) {
     const args=["tools/verify-proof-migration.mjs","--no-dependents","--edited-file",file,
       "--ledger","docs/roadmaps/hott/h1-truncation-ledger.json",...(scope ? ["--declarations",scope] : []),module];
-    const report=execFileSync(process.execPath,args,{encoding:"utf8"});
-    assert.match(report,new RegExp(`${count} exact ledger changes`)); assert.match(report,/0 failures/);
+    assert.throws(()=>execFileSync(process.execPath,args,{stdio:"pipe"}),
+      error=>error.status===1 && new RegExp(`The ledger retired its ${module} comparison, which last passed at 7896d18a`).test(String(error.stderr)));
   }
 });
 
