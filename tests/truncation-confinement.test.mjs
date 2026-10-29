@@ -77,6 +77,7 @@ test("an archive module may still use the legacy builtins; the archive's own cal
   const { result } = await checkProgram(t, legacyClassical, { module, name: "classical", reader: sourceReader({ path: classical, root: project }) });
   assert.equal(result.complete, true, JSON.stringify(result.gaps[0]));
   assert.deepEqual(labels(result, "double_negation"), legacyLabels);
+  assert.deepEqual(labels(result, "choice"), ["Choice[Truncate]", "Truncate"]);
 });
 
 test("a test fixture refuses each legacy builtin, called or named", async t => {
