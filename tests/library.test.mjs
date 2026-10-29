@@ -16,7 +16,7 @@ import { sourceReader } from "../tools/module-sources.mjs";
 
 // The assumptions each module's declarations use; a module not listed uses none.
 const assumptions = {
-  classical_axioms: ["Choice", "LEM"],
+  classical_axioms: ["Choice", "LEM", "PropResizing"],
   universe_automorphisms: ["LEM"],
   h1_classical: ["LEM"],
   continuum_axioms: ["CH", "DecidableCH", "DecidableGCH", "GCH"],
@@ -41,8 +41,6 @@ test("every library module checks completely", async t => {
 // A library axiom is labelled by its bare name (web/cubical-assumptions.mjs),
 // so no two library modules may assume under one name. Each is listed here,
 // as each module's assumptions are above: adding one is a reviewed change.
-// The legacy builtins' labels cannot meet them: they are reserved words,
-// or carry brackets, as LEM[Truncate] does.
 test("the library's axioms have distinct names, which are their labels", async () => {
   const axioms = [];
   for (const name of libraryModules) {
@@ -52,6 +50,7 @@ test("the library's axioms have distinct names, which are their labels", async (
   }
   const names = axioms.map(([name]) => name);
   assert.deepEqual(names.filter((name, index) => names.indexOf(name) !== index), [], JSON.stringify(axioms));
-  assert.deepEqual(axioms, [["LEM", "classical_axioms"], ["Choice", "classical_axioms"], ["CH", "continuum_axioms"],
-    ["DecidableCH", "continuum_axioms"], ["GCH", "continuum_axioms"], ["DecidableGCH", "continuum_axioms"]]);
+  assert.deepEqual(axioms, [["LEM", "classical_axioms"], ["Choice", "classical_axioms"],
+    ["PropResizing", "classical_axioms"], ["CH", "continuum_axioms"], ["DecidableCH", "continuum_axioms"],
+    ["GCH", "continuum_axioms"], ["DecidableGCH", "continuum_axioms"]]);
 });

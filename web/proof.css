@@ -838,11 +838,11 @@ nav a[aria-current] { font-weight: 600; text-decoration: none; }
   padding: 8px;
 }
 
-#kernel-truncation-options, #kernel-binder-options {
+#kernel-binder-options {
   display: block;
   margin-top: 10px;
 }
-#kernel-truncation-options[hidden], #kernel-binder-options[hidden] {
+#kernel-binder-options[hidden] {
   display: none;
 }
 

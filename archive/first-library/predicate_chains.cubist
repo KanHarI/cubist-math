@@ -5,7 +5,7 @@ import order_maps;
 use unat;
 
 // Families may be indexed in U1, since the collection of small subsets is
-// itself large. The union uses the existing U1 truncation signature explicitly.
+// itself large. The union truncates at U1, so it is a predicate in U1.
 def PredicateUnion(I : U1, A : U0, P : I -> A -> U0, x : A) := FieldExists(exists i : I. P(i, x));
 
 def PredicateChain(I : U1, A : U0, P : I -> A -> U0) := forall i : I. forall j : I. FieldOr(
@@ -19,24 +19,37 @@ def PredicateDirected(I : U1, A : U0, P : I -> A -> U0) := forall i : I. forall 
 def predicate_union_prop(I : U1, A : U0, P : I -> A -> U0, x : A) :=
   field_exists_prop(exists i : I. P(i, x));
 
+// The union is a predicate in U1. Inclusion relates small predicates, so
+// the union is resized to one by the library's propositional resizing.
 def predicate_union_upper(I : U1, A : U0, P : I -> A -> U0, i : I) :
-  PredicateIncluded(A, P(i), PredicateUnion(I, A, P)) {
+  PredicateIncluded(
+    A, P(i),
+    fun (x : A) => PropResizing(PredicateUnion(I, A, P, x), predicate_union_prop(I, A, P, x)).1
+  ) {
   intro x, member;
-  exact field_exists_intro((exists j : I. P(j, x)), typed((exists j : I. P(j, x)), (i, member)));
+  exact PropResizing(PredicateUnion(I, A, P, x), predicate_union_prop(I, A, P, x)).2.2.1(
+    field_exists_intro((exists j : I. P(j, x)), typed((exists j : I. P(j, x)), (i, member)))
+  );
 }
 
 def predicate_union_least(
   I : U1, A : U0, P : I -> A -> U0, Q : A -> U0, propQ : (forall x : A. Proposition(Q(x))),
   included : (forall i : I. PredicateIncluded(A, P(i), Q))
 ) :
-  PredicateIncluded(A, PredicateUnion(I, A, P), Q) {
+  PredicateIncluded(
+    A, fun (x : A) => PropResizing(PredicateUnion(I, A, P, x), predicate_union_prop(I, A, P, x)).1,
+    Q
+  ) {
   intro x, member;
   let fromMember : (exists i : I. P(i, x)) -> Q(x) {
     intro witness_;
     obtain (i, hx) := witness_;
     exact included(i, x, hx);
   }
-  exact field_exists_elim((exists i : I. P(i, x)), Q(x), propQ(x), fromMember, member);
+  exact field_exists_elim(
+    (exists i : I. P(i, x)), Q(x), propQ(x), fromMember,
+    PropResizing(PredicateUnion(I, A, P, x), predicate_union_prop(I, A, P, x)).2.2.2(member)
+  );
 }
 
 def predicate_chain_directed(I : U1, A : U0, P : I -> A -> U0, chain : PredicateChain(I, A, P)) :

@@ -122,6 +122,6 @@ export function migrationSourceReader(read, modules) {
     }
     return reader(name, importer);
   };
-  for (const name of ["place", "placeOf", "fromLibrary", "fromArchive", "beginCheck", "checkImports"]) original[name] = reader[name];
+  for (const name of ["place", "placeOf", "fromLibrary", "beginCheck", "checkImports"]) original[name] = reader[name];
   return original;
 }

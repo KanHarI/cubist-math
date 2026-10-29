@@ -140,10 +140,7 @@ internal binders. A closed judgment therefore has an empty context even when
 its expression contains such binders.
 
 Axiom leaves retain their checked identities and link to the corresponding
-axiom inspection. The truncation notation toggle displays a fully applied
-propositional truncation as `‖A‖`; disabling it exposes the named axiom
-application, including its universe argument. This is display notation only:
-it does not replace the checked term or alter workbench exports.
+axiom inspection.
 
 **Group independent binders** abbreviates consecutive Π binders, or consecutive
 Σ binders, when their domains do not refer to earlier members of the group.

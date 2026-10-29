@@ -11,27 +11,27 @@ def AdjoinVector(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x,
   y : vector_carrier(K, V)
 ) :=
-  Truncate(U0, P(y) or (y = x));
+  Mere(P(y) or (y = x));
 
 def adjoin_vector_prop(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x,
   y : vector_carrier(K, V)
 ) :=
-  TruncateProp(U0, P(y) or (y = x));
+  mere_is_prop(P(y) or (y = x));
 
 def adjoin_vector_old(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x,
   y : vector_carrier(K, V), member : P(y)
 ) :
   AdjoinVector(K, V, P, x, y) {
-  exact TruncateIntro(U0, P(y) or (y = x), left(member));
+  exact merely(P(y) or (y = x), left(member));
 }
 
 def adjoin_vector_new(
   K : AlgebraicField, V : VectorSpace(K), P : vector_carrier(K, V) -> U0, x : vector_carrier(K, V)
 ) :
   AdjoinVector(K, V, P, x, x) {
-  exact TruncateIntro(U0, P(x) or (x = x), right(refl(x)));
+  exact merely(P(x) or (x = x), right(refl(x)));
 }
 
 def adjoin_vector_other(
@@ -40,8 +40,8 @@ def adjoin_vector_other(
   different : (y = x) -> Void, member : AdjoinVector(K, V, P, x, y)
 ) :
   P(y) {
-  exact TruncateElim(
-    U0, P(y) or (y = x), P(y), prop_(y), (fun (side : P(y) or (y = x)) => match side return P(y) {
+  exact mere_eliminate(
+    P(y) or (y = x), P(y), prop_(y), (fun (side : P(y) or (y = x)) => match side return P(y) {
         left old => old;
         right same => absurd(different(same));
       }), member
@@ -157,7 +157,7 @@ def adjoin_independent_step(
 ) :
   a(j) = af_zero(af_carrier(K), af_operations(K)) {
   let Occurs := exists i : Fin(succ(n)). v(i) = x;
-  match excluded_middle(Truncate(U0, Occurs), TruncateProp(U0, Occurs)) {
+  match excluded_middle(Mere(Occurs), mere_is_prop(Occurs)) {
     left(occurs) => {
       let descend : Occurs -> (a(j) = af_zero(af_carrier(K), af_operations(K))) {
         intro witness_;
@@ -166,8 +166,8 @@ def adjoin_independent_step(
           K, V, P, prop_, independent, x, outside, n, v, distinct, members, a, vanishes, i, same, j
         );
       }
-      exact TruncateElim(
-        U0, Occurs, (a(j) = af_zero(af_carrier(K), af_operations(K))),
+      exact mere_eliminate(
+        Occurs, (a(j) = af_zero(af_carrier(K), af_operations(K))),
         af_set(K, a(j), af_zero(af_carrier(K), af_operations(K))), descend, occurs
       );
     }
@@ -175,8 +175,8 @@ def adjoin_independent_step(
       let oldMembers : forall i : Fin(succ(n)). P(v(i)) {
         intro i;
         exact adjoin_vector_other(
-          K, V, P, prop_, x, v(i),
-          (fun (same : v(i) = x) => absent(TruncateIntro(U0, Occurs, (i, same)))), members(i)
+          K, V, P, prop_, x, v(i), (fun (same : v(i) = x) => absent(merely(Occurs, (i, same)))),
+          members(i)
         );
       }
       exact independent(succ(n), v, distinct, oldMembers, a, vanishes, j);

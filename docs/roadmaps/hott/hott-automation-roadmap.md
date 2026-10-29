@@ -1526,13 +1526,13 @@ the same way. There, the ergonomic forms of its arithmetic examples use 1.7 to
   fibers. The native total-space univalence theorem cannot simply be published
   at the existing public type: the reverse public roundtrip remains an
   [open obligation](../../cubical/public-equivalence.md#validation-and-remaining-obligations).
-- [Truncate](../../../web/cubical-assumptions.mjs) still maps every `U_l` to
-  `U0`. This includes resizing, used explicitly by
-  [small_mere_eliminate](../../../archive/first-library/field_logic.cubist). Standard
-  computational truncation preserves the input universe, as the library's
-  `Trunc` does. Decided on 2026-10-20: the legacy assumptions are removed with
-  the archive ([removal plan](h1-truncation-migration.md#removing-the-legacy-assumptions));
-  no resizing decision is needed for them.
+- The archive's legacy `Truncate` mapped every `U_l` to `U0`, which
+  included resizing, used explicitly by the archive's `small_mere_eliminate`.
+  Standard computational truncation preserves the input universe, as the
+  library's `Trunc` does. The legacy assumptions were removed on 2026-10-29
+  ([removal plan](h1-truncation-migration.md#removing-the-legacy-assumptions)),
+  after the archive moved to `Trunc`, with the library's `PropResizing` where
+  a result needs a resized proposition.
 - `paths.based_induction` shadows the builtin of the same name wherever
   `paths` is imported, and the bodies differ: the library applies
   `path_induction` to a Π-motive, while the builtin is a direct connection

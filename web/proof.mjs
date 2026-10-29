@@ -1005,8 +1005,7 @@ function renderCubicalKernel(view) {
   $("kernel-axioms-list").replaceChildren();
   $("kernel-context-list").replaceChildren();
   const navigation = { resolve: binding => view.symbols[binding], inspect: info => inspect(decorate(info)),
-    identitySugar: $("kernel-identity-sugar").checked, truncationSugar: $("kernel-truncation-sugar").checked,
-    groupIndependentBinders: false };
+    identitySugar: $("kernel-identity-sugar").checked, groupIndependentBinders: false };
   if (view.dimensions?.length) {
     const row = document.createElement("li");
     row.textContent = `Interval coordinates: ${view.dimensions.map(([name]) => name).join(", ")}`;
@@ -1043,7 +1042,6 @@ function renderCubicalKernel(view) {
     $("open-kernel-" + side).disabled = false;
     render($("kernel-" + side), side === "expression" && folded && display.reference && !showKernelBody ? display.reference : display[side]);
   }
-  $("kernel-truncation-options").hidden = raw;
   $("kernel-binder-options").hidden = true;
   $("kernel-identity-options").hidden = raw;
   $("expand-kernel").textContent = "Show more of the term";
@@ -1082,7 +1080,6 @@ $("widen-inspector").onclick = () => {
 };
 
 $("kernel-view").onchange = () => { if (checkedKernelView) renderKernel(checkedKernelView); };
-$("kernel-truncation-sugar").onchange = () => { if (checkedKernelView) renderKernel(checkedKernelView); };
 $("kernel-group-binders").onchange = () => { if (checkedKernelView) renderKernel(checkedKernelView); };
 $("kernel-identity-sugar").onchange = () => { if (checkedKernelView) renderKernel(checkedKernelView); };
 // The workbench opens on the kernel graph: the judgements the instruction

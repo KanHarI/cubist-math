@@ -4,15 +4,15 @@
 import extension_degree;
 use unat;
 
-// Error: E606: Type mismatch: found HasDimension(Truncate, K, V, n), expected FiniteBasis(K, V, n).
+// Error: E606: Type mismatch: found HasDimension(K, V, n), expected FiniteBasis(K, V, n).
 def choose_basis(K : AlgebraicField, V : VectorSpace(K), n : UNat, size : HasDimension(K, V, n)) :
   FiniteBasis(K, V, n) {
   exact size;
 }
 
-// Error: E606: Type mismatch: found ExtensionDegree(Truncate, K, embedding_as_extension(K, K,
-//   field_embedding_identity(K)), 1), expected ExtensionDegree(Truncate, K,
-//   embedding_as_extension(K, K, field_embedding_identity(K)), 2).
+// Error: E606: Type mismatch: found ExtensionDegree(K, embedding_as_extension(K, K,
+//   field_embedding_identity(K)), 1), expected ExtensionDegree(K, embedding_as_extension(K, K,
+//   field_embedding_identity(K)), 2).
 def wrong_scalar_degree(K : AlgebraicField) :
   ExtensionDegree(K, embedding_as_extension(K, K, field_embedding_identity(K)), 2) {
   exact identity_extension_degree(K);
@@ -30,9 +30,9 @@ def arbitrary_bijection_is_linear(
   exact coordinate_dimension_invariant(K, m, n, b);
 }
 
-// Error: E606: Type mismatch: found FiniteExtension(Truncate, K, embedding_as_extension(K, M,
-//   field_embedding_compose(K, L, M, e, d))), expected FiniteExtension(Truncate, K,
-//   embedding_as_extension(K, M, c)).
+// Error: E606: Type mismatch: found FiniteExtension(K, embedding_as_extension(K, M,
+//   field_embedding_compose(K, L, M, e, d))), expected FiniteExtension(K, embedding_as_extension(K,
+//   M, c)).
 def unrelated_embedding(
   K : AlgebraicField, L : AlgebraicField, M : AlgebraicField, e : FieldEmbedding(K, L),
   d : FieldEmbedding(L, M), c : FieldEmbedding(K, M),

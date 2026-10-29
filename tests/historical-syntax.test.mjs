@@ -117,7 +117,7 @@ test("historical references use identifier spans inside parentheses and comments
 test("historical readers keep current axiom definitions and rename an old binder named axiom", async t => {
   const current = await readFile(new URL("../library/classical_axioms.cubist", import.meta.url), "utf8");
   assert.deepEqual(parse(current, false, { bindable: historicalKeywords({ axiomForm: true }) }).declarations.map(d => d.value.kind),
-    ["lambda", "lambda", "axiom", "axiom"]);
+    ["lambda", "lambda", "lambda", "forall", "axiom", "axiom", "axiom"]);
   assert.equal(historicalSource(current, "classical_axioms", { implicitNat: false, minusReverses: false, axiomForm: true }), current);
   const rewritten = await checked(t, "def f(axiom : Unit) : Unit := axiom;\ndef axiom := f(tt);\nprint(evaluate(axiom));", ["tt"]);
   assert.match(rewritten, /def f\(axiom_ : Unit\) : Unit := axiom_;\ndef axiom_ := f\(tt\);/);

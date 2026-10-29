@@ -8,25 +8,32 @@ archive's retirement, as [Removing the legacy assumptions](#removing-the-legacy-
 plans. On 2026-10-26 its [steps](#steps) 1–4 were scheduled alongside the
 runtime phase, starting with `axiom` definitions. Step 1 is implemented
 (2026-10-26): excluded middle and choice are the library's axioms, and the
-legacy builtins are labelled `LEM[Truncate]` and `Choice[Truncate]`. Steps 2
-and 3 are implemented (2026-10-28): no fixture outside the archive invokes the
+legacy builtins were labelled `LEM[Truncate]` and `Choice[Truncate]`. Steps 2
+and 3 are implemented (2026-10-28): no fixture outside the archive invoked the
 legacy builtins itself, and the reference and guides teach `Trunc` and the
 library's axioms, keeping the legacy builtins to notes on the archive. Step 4
-is implemented (2026-10-28): the legacy builtins are accepted only in an
+was implemented (2026-10-28): the legacy builtins were accepted only in an
 archive module, read unedited from the archive, and refused anywhere else.
-Step 5 waits for the archive's deletion. The
-[ledger](h1-truncation-ledger.json) pins 12 checked public changes against
-`f4d1961`, rebased from `cc6b50f` on 2026-10-05, and records 5 more of two
-comparisons that step 1 retired, with the revision at which they last
-passed. Its acceptance permits the listed changes; it does not certify
-that the old and new proofs are identical or that all 47 declarations of
-specification section 8.4 have been rebuilt.
+On 2026-10-29 the user reordered step 5: the archive is migrated in place
+to the library's truncation and axioms, and the legacy builtins are removed
+right after, not with the archive. Both its parts are implemented
+(2026-10-29): the migration, and the removal, so `Truncate`,
+`TruncateIntro`, `TruncateProp`, `TruncateElim` and the builtin `LEM` and
+`Choice` over them are no longer part of the language. The
+[ledger](h1-truncation-ledger.json) records 17 checked public changes
+against `f4d1961`, rebased from `cc6b50f` on 2026-10-05, in four retired
+comparisons, each with the revision at which it last passed: two that
+step 1 retired, and the field-logic and Cauchy comparisons, which step 5
+retired, since their baselines use the removed builtins. No comparison
+remains to be checked. Its acceptance permitted the listed changes; it
+does not certify that the old and new proofs are identical or that all 47
+declarations of specification section 8.4 have been rebuilt.
 
 `library/h1_truncation.cubist` admits the universe-preserving proposition
 truncation and proves its proposition evidence, mapping and elimination
 into an independent finite universe. Its definitions are computable and
-have no logical assumptions. The legacy archive stays isolated and unchanged
-until it retires.
+have no logical assumptions. Since step 5's first part (2026-10-29) the
+archive uses it too, through its `truncation` module's wrappers.
 
 | Acceptance case | Checked implementation | Dependencies |
 | --- | --- | --- |
@@ -36,11 +43,13 @@ until it retires.
 | G6 | `resize_prop` decides a proposition using rebuilt LEM at U1, returning Unit or Void with proposition evidence and maps both ways | `LEM` of `classical_axioms` only (`LEM[h1_truncation.Trunc]` before step 1); set evidence for `StrictlyAbove` is rejected |
 | G7 | Rebuilt `no_maximal_strict_successor` uses double-negation elimination at U1 on its large truncated conclusion | Legacy LEM explicitly replaced by `LEM[h1_truncation.Trunc]`, now `classical_axioms`'s `LEM`; the four legacy truncation dependencies removed. Its ledger comparison retired in step 1 |
 
-`cubist-tests/h1_cauchy_quotient.cubist` has 16 declarations: five verify as identical and
-eleven have exact ledger changes. Its representative-selection wrappers
-still call the archived predicate quotient and retain its legacy truncation
-dependencies. Those wrappers are recorded explicitly; this slice rebuilds
-the small equivalence relation and its laws, not the quotient foundation.
+`cubist-tests/h1_cauchy_quotient.cubist` has 16 declarations: against
+the baseline, five verified as identical and eleven had exact ledger
+changes, until step 5 retired the comparison. Its representative-selection
+wrappers call the archived predicate quotient, which at the baseline
+carried the legacy truncation dependencies. Those wrappers are recorded
+explicitly; this slice rebuilds the small equivalence relation and its
+laws, not the quotient foundation.
 
 The Zorn comparison selected `no_maximal_strict_successor` and its five
 unchanged local dependencies, until step 1 retired it. The field-logic
@@ -64,13 +73,13 @@ and reported `LEM[h1_truncation.Trunc]` and `Choice[h1_truncation.Trunc]`.
 Step 1 retired that form: `library/classical_axioms.cubist` states
 `ExcludedMiddle` and `AxiomOfChoice` over `Trunc` and assumes them as
 `def LEM := axiom ExcludedMiddle;` and `def Choice := axiom AxiomOfChoice;`,
-listed as `LEM` and `Choice`. They keep their non-computing status. Where
-nothing binds `LEM` or `Choice`, the old `LEM(U, ...)` and `Choice(U, ...)`
-keep their archived signatures, listed as `LEM[Truncate]` and
-`Choice[Truncate]`, in an archive module only since step 4, and can coexist
-with the axioms in the same session. A
-ledger records a replacement of a legacy builtin by the axiom of its name
-explicitly.
+listed as `LEM` and `Choice`. They keep their non-computing status. Until
+step 5, where nothing bound `LEM` or `Choice`, the old `LEM(U, ...)` and
+`Choice(U, ...)` kept their archived signatures, listed as `LEM[Truncate]`
+and `Choice[Truncate]`, in an archive module only since step 4, and could
+coexist with the axioms in the same session. Step 5 removed them: a `LEM`
+or `Choice` that nothing binds is an unknown name (E343). A ledger records
+a replacement of a legacy builtin by the axiom of its name explicitly.
 
 `h1_classical.cubist` imports `classical_axioms` and proves generic
 double-negation elimination, decidability of propositions and proposition
@@ -95,6 +104,15 @@ Each type and value pin also hashes the checked meanings of referenced
 definitions and admitted signatures, so a folded name cannot hide a changed
 dependency even when its public type stays the same.
 
+Step 5 retired the field-logic and Cauchy comparisons, and with them the
+last that the ledger checked. Their baselines read the archive at
+`f4d1961`, whose modules use the legacy builtins, so they no longer check
+once the builtins are removed. Both last passed at `7896d18a`, the tip of
+step 5's first part, checked on 2026-10-29 before the removal; the verifier
+refuses them, naming that revision, and the ledger's `retired` list keeps
+their scopes and 12 pinned changes. To reproduce either, check out
+`7896d18a` and run its command there:
+
 ```sh
 node tools/verify-proof-migration.mjs --base f4d1961 --no-dependents --edited-file cubist-tests/h1_cauchy_quotient.cubist --ledger docs/roadmaps/hott/h1-truncation-ledger.json cauchy_quotient
 node tools/verify-proof-migration.mjs --base f4d1961 --no-dependents --edited-file docs/examples/h1/migrations/field_logic.cubist --declarations FieldProp,small_mere_eliminate --ledger docs/roadmaps/hott/h1-truncation-ledger.json field_logic
@@ -118,8 +136,8 @@ node tools/verify-proof-migration.mjs --base f4d1961 --no-dependents --edited-fi
 ```
 
 The field-logic and Cauchy comparisons were rechecked after step 1, and their
-pins hold: neither involves `LEM` or `Choice`, and the four legacy truncation
-labels are unchanged.
+pins held: neither involves `LEM` or `Choice`, and the four legacy truncation
+labels were unchanged.
 
 The pins were refreshed at H1's release on 2026-10-02. Results no longer
 carry the `kernel extension: H1` marker, so every change's
@@ -149,16 +167,15 @@ list was checked unchanged before writing the hashes. All four migration
 comparisons pass; no mathematical source was changed.
 
 `tests/truncation-migration.test.mjs` checks G2 and G5–G7, the ledger file
-and its retired comparisons, coexistence of the library's `LEM` with the
-archive's `LEM[Truncate]`, and the CLI's refusal of another baseline, of a
-retired comparison and of a module without a baseline.
-`tests/truncation-confinement.test.mjs` checks step 4's confinement in each
-place a source can come from.
+and its retired comparisons, that the archive's excluded middle is the
+library's `LEM`, the CLI's refusal of another baseline, of each retired
+comparison and of a module without a baseline, and that the removed
+builtins' names are unknown in an archive module and in a library module.
 Compared modules require a baseline at the requested Git revision in
 `library/` or `archive/first-library/`; an untracked new module cannot supply
 its own baseline. `tests/proof-migration.test.mjs` checks listed/unlisted G4 changes,
 changed pins, forbidden removals, duplicate entries, failed declarations,
-scope escapes, body substitution, explicit assumption replacements,
+scope escapes, body substitution, the replacement policy,
 archive/library collisions and refusal to bypass proof-identity checking.
 The rebuilt module's `h1_` prefix keeps it apart from the archive's
 `cauchy_quotient` in CLI, REPL and page lookup.
@@ -171,11 +188,26 @@ The rebuilt module's `h1_` prefix keeps it apart from the archive's
 the language. The archive's remaining remedies of specification section 8.4
 are not pursued: the archive retires ([I0.5](../archive-retirement.md)), and
 its uses of the legacy assumptions leave with it. Until then, archive modules
-are their only permitted consumers. The library's `Trunc` is the one
+were to be their only permitted consumers. The library's `Trunc` is the one
 truncation, and excluded middle and choice become named definitions using
 `axiom` in `library/classical_axioms.cubist`, stated over it. The translator's
 `LEM` and `Choice` builtins, with or without a truncation former, go with the
 legacy truncation (direction of 2026-10-20).
+
+**Reordered on 2026-10-29** (the user): the legacy builtins do not wait for
+the archive's retirement. The archive is migrated in place to the library's
+`Trunc` and its axioms `LEM` and `Choice`, and the builtins are removed
+right after (step 5). Where the legacy `Truncate` resized a proposition in
+`U1` into `U0` and a result needs that, the archive uses the library's
+propositional-resizing axiom, `PropResizing` in `classical_axioms`, so that
+every result is kept and lists it among its axioms. The remedies of
+specification section 8.4 that restate results or wait for H2 are still not
+pursued. The [migration](#migration-in-place-2026-10-29) records the outcome.
+
+**Removed on 2026-10-29** (step 5, part 2): the legacy builtins, step 4's
+confinement and the diagnostics that only they raised are gone, and their
+names are unknown in every module, the archive's included. The
+[steps](#steps) record what went and what stayed.
 
 ### Measurement, 2026-10-20
 
@@ -224,6 +256,116 @@ Cauchy quotient, splitting fields, periods on punctured planes) are listed
 in the [results catalog](../../library-results.md). The retirement's step R3
 decides which the library rebuilds, at the universes they need and without
 resizing, before the archive is deleted.
+
+### Migration in place, 2026-10-29
+
+`library/classical_axioms.cubist` states propositional resizing from `U1`
+to `U0` over `hlevels`' `IsProp` and assumes it:
+
+```text
+def PropResize(P : U1) := exists Q : U0. IsProp(U0, Q) and (P -> Q) and (Q -> P);
+def PropositionalResizing := forall P : U1. IsProp(U1, P) -> PropResize(P);
+def PropResizing := axiom PropositionalResizing;
+```
+
+`PropResize` moved there from `h1_classical`, whose `resize_prop` proves it
+from `LEM`. The archive's `truncation` imports `classical_axioms`: `Mere(A)`
+is `Trunc(U0, A)`, and `merely`, `mere_is_prop`, `mere_eliminate` and
+`mere_map` keep their names and premises over the library's operations at
+`U0`, shadowing `h1_truncation`'s of the same names. `field_logic` imports
+`truncation`, and its `FieldExists(A)` is `Trunc(U1, A)`, with the library's
+operations at `U1`. The four other modules that used the legacy builtins
+directly, `independent_extension`, `linear_span`, `span_subspace` and
+`vector_subspaces`, use `truncation`'s wrappers. The three call sites of
+`LEM` and `Choice` keep their text: `classical_axioms`, imported through
+`truncation`, binds both names, so they are the library's axioms.
+
+`node tools/audit-cubical.mjs --all` checks 3,857 declarations with no
+failure: main's 3,844 and the 13 of `h1_truncation` and `classical_axioms`.
+No archive declaration lists a legacy label. The 455 that listed
+`LEM[Truncate]` list `LEM`, the 3 that listed `Choice[Truncate]` list
+`Choice`, and a declaration that relied only on the legacy truncation lists
+nothing, unless it uses a resized proposition (below). The roots:
+
+| Root | Module | Remedy | Resizing |
+| --- | --- | --- | --- |
+| `small_mere_eliminate` | `field_logic` | The library's elimination, whose motive may lie in any universe: it is `h1_truncation`'s `small_mere_eliminate` (8.4's group 1) | None |
+| `CauchyQuotient`, `cauchy_same_equivalence` | `cauchy_quotient` | `EventualClose` truncates its small witness at `U0`, `Mere(…)`, as `h1_cauchy_quotient`'s does (group 2) | None |
+| `predicate_union_upper`, `predicate_union_least` | `predicate_chains` | Inclusion relates small predicates, so their statements take `PredicateUnion`, membership in the union of a `U1`-indexed family, resized to a small predicate; the resizing's maps lead in and out of it | `PropResizing` |
+| `directed_union_independent` | `independent_unions` | Its statement takes the resized union, as `chain_union_independent`'s and `IndependentUnion`'s do; its members are taken out through the resizing's map | `PropResizing` |
+| `tower_induction_large` | `bourbaki_tower` | Its motive, a family of propositions in `U1`, is resized | `PropResizing` |
+| `no_maximal_strict_successor` | `zorn_chain_complete` | The truncated successor, a proposition in `U1`, is resized to `U0` for the archive's `double_negation` | `PropResizing` |
+
+Two declarations that the measurement counted only through a root need
+resizing of their own: `bourbaki_witt`'s `tower_is_chain` uses the tower
+as a chain of small predicates, so its statement takes tower membership
+resized, and `bourbaki_witt` passes the chain's members and the supremum's
+step through the resizing's maps; and `zorn_chain_complete` resizes its
+conclusion for `double_negation`, as `no_maximal_strict_successor` does.
+
+Resizing is used only there, where a statement or a proof needs the small
+form. `PredicateUnion` and `TowerMember` stay truncations at `U1`, so their
+own lemmas assume nothing. Of the 47, the 20 of groups 3–7 list
+`PropResizing`, the 27 of groups 1 and 2 list no resizing, and no other
+archive declaration lists it. The specification's group 7
+remedy, double negation at `U1` through `LEM(U1, …)` as `h1_zorn_step`
+does, would take `PropResizing` from `no_maximal_strict_successor` alone:
+`zorn_chain_complete` reaches the resized tower through `bourbaki_witt`.
+
+The migration verifier classifies what changed, against main (`bfca6cad`,
+whose archive and library are `6f0cc3a4`'s):
+`node --max-old-space-size=14336 tools/verify-proof-migration.mjs --base origin/main`.
+The heap flag is needed because Node's default heap of about 4 GB runs
+out after about 83 seconds. It compares 315 modules, 14 changed and 301
+dependents, and reports 1,266 failures: 800 declarations lose legacy
+labels, 446 lose them with `LEM[Truncate]` and `Choice[Truncate]` replaced
+by `LEM` and `Choice`, and the 20 above gain `PropResizing`. Against
+`ef6f57a1`, main's archive with the new library, every one of the 1,266 is
+a report of a changed assumption list; against main the 20 read as
+"Untranslated name: PropResizing", or an untranslated dependency on one,
+since the verifier reads the library at the base revision. That
+classification is all the run shows: the verifier reports a declaration's
+changed assumptions before it compares its type or term, and does not
+compare a declaration it cannot translate. By the user's decision of
+2026-10-29 the ledger is not extended for this decided migration: its
+policy refuses an added assumption and keeps one base per file. The audit
+is the gate, and shows that every declaration checks. Since step 5's second
+part this run no longer classifies the migration: its baseline's archive
+uses the removed builtins, and its declarations over them no longer check.
+
+That the archive states the same results rests on its source text, reviewed
+here. Each declaration's text was compared between main and this change,
+parsed, with comments and spacing ignored: the 301 dependent modules are
+unchanged, `classical` and `surjections` change only comments, and every
+other changed declaration changes only its proof, except these:
+
+- `truncation`'s `Mere`, `merely`, `mere_is_prop` and `mere_eliminate`, and
+  `field_logic`'s `FieldExists`, `field_exists_intro`, `field_exists_prop`
+  and `field_exists_elim`: `Truncate(U, A)`, `TruncateIntro`,
+  `TruncateProp` and `TruncateElim` become `Trunc(U, A)`, `merely`,
+  `mere_is_prop` and `mere_eliminate` at the same universes. They are the
+  same truncation, introduction, proposition evidence and elimination into
+  a proposition of the same universe; only the truncation's own universe
+  differs, `U` where `Truncate` gave `U0`.
+- `linear_span`'s `Span` and `span_prop`, and `independent_extension`'s
+  `AdjoinVector` and `adjoin_vector_prop`: `Truncate(U0, X)` and
+  `TruncateProp(U0, X)` become `Mere(X)` and `mere_is_prop(X)`, the
+  truncation at `U0` as before.
+- `cauchy_quotient`'s `EventualClose`: the truncation of its small witness
+  type through `FieldExists`, at `U1`, which `Truncate` put in `U0`,
+  becomes its truncation at `U0`, `Mere`.
+- `field_logic`'s `small_mere_eliminate`: its truncated hypothesis
+  `Truncate(U0, A)` becomes `Trunc(U0, A)`.
+- `predicate_chains`' `predicate_union_upper` and `predicate_union_least`,
+  and `independent_unions`' `directed_union_independent` and
+  `chain_union_independent`: the union `PredicateUnion(I, A, P)`, now a
+  predicate in `U1`, becomes its resized copy in `U0`,
+  `PropResizing(PredicateUnion(I, A, P, x), …).1`, as `Truncate` made the
+  legacy union small. `IndependentUnion` keeps its type, and its value's
+  predicate is that resized union.
+- `bourbaki_witt`'s `tower_is_chain`: tower membership, now a proposition
+  in `U1`, becomes its resized copy in `U0`, as the legacy tower's
+  membership was.
 
 ### Consumers outside the archive, 2026-10-20
 
@@ -653,7 +795,9 @@ transition land together.
    translator check, a source test over the roots, is weaker: it reports
    after the fact and says nothing to a REPL entry.
 
-   **Done on 2026-10-28.** The translator refuses each legacy builtin
+   **Done on 2026-10-28**, and removed with the builtins on 2026-10-29
+   (step 5, part 2): what follows records the confinement as it was.
+   The translator refuses each legacy builtin
    written outside an archive module: a call of `Truncate`,
    `TruncateIntro`, `TruncateProp` or `TruncateElim`, or of `LEM` or
    `Choice` where nothing binds them (the handler in
@@ -803,14 +947,114 @@ transition land together.
      comparisons read their baselines from the archive at `f4d1961`, which
      keep the builtins, and their edited sources use none; both pass with
      their pins unchanged (2026-10-28).
-5. **Removal, with the archive** ([I0.5](../archive-retirement.md), R5).
-   `web/cubical-assumptions.mjs` goes entirely: the four truncation types, the
-   legacy `LEM`/`Choice` signatures, their builtins, the notation hook and the
-   diagnostics. Any surviving archive-dependent comparisons and coexistence
-   checks end here, with their last passing revisions recorded. Comparisons
-   invalidated by steps 1 or 4 have already retired in those steps. The ledger
-   file, its `assumptionsRemoved` lists and the `LEGACY` set
-   stay as the record of the pinned changes.
+5. **The archive migrated in place, then removal.** Planned with the
+   archive's deletion ([I0.5](../archive-retirement.md), R5) until the user
+   reordered it on 2026-10-29: the archive moves to the library's truncation
+   and axioms first, and the legacy builtins are removed right after, before
+   the archive retires. Two parts:
+   1. **The archive migrated in place**, done on 2026-10-29, as
+      [recorded above](#migration-in-place-2026-10-29). `classical_axioms`
+      adds `PropResize`, `PropositionalResizing` and
+      `def PropResizing := axiom PropositionalResizing;`, which
+      `tests/library.test.mjs` lists with `LEM` and `Choice`. No archive
+      module uses `Truncate`, `TruncateIntro`, `TruncateProp`,
+      `TruncateElim` or the builtin `LEM` and `Choice`, though they stay
+      accepted in an archive module until part 2:
+      - Expectations over archive modules list the library's labels: the
+        mathematical tests, the six `*_invalid_*` goldens, whose type
+        renderings carry no legacy assumption among their parameters, only
+        `LEM` where a declaration uses it, and the corpus
+        count, which adds the 13 declarations of `h1_truncation` and
+        `classical_axioms` that the archive now imports.
+      - Tests whose subject is a legacy builtin read an archive module that
+        still uses one, `legacyClassical` (`tests/check-program.mjs`): the
+        archive's double negation over the builtins, answered as the
+        archive's own file (`legacyArchiveReader`), or written into a
+        temporary project's archive, read through that project's root
+        (`legacyProject` in `tests/truncation-confinement.test.mjs`). So
+        do the label checks of `tests/test-contracts.test.mjs` and
+        `tests/declarations.test.mjs` and the `‖A‖` hook's check in
+        `tests/cubical-inspection.test.mjs`. The confinement's checks of
+        the repository's archive from the command line now find the
+        library's `LEM`.
+      - Tests that used the archive's truncation only as a source of
+        assumptions use the library's axioms instead: the context query of
+        `tests/contextual-commands.test.mjs` publishes `h1_classical`'s
+        `double_negation`, over `LEM`.
+      - `truncation_legacy_confined` no longer imports the archive's
+        `truncation`, which would bind `LEM` and `Choice`, and
+        `truncation_rebuilt_classical`'s `old`, `rebuilt` and `both` all
+        list `LEM` alone: the archive's excluded middle is the library's.
+      - No ledger comparison retires: the field-logic and Cauchy
+        comparisons pass with their pins unchanged (2026-10-29).
+   2. **Removal**, done on 2026-10-29. The legacy part of
+      `web/cubical-assumptions.mjs` is gone, `assumptionType` and
+      `libraryAssumption` with the four truncation types and the legacy
+      `LEM`/`Choice` signatures; `axiomAssumption`, which `axiom`
+      definitions use, stays. Gone with it:
+      - the builtins' handler in `web/translator/builtins.mjs`, and
+        `Truncate`, `TruncateIntro`, `TruncateProp` and `TruncateElim`
+        among the parser's builtin names, which frees them: each is an
+        ordinary name, unknown unless a source declares it, so
+        `Truncate(U0, Unit)` fails in an archive module as in a library
+        module, as any unknown name does (E343), and so do `LEM` and
+        `Choice` where nothing binds them. `expect_axioms` no longer reads
+        a label in brackets, as `LEM[Truncate]` was.
+      - the confinement: E491's checks (`legacyBuiltins`,
+        `legacyConfinement`, `writtenInArchive`), `SourceRefusal`, which
+        only they raised, and the archive's provenance (`fromArchive`,
+        `archiveProvenance`) with the record the program, a replay and the
+        workbench kept of it (`archiveSources`, `ReplayInputs`'s
+        `archive`, `WorkbenchSession`'s `fromArchive`).
+      - the `‖A‖` notation hook (`axiomNotation` in
+        `web/cubical-notation.mjs`), which only the legacy `Truncate` set,
+        with the rendering it fed (`truncationSugar` in
+        `web/math-notation.mjs`) and its toggles on the proof page and in
+        the workbench.
+      - the diagnostics that only the legacy builtins raised: E404, E406,
+        E407, E491 and E601 are retired, keeping their codes.
+
+      The library's provenance stays: `fromLibrary` and
+      `libraryProvenance` give a library module's axioms their bare names
+      (#317). So does what #332 built for both roots and the library
+      still uses: a file read by its real path (`fileAt` and
+      `canonicalFile` in `tools/module-sources.mjs`), the file each module
+      was read from (`fileOf`, the program's `sourceFiles`, an export's
+      `files`), and a recheck when a module's provenance or file changes.
+      `libraryProvenance` now checks the library's file of the module's
+      own name alone.
+
+      `tests/truncation-confinement.test.mjs`, the
+      `truncation_legacy_confined` fixture and the synthetic legacy module
+      (`legacyClassical`, `legacyArchiveReader`) are gone. Its checks of
+      what the library keeps are restated over the library's labels in
+      `tests/library-provenance.test.mjs`: a path that spells the
+      library's file in another case, a path through a link and `..`, a
+      file swapped for a link while it is read, a recheck when the
+      provenance or the file changes, and a transfer authenticated by its
+      file. `tests/truncation-migration.test.mjs` checks that the names
+      are unknown in an archive module and in a library module. The ledger
+      tests of `tests/proof-migration.test.mjs` whose baselines used the
+      builtins compare the same edits from a baseline without them, and
+      the replacement test, which no checked change can now exercise,
+      checks that a listed replacement the change does not make is refused.
+      The declarations, contracts, inspection and pragma tests drop their
+      legacy cases.
+
+      The field-logic and Cauchy comparisons retire, the last the ledger
+      checked: their baselines, read from the archive at `f4d1961`, use the
+      removed builtins. Both last passed at `7896d18a`, checked on
+      2026-10-29 before the removal, and the ledger's `retired` list keeps
+      their scopes and 12 pinned changes. The ledger file, its
+      `assumptionsRemoved` lists, the `LEGACY` set and the replacements stay
+      as the record of the pinned changes: the validator checks that a
+      retired comparison's changes remove only the legacy assumptions, as
+      their policy allowed, and refuses an active change that removes or
+      replaces any assumption. The freed names may now label a library's
+      axiom, `def Truncate := axiom Unit;`, whose removal the legacy
+      exemption would otherwise have permitted (#336's review). Part 1's whole-archive comparison against
+      main no longer runs either; `node tools/audit-cubical.mjs --all`
+      remains the archive's gate.
 
 ### Decisions
 
@@ -840,7 +1084,8 @@ transition land together.
   other non-library axioms display their module-qualified names,
   `module::Name`. This replaced a table of `classical_axioms`'s two names.
   The library's axiom names are distinct, which `tests/library.test.mjs`
-  checks; the legacy builtins' labels are reserved words or carry brackets.
+  checks; the legacy builtins' labels were reserved words or carried
+  brackets, until step 5 removed them.
   Internal identities include their defining module and declaration,
   aliases retain those identities, and one identity names one declaration.
   In step 1 the legacy builtins are
@@ -855,8 +1100,9 @@ transition land together.
   remains unsupported.
   That step also permits ordinary declarations of `LEM` and `Choice`, with
   imported bindings resolved before the legacy builtin fallback. Step 4
-  restricted that fallback to archive modules (2026-10-28).
-  `Truncate`, `TruncateIntro`, `TruncateProp` and `TruncateElim` stay
-  reserved through step 4, so that a historical source fails with the
-  retirement error rather than an unknown name, and are freed in step 5.
-  Open: whether to keep them reserved after.
+  restricted that fallback to archive modules (2026-10-28), and step 5
+  removed it (2026-10-29).
+  `Truncate`, `TruncateIntro`, `TruncateProp` and `TruncateElim` stayed
+  reserved through step 4, so that a historical source failed with the
+  retirement error rather than an unknown name, and were freed in step 5
+  (2026-10-29): a source that uses one meets the unknown-name error (E343).

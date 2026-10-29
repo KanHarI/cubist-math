@@ -22,8 +22,8 @@ def span_add_witnesses(
         ), cong(vector_add(K, V, x), sumY)
       )
     );
-  exact TruncateIntro(
-    U0, SpanWitness(K, V, P, vector_add(K, V, x, y)),
+  exact merely(
+    SpanWitness(K, V, P, vector_add(K, V, x, y)),
     typed(
       SpanWitness(K, V, P, vector_add(K, V, x, y)),
       (
@@ -39,12 +39,12 @@ def span_add(
   y : vector_carrier(K, V), hx : Span(K, V, P, x), hy : Span(K, V, P, y)
 ) :
   Span(K, V, P, vector_add(K, V, x, y)) {
-  exact TruncateElim(
-    U0, SpanWitness(K, V, P, x), Span(K, V, P, vector_add(K, V, x, y)),
+  exact mere_eliminate(
+    SpanWitness(K, V, P, x), Span(K, V, P, vector_add(K, V, x, y)),
     span_prop(K, V, P, vector_add(K, V, x, y)),
     (
-      fun (wx : SpanWitness(K, V, P, x)) => TruncateElim(
-        U0, SpanWitness(K, V, P, y), Span(K, V, P, vector_add(K, V, x, y)),
+      fun (wx : SpanWitness(K, V, P, x)) => mere_eliminate(
+        SpanWitness(K, V, P, y), Span(K, V, P, vector_add(K, V, x, y)),
         span_prop(K, V, P, vector_add(K, V, x, y)), span_add_witnesses(K, V, P, x, y, wx), hy
       )
     ), hx
@@ -57,8 +57,8 @@ def span_scale_witness(
 ) :
   Span(K, V, P, vector_scale(K, V, a, x)) {
   obtain (n, vectors, coefficients, members, sum) := witness_;
-  exact TruncateIntro(
-    U0, SpanWitness(K, V, P, vector_scale(K, V, a, x)),
+  exact merely(
+    SpanWitness(K, V, P, vector_scale(K, V, a, x)),
     typed(
       SpanWitness(K, V, P, vector_scale(K, V, a, x)),
       (
@@ -78,8 +78,8 @@ def span_scale(
   x : vector_carrier(K, V), member : Span(K, V, P, x)
 ) :
   Span(K, V, P, vector_scale(K, V, a, x)) {
-  exact TruncateElim(
-    U0, SpanWitness(K, V, P, x), Span(K, V, P, vector_scale(K, V, a, x)),
+  exact mere_eliminate(
+    SpanWitness(K, V, P, x), Span(K, V, P, vector_scale(K, V, a, x)),
     span_prop(K, V, P, vector_scale(K, V, a, x)), span_scale_witness(K, V, P, a, x), member
   );
 }

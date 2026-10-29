@@ -79,27 +79,21 @@ for(const [label,sources] of [
   assert.ok(report.prerequisites.length);
 });
 
-// The legacy builtins are the archive's, as its classical module uses them.
-test("assumption expectations name axioms and legacy builtins by their labels",async t=>{
-  for(const source of [`import classical_axioms;
+test("assumption expectations name axioms by their labels",async t=>{
+  const {report}=await checked(t,`import unat;
+import classical_axioms;
 # test(library) # expect_axioms([LEM])
 def excluded := LEM(U0);
 def Pointed := axiom UNat;
 # test(qualified) # expect_axioms([Choice, main::Pointed])
-def both : AxiomOfChoice(U0) and UNat := (Choice(U0), Pointed);`,`import classical;
-# test(legacy) # expect_axioms([LEM[Truncate], Truncate, TruncateElim])
-def excluded := classical::double_negation;`]) {
-    const {report}=await checked(t,`import unat;\n${source}`);
-    assert.deepEqual(report.prerequisites,[]);
-    assert.deepEqual(report.failures,[]);
-    assert.deepEqual(report.cases.map(entry=>entry.failures),report.cases.map(()=>[]));
-  }
-  const {report}=await checked(t,`import classical_axioms;
-# test(legacy) # expect_axioms([LEM[Truncate]])
+def both : AxiomOfChoice(U0) and UNat := (Choice(U0), Pointed);`);
+  assert.deepEqual(report.prerequisites,[]);
+  assert.deepEqual(report.failures,[]);
+  assert.deepEqual(report.cases.map(entry=>entry.failures),report.cases.map(()=>[]));
+  const other=await checked(t,`import classical_axioms;
+# test(other) # expect_axioms([Choice])
 def excluded := LEM(U0);`);
-  // An import of classical_axioms shadows the legacy builtin.
-  assert.deepEqual(report.cases[0].failures,["Unknown checked assumption LEM[Truncate].",
-    "excluded: expected assumptions [LEM[Truncate]], observed [LEM]."]);
+  assert.deepEqual(other.report.cases[0].failures,["excluded: expected assumptions [Choice], observed [LEM]."]);
 });
 
 test("an imported expected refusal cannot make a dependency successful",async t=>{
