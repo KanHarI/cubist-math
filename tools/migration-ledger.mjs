@@ -1,13 +1,15 @@
 // K2.5: a ledger permits only a pinned public change, never an unchecked
 // declaration. Types and values include a checked hash and readable rendering.
-// The labels of the legacy truncation assumptions, which K2.5 step 5 removed
-// from the language: the only assumptions a pinned change may remove. The
-// ledger's changes, all in retired comparisons, keep them as the record.
+// The labels of the legacy truncation assumptions, the only assumptions a
+// pinned change could remove. K2.5 step 5 removed them from the language and
+// freed their names, which a library axiom may now take as its label, so no
+// active change may remove an assumption; the retired comparisons' changes
+// keep removing only these, as the policy they were pinned under allowed.
 const LEGACY = new Set(["Truncate","TruncateIntro","TruncateProp","TruncateElim"]);
 // The archive's builtin excluded middle and choice over Truncate, removed
-// with it, and the library's axioms over Trunc that replace them
+// with it, and the library's axioms over Trunc that replaced them
 // (h1-truncation-migration.md, step 1). A replacement is listed explicitly,
-// never inferred.
+// never inferred; since step 5 no active change may list one.
 export const REPLACEMENTS = new Map([["LEM[Truncate]","LEM"],["Choice[Truncate]","Choice"]]);
 const pins = ["oldPublicType","newPublicType","oldValue","newValue"];
 const lists = ["hypothesesAdded","assumptionsRemoved","assumptionsRetained","extensionsAdded","extensionsRetained"];
@@ -27,9 +29,10 @@ export function validateLedger(ledger) {
   if (ledger?.version !== 2 || !Array.isArray(ledger.changes)) throw Error("A migration ledger has version 2 and a changes array, including value pins and explicit assumption replacements.");
   if (ledger.retired !== undefined && (!Array.isArray(ledger.retired) || ledger.retired.some(record =>
     !/^[A-Za-z_][A-Za-z_0-9]*$/.test(record?.comparison ?? "") || !/^[a-f0-9]{7,40}$/.test(record.lastPassing ?? "")
-    || typeof record.reason !== "string" || !Array.isArray(record.changes))
+    || typeof record.reason !== "string" || !Array.isArray(record.changes)
+    || record.changes.some(change => !Array.isArray(change?.assumptionsRemoved) || change.assumptionsRemoved.some(name => !LEGACY.has(name))))
     || new Set(ledger.retired.map(record => record.comparison)).size !== ledger.retired.length))
-    throw Error("A retired comparison names its module, its last passing revision, the reason and its recorded changes.");
+    throw Error("A retired comparison names its module, its last passing revision, the reason and its recorded changes, which remove only the legacy truncation assumptions.");
   for (const entry of ledger.changes) {
     if (!/^[A-Za-z_][A-Za-z_0-9]*$/.test(entry.module ?? "") || !/^[A-Za-z_][A-Za-z_0-9]*$/.test(entry.declaration ?? ""))
       throw Error("Every ledger change names a module and declaration.");
@@ -45,12 +48,8 @@ export function validateLedger(ledger) {
       if (!Array.isArray(values) || values.some(value => typeof value !== "string") || new Set(values).size !== values.length)
         throw Error(`Ledger change ${key} needs a list without duplicates for ${field}.`);
     }
-    if (!Array.isArray(entry.assumptionsReplaced) || entry.assumptionsReplaced.some(change =>
-      !REPLACEMENTS.has(change?.old) || REPLACEMENTS.get(change.old) !== change.new)
-      || new Set(entry.assumptionsReplaced.map(change => change.old)).size !== entry.assumptionsReplaced.length)
-      throw Error(`Ledger change ${key} may replace only LEM[Truncate] and Choice[Truncate], each by the library's axiom of its name.`);
-    if (entry.assumptionsRemoved.some(name => !LEGACY.has(name)))
-      throw Error(`Ledger change ${key} may remove only the four legacy truncation assumptions.`);
+    if (!Array.isArray(entry.assumptionsReplaced) || entry.assumptionsReplaced.length || entry.assumptionsRemoved.length)
+      throw Error(`Ledger change ${key} may not remove or replace an assumption: the legacy truncation assumptions, the only ones a change could, left the language in K2.5 step 5.`);
     if (entry.extensionsAdded.some(name => name !== "H1")) throw Error(`Ledger change ${key} may add only the recorded H1 extension.`);
     entries.set(key, entry);
   }
@@ -73,6 +72,6 @@ export function ledgerMatches(entry, observed) {
     return "The ledger's assumptionsReplaced does not match the checked change.";
   if (observed.assumptionsAdded.length) return `A migration adds assumptions: ${observed.assumptionsAdded.join(", ")}.`;
   if (observed.extensionsRemoved.length) return `A migration removes kernel extensions: ${observed.extensionsRemoved.join(", ")}.`;
-  if (observed.assumptionsRemoved.some(name => !LEGACY.has(name))) return "The change removes an assumption outside the truncation policy.";
+  if (observed.assumptionsRemoved.length) return `A migration removes assumptions: ${observed.assumptionsRemoved.join(", ")}.`;
   return null;
 }

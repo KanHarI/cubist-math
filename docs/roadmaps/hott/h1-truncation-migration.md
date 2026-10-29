@@ -1047,8 +1047,12 @@ transition land together.
       2026-10-29 before the removal, and the ledger's `retired` list keeps
       their scopes and 12 pinned changes. The ledger file, its
       `assumptionsRemoved` lists, the `LEGACY` set and the replacements stay
-      as the record of the pinned changes, and the validator still checks
-      a ledger against them. Part 1's whole-archive comparison against
+      as the record of the pinned changes: the validator checks that a
+      retired comparison's changes remove only the legacy assumptions, as
+      their policy allowed, and refuses an active change that removes or
+      replaces any assumption. The freed names may now label a library's
+      axiom, `def Truncate := axiom Unit;`, whose removal the legacy
+      exemption would otherwise have permitted (#336's review). Part 1's whole-archive comparison against
       main no longer runs either; `node tools/audit-cubical.mjs --all`
       remains the archive's gate.
 

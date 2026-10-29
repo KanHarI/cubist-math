@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { canonicalHasher } from "../tools/canonical-hash.mjs";
 import { mapDefinitions, verifyMigration } from "../tools/proof-migration.mjs";
+import { ledgerMatches } from "../tools/migration-ledger.mjs";
 import { identicalRewrites, rewriteModule, typePreservingRewrites } from "../tools/proof-rewrites.mjs";
 import { formatCubist } from "../web/cubist/formatter.mjs";
 import { migrationSourceReader } from "../tools/migration-sources.mjs";
@@ -300,18 +301,20 @@ test("G4: an exact ledger records a changed public type, and no marker since H1'
   const allowed = await verify(ledger);
   assert.deepEqual(allowed.failures,[]);
   assert.equal(allowed.ledgerAccepted,1);
-  for (const field of ["oldPublicType","newPublicType","oldValue","newValue","assumptionsRemoved","extensionsAdded","hypothesesAdded"]) {
+  for (const field of ["oldPublicType","newPublicType","oldValue","newValue","extensionsAdded","hypothesesAdded"]) {
     const altered = structuredClone(ledger);
     if (field.endsWith("PublicType") || field.endsWith("Value")) altered.changes[0][field].hash = "0".repeat(40);
-    // A ledger that claims a marker, or a removed assumption, the result
-    // lacks is refused too.
-    else altered.changes[0][field] = field === "hypothesesAdded" ? ["extra"] : field === "extensionsAdded" ? ["H1"] : ["Truncate"];
+    // A ledger that claims a marker the result lacks is refused too.
+    else altered.changes[0][field] = field === "hypothesesAdded" ? ["extra"] : ["H1"];
     assert.match((await verify(altered)).failures[0].reason,new RegExp(field));
   }
   assert.match((await verify(ledger,after.replace("a : A)","a : A, extra : Unit)"))).failures[0].reason,
     /newPublicType|hypothesesAdded/);
   await assert.rejects(verify({...ledger,changes:[change,change]}),/Duplicate ledger/);
-  await assert.rejects(verify({version:2,changes:[{...change,assumptionsRemoved:["LEM"]}]}),/only the four legacy/);
+  // Since K2.5 step 5 no active change removes an assumption, a legacy one
+  // included.
+  for (const removed of [["LEM"],["Truncate"]])
+    await assert.rejects(verify({version:2,changes:[{...change,assumptionsRemoved:removed}]}),/may not remove or replace an assumption/);
   await assert.rejects(verify({version:2,changes:[{...change,remedyGroup:5}]}),/waits for H2/);
 });
 
@@ -392,10 +395,10 @@ test("ledgered public dependencies cannot be hidden outside a declaration scope"
   assert.match(unpinned.failures.find(item => item.name === "witness_").reason,/must be identical or have its own verified ledger entry/);
 });
 
-// The ledger permits a replacement of a removed legacy builtin by the
-// library's axiom of its name, LEM[Truncate] by LEM, only as listed and
-// pinned: one the change does not make is refused, and so is any other.
-test("a ledger's replacements are exact and its policy's, and its retired comparisons are refused", async () => {
+// The ledger permitted a replacement of a legacy builtin by the library's
+// axiom of its name, LEM[Truncate] by LEM; since K2.5 step 5 removed the
+// builtins, no active change may list one.
+test("a ledger lists no replacement, and its retired comparisons are refused", async () => {
   const types = "inductive Tr(A : U0) : prop { point(a : A); }\n";
   const before = "import trunc_types;\ndef Predicate(A : U0) := A;\n";
   const after = "import trunc_types;\ndef Predicate(A : U0) := Tr(A);\n";
@@ -404,15 +407,31 @@ test("a ledger's replacements are exact and its policy's, and its retired compar
   const change = {...(await run(null)).changes[0],remedyGroup:6};
   assert.deepEqual(change.assumptionsReplaced,[]);
   assert.deepEqual((await run({version:2,changes:[change]})).failures,[]);
-  assert.match((await run({version:2,changes:[{...change,assumptionsReplaced:[{old:"LEM[Truncate]",new:"LEM"}]}]})).failures[0].reason,
-    /assumptionsReplaced/);
-  await assert.rejects(run({version:2,changes:[{...change,assumptionsReplaced:[{old:"LEM[Truncate]",new:"Choice"}]}]}),
-    /may replace only LEM\[Truncate\] and Choice\[Truncate\]/);
+  for (const replaced of [{old:"LEM[Truncate]",new:"LEM"},{old:"LEM[Truncate]",new:"Choice"}])
+    await assert.rejects(run({version:2,changes:[{...change,assumptionsReplaced:[replaced]}]}),/may not remove or replace an assumption/);
   const retired = changes => [{comparison:"replacement",lastPassing:"21f55b55",reason:"Retired.",changes}];
   await assert.rejects(run({version:2,changes:[change],retired:retired([])}),
     /belongs to the retired replacement comparison/);
   await assert.rejects(run({version:2,changes:[],retired:retired([change])}),
     /The ledger retired its replacement comparison, which last passed at 21f55b55: Retired\./);
+});
+
+// The legacy truncation's names are free since K2.5 step 5, so a library may
+// declare an axiom of one, labelled by its bare name (#336's review, round
+// 1): a change that removes it is refused, ledger or not, as the removal of
+// any assumption is. No active change may remove or replace an assumption.
+test("a ledger refuses the removal of an axiom that a library names after a legacy builtin", async () => {
+  const before = "import named_axiom;\ndef value : Unit := Truncate;\n", after = "import named_axiom;\ndef value : Unit := tt;\n";
+  const run = async ledger => (await verifyMigration({modules:["removal"],ledger,readOriginal:migrationSourceReader(async (place,name) =>
+    place === "archive" && name === "removal" ? before : place === "library" && name === "named_axiom" ? "def Truncate := axiom Unit;\n" : null,
+    ["removal"]),readEdited:async () => after}))[0];
+  const strict = await run(null);
+  assert.match(strict.failures[0].reason,/Assumptions changed/);
+  const change = {...strict.changes[0],remedyGroup:1};
+  assert.deepEqual(change.assumptionsRemoved,["Truncate"]);
+  await assert.rejects(run({version:2,changes:[change]}),/may not remove or replace an assumption/);
+  // The exact entry is refused when it is matched, too.
+  assert.equal(ledgerMatches(change,change),"A migration removes assumptions: Truncate.");
 });
 
 test("pinned source resolution keeps archive imports isolated from library collisions", async () => {

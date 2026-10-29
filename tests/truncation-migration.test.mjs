@@ -59,6 +59,13 @@ test("G4: the checked migration ledger records its retired comparisons and defer
   assert.deepEqual(ledger.deferred,["tower_induction_large","tower_relative_induction"]);
   assert.throws(()=>validateLedger({...ledger,changes:[...ledger.changes,ledger.retired[0].changes[0]]}),
     /belongs to the retired zorn_chain_complete comparison/);
+  // The retired changes remove only the legacy truncation assumptions, the
+  // policy they were pinned under; an active change removes none.
+  const [record]=ledger.retired;
+  assert.throws(()=>validateLedger({...ledger,retired:[{...record,changes:[{...record.changes[0],assumptionsRemoved:["LEM"]}]}]}),
+    /which remove only the legacy truncation assumptions/);
+  assert.throws(()=>validateLedger({...ledger,changes:[{...ledger.retired[2].changes[0],module:"field_logic_again"}]}),
+    /may not remove or replace an assumption/);
 });
 
 test("G4: the CLI refuses a baseline other than the pinned one, a retired comparison and a new module without a baseline",()=>{
