@@ -161,6 +161,30 @@ test("dimension pruning keeps the renamings a system's faces read", async t => {
   }
 });
 
+// The two reproductions of #331's second review, with the faces counted:
+// a composition whose binder reuses the index of the path binder its face
+// names, <i> comp^i X [i = 0 ↦ a] a, is its own derivation's term both ways;
+// and <d0><d0> comp^d3 Unit [d0 = 0 ↦ tt] tt, whose face names the inner
+// binder, is not <d1><d2> comp^d3 Unit [d1 = 0 ↦ tt] tt, whose face names
+// the outer one. The driver answers as the kernel does.
+test("a composition's faces are read under the binders around it, each by its own identity", async t => {
+  const { kernel, driver, term } = await setup(t);
+  const at0 = dim => kernel.formula("face", [[0n, 1n << BigInt(dim)]]);
+  const symbol = name => kernel.symbol(name), v = name => term("Var", symbol(name));
+  const source = term("PLam", 0, v("X"), term("Comp", 0, v("X"), term("Tube", at0(0), v("a"), 0), v("a")));
+  const derived = driver.graph.judgement(driver.infer(source, [[symbol("X"), term("U", 0, term("LConst", 0))], [symbol("a"), v("X")]])).term;
+  assert.ok(kernel.alphaEqual(derived, source) && kernel.alphaEqual(source, derived));
+  assert.ok(driver.alpha(derived, source), "the derived term against its source");
+  assert.ok(driver.alpha(source, derived), "the source against its derived term");
+  const unit = term("Unit"), point = term("Point");
+  const square = (outer, inner, faced) => term("PLam", outer, unit,
+    term("PLam", inner, unit, term("Comp", 3, unit, term("Tube", at0(faced), point, 0), point)));
+  const inner = square(0, 0, 0), outer = square(1, 2, 1);
+  assert.equal(kernel.alphaEqual(inner, outer), false);
+  assert.equal(driver.alpha(inner, outer), false, "a face on the inner binder against one on the outer");
+  assert.equal(new InstructionDriver(kernel).alpha(outer, inner), false, "and the other way, with no answer kept");
+});
+
 // A derivation reads only part of its scope (InstructionDriver.narrow), and
 // summarizes the dimensions the types of the variables it leaves out
 // mention. A variable the term binds again leaves the scope under that
