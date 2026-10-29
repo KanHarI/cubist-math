@@ -340,14 +340,19 @@ and hypotheses, as `ck_eliminate` builds it.
 
 `closure(code, env)`:
 
-- If no variable free in `code` is bound in `env`, it is `code`, the
-  original kernel handle. Every closed definition body is such a code.
 - If `code` is a variable `x`, it is `R(env(x))`.
+- If `code` is a reference to a definition whose cell the walk has forced,
+  it is `R` of that cell: the machine keeps one cell per definition
+  (`#definitions`, the `DefRef` case of `#run`).
+- If no variable free in `code` is bound in `env`, and no definition that
+  `code` references outside its term binders has a forced cell, it is
+  `code`, the original kernel handle.
 - If `code` is a spine node, an application `App(f, a)` or `LApp(f, ℓ)`,
   a projection or a path application (`spine_node` in
-  `kernel/src/term_normalize.c`), it is rebuilt one level, as below: an
-  application is `closure(f, env)` applied to `closure(a, env)`, or to the
-  level `ℓ` read back as below.
+  `kernel/src/term_normalize.c`), or a node that is no term binder and
+  references a forced definition outside its term binders, it is rebuilt
+  one level, as below: an application is `closure(f, env)` applied to
+  `closure(a, env)`, or to the level `ℓ` read back as below.
 - Otherwise it abstracts the frames that `code` needs as one telescope and
   applies it to their cells:
   `App(…App(L1(x1; D1, … Ln(xn; Dn, code)…), R(c1))…, R(cn))`. The frames
@@ -407,9 +412,15 @@ dimension (section 5), so nothing is captured. It keeps a literal node
 where the kernel reads a node's kind without reducing it: a spine node,
 whose spine `folding_head` reads, and a constructor's instance.
 
+A definition referenced under a term binder stays as written, and the
+kernel computes it again: reading its cell back there would put a value
+under the binder, which only a substitution does, and readback leaves
+substitution to the kernel (D2).
+
 Free-variable sets are computed once per copied node, binding as
 `ck_term_free` does (`Pi`, `Lam`, `Sigma`, `LPi` and `LLam` bind their
-payload in their second child), within the query's budget. This is the
+payload in their second child), within the query's budget, and so are
+the definitions each node references outside its term binders. This is the
 pruning that EVAL4's closed-environment item needs for retention as well.
 
 The alternative is to substitute in JavaScript. That needs a capture- and
@@ -515,9 +526,13 @@ neither: it is the value as far as the runtime computed it.
   a readback by origin of the same code and environment.
 - A closure reuses its code's handle as it is, and the kernel's interning
   merges identical syntax.
-- The output has one node per cell reached, plus two per telescope binding
-  and one per spine node a closure is taken through. So it is a DAG of
-  the runtime's reachable graph, never a tree.
+- The output has one node per cell reached, one per node a closure is
+  rebuilt through, and two per binding of each telescope built.
+  Telescopes are not shared between closures: n distinct closures over
+  the same n variables build n telescopes of n bindings each. So the
+  output is bounded by the cells and code reached plus the sum of the
+  telescopes' sizes, which can be quadratic in the runtime's graph. It is
+  a DAG, never the tree that a decoding would expand.
 - `R` is never decoded to JavaScript. Only the final normal form is,
   under the printer's budget, and that decoding keeps sharing (1,007
   objects for 986 handles, [1.4](#14-what-a-re-check-costs-today)).
@@ -534,13 +549,14 @@ neither: it is the value as far as the runtime computed it.
 3. Read back by value, with origins off, their full normal forms are
    α-equal wherever both complete, by confluence and unique normal forms.
    This is the oracle: it compares every value the runtime computed,
-   functions included.
+   functions included, and each head an observation returned after η
+   (W1).
 4. With origins, their folded normal forms are to be α-equal
    ([3.4](#34-origins-provenance-and-folding)): a target that W1 tests,
    not a guarantee. It tests folding, not the runtime's non-data values,
    which claim 3 tests.
-5. Its size is linear in the cells and code nodes reached
-   ([3.5](#35-sharing)).
+5. Its size is at most the cells and code nodes reached plus the sum of
+   its telescopes' bindings ([3.5](#35-sharing)).
 6. It captures nothing, and its nearest-binding rule is the machine's
    lookup.
 
@@ -588,9 +604,12 @@ restart[ing] the same fallback"
 
 **Decided (D4): option c.** The machine meets a node it does not execute:
 a composition, a path applied, η of a path abstraction, Glue, `unglue` or
-`abort`. It forces none of the node's parts: parts the walk had already
-forced read back from their cells, the rest as closures, and the kernel's
-head query decides what it needs. Forcing a part first would add demand
+`abort`. It forces none of the node's parts: the node reads back as its
+closure (3.3), so cells the walk had already forced, in its environment
+or as definitions it references outside its term binders, read back as
+values, the rest as closures, and the kernel's head query decides what it
+needs. A definition referenced under a term binder is computed again by
+the kernel. Forcing a part first would add demand
 wherever the kernel's rule does not inspect that part: a composition at a
 function type is a λ at once (`ck_reduce_composition`), so
 `comp(fun (i : Interval) => Unit -> Unit, slow(2 * 255))` shows `<fun>`
@@ -769,8 +788,8 @@ Each is one PR, reviewed under the roadmap's rule.
 
 | ID | Work | Acceptance and tests | Size |
 | --- | --- | --- | --- |
-| W1 | **Readback and its oracle.** In `web/cubical-runtime.mjs`: environment frames record the β'd value; values keep their node, `Type` values their environment, and `Con` values their instance cell's code; readback by value from the fields the machine executes; queries made for normal forms keep every forced cell's origin; an internal `readback(handle)` returning a kernel handle; free-variable sets per copied node; the generation check at entry, before each write and before a handle is returned; readback counted in the query's work and cells. The correspondence goes into the runtime report. No user-visible change. | **Differential, by value:** for every value form the runtime computes (156 constructs, 40 binary contract values, the `cubist-tests` prints), with origins off, `normalize(R(root))` α-equals `normalize(e)` wherever the full normal form completes within a fixed budget. **Folding, by origin:** with origins on, `normalizeFolded(R(root))` α-equals `normalizeFolded(e)`, the target of 3.4, with these regressions: a closure over `cert(x)` inside a pair keeps `cert(tt)` folded (3.3), `(fun x => (tt, x.1))(certPair(tt))` keeps `certPair(tt).1` folded (3.4), and so does a pair of a `Box(x)` constructor and `(fun y => y.1)(x)`, with `x = certPair(tt)`, whose instance reads `x` by value first (3.5), and `(fun x => (tt, x.1(tt)))(certPair(tt))` keeps `certPair(tt).1(tt)` folded (3.3). **Typing:** `R(root)` is typed by instructions on the small constructs only, since 1.4's cost rules out more, and on a closure capturing `A : U0` and `x : A` (3.3) a constructor of `Box(A)` read back from a closure, which `kernel.head` must also eliminate, and the type value of `(fun (A : U0) => A -> A)(Unit)` read back by value, whose full normal form is `Unit -> Unit` (3.2). **Mutations that must fail:** swapped pair components; a constructor value whose index, signature or instance is changed in its own fields, the node it was made from left as it was; likewise a λ's body, symbol or environment and an eliminator's motive or clauses; a dropped instance; a function value replaced by another of its type (`λ_:Unit. Void` for `λ_:Unit. Unit`, which the folding check passes), a value read instead of its origin, a data cell inside a non-data origin read by its value, the farthest binding instead of the nearest, a free variable skipped, domains closed one by one instead of the telescope, a memo reused across generations. **Cases:** capture and shadowing; a level argument that mentions a bound level variable; an unused argument never read back; a cell reached twice read back as one handle; readback after a rollback and after a commit is `expired`, for a readback that writes and for one that writes nothing (a closed code's own handle, a memoized handle); a `Lift` refused. M1 recorded. | M |
-| W2 | **Per-node fallback** ([section 5](#5-fallback-in-mid-computation-d4)), replacing the whole restart in `valueFormOf`, by D4, except where a rebuild reaches a `Lift` (section 5). | Every value form unchanged against the kernel's queries alone: constructs, `cubist-tests`, contracts and the reference. A count of fallbacks now partial. No node asked twice. A fallback forces nothing: `comp(fun (i : Interval) => Unit -> Unit, slow(2 * 255))` shows `<fun>` without computing `slow`, and cells the walk forced read back as values, whose computation the kernel's ticks for the node do not include. An unused expensive path: `p @ 0` under its `Path` annotation gives the endpoint without `p` being forced or read back. A discarded part holding a `Lift`: the higher-order `Tree` induction's `((fun (g : Unit -> Unit) => refl(tt))(below)) @ 0` still shows `tt`. A rebuild that reaches a `Lift` restarts as today: the higher-order `Tree` clause `comp(fun (i : Interval) => Unit -> Unit, below)(tt)` still shows `tt`. Two binders on one dimension slot: `comp^i hold(swapped @ i) [] (tt, 3)`, with `hold(A) := comp^i U0 [1 ↦ A] A`, shows `(3, tt)`. An `unglue` whose `Glue` type depends on the environment computes as the kernel's queries alone do. An opaque head consumed by a frame sent through the fallback: the circle eliminator on a transported `base` computes `3`. An opaque head that is the observation completed by the kernel's walk: `def g : Glue(UNat) := glue(1 + 1); evaluate g;` shows `glue(2)`, and a marker appears only where that walk shows one. A kernel stop reported as the kernel's. M2 recorded, slower rows said plainly. | M |
+| W1 | **Readback and its oracle.** In `web/cubical-runtime.mjs`: environment frames record the β'd value; values keep their node, `Type` values their environment, and `Con` values their instance cell's code; readback by value from the fields the machine executes; queries made for normal forms keep every forced cell's origin; an internal `readback(handle)` returning a kernel handle; free-variable sets per copied node; the generation check at entry, before each write and before a handle is returned; readback counted in the query's work and cells. The correspondence goes into the runtime report. No user-visible change. | **Differential, by value:** for every value form the runtime computes (156 constructs, 40 binary contract values, the `cubist-tests` prints), with origins off, `normalize(R(root))` α-equals `normalize(e)` wherever the full normal form completes within a fixed budget. **Observed heads:** each head an observation returns after `#head`'s η steps is read back too, and its full normal form α-equals that of the cell it was asked of: η leaves that cell holding the λ, so `R(root)` alone never reads back the head η computed. **Folding, by origin:** with origins on, `normalizeFolded(R(root))` α-equals `normalizeFolded(e)`, the target of 3.4, with these regressions: a closure over `cert(x)` inside a pair keeps `cert(tt)` folded (3.3), `(fun x => (tt, x.1))(certPair(tt))` keeps `certPair(tt).1` folded (3.4), and so does a pair of a `Box(x)` constructor and `(fun y => y.1)(x)`, with `x = certPair(tt)`, whose instance reads `x` by value first (3.5), and `(fun x => (tt, x.1(tt)))(certPair(tt))` keeps `certPair(tt).1(tt)` folded (3.3). **Typing:** `R(root)` is typed by instructions on the small constructs only, since 1.4's cost rules out more, and on a closure capturing `A : U0` and `x : A` (3.3) a constructor of `Box(A)` read back from a closure, which `kernel.head` must also eliminate, and the type value of `(fun (A : U0) => A -> A)(Unit)` read back by value, whose full normal form is `Unit -> Unit` (3.2). **Mutations that must fail:** swapped pair components; a constructor value whose index, signature or instance is changed in its own fields, the node it was made from left as it was; likewise a λ's body, symbol or environment and an eliminator's motive or clauses; a dropped instance; an η-produced constructor index changed (`zero` for `succ` in `fun (n : UNat) => succ(n)`); a function value replaced by another of its type (`λ_:Unit. Void` for `λ_:Unit. Unit`, which the folding check passes), a value read instead of its origin, a data cell inside a non-data origin read by its value, the farthest binding instead of the nearest, a free variable skipped, domains closed one by one instead of the telescope, a memo reused across generations. **Cases:** capture and shadowing; a level argument that mentions a bound level variable; an unused argument never read back; a cell reached twice read back as one handle; a scaling test, n closures over the same n variables for growing n, whose readback stays within 3.5's bound and grows as n²; readback after a rollback and after a commit is `expired`, for a readback that writes and for one that writes nothing (a closed code's own handle, a memoized handle); a `Lift` refused. M1 recorded. | M |
+| W2 | **Per-node fallback** ([section 5](#5-fallback-in-mid-computation-d4)), replacing the whole restart in `valueFormOf`, by D4, except where a rebuild reaches a `Lift` (section 5). | Every value form unchanged against the kernel's queries alone: constructs, `cubist-tests`, contracts and the reference. A count of fallbacks now partial. No node asked twice. A fallback forces nothing: `comp(fun (i : Interval) => Unit -> Unit, slow(2 * 255))` shows `<fun>` without computing `slow`, and cells the walk forced, in the node's environment or as definitions it references outside its term binders, read back as values, whose computation the kernel's ticks for the node do not include: in `(expensive, comp(fun (i : Interval) => Unit, expensive))`, with `expensive : Unit` a computation the kernel stops with `K344`, the composition's base reads back from the definition cell the first field forced. An unused expensive path: `p @ 0` under its `Path` annotation gives the endpoint without `p` being forced or read back. A discarded part holding a `Lift`: the higher-order `Tree` induction's `((fun (g : Unit -> Unit) => refl(tt))(below)) @ 0` still shows `tt`. A rebuild that reaches a `Lift` restarts as today: the higher-order `Tree` clause `comp(fun (i : Interval) => Unit -> Unit, below)(tt)` still shows `tt`. Two binders on one dimension slot: `comp^i hold(swapped @ i) [] (tt, 3)`, with `hold(A) := comp^i U0 [1 ↦ A] A`, shows `(3, tt)`. An `unglue` whose `Glue` type depends on the environment computes as the kernel's queries alone do. An opaque head consumed by a frame sent through the fallback: the circle eliminator on a transported `base` computes `3`. An opaque head that is the observation completed by the kernel's walk: `def g : Glue(UNat) := glue(1 + 1); evaluate g;` shows `glue(2)`, and a marker appears only where that walk shows one. A kernel stop reported as the kernel's. M2 recorded, slower rows said plainly. | M |
 | W3 | **`!!` printed through the runtime**, only if W1's folded tests pass and M3 shows a gain: the runtime's data, `R(root)` with origins, then the kernel's folded normalization. | Identical text on every `print(evaluate(!!…))` and REPL transcript in `cubist-tests`, the contracts and the reference. `expecting !!_` stays on the kernel. M3 re-recorded. | S |
 | W4 | **EVAL8 review record** for the readback fragment and the fallback boundary, [section 6](#6-eval8-interaction)'s list. | Review rounds by the roadmap's rule. Applicable suites: C and JavaScript, `make sanitize SANITIZERS=undefined` (ASan runs in CI), canonicity fixtures, browser and CLI evaluation, archive checking, definition re-derivation, isolation. | S |
 | W5 | **Optional, by D1: runtime-guided derivation, measured only** (option D), as a scratch tool like the closure experiment. | M5 recorded; D1 reopened with it, or not. | M |
@@ -806,8 +825,9 @@ Each is one PR, reviewed under the roadmap's rule.
 
 - **Readback volume.** A closure's environment can reach much of the
   heap. Pruning to free variables and the memos bound `R` by the cells
-  and code nodes reached. The 20M-cell cap and the arena (`K347`) bound
-  the rest. M1 measures it.
+  and code nodes reached plus its telescopes' bindings, which can be
+  quadratic (3.5). The 20M-cell cap and the arena (`K347`) bound the
+  rest. M1 measures it.
 - **Kernel work in W2.** The kernel computes, with its own substitution,
   whatever part of a fallback node its rule inspects and the walk had not
   forced. That avoids demand the kernel would not make, but repeats work
