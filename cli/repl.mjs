@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 // Source is elaborated by JavaScript; all accepted judgements come from C/WASM.
 import { readFile, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
@@ -13,7 +12,7 @@ import { ReplSession, replStatements, restartNote } from "../web/repl-session.mj
 import { assumptionLines, assumptionNote } from "../web/axiom-labels.mjs";
 import { moduleListing } from "../web/module-listing.mjs";
 import { diagnosticLine, withCode } from "../web/diagnostics.mjs";
-import { moduleOfFile, sourceReader } from "../tools/module-sources.mjs";
+import { canonicalFile, moduleOfFile, sourceReader } from "../tools/module-sources.mjs";
 import { assertFreshBuild } from "../tools/build-stamp.mjs";
 const help = `Cubist Math — cubical C kernel
   let NAME := TERM;        Define a name; def and any other declaration work too
@@ -143,7 +142,8 @@ async function execute(line) {
     if (!value) throw Error("check requires a module or .cubist file.");
     // A file is checked where it lives; a module name is found library-first.
     const file = value.endsWith(".cubist"), imports = checkedReader({ file, value });
-    const source = file ? await readFile(resolve(value), "utf8") : await imports(value);
+    // The file is read through the path its provenance names (module-sources.mjs).
+    const source = file ? await readFile(canonicalFile(value), "utf8") : await imports(value);
     const main = file ? moduleOfFile(value) : value;
     // The new program is installed once its check returns: a check that
     // throws, or whose instance fails, leaves the last one as it was.

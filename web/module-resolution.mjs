@@ -26,6 +26,13 @@
 // archive-first, and checking anything else is library-first: a library
 // module shadows the archive module of that name.
 //
+// A root also vouches for its modules' text (fromLibrary, fromArchive): a
+// module read unedited from library/'s file of its name names its axioms by
+// their bare names, and only text read unedited from a file of the archive
+// may use the archive's legacy builtins over Truncate. What vouches is the
+// file a module was really read from, by its real path; a module's name, or
+// a place given to it for its imports, vouches for nothing.
+//
 // A check holds one module per name. When two modules of one check would
 // resolve the same name to different files, for example a library module and
 // an archive module that both import a name the library shadows, the check
@@ -61,19 +68,31 @@ const either = order => order.length === 1 ? where(order[0])
 
 // A readSource for CubicalProgram. `read(place, name)` returns the text of the
 // module `name` in that place, or null when there is none; each answer is read
-// once per check. `place(name, where)` records where a checked source lives
-// before the check, for a source given as text rather than read here.
+// once per check. `place(name, where, origin)` records where a checked source
+// lives before the check, for a source given as text rather than read here.
+//
+// Where a module's imports resolve (its place) is apart from which file it was
+// read from (its origin). `read` may answer with the file it read,
+// { text, root, file }: the root that file really lives in, by its real path,
+// and its path there, or root "local" and file null outside every root. An
+// answer of text alone vouches that it is that place's own file of that name,
+// as a reader without aliases or links reads. A checked source's `origin`,
+// when given, reads the file it came from in the same form.
 //
 // A reader can serve several checks, as a REPL session's entries do. Where each
 // name was placed persists, since the modules a program holds keep their
 // identity. What was read does not: `beginCheck()` forgets every answer, so a
 // failed fetch is retried and a module created or fixed since is read again.
 export function moduleReader(read) {
-  // `given` holds the checked sources placed before their checks.
-  const probes = new Map(), placed = new Map(), given = new Set();
+  // `given` holds the checked sources placed before their checks, and
+  // `origins` how to read the file each came from, when its place's file of
+  // its name is not that file.
+  const probes = new Map(), placed = new Map(), given = new Set(), origins = new Map(), originProbes = new Map();
+  const answer = (place, name, found) => found === null || found === undefined ? null : typeof found === "string"
+    ? { text: found, root: place, file: Object.hasOwn(moduleRoots, place) ? `${moduleRoots[place]}${name}.cubist` : null } : found;
   const probe = (place, name) => {
     const key = `${place}/${name}`;
-    if (!probes.has(key)) probes.set(key, Promise.resolve(read(place, name)).then(text => text ?? null));
+    if (!probes.has(key)) probes.set(key, Promise.resolve(read(place, name)).then(found => answer(place, name, found)));
     return probes.get(key);
   };
   // The first place in `order` that has the module.
@@ -88,21 +107,58 @@ export function moduleReader(read) {
     if (place === null) throw new Error(`No module named ${name} in ${either(order)}${
       placed.get(importer) === "library" ? ": a library module imports only from the library" : ""}.`);
     placed.set(name, place);
-    return probe(place, name);
+    origins.delete(name);
+    return (await probe(place, name)).text;
   };
-  readSource.place = (name, place) => {
+  readSource.place = (name, place, origin = null) => {
     searchOrder(place);
     placed.set(name, place);
     given.add(name);
+    if (origin) origins.set(name, origin);
+    else origins.delete(name);
   };
   readSource.placeOf = name => placed.get(name);
-  // Whether `text` is the module `name` exactly as library/ holds it: read
-  // from there, or given as that same text, as the command line gives a
-  // library file it checks. An edited source, or one placed elsewhere, is
-  // not. Only a library module names its axioms by their bare names, as
-  // LEM and Choice (web/cubical-assumptions.mjs).
-  readSource.fromLibrary = async (name, text) => placed.get(name) === "library" && await probe("library", name) === text;
-  readSource.beginCheck = () => probes.clear();
+  // The file a module came from: a checked source's own, or the file its
+  // place holds under its name, which is what this reader read for it.
+  const originOf = name => {
+    if (origins.has(name)) {
+      if (!originProbes.has(name)) originProbes.set(name, Promise.resolve(origins.get(name)()).then(found => found ?? null));
+      return originProbes.get(name);
+    }
+    return placed.has(name) ? probe(placed.get(name), name) : Promise.resolve(null);
+  };
+  // A root vouches only for text a file of its own holds: an edited source,
+  // a file elsewhere aliased into a root's place, and a source placed in a
+  // root for its imports alone, which no file of the root holds, are not
+  // the root's. Its place and its name decide nothing here.
+  //
+  // Only a library module names its axioms by their bare names, as LEM and
+  // Choice (web/cubical-assumptions.mjs). A bare label is a name, so the
+  // module must also be the library's file of its own name: a library file
+  // checked under another name, through a link, would give a second
+  // assumption the same label.
+  readSource.fromLibrary = async (name, text) => {
+    const origin = await originOf(name);
+    return origin?.root === "library" && origin.file === `${moduleRoots.library}${name}.cubist` && origin.text === text;
+  };
+  // Only an archive module may use the archive's legacy builtins, Truncate,
+  // its three companions and the builtin LEM and Choice over it
+  // (web/translator/builtins.mjs, legacyConfinement): text that a file of
+  // the archive holds, under any name, as a link to it reads. The archive is
+  // frozen until it retires, so an archive module edited, in the workspace or
+  // elsewhere, is a module of the user's, and may not.
+  readSource.fromArchive = async (name, text) => {
+    const origin = await originOf(name);
+    return origin?.root === "archive" && origin.text === text;
+  };
+  // The file `text` was read from, as a root's path, when it is that file's
+  // text: what a transfer carries so that its receiver authenticates the
+  // same file (rootProvenance), whatever name the module has.
+  readSource.fileOf = async (name, text) => {
+    const origin = await originOf(name);
+    return origin?.text === text ? origin.file : null;
+  };
+  readSource.beginCheck = () => { probes.clear(); originProbes.clear(); };
   // Called after a module's imports are loaded: a refusal message when one of
   // them is not the module this importer would have loaded under that name.
   readSource.checkImports = async (importer, imports) => {
@@ -125,16 +181,26 @@ export function moduleReader(read) {
   return readSource;
 }
 
-// Whether a source given as text, as a transfer gives one, is the module
-// `name` exactly as library/ holds it, read through `fetchText` as
-// listedReader reads it: the provenance of a module no reader placed. Only
-// such a module names its axioms by their bare names (fromLibrary).
-// A text that cannot be compared, as when library/ is unreachable, is not
-// the library's.
-export const libraryProvenance = (listing, fetchText) => async (name, text) => {
-  if (!listing.library?.includes(name)) return false;
-  try { return await fetchText(`${moduleRoots.library}${name}.cubist`) === text; } catch { return false; }
+// Whether a source given as text, as a transfer gives one, is the text of a
+// root's file, read through `fetchText` as listedReader reads it: the
+// provenance of a module no reader placed. `file` is the file the transfer
+// says the module was read from (CubicalProgram.export), a root's path, so
+// that a module read under another name, through an alias or a link, is
+// authenticated by its file, as its reader authenticated it; without one,
+// the root's file of the module's name. Only a library module names its
+// axioms by their bare names (fromLibrary), its file of its own name, and
+// only an archive module may use the archive's legacy builtins
+// (fromArchive). A file the root does not list, and a text that cannot be
+// compared, as when the root is unreachable, are not the root's.
+const rootProvenance = root => (listing, fetchText) => async (name, text, file = null) => {
+  const path = file ?? `${moduleRoots[root]}${name}.cubist`;
+  const own = path.startsWith(moduleRoots[root]) && path.endsWith(".cubist")
+    ? path.slice(moduleRoots[root].length, -".cubist".length) : null;
+  if (own === null || !listing[root]?.includes(own) || root === "library" && own !== name) return false;
+  try { return await fetchText(path) === text; } catch { return false; }
 };
+export const libraryProvenance = rootProvenance("library");
+export const archiveProvenance = rootProvenance("archive");
 
 // Modules known by name, as the browser knows them: `listing` names the
 // modules of each root, and fetchText(path) reads one by its path from the

@@ -8,6 +8,7 @@ import {equiv,withNativeReferences} from "./equivalence.mjs";
 import {halfAdjointEquiv,publicUnivalencePath,publicUnivalenceBeta} from "./public-equivalence.mjs";
 import {dependentPathToTransport,transportToDependentPath} from "./path-over.mjs";
 import {libraryAssumption} from "../cubical-assumptions.mjs";
+import {SourceRefusal} from "./control.mjs";
 
 export const builtinHandlers = new Map([
   ["ua",ua],
@@ -90,10 +91,34 @@ function ua({t,builtin,n,scope,tr,inferred}) {
   return fn;
 }
 
-// The archive's legacy assumptions over Truncate. LEM and Choice reach this
-// only where nothing binds them: the library's classical_axioms declares
-// both, over Trunc, and an import of it shadows these.
+// The archive's legacy builtins: its truncation, Truncate, with
+// TruncateIntro, TruncateProp and TruncateElim, and its excluded middle and
+// choice over it, LEM and Choice where nothing binds them (the library's
+// classical_axioms declares both, over Trunc, and an import of it shadows
+// these). Only the archive's text may use them: an occurrence written in a
+// module read unedited from a file of the archive (module-resolution.mjs,
+// fromArchive). Anywhere else, a library module, a test, a user's file, the
+// workspace, a REPL or console entry, each is refused, called or named,
+// with what replaces it (K2.5 step 4,
+// docs/roadmaps/hott/h1-truncation-migration.md). They leave with the
+// archive.
+export const legacyBuiltins=new Set(["Truncate","TruncateIntro","TruncateProp","TruncateElim","LEM","Choice"]);
+const confinement=builtin=>`${builtin} is the archive's legacy builtin, accepted only in archive modules: elsewhere use the library's Trunc, from h1_truncation, and its axioms LEM and Choice, from classical_axioms.`;
+// A refusal, which a speculative elaboration reports and never takes for a
+// failed attempt (control.mjs, SourceRefusal): an argument whose type is
+// inferred, as an implicit parameter's or a literal rule's parse is,
+// reports it, not that nothing determines the parameter.
+export const legacyConfinement=builtin=>new SourceRefusal(confinement(builtin));
+// Whether the occurrence `node` was written in the archive: in the module its
+// origin names, where the source text holding it was authored, not the
+// module being checked. A notation's rule, a theory's parent, an initial or
+// free model's operations and every other expansion keep the origin of
+// their authored syntax, so text written outside the archive and expanded
+// in an archive module is not the archive's. `archiveSources` is the
+// program's record of which of its modules are (CubicalProgram.load).
+export const writtenInArchive=(t,scope,node)=>t.archiveSources?.get(node?.origin?.module??scope.unit.moduleName)===true;
 function Truncate({t,builtin,n,scope,tr,inferred}) {
+  if(!writtenInArchive(t,scope,n.fn))throw scope.unit.locate(legacyConfinement(builtin),n.fn);
   if(!n.args.length)throw Error(`${builtin} needs a universe argument.`);
   const universe=tr(n.args[0],null);
   if(universe.tag!=="U"||!t.checker.assume)throw Error("Logical assumptions require a universe and an explicit native context.");

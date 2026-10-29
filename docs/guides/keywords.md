@@ -23,7 +23,11 @@ expression, the whole value of `def Name := axiom F;`
 ([axioms](../../web/reference/first-proof.html#axiom-definitions)). `LEM` and
 `Choice` became ordinary names then: the library's `classical_axioms` declares
 them, and only where nothing binds them do they fall back to the archive's
-builtins over `Truncate`. No revision before gave `axiom` a meaning, so the
+builtins over `Truncate`, and since step 4 (2026-10-28) only in an archive
+module; anywhere else, such a use is refused (E491). `Truncate`,
+`TruncateIntro`, `TruncateProp` and `TruncateElim` stay reserved until the
+archive retires, so that a source using them meets that refusal rather
+than an unknown name. No revision before gave `axiom` a meaning, so the
 historical source reader reads a source of that time with every `axiom` as
 the name it was, renamed with its declaration wherever its binding came
 from, and a later source with the form (`historicalKeywords` in
