@@ -1,12 +1,12 @@
 // EVAL7's binary division, divisibility, least divisor search and Euclid's
 // theorem, over public binary Nat.
 // Authority: docs/roadmaps/runtime/runtime-evaluation-roadmap.md#eval7-reduce-the-algorithms-work
-import binary_euclid;
+import euclid;
 use nat;
 
-# test(binary_euclid.theorem)
+# test(euclid.theorem)
 # expect_axioms([])
-computable def binary_euclid_theorem : InfinitelyManyPrimes := euclid;
+computable def euclid_theorem : InfinitelyManyPrimes := euclid;
 
 # test(prime_numbers.least_divisor)
 # expect_axioms([])
@@ -19,24 +19,24 @@ computable def binary_divides_decide(d, n : Nat) :
   Decidable(U0, Divides(d, n)) := divides_decide(d, n);
 
 // The source algorithm's witnesses: the least divisor of n! + 1 above one.
-# test(binary_euclid.witness_0)
+# test(euclid.witness_0)
 evaluate euclid(0).1 expecting 2;
-# test(binary_euclid.witness_1)
+# test(euclid.witness_1)
 evaluate euclid(1).1 expecting 2;
-# test(binary_euclid.witness_2)
+# test(euclid.witness_2)
 evaluate euclid(2).1 expecting 3;
-# test(binary_euclid.witness_3)
+# test(euclid.witness_3)
 evaluate euclid(3).1 expecting 7;
-# test(binary_euclid.witness_4)
+# test(euclid.witness_4)
 evaluate euclid(4).1 expecting 5;
-# test(binary_euclid.witness_5)
+# test(euclid.witness_5)
 evaluate euclid(5).1 expecting 11;
 
 // The folded normal form (!!_) computes each witness's data in full and
 // keeps its certificates named (docs/roadmaps/historical/folded-normal-forms.md).
-# test(binary_euclid.normalize_3)
+# test(euclid.normalize_3)
 evaluate euclid(3) expecting !!_;
-# test(binary_euclid.normalize_5)
+# test(euclid.normalize_5)
 evaluate euclid(5) expecting (11, !!_);
 
 // Divisors by bits: a test helper reads a positive literal as BPositive.

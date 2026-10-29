@@ -486,21 +486,21 @@ theory Parent(U < UU0) { M : U;
   const width = (await page.locator(".inspector").boundingBox()).width;
   await page.locator("#widen-inspector").click();
   assert.ok((await page.locator(".inspector").boundingBox()).width > width);
-  await page.locator('.source-line [data-name="hd"]').first().click(); await inspected("hd");
-  assert.equal(await page.locator("#kernel-type").textContent(), "Divides(succ(succ(i)),m)");
-  assert.equal(await page.locator("#kernel-expression").textContent(), "hd");
+  await page.locator('.source-line [data-name="least"]').first().click(); await inspected("least");
+  assert.equal(await page.locator("#kernel-type").textContent(), "IsLeastDivisor(succ(factorial(n)),p)");
+  assert.equal(await page.locator("#kernel-expression").textContent(), "least");
   assert.equal(await page.locator("#kernel-context-list button").first().textContent(), "n");
-  await page.locator('#kernel-type [data-name="i"]').click(); await inspected("i");
-  assert.equal(await page.locator("#kernel-type").textContent(), "UNat");
-  await page.locator("#back").click(); await inspected("hd");
+  await page.locator('#kernel-type [data-name="p"]').click(); await inspected("p");
+  assert.equal(await page.locator("#kernel-type").textContent(), "Nat");
+  await page.locator("#back").click(); await inspected("least");
   await page.locator('#kernel-context-list button').first().click(); await inspected("n");
-  await page.locator("#back").click(); await inspected("hd");
+  await page.locator("#back").click(); await inspected("least");
   await page.locator("#kernel-view").selectOption("raw");
   assert.match(await page.locator("#kernel-type").textContent(), /"Fst"/);
   await page.locator("#kernel-view").selectOption("expanded");
-  assert.match(await page.locator("#kernel-type").textContent(), /prime_divisor_exists/);
+  assert.match(await page.locator("#kernel-type").textContent(), /least_divisor/);
   await page.locator("#kernel-view").selectOption("notation");
-  assert.equal(await page.locator("#kernel-type").textContent(), "Divides(succ(succ(i)),m)");
+  assert.equal(await page.locator("#kernel-type").textContent(), "IsLeastDivisor(succ(factorial(n)),p)");
   const popup = page.waitForEvent("popup");
   await page.locator("#open-kernel-type").click();
   const workbench = await popup;
@@ -510,13 +510,13 @@ theory Parent(U < UU0) { M : U;
   assert.equal(await workbench.locator("#workbench-view").inputValue(), "graph");
   await workbench.locator("#graph-listing .graph-row").first().waitFor();
   await workbench.locator("#workbench-view").selectOption("math"); await settled(workbench);
-  assert.equal(await workbench.locator("#expression").textContent(), "Divides(succ(succ(i)),m)");
-  assert.match(await workbench.locator("#context").textContent(), /n :UNat/);
+  assert.equal(await workbench.locator("#expression").textContent(), "IsLeastDivisor(succ(factorial(n)),p)");
+  assert.match(await workbench.locator("#context").textContent(), /n :Nat/);
   await workbench.locator("#fold-names").uncheck(); await settled(workbench);
-  assert.match(await workbench.locator("#expression").textContent(), /prime_divisor_exists/);
+  assert.match(await workbench.locator("#expression").textContent(), /least_divisor/);
   await workbench.locator("#fold-names").check(); await settled(workbench);
-  await workbench.locator('#expression [data-name="i"]').click(); await settled(workbench);
-  await workbench.waitForFunction(() => document.querySelector("#name")?.textContent === "i");
+  await workbench.locator('#expression [data-name="p"]').click(); await settled(workbench);
+  await workbench.waitForFunction(() => document.querySelector("#name")?.textContent === "p");
   await workbench.locator("#back").click(); await settled(workbench);
   await workbench.locator("#mathematical-view details > summary").click(); await settled(workbench);
   // The exported type is itself a U0 term: replace it with UNat and recheck.
@@ -550,9 +550,9 @@ theory Parent(U < UU0) { M : U;
   // node links lead back into the assembly's syntax graph.
   await assemblyBench.locator("#workbench-view").selectOption("graph"); await settled(assemblyBench);
   assert.match(await assemblyBench.locator("#graph-status").textContent(), /^\d+ judgements?, \d+ highlighted steps?; #\d+ is the conclusion\.$/);
-  // hd is a local definition over n : UNat, derived with its context entry.
+  // least is a local definition over n : Nat, derived with its context entry.
   assert.match(await assemblyBench.locator(".graph-row.graph-root .graph-statement").textContent(),
-    /^\{n : UNat\} ⊢ prime_divisor_exists\(.*\)\.2\.2 : Divides\(/);
+    /^\{n : Nat\} ⊢ least_divisor\(.*\)\.2 : IsLeastDivisor\(/);
   // A lookup's definition is derived on request, as the lookup's premise, or
   // says which rule it still needs.
   const rows = await assemblyBench.locator(".graph-row").count();
@@ -571,17 +571,17 @@ theory Parent(U < UU0) { M : U;
   assert.match((await downloaded).suggestedFilename(), /\.ast\.txt$/);
   await assemblyBench.locator("#workbench-view").selectOption("math"); await settled(assemblyBench);
   assert.equal(await assemblyBench.locator("#mathematical-view").isVisible(), true);
-  assert.equal(await assemblyBench.locator("#type").textContent(), "Divides(succ(succ(i)),m)");
+  assert.equal(await assemblyBench.locator("#type").textContent(), "IsLeastDivisor(succ(factorial(n)),p)");
   assert.ok((await assemblyBench.locator("#syntax").inputValue()).length > 0);
   await assemblyBench.locator("#workbench-view").selectOption("assembly"); await settled(assemblyBench);
   await assemblyBench.locator("#source-back").click();
-  await assemblyBench.waitForFunction(() => document.querySelector("#inspect-name")?.textContent === "hd" && document.querySelector("#kernel-view")?.disabled === false);
+  await assemblyBench.waitForFunction(() => document.querySelector("#inspect-name")?.textContent === "least" && document.querySelector("#kernel-view")?.disabled === false);
   await assemblyBench.close();
 
-  await page.locator('.source-line [data-name="prime_divisor_exists"]').first().click();
-  await inspected("prime_divisor_exists"); await page.locator("#view-source").click(); await idle();
-  assert.match(page.url(), /proof=primes/);
-  await page.locator("#back").click(); await inspected("prime_divisor_exists");
+  await page.locator('.source-line [data-name="least_divisor"]').first().click();
+  await inspected("least_divisor"); await page.locator("#view-source").click(); await idle();
+  assert.match(page.url(), /proof=prime_numbers/);
+  await page.locator("#back").click(); await inspected("least_divisor");
   assert.match(page.url(), /proof=euclid/);
 
   await openProof("group_univalence", "group_isomorphism_is_equality");
@@ -782,8 +782,8 @@ theory Parent(U < UU0) { M : U;
   assert.ok((await page.locator("#expression").textContent()).length>0);
   // A page's imports resolve by where its source lives, as the CLI checks it:
   // the library is self-contained, so on a library page importing an archive
-  // module leaves the check incomplete, while an archive proof, such as the
-  // default Euclid page, may import the library.
+  // module leaves the check incomplete, while an archive proof, such as
+  // basics, may import the library.
   // The page keeps an edited draft across visits, so each edit starts from
   // the repository's source.
   const statusAfterImport = async (proof, root, header) => {
@@ -795,8 +795,8 @@ theory Parent(U < UU0) { M : U;
     return page.locator("#status").textContent();
   };
   assert.match(await statusAfterImport("universe_automorphisms", "library", "import classical;"), /check incomplete/);
-  assert.match(await statusAfterImport("euclid", "archive/first-library", "import classical_axioms;"), /· checked/);
-  assert.match(await statusAfterImport("euclid", "archive/first-library", "import classical;"), /· checked/);
+  assert.match(await statusAfterImport("basics", "archive/first-library", "import classical_axioms;"), /· checked/);
+  assert.match(await statusAfterImport("basics", "archive/first-library", "import classical;"), /· checked/);
   assert.match(await statusAfterImport("universe_automorphisms", "library", "import unat;"), /· checked/);
   // A check started from Edit shows the checked source, revealing the named
   // declaration; editing that goes on during the check stays open instead.

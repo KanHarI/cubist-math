@@ -27,7 +27,8 @@ computable def small_inverse_neg : BQ := q_inv{{U0}}(
 );
 `,
   // The evaluation baseline's Euclid workloads, and lambdas the weak head
-  // contracts by eta or keeps.
+  // contracts by eta or keeps. They measured the archive's unary Euclid,
+  // deleted on 2026-10-28: run them in a checkout from before (report.md).
   euclid: `import euclid;
 use unat;
 

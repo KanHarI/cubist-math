@@ -9,10 +9,19 @@ await browserTest(async ({ browser, base }) => {
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
   const idle = () => page.waitForFunction(() => document.querySelector("#check")?.disabled === false && document.querySelector("#check-loader")?.hidden);
-  await page.goto(`${base}/proof.html?proof=euclid`);
+  // A page that names no module, or one that does not exist, opens the
+  // default, the library's Euclid.
+  for (const query of ["", "?proof=no_such_module"]) {
+    await page.goto(`${base}/proof.html${query}`);
+    await idle();
+    assert.equal(await page.locator("#proof-title").textContent(), "Library: euclid");
+    assert.equal(await page.locator("#source-file").textContent(), "library/euclid.cubist");
+    assert.match(await page.locator("#result").textContent(), /Verified euclid/);
+  }
+  await page.goto(`${base}/proof.html?proof=signed_integers`);
   await idle();
   assert.equal(await page.locator("#proof-topic").inputValue(), "arithmetic");
-  assert.equal(await page.locator("#proof-picker").inputValue(), "euclid");
+  assert.equal(await page.locator("#proof-picker").inputValue(), "signed_integers");
   const initialURL = page.url(), source = await page.locator("#editor").inputValue();
   assert.equal(await page.locator("#proof-topic option").count(), proofTopics.length);
   // Inspect every submenu without compiling the library or leaving the current proof.
@@ -35,8 +44,8 @@ await browserTest(async ({ browser, base }) => {
   await page.locator("#editor").fill(draft);
   await page.locator("#proof-topic").selectOption("arithmetic");
   assert.equal(await page.locator("#editor").inputValue(), draft);
-  await selectProof(page, "euclid");
-  await page.waitForURL("**/proof.html?proof=euclid");
+  await selectProof(page, "signed_integers");
+  await page.waitForURL("**/proof.html?proof=signed_integers");
   await idle();
   await page.goBack();
   await idle();
@@ -45,16 +54,16 @@ await browserTest(async ({ browser, base }) => {
   assert.equal(await page.locator("#editor").inputValue(), draft);
   await page.goForward();
   await idle();
-  assert.equal(await page.locator("#proof-picker").inputValue(), "euclid");
+  assert.equal(await page.locator("#proof-picker").inputValue(), "signed_integers");
   // Imported source navigation still initializes the destination's topic.
-  await page.locator('#read-source a[data-name="primes"]').click();
-  await page.waitForURL("**/proof.html?proof=primes*");
+  await page.locator('#read-source a[data-name="paths_"]').click();
+  await page.waitForURL("**/proof.html?proof=paths_*");
   await idle();
-  assert.equal(await page.locator("#proof-topic").inputValue(), "arithmetic");
-  assert.equal(await page.locator("#proof-picker").inputValue(), "primes");
+  assert.equal(await page.locator("#proof-topic").inputValue(), "homotopy");
+  assert.equal(await page.locator("#proof-picker").inputValue(), "paths_");
   await page.goBack();
   await idle();
-  assert.equal(await page.locator("#proof-picker").inputValue(), "euclid");
+  assert.equal(await page.locator("#proof-picker").inputValue(), "signed_integers");
   // Direct links do not depend on the previously browsed topic.
   await page.goto(`${base}/proof.html?proof=complete_fields`);
   await idle();

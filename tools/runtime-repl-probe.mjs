@@ -23,27 +23,21 @@ import { sourceReader } from "./module-sources.mjs";
 import { assertFreshBuild, sourceHash } from "./build-stamp.mjs";
 
 export const workloads = {
-  "euclid-3": ["import euclid; use unat;", "evaluate euclid(3);"],
-  "euclid-4-prime": ["import euclid; use unat;", "evaluate euclid(4).1;"],
-  "euclid-4": ["import euclid; use unat;", "evaluate euclid(4);"],
-  "euclid-5-prime": ["import euclid; use unat;", "evaluate euclid(5).1;"],
-  "euclid-6-prime": ["import euclid; use unat;", "evaluate euclid(6).1;"],
-  // An exact expected value is compared by the kernel's queries on either path.
-  "euclid-3-expecting": ["import euclid; use unat;", "evaluate euclid(3).1 expecting 7;"],
-  "euclid-5-expecting": ["import euclid; use unat;", "evaluate euclid(5).1 expecting 11;"],
-  // The library's binary Euclid (library/binary_euclid.cubist), a separate
-  // source-algorithm series (docs/reports/binary-euclid.md).
-  "binary-euclid-3": ["import binary_euclid; use nat;", "evaluate euclid(3);"],
-  "binary-euclid-4-prime": ["import binary_euclid; use nat;", "evaluate euclid(4).1;"],
-  "binary-euclid-4": ["import binary_euclid; use nat;", "evaluate euclid(4);"],
-  "binary-euclid-5-prime": ["import binary_euclid; use nat;", "evaluate euclid(5).1;"],
-  "binary-euclid-6-prime": ["import binary_euclid; use nat;", "evaluate euclid(6).1;"],
-  "binary-euclid-10-prime": ["import binary_euclid; use nat;", "evaluate euclid(10).1;"],
+  // The library's Euclid over binary Nat (library/euclid.cubist,
+  // docs/reports/binary-euclid.md). The archive's unary Euclid, measured
+  // here until 2026-10-28, is deleted; its figures stay in the reports.
+  "euclid-3": ["import euclid; use nat;", "evaluate euclid(3);"],
+  "euclid-4-prime": ["import euclid; use nat;", "evaluate euclid(4).1;"],
+  "euclid-4": ["import euclid; use nat;", "evaluate euclid(4);"],
+  "euclid-5-prime": ["import euclid; use nat;", "evaluate euclid(5).1;"],
+  "euclid-6-prime": ["import euclid; use nat;", "evaluate euclid(6).1;"],
+  "euclid-10-prime": ["import euclid; use nat;", "evaluate euclid(10).1;"],
   // 7! + 1 = 71 * 71: the search's 70 candidates pass the kernel's depth guard.
-  "binary-euclid-7-prime": ["import binary_euclid; use nat;", "evaluate euclid(7).1;"],
-  "binary-euclid-3-expecting": ["import binary_euclid; use nat;", "evaluate euclid(3).1 expecting 7;"],
-  "binary-euclid-5-expecting": ["import binary_euclid; use nat;", "evaluate euclid(5).1 expecting 11;"],
-  "binary-euclid-5-folded": ["import binary_euclid; use nat;", "evaluate !!euclid(5);"],
+  "euclid-7-prime": ["import euclid; use nat;", "evaluate euclid(7).1;"],
+  // An exact expected value is compared by the kernel's queries on either path.
+  "euclid-3-expecting": ["import euclid; use nat;", "evaluate euclid(3).1 expecting 7;"],
+  "euclid-5-expecting": ["import euclid; use nat;", "evaluate euclid(5).1 expecting 11;"],
+  "euclid-5-folded": ["import euclid; use nat;", "evaluate !!euclid(5);"],
   "unary-510": ["import unat; use unat;", "evaluate typed(UNat and UNat, (2 * 255, 2 * 255));"],
   // An accumulator the kernel substitutes into each call, past its syntax
   // depth (web/reference/checking.html#print).

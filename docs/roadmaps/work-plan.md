@@ -1026,15 +1026,18 @@ Each step lands in focused PRs under the review rule above.
       2. NT2 is EVAL7: primality, divisibility and Euclid over binary `Nat`.
          Every consumer of the archive's `euclid` moves to it, and the
          evaluator workloads and their acceptance move to the library Euclid.
-         - **Part one, the library modules, done on 2026-10-28**
-           ([report](../reports/binary-euclid.md)): `bnat_order_laws`,
-           `bnat_division`, `divisibility`, `prime_numbers` and
-           `binary_euclid`, with Euclid's witnesses `2, 2, 3, 7, 5, 11`
-           for 0 through 5. Part two moves the consumers and deletes the
-           archive's `euclid` and `primes`' divisibility and primality.
+         **Done** on 2026-10-28 ([report](../reports/binary-euclid.md)):
+         - part one, the library modules: `bnat_order_laws`,
+           `bnat_division`, `divisibility`, `prime_numbers` and the Euclid
+           module, with Euclid's witnesses `2, 2, 3, 7, 5, 11` for 0
+           through 5;
+         - part two: the Euclid module takes the name `euclid`; the site,
+           the reference, the tests, the evaluation baseline (version 10)
+           and the runtime probe move to it; the archive's `euclid` and
+           `primes`' divisibility and primality are deleted.
       3. NT3: least elements.
       4. NT4: binary and radix numerals.
-      5. NT5: the 20 archive modules are deleted.
+      5. NT5: the remaining 19 archive modules are deleted.
 
       This depends only on NUM1 and can proceed alongside 3 and 4.
 3. **Alongside the runtime phase: K2.5's `axiom` definitions**, steps 1–4 of

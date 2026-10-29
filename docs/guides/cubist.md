@@ -40,7 +40,8 @@ http://127.0.0.1:8088/files.html, shows the same tree with each file's summary
 and source.
 
 Click a lemma, then **View source**, to open its definition. Clicking the module
-name in `import primes` opens the foundation source. Click a line number in a
+name in an import, such as Euclid's `import prime_numbers`, opens that module's
+source. Click a line number in a
 structured proof block to inspect its goal and local assumptions. The inspector's
 Back button retraces inspections; browser Back retraces source navigation.
 
@@ -134,7 +135,7 @@ component of a tuple `(a, b, c)` is `.2.2`.
 `x = x`; `absurd(impossible)` eliminates a proof of `Void` into the expected type.
 
 Blocks support `intro`, `let`, `obtain`, `cases`, and `exact`. See
-[Euclid](../../archive/first-library/euclid.cubist) for the complete short argument.
+[Euclid](../../library/euclid.cubist) for the complete short argument.
 `let name := term;` names a term, `let name : T := term;` checks it against
 `T`, and `let name : T { … }` proves `T` in a nested block; the checker sees
 through every form. To restate the goal, prove the restated form in a `let`
@@ -178,9 +179,9 @@ induction and introduce no axiom. `refl(x)` supplies the reflexive path `x = x`.
 
 Equality induction is available as
 `path_induction(A, motive, reflexive_case, x, y, equality)`, where the motive is a
-function of two endpoints and their equality proof. The foundational symmetry,
-transitivity, and congruence proofs in [primes.cubist](../../archive/first-library/primes.cubist)
-show its use. The lower-level `induct`, `cases`, and `unpack` function forms remain
+function of two endpoints and their equality proof. The bounded least-witness
+search in [primes.cubist](../../archive/first-library/primes.cubist) uses it to
+carry a predicate along an equality of numbers. The lower-level `induct`, `cases`, and `unpack` function forms remain
 available for proof-producing source tools.
 
 ## Modules and validation
@@ -254,12 +255,14 @@ discuss what working without resizing implies for the reals.
 
 ### Source checking
 
-`import primes;` parses and checks the entire mathematical foundation source.
-It does not trust a saved proof snapshot. Human-readable interface signatures are
-also checked against the resulting definitions before use. All 42 declarations
-in that module are axiom-free. `euclid.cubist` owns both the proposition
-`InfinitelyManyPrimes` and its proof `euclid`; neither is imported from `primes`. A regression test checks that the high-level Euclid
-proposition matches the independently saved original proposition after reduction.
+`import euclid;` parses and checks the library's Euclid and every module beneath
+it from source. It does not trust a saved proof snapshot. Human-readable interface
+signatures are also checked against the resulting definitions before use.
+`euclid.cubist` owns both the proposition `InfinitelyManyPrimes` and its proof
+`euclid`, which uses no assumption: its source contracts
+([`euclid_contracts`](../../tests/fixtures/contracts/euclid_contracts.cubist))
+state `expect_axioms([])` for the theorem, the least divisor search and the
+divisibility decision.
 
 The mathematical source backend in `tools/proofs/readable_backend.mjs` migrated
 proof-producing combinators into mathematical syntax. Its output is independently
@@ -308,9 +311,9 @@ calculation blocks, implicit arguments, and editor completion are future work.
 A named proposition can be used directly as a definition's result type:
 
 ```text
-def InfinitelyManyPrimes = forall n : UNat. exists p : UNat. Prime(p) and n < p;
+computable def InfinitelyManyPrimes : U0 := forall n : Nat. exists p : Nat. Prime(p) and n < p;
 
-def euclid : InfinitelyManyPrimes {
+computable def euclid : InfinitelyManyPrimes {
   intro n;
   // Construct a prime above n, then finish with exact.
 }

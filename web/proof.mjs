@@ -37,17 +37,22 @@ const fileRoot = !fileName ? null
   : filePath === `cubist-tests/${fileName}.cubist` ? "tests"
   : filePath === `archive/first-library/${fileName}.cubist` ? "archive"
   : filePath.startsWith("docs/") ? "docs" : null;
-const requested = fileRoot ? fileName : query.get("proof");
-const libraryModule = !exampleMode && (fileRoot ? fileRoot === "library" : true) && libraryModules.includes(requested);
-const testModule = !exampleMode && !libraryModule && (fileRoot ? fileRoot === "tests" : true) && cubistTestModules.includes(requested);
-const archiveModule = !exampleMode && !libraryModule && !testModule && (fileRoot ? fileRoot === "archive" : true)
-  && (archiveModules.includes(requested) || proofCatalog.some((p) => p.id === requested));
 const documentationExample = fileRoot === "docs";
+// Where a module's name opens, within the root its path names, if any.
+const placeOf = (name, root) => (!root || root === "library") && libraryModules.includes(name) ? "library"
+  : (!root || root === "tests") && cubistTestModules.includes(name) ? "tests"
+  : (!root || root === "archive") && (archiveModules.includes(name) || proofCatalog.some((p) => p.id === name)) ? "archive"
+  : null;
+// A page that names no module opens the default one, the library's Euclid.
+const named = fileRoot ? fileName : query.get("proof");
+const found = exampleMode || documentationExample ? null : placeOf(named, fileRoot);
+const requested = found ? named : "euclid";
+const modulePlace = exampleMode || documentationExample ? null : found ?? "library";
+const libraryModule = modulePlace === "library", testModule = modulePlace === "tests", archiveModule = modulePlace === "archive";
 // A documentation example is checked under its file's name, as a name.
 const proofId = exampleMode ? "reference_example"
   : documentationExample ? fileName.replace(/\W/g, "_").replace(/^(?=\d)/, "_")
-  : libraryModule || testModule || archiveModule ? requested
-  : "euclid";
+  : requested;
 const catalogEntry = proofCatalog.find((p) => p.id === proofId);
 const sourceURL = exampleMode ? null
   : documentationExample ? filePath

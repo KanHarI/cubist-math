@@ -26,11 +26,11 @@ test("a module resolves its imports by where it lives", async () => {
   assert.deepEqual(searchOrder("local"), ["local", "library", "archive"]);
   assert.deepEqual(searchOrder(), ["library", "archive"], "a source that is not a file");
   assert.throws(() => searchOrder("elsewhere"), /Unknown module place/);
-  assert.equal(placeOfPath("archive/first-library/euclid.cubist"), "archive");
+  assert.equal(placeOfPath("archive/first-library/basics.cubist"), "archive");
   assert.equal(placeOfPath("library/lists.cubist"), "library");
   assert.equal(placeOfPath("cubist-tests/glue_.cubist"), "tests");
   assert.equal(placeOfPath("scratch/mine.cubist"), "local");
-  assert.equal(placeOfFile(join(projectRoot, "archive/first-library/euclid.cubist")), "archive");
+  assert.equal(placeOfFile(join(projectRoot, "archive/first-library/basics.cubist")), "archive");
 
   const files = { "library/x": "library x", "archive/x": "archive x", "library/only": "library only",
     "archive/old": "archive old", "local/helper": "local helper", "tests/case": "tests case" };
@@ -91,16 +91,18 @@ test("the browser lists every module the CLI finds on disk", async () => {
   const names = async directory => (await readdir(join(projectRoot, directory)))
     .filter(file => file.endsWith(".cubist")).map(file => file.slice(0, -".cubist".length)).sort();
   assert.deepEqual([...moduleListing.archive].sort(), await names(moduleRoots.archive),
-    "every archive module, entry points such as euclid and basics included");
+    "every archive module, its entry point basics included");
   assert.deepEqual([...moduleListing.library].sort(), await names(moduleRoots.library));
   assert.deepEqual([...moduleListing.tests].sort(), await names(moduleRoots.tests));
-  // So the page's default proof is placed in the archive, and a library
-  // module imports only from the library.
-  assert.equal(listedReader(moduleListing, async () => "", "euclid").placeOf("euclid"), "archive");
+  // So the page's default proof, the library's Euclid, is placed in the
+  // library, an archive entry point in the archive, and a library module
+  // imports only from the library.
+  assert.equal(listedReader(moduleListing, async () => "", "euclid").placeOf("euclid"), "library");
+  assert.equal(listedReader(moduleListing, async () => "", "basics").placeOf("basics"), "archive");
   const reader = listedReader(moduleListing, async () => "", "lists");
   assert.equal(reader.placeOf("lists"), "library");
-  await assert.rejects(reader("euclid", "lists"),
-    { message: "No module named euclid in library/: a library module imports only from the library." });
+  await assert.rejects(reader("basics", "lists"),
+    { message: "No module named basics in library/: a library module imports only from the library." });
 });
 
 // A repository-shaped directory with a module x in both roots, an archive
@@ -214,7 +216,7 @@ test("a checked file outside both roots imports from its own directory first", a
 test("test selection finds a module as the CLI does and loads the same imports", async t => {
   const { root, text } = await fixture(t);
   assert.deepEqual(selectTests(["lists"]).proofs, [resolve(projectRoot, "library/lists.cubist")]);
-  assert.deepEqual(selectTests(["euclid"]).proofs, [resolve(projectRoot, "archive/first-library/euclid.cubist")]);
+  assert.deepEqual(selectTests(["basics"]).proofs, [resolve(projectRoot, "archive/first-library/basics.cubist")]);
   assert.deepEqual(selectTests(["x", "a"], { root }).proofs,
     [resolve(root, "library/x.cubist"), resolve(root, "archive/first-library/a.cubist")]);
   assert.equal((await loadProof(join(root, "archive/first-library/a.cubist"), root)).sources.x,

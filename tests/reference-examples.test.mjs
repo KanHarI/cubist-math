@@ -183,13 +183,13 @@ test("the harness distinguishes accepted, rejected, excerpted and unmarked examp
   const page = `
 <pre><code data-check="accept">import unat; use unat; def one := succ(0);</code></pre>
 <pre data-check="reject">import unat; use unat; def wrong : 0 = 1 { exact refl(0); }  // Error: Type mismatch: found 0 = 0, expected 0 = 1.</pre>
-<pre><code data-check="excerpt" data-module="primes">def Divides(d, n : UNat) :=</code></pre>
+<pre><code data-check="excerpt" data-module="divisibility">computable def Divides(d, n : Nat) : U0 :=</code></pre>
 <pre><code>def unmarked := 0;</code></pre>`;
   const [accepted, rejected, excerpt, unmarked] = referenceExamples("sample.html", page);
   await verify(accepted, 0);
   await verify(rejected, 1);
   await verify(excerpt, 2);
-  await assert.rejects(verify({ ...excerpt, text: "def  Divides(d, n : UNat) :=" }, 10), /should quote primes exactly/);
+  await assert.rejects(verify({ ...excerpt, text: "computable def  Divides(d, n : Nat) : U0 :=" }, 10), /should quote divisibility exactly/);
   await assert.rejects(verify(unmarked, 3), /no declared check/);
   await assert.rejects(verify({ ...rejected, text: "import unat; use unat; def wrong : 0 = 1 { exact refl(0); }  // Error: not this message" }, 4),
     /should fail with/);

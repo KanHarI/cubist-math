@@ -18,8 +18,6 @@ import { termBinders as TERM_BINDERS } from "./translator/term-shape.mjs";
 // Binders of a universe variable x < ω (G0): the level entry is found by its
 // symbol, which levels below name.
 const LEVEL_BINDERS = new Set(["LPi", "LLam"]);
-// Nodes whose payload is an interval or face formula.
-const FORMULA_PAYLOADS = new Set(["PApp", "Tube", "GlueSystem"]);
 const unsupported = kind => new Error(`${kind} is not in instruction mode yet.`);
 // Whether child i of a node is under its dimension binder (the payload).
 const dimensionBound = (kind, i) => kind === "PLam" || ((kind === "Path" || kind === "Trans") && i === 0) ||
@@ -1325,9 +1323,11 @@ export class InstructionDriver {
   }
   // Whether two compositions' tubes are on the same faces, in order. Their
   // faces are in the outer cube, named through `dims`.
-  sameFaces(x, y, dims) {
-    let a = x.children[1], b = y.children[1];
-    for (; a && b; a = this.node(a).children[1], b = this.node(b).children[1])
+  sameFaces(x, y, dims) { return this.sameSystemFaces(x.children[1], y.children[1], 1, dims); }
+  // Whether two systems' links, Tubes or Glue system entries whose next link
+  // is child `next`, are on the same faces, in order.
+  sameSystemFaces(a, b, next, dims) {
+    for (; a && b; a = this.node(a).children[next], b = this.node(b).children[next])
       if (!this.sameFormula(this.node(a).payload, this.node(b).payload, dims)) return false;
     return !a && !b;
   }
@@ -1367,8 +1367,16 @@ export class InstructionDriver {
         if (!this.levelsEqual(this.node(a).children[0], this.node(b).children[0], terms)) return false;
       return !a && !b;
     }
-    if (FORMULA_PAYLOADS.has(x.kind)) return this.sameFormula(x.payload, y.payload, dims);
-    if (TERM_BINDERS.has(x.kind) || ["PLam", "Path", "Comp", "HComp", "Trans"].includes(x.kind)) return true;
+    if (x.kind === "PApp") return this.sameFormula(x.payload, y.payload, dims);
+    // A system's faces are in the cube of the term that holds it: outside a
+    // composition's binder, which scopes its tubes' bodies only. So the
+    // holder compares them, under its own dimensions, and a link of the
+    // system compares only its parts.
+    if (x.kind === "Comp" || x.kind === "HComp") return this.sameFaces(x, y, dims);
+    if (x.kind === "Trans") return this.sameFormula(this.node(x.children[1]).payload, this.node(y.children[1]).payload, dims);
+    if (x.kind === "Glue") return x.payload === y.payload && this.sameSystemFaces(x.children[1], y.children[1], 2, dims);
+    if (x.kind === "GlueTerm") return x.payload === y.payload && this.sameSystemFaces(x.children[2], y.children[2], 1, dims);
+    if (TERM_BINDERS.has(x.kind) || ["PLam", "Path", "Tube", "GlueSystem"].includes(x.kind)) return true;
     return x.payload === y.payload;
   }
   nodeHandle(node) { return node.id; }
@@ -1609,20 +1617,24 @@ export class InstructionDriver {
       if (binding.left === left || binding.right === right) return binding.left === left && binding.right === right;
     return left === right;
   }
+  // Two formulas agree up to the renaming `dims`. A dimension is read as
+  // sameName and levelsEqual read a name: bound, by the depth of the
+  // innermost binding that names it on its side, or free, by its index, so
+  // that a bound dimension never meets a free one of the same index.
   sameFormula(left, right, dims) {
     if (left === right && !dims) return true;
-    const rename = (clauses, side) => clauses.map(([positive, negative]) => [positive, negative].map(bits => {
-      let renamed = 0n;
-      for (let index = 0n; bits >> index; index++) {
-        if (!((bits >> index) & 1n)) continue;
-        let target = index;
-        for (let binding = dims; binding; binding = binding.next)
-          if (BigInt(side ? binding.right : binding.left) === index) { target = BigInt(binding.left); break; }
-        renamed |= 1n << target;
-      }
-      return renamed.toString();
+    const key = (index, side) => {
+      let depth = 0;
+      for (let binding = dims; binding; binding = binding.next, depth++)
+        if (BigInt(side ? binding.right : binding.left) === index) return `bound ${depth}`;
+      return `free ${index}`;
+    };
+    const read = (clauses, side) => clauses.map(([positive, negative]) => [positive, negative].map(bits => {
+      const names = [];
+      for (let index = 0n; bits >> index; index++) if ((bits >> index) & 1n) names.push(key(index, side));
+      return names.sort().join("&");
     }).join(":")).sort().join(",");
     const a = this.kernel.inspectFormula(left), b = this.kernel.inspectFormula(right);
-    return a.sort === b.sort && rename(a.clauses, 0) === rename(b.clauses, 1);
+    return a.sort === b.sort && read(a.clauses, 0) === read(b.clauses, 1);
   }
 }
