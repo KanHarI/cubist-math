@@ -3,7 +3,7 @@
 Found while moving the unary order lemmas into `unat`. Outside NT1's scope
 and left unfixed here.
 
-- [ ] An expression `match` does not always narrow a hypothesis parameter's
+- [x] An expression `match` does not always narrow a hypothesis parameter's
   type in its clauses, while a proof-block `match` does. Over
   `import unat; use unat;`:
 
@@ -27,3 +27,8 @@ and left unfixed here.
     blocks for this reason.
   - **Next step:** find where the expression form computes its clause
     contexts, and why `typed(Void, h)` succeeds where `h` alone does not.
+  - **Fixed by #330** (option B, decided on 2026-10-28): a `match`
+    expression takes each hypothesis about its variable at each constructor,
+    as the statement does. `le_zero_absurd` and the three-column
+    transitivity are in `cubist-tests/match_hypotheses.cubist`. An
+    `induction` expression keeps its rule.
