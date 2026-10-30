@@ -1030,8 +1030,11 @@ Each step lands in focused PRs under the review rule above.
       ([typed readback](runtime/typed-readback.md)): readback serves displays
       and a fallback per node in mid-computation; no verdict consumes a
       readback, so patterns, exact expected values, `!!!`, `!` and `witness`
-      stay on the kernel's queries. W1 (readback and its oracle tests) and
-      W2 (the fallback per node) are next.
+      stay on the kernel's queries. W1 is done (2026-10-29): readback by
+      value and by origin, internal to the runtime query, with its oracle
+      over every value form the runtime computes, the note's mutations and
+      M1 ([report](../reports/shared-runtime-evaluation.md#typed-readback-w1));
+      no observation changes. W2 (the fallback per node) is next.
    5. **The archive's number theory in the library**
       ([NT1–NT5](archive-retirement.md#number-theory-in-the-library)):
       1. NT1: the unary order lemmas move to `unat`. **Done** on 2026-10-28.

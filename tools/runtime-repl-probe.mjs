@@ -8,9 +8,14 @@
 // counted and the heap is measured after a collection (each sample's
 // process runs with --expose-gc), so that retained memory is the query's
 // live graph, not its garbage. That collection and count happen inside the
-// entry, and their time is taken out of the entry's.
+// entry, and their time is taken out of the entry's. The readback path is
+// the runtime path with its query made for readback, which reads the
+// query's root back by value before it is disposed of (M1 of
+// docs/roadmaps/runtime/typed-readback.md): the readback's work and its
+// counters, the arena's growth, and the DAG and tree sizes of the term, its
+// time likewise taken out.
 //   node tools/runtime-repl-probe.mjs                 every workload, both paths
-//   node tools/runtime-repl-probe.mjs NAME[,NAME] [runtime|kernel]
+//   node tools/runtime-repl-probe.mjs NAME[,NAME] [runtime|kernel|readback]
 import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
@@ -81,9 +86,20 @@ const args = process.argv.slice(2), child = args[0] === "--child";
 const [names, only] = child ? args.slice(1) : args;
 const root = fileURLToPath(new URL("..", import.meta.url));
 const selected = (names ? names.split(",") : Object.keys(workloads)).flatMap(name => (only ? [only] : ["runtime", "kernel"]).map(path => {
-  if (!workloads[name] || !["runtime", "kernel"].includes(path)) throw new Error(`Unknown workload or path: ${name} ${path}`);
+  if (!workloads[name] || !["runtime", "kernel", "readback"].includes(path)) throw new Error(`Unknown workload or path: ${name} ${path}`);
   return [name, path];
 }));
+// A term's distinct nodes, and its nodes as a tree.
+function sizes(kernel, handle) {
+  const trees = new Map(), pending = [handle];
+  while (pending.length) {
+    const id = pending.at(-1), children = kernel.node(id).children.filter(Boolean), missing = children.filter(child => !trees.has(child));
+    if (missing.length) { pending.push(...missing); continue; }
+    pending.pop();
+    trees.set(id, children.reduce((sum, child) => sum + trees.get(child), 1n));
+  }
+  return { dag: trees.size, tree: String(trees.get(handle)) };
+}
 if (!child) {
   for (const [name, path] of selected)
     execFileSync(process.execPath, ["--expose-gc", fileURLToPath(import.meta.url), "--child", name, path], { stdio: "inherit" });
@@ -91,7 +107,7 @@ if (!child) {
   if (selected.length !== 1) throw new Error("A child process measures one workload by one path.");
   for (const [name, path] of selected) {
     const [setup, entry] = workloads[name];
-    const program = new CubicalProgram(await createCubical(), sourceReader(), { collectReferences: false, runtimeEvaluation: path === "runtime" });
+    const program = new CubicalProgram(await createCubical(), sourceReader(), { collectReferences: false, runtimeEvaluation: path !== "kernel" });
     try {
       const session = new ReplSession(program);
       const prepared = await session.run(setup);
@@ -99,23 +115,41 @@ if (!child) {
       if (failed) throw new Error(failed.text);
       globalThis.gc?.();
       const before = { work: program.kernel.work(), arena: program.kernel.arena().nodes, heap: process.memoryUsage().heapUsed };
-      let captured = null, retained = null, measuring = 0;
+      let captured = null, retained = null, readback = null, measuring = 0;
       const dispose = RuntimeQuery.prototype.dispose;
       RuntimeQuery.prototype.dispose = function () {
         const measured = performance.now();
         globalThis.gc?.();
         retained = { heapMiB: +((process.memoryUsage().heapUsed - before.heap) / 1048576).toFixed(1) };
         try { Object.assign(retained, this.retainedObjects()); } catch (error) { retained.walk = error.kind; }
+        if (path === "readback") {
+          const steps = this.stats.steps, arena = program.kernel.arena().nodes, started = performance.now();
+          try {
+            const term = this.readback();
+            readback = { milliseconds: Math.round(performance.now() - started), steps: this.stats.steps - steps,
+              arenaNodes: program.kernel.arena().nodes - arena, ...this.readbackStats, ...sizes(program.kernel, term) };
+          } catch (error) { readback = { failed: `${error.kind}: ${error.message}`, steps: this.stats.steps - steps, ...this.readbackStats }; }
+        }
         measuring += performance.now() - measured;
         return dispose.call(this);
       };
+      if (path === "readback") {
+        // The query the value form asks for, made for readback.
+        const checker = program.checker, made = checker.runtimeQuery;
+        checker.runtimeQuery = judgement => {
+          const asked = made.call(checker, judgement);
+          if (!asked) return null;
+          dispose.call(asked);
+          return new RuntimeQuery(program.kernel, judgement, { ...checker.runtimeLimits(), readback: true });
+        };
+      }
       const check = program.checkEntry.bind(program);
       program.checkEntry = async (...args) => (captured = await check(...args));
       const started = performance.now(), [answer] = await session.run(entry), elapsed = performance.now() - started - measuring;
       const after = program.kernel.work();
       globalThis.gc?.();
       console.log(JSON.stringify({ workload: name, path, entry, result: answer.text.slice(0, 120), kind: answer.kind,
-        computedBy: captured?.prints?.at(-1)?.valueForm ?? null, retained, milliseconds: Math.round(elapsed),
+        computedBy: captured?.prints?.at(-1)?.valueForm ?? null, retained, ...readback ? { readback } : {}, milliseconds: Math.round(elapsed),
         kernelQuerySteps: Number(after.querySteps - before.work.querySteps), kernelQueries: Number(after.queries - before.work.queries),
         arenaNodes: program.kernel.arena().nodes - before.arena,
         heapAfterGcMiB: +((process.memoryUsage().heapUsed - before.heap) / 1048576).toFixed(1),
