@@ -2595,6 +2595,22 @@
    "summary": "Set quotients as a declared type: the quotient of a type by a relation, with a class for each element and a path between related classes. It is a set; it has induction into families of sets, of any universe below `UU0`; and a map into a set that respects the relation descends to it, uniquely. No representative is chosen. For an equivalence relation valued in propositions, related elements are exactly those with equal classes (`quotient_effective`, `class_path_equiv`): relatedness to an element descends into [`propositions`](propositions.cubist)' `Prop(U)`. Induction into a family of propositions needs only the classes (`quotient_induction_prop`), and a map of two arguments that respects the relation in each descends (`descend2`)."
   },
   {
+   "path": "library/radix_conversion.cubist",
+   "summary": "Radix numerals and binary Nat are equivalent."
+  },
+  {
+   "path": "library/radix_factorials.cubist",
+   "summary": "One factorial algorithm in every radix: the pair (k, k!) stepped from (0, 1), counting and multiplying in the radix, n times by n's bits (bnat_iterate)."
+  },
+  {
+   "path": "library/radix_numerals.cubist",
+   "summary": "Positional numerals in every radix at least two, over binary Nat."
+  },
+  {
+   "path": "library/radix_operations.cubist",
+   "summary": "Addition and multiplication of radix numerals, computed in the radix: digits are added with a carry, and a numeral is multiplied by a digit through the digit's bits, doubling and adding."
+  },
+  {
    "path": "library/rationals.cubist",
    "summary": "Public rationals `Q`, an alias of `BQ` from `binary_rationals`, the field `rationals` of fractions of `Z`, with `rat(a, k)` for `a / (k + 1)`, decidable equality (`rat_decide`), the total inverse `rat_inv`, and the casts `rat_of_int`, injective and preserving the ring operations, and `rat_of_nat`, which agrees with the field's numerals (`rat_of_nat_numeral`). Integer, fraction, decimal and `0b` literals accumulate binary magnitudes."
   },
