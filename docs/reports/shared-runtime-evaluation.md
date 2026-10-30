@@ -318,11 +318,11 @@ lists and an eliminator's clause list, a list's next cell, the tubes of a
 composition, a homogeneous composition, a transport and a glue value and a
 tube's next one, a `Glue` type's system and a system's next piece, and the
 annotations the kernel reads by node kind without reducing them, a path
-application's `Path` type, an `unglue`'s `Glue` type and a constructor's
-`Sort` instance. Variables free in a node, bound as `ck_term_free` binds
-them, and the definitions it references outside its term binders, are
-computed once per copied node; a definition inside a term binder stays as
-written.
+application's `Path` type, an `unglue`'s and a glue term's `Glue` type and
+a constructor's `Sort` instance. Variables free in a node, bound as
+`ck_term_free` binds them, and the definitions it references outside its
+term binders, are computed once per copied node; a definition inside a
+term binder stays as written.
 
 A level that is a variable is the level its frame binds; one with no
 variable is itself; and any other is read off the kernel's weak head of the
@@ -356,9 +356,20 @@ that read one are unstable.
 2. **A constructor's instance** is read from its instance cell, whose code
    survives forcing in the type value (above), rather than from a copy on
    the constructor value.
-3. **An `unglue`'s `Glue` type** is rebuilt one level besides the two
-   annotations 3.3 names, by 3.3's own rule for annotations the kernel
-   reads by node kind: `weak` reads it, as section 5 says.
+3. **An `unglue`'s and a glue term's `Glue` type** are rebuilt one level
+   besides the two annotations 3.3 names, by 3.3's own rule for
+   annotations the kernel reads by node kind: `weak` reads the first, as
+   section 5 says, and the glue term's typing rule the second
+   (`cc_instr_glue_term_base`). As a closure, `(λ A. Glue(A))(Unit)`, a
+   glue term's annotation made its readback untypeable. Of the other
+   annotations an instruction reads by kind, a pair's `Σ` and an
+   injection's sum are reduced to their former by the instruction driver
+   first (`former` in `web/cubical-instruction-driver.mjs`), and a
+   homogeneous composition's and a transport's family by the kernel
+   (`formal_family`), so they stay closures, and typed so in the tests; a
+   composition's family is read by no kind check, and a path
+   application's `Path` type and a constructor's `Sort` are rebuilt
+   already.
 4. **A frame records the applied function's node**, not the function value
    3.3 names: the node is all a telescope reads, and the value kept its
    domain cell alive (above).
@@ -421,7 +432,10 @@ across one, so this has no diagnostic code.
   `(fun (A : U0) => A -> A)(Unit)`, whose full normal form is
   `Unit -> Unit`, and of a constructor of `Box(A)` read back from a closure,
   which `kernel.head` eliminates, where the same constructor with its
-  instance a redex is refused, as are the domains closed one by one; the
+  instance a redex is refused, as are the domains closed one by one, and
+  of a pair with a path between glue terms over a forced `f(A, a)`, whose
+  `Glue(A)` annotations stay literal, and of a pair and an injection whose
+  types mention a bound variable; the
   heads η computed, kept and counted only by a query made for readback,
   and readback refused on any other; a value form's query keeping no
   environment for a type value, so that `traverse(100 * 100)` and

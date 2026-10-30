@@ -159,7 +159,12 @@ test("a level argument that mentions a bound level variable comes back canonical
 // R(root) is a closed term well typed at the value's type (3.6, claim 1):
 // a telescope closes its domains together, a type value is read from its
 // node under its environment, and a constructor's instance is a literal
-// Sort, which the kernel eliminates.
+// Sort, which the kernel eliminates. A glue term's Glue type stays literal
+// too, as its typing rule reads it (cc_instr_glue_term_base): in glued, f
+// forced makes the path's endpoints rebuild, and with the annotation a
+// closure, (λ A. Glue(A))(Unit), the readback was refused. A pair's and an
+// injection's types over a bound variable stay closures, which the driver
+// reduces to their Σ and sum before the kernel reads them.
 test("readbacks of closures, a type value and a constructor are well typed, and the constructor eliminates", async t => {
   const s = await setup(t, `
 inductive Box(A : U0) { box(a : A); }
@@ -167,9 +172,13 @@ def unbox(b : Box(Unit)) : Unit := match b { box(a) => a; };
 def captured := (fun (A : U0) => fun (x : A) => fun (u : Unit) => typed(A and A, (x, x)))(Unit, tt);
 def endo := (fun (A : U0) => A -> A)(Unit);
 def boxed := (fun (A : U0) => fun (a : A) => typed(Box(A), box(a)))(Unit, tt);
+def f(A : U0, a : A) : A := a;
+def glued := (fun (A : U0) => fun (a : A) => typed(A and U0, (f(A, a), typed(Glue(A), glue(f(A, a))) = typed(Glue(A), glue(f(A, a))))))(Unit, tt);
+def paired := (fun (A : U0) => fun (x : A) => typed(A and (A -> A), (x, fun (y : A) => y)))(Unit, tt);
+def injected := (fun (A : U0) => fun (x : A) => typed(A or Unit, left(x)))(Unit, tt);
 `);
   const read = name => { const runtime = s.query(name); s.walk(runtime); return runtime.readback(); };
-  for (const name of ["captured", "endo", "boxed"]) {
+  for (const name of ["captured", "endo", "boxed", "glued", "paired", "injected"]) {
     const handle = read(name);
     assert.ok(s.same(s.normal(handle), s.normal(s.term(name))), name);
     new InstructionDriver(s.kernel).check(handle, s.graph.judgement(s.judgement(name)).type);

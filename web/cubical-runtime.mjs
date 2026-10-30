@@ -33,11 +33,12 @@ const levelSlots = { U: [0], LSucc: [0], LMax: [0, 1], LApp: [1] };
 // closures: a list, whose items are terms or levels (null where its parent
 // says), a chain of tubes or of Glue system pieces, and an annotation the
 // kernel reads by its node kind without reducing it, a path application's
-// Path type and an unglue's Glue type (weak) and a constructor's Sort
-// instance (admitted_signature, kernel/src/signatures.c).
+// Path type and an unglue's Glue type (weak), a constructor's Sort instance
+// (admitted_signature, kernel/src/signatures.c) and a glue term's Glue type
+// (cc_instr_glue_term_base, kernel/src/instruction_glue.c).
 const rebuiltSlots = {
   Sort: { 0: "term", 1: "level" }, Elim: { 1: "term" },
-  Comp: { 1: null }, HComp: { 1: null }, Trans: { 1: null }, GlueTerm: { 2: null }, Tube: { 1: null },
+  Comp: { 1: null }, HComp: { 1: null }, Trans: { 1: null }, GlueTerm: { 0: null, 2: null }, Tube: { 1: null },
   Glue: { 1: null }, GlueSystem: { 2: null },
   PApp: { 1: null }, Con: { 0: null }, Unglue: { 0: null },
 };
