@@ -273,6 +273,8 @@ def tagged := (fun (x : (Unit -> Unit) and Unit) => typed(Tag(x) and (Unit -> Un
 def applied := (fun (x : (Unit -> Unit -> Unit) and Unit) => typed(Unit and (Unit -> Unit), (tt, x.1(tt))))(certPair2(tt));
 def shared := (fun (x : (Unit -> Unit) and Unit) => typed(((Unit -> Unit) and Unit) and (Unit -> Unit), (x, (fun (y : (Unit -> Unit) and Unit) => y.1)(x))))(certPair(tt));
 def annotated := (fun (x : (Unit -> Unit) and Unit) => typed(((Unit -> Unit) and Unit) and Marked(x.1), (x, mark)))(certPair(tt));
+def projections := typed((Unit -> Unit) and Unit, (certPair(tt).1, certPair(tt).2));
+def projected_pair := (fun (x : (Unit -> Unit) and Unit) => typed((Unit -> Unit) and Unit, (x.1, x.2)))(certPair(tt));
 `);
   // What each keeps folded in its second part: cert(tt), certPair(tt).1,
   // certPair(tt).1, certPair2(tt).1(tt) and certPair(tt).1, each a
@@ -289,6 +291,18 @@ def annotated := (fun (x : (Unit -> Unit) and Unit) => typed(((Unit -> Unit) and
     const byValue = runtime.readback();
     assert.ok(s.same(s.normal(byValue), s.normal(s.term(name))), name);
     assert.ok(!s.same(s.folded(byValue), kernelFolded), name);
+  }
+  // (certPair(tt).1, certPair(tt).2) is the kernel's surjective pairing
+  // redex: it contracts to certPair(tt), which computes, and folds to
+  // (fun y => tt, tt). With its second field read by value, the readback
+  // (certPair(tt).1, tt) kept the first folded. Written so, or reached by
+  // a β, the pair folds as the kernel's.
+  for (const name of ["projections", "projected_pair"]) {
+    const runtime = s.query(name, { origins: true });
+    s.walk(runtime);
+    const kernelFolded = s.folded(s.term(name)), first = s.kernel.node(s.kernel.node(kernelFolded).children[1]);
+    assert.equal(first.kind, "Lam", name);
+    assert.ok(s.same(s.folded(runtime.readback(runtime.root, { origins: true })), kernelFolded), name);
   }
   // A query made without origins keeps none to read.
   const plain = s.query("wrapped");

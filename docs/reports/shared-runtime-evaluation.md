@@ -277,7 +277,10 @@ application cell the application of its two cells. A normal-form readback
 cannot tell an unforced cell's value data, so it reads an unforced cell,
 an annotation such as a pair's type among them, as inside an origin, and
 so too a constructor's instance, a type: data reaches it by value only
-through forced cells.
+through forced cells. And it reads the fields of a pair that, as written,
+pairs `t.1` and `t.2` of one term under one environment as inside an
+origin: the kernel's `weak` contracts such a pair to `t` by syntax
+(surjective pairing), which a field read by value would hide.
 
 By value: a constructor from its index and instance cell, rebuilt one level
 into a literal `Sort` that must be of the value's signature, applied to its
@@ -383,6 +386,16 @@ that read one are unstable.
    `(fun y => y.1)(x)`.
 7. **Observed heads** are kept only by a query made for readback (above),
    which the note does not say: no value form reads them.
+8. **A pair of two projections of one term**, one more of the cases 3.4
+   expects ("Others may remain"): `(cp(tt).1, cp(tt).2)`, with
+   `cp(tt) = (fun y => tt, tt)`, folds in the kernel to
+   `(fun y => tt, tt)`, since its surjective pairing contracts the pair to
+   `cp(tt)`, which computes. Read with its second field by value, the
+   readback `(cp(tt).1, tt)` kept the first folded. A normal-form readback
+   now reads such a pair's fields as inside an origin, which keeps the
+   redex; a pair whose fields project terms that are alike only after
+   substitution, `x.1` and `y.2` with `x` and `y` bound to one cell, is
+   not recognized, and remains a case the folded target can miss.
 
 ### Session safety
 
@@ -418,7 +431,9 @@ across one, so this has no diagnostic code.
   back to the kernel's `Tag(3)` and `Unit -> Unit`;
   the four folding regressions of the note by origin, and two more, data
   read in both modes and `Marked(x.1)` in an instance and a pair's type,
-  each folding away by value; expiry after a rollback and after a commit; a
+  each folding away by value, and a pair of `cp(tt).1` and `cp(tt).2`,
+  written so or reached by a β, folding as the kernel's surjective pairing
+  makes it fold; expiry after a rollback and after a commit; a
   lifted hypothesis refused and K344 at the 511th successor; readback's
   work and cells counted in the query's, stopping at its limits; the scaling
   test, n closures over n variables for n = 4, 8 and 16, within 3.5's bound

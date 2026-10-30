@@ -641,7 +641,15 @@ export class RuntimeQuery {
     const cell = c => ({ kind: "cell", cell: c, mode }), closure = (code, env) => frame([{ kind: "closure", code, env, mode }], first);
     switch (value.tag) {
       case "Point": return { handle: this.#write("Point", 0), stable: true };
-      case "Pair": return frame([cell(value.type), cell(value.first), cell(value.second)], ([type, a, b]) => this.#write("Pair", 0, type, a, b));
+      // A pair of the first and second projections of one term is the
+      // kernel's surjective pairing redex, which weak contracts by syntax:
+      // a normal-form readback keeps its fields as inside an origin, since a
+      // field read by value would hide it.
+      case "Pair": {
+        const fields = { kind: "cell", mode: mode === "outer" && this.#projections(value) ? "origin" : mode };
+        return frame([cell(value.type), { ...fields, cell: value.first }, { ...fields, cell: value.second }],
+          ([type, a, b]) => this.#write("Pair", 0, type, a, b));
+      }
       case "Inl": case "Inr": return frame([cell(value.type), cell(value.item)], ([type, item]) => this.#write(value.tag, 0, type, item));
       // A constructor's instance is a type, no data: a normal-form readback
       // rebuilds its literal Sort with its parts as inside an origin.
@@ -663,6 +671,17 @@ export class RuntimeQuery {
   }
   // A constructor's instance, from its instance cell: its code and
   // environment, or, forced, those its type value keeps.
+  // Whether a pair's fields, as written, are `t.1` and `t.2` of one term
+  // under one environment, as weak's surjective pairing compares them:
+  // their projected parts up to bound names (ck_alpha_equal).
+  #projections(value) {
+    const { first, second } = value;
+    if (first.operation !== "syntax" || second.operation !== "syntax" || first.code === undefined || first.env !== second.env) return false;
+    const a = this.#node(first.code), b = second.code !== undefined && this.#node(second.code);
+    if (a.kind !== "Fst" || b?.kind !== "Snd") return false;
+    this.#budget.tick();
+    return a.children[0] === b.children[0] || this.#kernel().alphaEqual(a.children[0], b.children[0]);
+  }
   #instance(value) {
     const cell = value.instance, [code, env] = cell.state === 2 ? [cell.value.node, cell.value.env] : [cell.code, cell.env];
     const n = code && this.#node(code);
