@@ -416,52 +416,54 @@ def le_zero(n : UNat, h : n &lt;= 0) : n = 0 := match n {
           </section>
           <section id="binary">
             <h2>Binary numbers</h2>
-            <p>Unary <code>UNat</code> is simple to reason about, but <code>n</code> takes <code>n</code> constructors. The archive's <code>binary_naturals</code> module declares binary numbers, which take one constructor per digit:</p>
-            <pre><code data-check="excerpt" data-module="binary_naturals">inductive BinaryPositive : U0 {
-  binary_one;
-  binary_bit0(p : BinaryPositive);
-  binary_bit1(p : BinaryPositive);
+            <p>Unary <code>UNat</code> is simple to reason about, but <code>n</code> takes <code>n</code> constructors. The library's <code>bnat</code> module declares binary numbers, which take one constructor per digit:</p>
+            <pre><code data-check="excerpt" data-module="bnat">inductive BPositive : U0 {
+  bp_one;
+  bp_even(p : BPositive);
+  bp_odd(p : BPositive);
 }
 
-// Zero is separate, so every nonzero numeral ends at the one leaf.
-inductive BinaryNat : U0 {
-  binary_zero;
-  binary_positive(p : BinaryPositive);
+inductive BNat : U0 {
+  b_zero;
+  b_positive(p : BPositive);
 }</code></pre>
-            <p>A positive number is its leading <code>binary_one</code> with its other digits appended, the last digit outermost: <code>binary_bit0(p)</code> is <span class="math">2p</span> and <code>binary_bit1(p)</code> is <span class="math">2p + 1</span>. Zero is a constructor of its own, so no number has a leading zero and each has one representation. Functions on binary numbers use <code>match</code> and structural recursion, like functions on <code>UNat</code>:</p>
-            <pre><code data-check="accept">import binary_naturals;
+            <p>A positive number is its leading <code>bp_one</code> with its other digits appended, the last digit outermost: <code>bp_even(p)</code> is <span class="math">2p</span> and <code>bp_odd(p)</code> is <span class="math">2p + 1</span>. Zero is a constructor of its own, so no number has a leading zero and each has one representation. Functions on binary numbers use <code>match</code> and structural recursion, like functions on <code>UNat</code>:</p>
+            <pre><code data-check="accept">import bnat_notation;
 import unat;
 use unat;
 
-def positive_value(p : BinaryPositive) : UNat := match p {
-  binary_one =&gt; 1;
-  binary_bit0(q) =&gt; 2 * positive_value(q);
-  binary_bit1(q) =&gt; succ(2 * positive_value(q));
+def positive_value(p : BPositive) : UNat := match p {
+  bp_one =&gt; 1;
+  bp_even(q) =&gt; 2 * positive_value(q);
+  bp_odd(q) =&gt; succ(2 * positive_value(q));
 };
 
-def value(n : BinaryNat) : UNat := match n {
-  binary_zero =&gt; 0;
-  binary_positive(p) =&gt; positive_value(p);
+def value(n : BNat) : UNat := match n {
+  b_zero =&gt; 0;
+  b_positive(p) =&gt; positive_value(p);
 };
 
-def six : value(binary.(0b110)) = 6 { rfl; }</code></pre>
-            <p><code>binary_naturals</code> declares the notation
-            <code>binary</code>, whose literal rule reads a binary literal from its
-            characters: <code>binary.(0b110)</code> has type <code>BinaryNat</code>
-            and computes to
-            <code>binary_positive(binary_bit0(binary_bit1(binary_one)))</code>.
-            <code>binary.(0b0)</code> is <code>binary_zero</code>. Leading zeroes
-            do not affect the value. Only digits 0 and 1 are accepted; the parser
-            permits at most 256 significant bits, and the kernel's term-depth
-            resource bound also applies. Digits are stored as text, so there is
-            no machine-number rounding. These literals denote nonnegative
-            numbers. The rebuilt <code>nat</code> notation reads decimal and binary literals into <code>BNat</code>; <code>unat</code> retains structural unary numerals.</p>
-            <p><code>binary_add</code>, <code>binary_mul</code> and
-            <code>binary_of_nat</code> are available from
-            <code>binary_arithmetic</code>. Arithmetic symbols are not overloaded.
-            The <a href="../proof.html?proof=binary_arithmetic&amp;name=binary_factorial_ten">binary factorial proof</a>
-            and <a href="../proof.html?proof=radix_factorial">base-2 and base-10 instances</a>
-            compute 10! without a unary expansion of 3628800.</p>
+def six : value(bnat.(0b110)) = 6 { rfl; }</code></pre>
+            <p><code>bnat_notation</code> declares the notation
+            <code>bnat</code>, whose literal rule reads a decimal or binary
+            literal from its characters: <code>bnat.(0b110)</code> has type
+            <code>BNat</code> and computes to
+            <code>b_positive(bp_even(bp_odd(bp_one)))</code>, and
+            <code>bnat.(6)</code> to the same bits. <code>bnat.(0b0)</code> is
+            <code>b_zero</code>. Leading zeroes do not affect the value. After
+            <code>0b</code> only digits 0 and 1 are accepted. The value is
+            accumulated in binary as the characters are read, so no machine
+            number and no unary magnitude holds it. These literals denote
+            nonnegative numbers. Public <code>Nat</code>, from
+            <code>nat</code>, is <code>BNat</code>, and its notation reads the
+            same literals; <code>unat</code> retains structural unary
+            numerals.</p>
+            <p><code>nat</code> gives binary <code>Nat</code> its arithmetic,
+            order and factorial. Arithmetic symbols are not overloaded. The
+            <a href="../proof.html?proof=radix_factorials&amp;name=radix_factorial_ten_base_ten">radix factorial</a>
+            computes 10! digit by digit in base 10 and in base 2, and carries
+            it from binary along a univalence path, without a unary expansion
+            of 3628800.</p>
           </section>
           <nav class="pager" aria-label="Chapter navigation">
             <a class="previous" href="paths.html">← 7. Equality and paths</a>
