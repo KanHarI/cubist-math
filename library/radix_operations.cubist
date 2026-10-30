@@ -9,67 +9,68 @@ use nat;
 // A leading digit is a digit.
 computable def radix_leading_digit(r : Radix, d : LeadingDigit(r)) : Digit(r) := (d.1, d.2.2);
 
-// Two digits sum to a digit, or to the radix and a digit, with one
-// carried to the next place.
-computable def DigitSum(r : Radix, n : Nat) :
-  U0 := (exists s : Digit(r). s.1 = n) or (exists s : Digit(r). r.1 + s.1 = n);
+// Two digits sum to a digit, or with a carry to the radix and a digit:
+// d + e - r, since r + (d + e - r) = d + e < r + r. A computed digit's
+// bound is the comparison's own evidence; the order laws refute only the
+// impossible branch.
+computable def radix_carry_sum(r : Radix, d, e : Digit(r), carry : (d.1 + e.1 < r.1) -> Void) :
+  r.1 + bnat_sub(d.1 + e.1, r.1) = d.1 + e.1 := bnat_add_sub(
+    d.1 + e.1, r.1, bnat_le_of_not_lt(d.1 + e.1, r.1, carry)
+  );
 
-// What is left after a carry is a digit: r + s = d + e < r + r.
 computable def radix_carry_digit_below(
-  r : Radix, d, e : Digit(r), carry : r.1 + bnat_sub(d.1 + e.1, r.1) = d.1 + e.1
+  r : Radix, d, e : Digit(r), carry : (d.1 + e.1 < r.1) -> Void
 ) :
-  bnat_sub(d.1 + e.1, r.1) < r.1 := bnat_lt_add_cancel(
-    r.1, bnat_sub(d.1 + e.1, r.1), r.1,
-    comp(fun (i : Interval) => (carry @ ~i) < r.1 + r.1, bnat_add_lt(d.1, r.1, e.1, r.1, d.2, e.2))
-  );
-
-computable def radix_digit_carry(
-  r : Radix, d, e : Digit(r), carry : r.1 + bnat_sub(d.1 + e.1, r.1) = d.1 + e.1
-) :
-  DigitSum(r, d.1 + e.1) := right(
-    ((bnat_sub(d.1 + e.1, r.1), radix_carry_digit_below(r, d, e, carry)), carry)
-  );
-
-computable def radix_digit_sum(r : Radix, d, e : Digit(r)) :
-  DigitSum(r, d.1 + e.1) := match bnat_lt_decide(d.1 + e.1, r.1) return DigitSum(r, d.1 + e.1) {
-    left below => left(((d.1 + e.1, below), refl(d.1 + e.1)));
-    right not_below => radix_digit_carry(
-      r, d, e, bnat_add_sub(d.1 + e.1, r.1, bnat_le_of_not_lt(d.1 + e.1, r.1, not_below))
+  bnat_sub(d.1 + e.1, r.1) < r.1 := match bnat_lt_decide(bnat_sub(d.1 + e.1, r.1), r.1) return (
+    bnat_sub(d.1 + e.1, r.1) < r.1
+  ) {
+    left below => below;
+    right not_below => absurd(
+      not_below(
+        bnat_lt_add_cancel(
+          r.1, bnat_sub(d.1 + e.1, r.1), r.1,
+          comp(
+            fun (i : Interval) => (radix_carry_sum(r, d, e, carry) @ ~i) < r.1 + r.1,
+            bnat_add_lt(d.1, r.1, e.1, r.1, d.2, e.2)
+          )
+        )
+      )
     );
   };
 
+computable def radix_carry_digit(r : Radix, d, e : Digit(r), carry : (d.1 + e.1 < r.1) -> Void) :
+  Digit(r) := (bnat_sub(d.1 + e.1, r.1), radix_carry_digit_below(r, d, e, carry));
+
 // A digit sum in the leading place: a nonzero digit, or a carry to a new
-// leading one.
+// leading one. The decision whether the sum fits is an argument, so that
+// the value laws below can take its two cases.
 computable def radix_leading_sum(
-  r : Radix, d : LeadingDigit(r), e : Digit(r), sum : DigitSum(r, d.1 + e.1)
+  r : Radix, d : LeadingDigit(r), e : Digit(r), fits : Decidable(U0, d.1 + e.1 < r.1)
 ) :
-  RadixPositive(r) := match sum return RadixPositive(r) {
-    left digit => radix_leading(
-      (
-        digit.1.1,
-        comp(fun (i : Interval) => 0 < (digit.2 @ ~i), bnat_positive_add(d.1, e.1, d.2.1)),
-        digit.1.2
-      )
+  RadixPositive(r) := match fits return RadixPositive(r) {
+    left below => radix_leading((d.1 + e.1, bnat_positive_add(d.1, e.1, d.2.1), below));
+    right carry => radix_append(
+      radix_carry_digit(r, radix_leading_digit(r, d), e, carry), radix_one(r)
     );
-    right digit => radix_append(digit.1, radix_one(r));
   };
 
 // A digit sum in a lower place, over the places above, which take the
 // carry as carried.
 computable def radix_append_sum(
-  r : Radix, d, e : Digit(r), rest, carried : RadixPositive(r), sum : DigitSum(r, d.1 + e.1)
+  r : Radix, d, e : Digit(r), rest, carried : RadixPositive(r),
+  fits : Decidable(U0, d.1 + e.1 < r.1)
 ) :
-  RadixPositive(r) := match sum return RadixPositive(r) {
-    left digit => radix_append(digit.1, rest);
-    right digit => radix_append(digit.1, carried);
+  RadixPositive(r) := match fits return RadixPositive(r) {
+    left below => radix_append((d.1 + e.1, below), rest);
+    right carry => radix_append(radix_carry_digit(r, d, e, carry), carried);
   };
 
 // A digit added to a positive numeral.
 computable def radix_positive_add_digit(r : Radix, p : RadixPositive(r), e : Digit(r)) :
   RadixPositive(r) := match p {
-    radix_leading(d) => radix_leading_sum(r, d, e, radix_digit_sum(r, radix_leading_digit(r, d), e));
+    radix_leading(d) => radix_leading_sum(r, d, e, bnat_lt_decide(d.1 + e.1, r.1));
     radix_append(d, rest) => radix_append_sum(
-      r, d, e, rest, radix_positive_succ(r, rest), radix_digit_sum(r, d, e)
+      r, d, e, rest, radix_positive_succ(r, rest), bnat_lt_decide(d.1 + e.1, r.1)
     );
   };
 
@@ -83,7 +84,7 @@ computable def radix_positive_add(r : Radix, p, q : RadixPositive(r)) :
       );
       radix_append(e, more) => radix_append_sum(
         r, d, e, radix_positive_add(r, rest, more),
-        radix_positive_succ(r, radix_positive_add(r, rest, more)), radix_digit_sum(r, d, e)
+        radix_positive_succ(r, radix_positive_add(r, rest, more)), bnat_lt_decide(d.1 + e.1, r.1)
       );
     };
   };
@@ -148,56 +149,46 @@ computable def radix_mul(r : Radix, m, n : RadixNat(r)) : RadixNat(r) := match m
     radix_positive(p), radix_positive(q) => radix_positive(radix_positive_mul(r, p, q));
   };
 
-// The values. A carried place: w * b + s = v * b + n, where w = v + 1 and
-// b + s = n.
-computable def radix_carried_value(v, w, b, s, n : Nat, w_value : w = succ(v), carry : b + s = n) :
-  w * b + s = v * b + n {
-  calc {
-    w * b + s = succ(v) * b + s by cong(fun (x : Nat) => x * b + s, w_value);
-    _ = (v * b + b) + s by cong(fun (x : Nat) => x + s, nat_succ_mul(v, b));
-    _ = v * b + (b + s) by nat_add_assoc(v * b, b, s);
-    _ = v * b + n by cong(fun (x : Nat) => v * b + x, carry);
-  }
-}
-
+// The values.
 computable def radix_leading_sum_value(
-  r : Radix, d : LeadingDigit(r), e : Digit(r), sum : DigitSum(r, d.1 + e.1)
+  r : Radix, d : LeadingDigit(r), e : Digit(r), fits : Decidable(U0, d.1 + e.1 < r.1)
 ) :
-  radix_positive_to_nat(r, radix_leading_sum(r, d, e, sum)) = d.1 + e.1 := match sum as s return (
-    radix_positive_to_nat(r, radix_leading_sum(r, d, e, s)) = d.1 + e.1
+  radix_positive_to_nat(r, radix_leading_sum(r, d, e, fits)) = d.1 + e.1 := match fits as decision return (
+    radix_positive_to_nat(r, radix_leading_sum(r, d, e, decision)) = d.1 + e.1
   ) {
-    left digit => digit.2;
-    right digit => trans(cong(fun (x : Nat) => x + digit.1.1, nat_one_mul(r.1)), digit.2);
+    left below => refl(d.1 + e.1);
+    right carry => trans(
+      cong(fun (x : Nat) => x + bnat_sub(d.1 + e.1, r.1), nat_one_mul(r.1)),
+      radix_carry_sum(r, radix_leading_digit(r, d), e, carry)
+    );
   };
 
 computable def radix_append_sum_value(
   r : Radix, d, e : Digit(r), rest, carried : RadixPositive(r),
   carried_value : radix_positive_to_nat(r, carried) = succ(radix_positive_to_nat(r, rest)),
-  sum : DigitSum(r, d.1 + e.1)
+  fits : Decidable(U0, d.1 + e.1 < r.1)
 ) :
-  radix_positive_to_nat(r, radix_append_sum(r, d, e, rest, carried, sum)) = radix_positive_to_nat(
+  radix_positive_to_nat(r, radix_append_sum(r, d, e, rest, carried, fits)) = radix_positive_to_nat(
     r, rest
-  ) * r.1 + (d.1 + e.1) := match sum as s return (
-    radix_positive_to_nat(r, radix_append_sum(r, d, e, rest, carried, s)) = radix_positive_to_nat(
+  ) * r.1 + (d.1 + e.1) := match fits as decision return (
+    radix_positive_to_nat(r, radix_append_sum(r, d, e, rest, carried, decision)) = radix_positive_to_nat(
       r, rest
     ) * r.1 + (d.1 + e.1)
   ) {
-    left digit => cong(fun (x : Nat) => radix_positive_to_nat(r, rest) * r.1 + x, digit.2);
-    right digit => radix_carried_value(
-      radix_positive_to_nat(r, rest), radix_positive_to_nat(r, carried), r.1, digit.1.1, d.1 + e.1,
-      carried_value, digit.2
+    left below => refl(radix_positive_to_nat(r, rest) * r.1 + (d.1 + e.1));
+    right carry => radix_carried_value(
+      radix_positive_to_nat(r, rest), radix_positive_to_nat(r, carried), r.1,
+      bnat_sub(d.1 + e.1, r.1), d.1 + e.1, carried_value, radix_carry_sum(r, d, e, carry)
     );
   };
 
 computable def radix_positive_add_digit_value(r : Radix, p : RadixPositive(r), e : Digit(r)) :
   radix_positive_to_nat(r, radix_positive_add_digit(r, p, e)) = radix_positive_to_nat(r, p) + e.1 := match p {
-    radix_leading(d) => radix_leading_sum_value(
-      r, d, e, radix_digit_sum(r, radix_leading_digit(r, d), e)
-    );
+    radix_leading(d) => radix_leading_sum_value(r, d, e, bnat_lt_decide(d.1 + e.1, r.1));
     radix_append(d, rest) => trans(
       radix_append_sum_value(
         r, d, e, rest, radix_positive_succ(r, rest), radix_positive_succ_value(r, rest),
-        radix_digit_sum(r, d, e)
+        bnat_lt_decide(d.1 + e.1, r.1)
       ), sym(nat_add_assoc(radix_positive_to_nat(r, rest) * r.1, d.1, e.1))
     );
   };
@@ -229,7 +220,8 @@ computable def radix_positive_add_value(r : Radix, p, q : RadixPositive(r)) :
         radix_append_sum_value(
           r, d, e, radix_positive_add(r, rest, more),
           radix_positive_succ(r, radix_positive_add(r, rest, more)),
-          radix_positive_succ_value(r, radix_positive_add(r, rest, more)), radix_digit_sum(r, d, e)
+          radix_positive_succ_value(r, radix_positive_add(r, rest, more)),
+          bnat_lt_decide(d.1 + e.1, r.1)
         ),
         trans(
           cong(fun (x : Nat) => x * r.1 + (d.1 + e.1), radix_positive_add_value(r, rest, more)),

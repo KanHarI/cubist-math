@@ -118,20 +118,14 @@ computable def radix_leading_succ_value(
     );
   };
 
-// With a carry, the digit's successor is the radix: (v + 1) * b + 0 is
-// v * b + (d + 1).
-computable def radix_carry_value(
-  r : Radix, d : Digit(r), v, w : Nat, w_value : w = succ(v), carry : (succ(d.1) < r.1) -> Void
-) :
-  w * r.1 + 0 = succ(v * r.1 + d.1) {
+// A carried place: w * b + s = v * b + n, where w = v + 1 and b + s = n.
+computable def radix_carried_value(v, w, b, s, n : Nat, w_value : w = succ(v), carry : b + s = n) :
+  w * b + s = v * b + n {
   calc {
-    w * r.1 + 0 = w * r.1 by nat_add_zero(w * r.1);
-    _ = succ(v) * r.1 by cong(fun (x : Nat) => x * r.1, w_value);
-    _ = v * r.1 + r.1 by nat_succ_mul(v, r.1);
-    _ = v * r.1 + succ(d.1) by cong(
-      fun (x : Nat) => v * r.1 + x, sym(radix_last_digit(r, d, carry))
-    );
-    _ = succ(v * r.1 + d.1) by sym(bnat_succ_add(v * r.1, d.1));
+    w * b + s = succ(v) * b + s by cong(fun (x : Nat) => x * b + s, w_value);
+    _ = (v * b + b) + s by cong(fun (x : Nat) => x + s, nat_succ_mul(v, b));
+    _ = v * b + (b + s) by nat_add_assoc(v * b, b, s);
+    _ = v * b + n by cong(fun (x : Nat) => v * b + x, carry);
   }
 }
 
@@ -148,8 +142,11 @@ computable def radix_append_succ_value(
     )
   ) {
     left below => sym(bnat_succ_add(radix_positive_to_nat(r, rest) * r.1, d.1));
-    right carry => radix_carry_value(
-      r, d, radix_positive_to_nat(r, rest), radix_positive_to_nat(r, carried), carried_value, carry
+    right carry => trans(
+      radix_carried_value(
+        radix_positive_to_nat(r, rest), radix_positive_to_nat(r, carried), r.1, 0, succ(d.1),
+        carried_value, trans(nat_add_zero(r.1), sym(radix_last_digit(r, d, carry)))
+      ), sym(bnat_succ_add(radix_positive_to_nat(r, rest) * r.1, d.1))
     );
   };
 
