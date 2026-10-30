@@ -102,7 +102,7 @@ computable def radix_succ(r : Radix, n : RadixNat(r)) : RadixNat(r) := match n {
   };
 
 // A digit whose successor is not below the radix is the last digit.
-computable def radix_carry(r : Radix, d : Digit(r), carry : (succ(d.1) < r.1) -> Void) :
+computable def radix_last_digit(r : Radix, d : Digit(r), carry : (succ(d.1) < r.1) -> Void) :
   succ(d.1) = r.1 := bnat_le_not_lt_equal(succ(d.1), r.1, bnat_le_succ_of_lt(d.1, r.1, d.2), carry);
 
 // The successor adds one to the value.
@@ -114,7 +114,7 @@ computable def radix_leading_succ_value(
   ) {
     left below => refl(succ(d.1));
     right carry => trans(
-      nat_add_zero(1 * r.1), trans(nat_one_mul(r.1), sym(radix_carry(r, (d.1, d.2.2), carry)))
+      nat_add_zero(1 * r.1), trans(nat_one_mul(r.1), sym(radix_last_digit(r, (d.1, d.2.2), carry)))
     );
   };
 
@@ -128,7 +128,9 @@ computable def radix_carry_value(
     w * r.1 + 0 = w * r.1 by nat_add_zero(w * r.1);
     _ = succ(v) * r.1 by cong(fun (x : Nat) => x * r.1, w_value);
     _ = v * r.1 + r.1 by nat_succ_mul(v, r.1);
-    _ = v * r.1 + succ(d.1) by cong(fun (x : Nat) => v * r.1 + x, sym(radix_carry(r, d, carry)));
+    _ = v * r.1 + succ(d.1) by cong(
+      fun (x : Nat) => v * r.1 + x, sym(radix_last_digit(r, d, carry))
+    );
     _ = succ(v * r.1 + d.1) by sym(bnat_succ_add(v * r.1, d.1));
   }
 }

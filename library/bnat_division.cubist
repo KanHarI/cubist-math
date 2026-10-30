@@ -519,3 +519,79 @@ computable def bnat_remainder_zero(
     )
   );
 }
+
+// Quotient and remainder are unique: q * d + r = s * d + t with r and t
+// below d gives q = s and r = t. The unary argument cancels d from both
+// sides until a quotient is zero; a remainder below d is then not d plus
+// anything.
+computable def unat_division_unique(
+  d, q, r, s, t : UNat, small_r : isLt(r, d), small_t : isLt(t, d),
+  same : add(mul(q, d), r) = add(mul(s, d), t)
+) :
+  (q = s) and (r = t) {
+  match q, s {
+    zero, zero => {
+      exact (refl(zero), same);
+    }
+    zero, succ(k) => {
+      exact absurd(
+        unat_lt_le_absurd(
+          r, d, small_r,
+          comp(
+            fun (i : Interval) => le(d, trans(same, unat_add_assoc(d, mul(k, d), t)) @ ~i),
+            unat_le_add_right(d, add(mul(k, d), t))
+          )
+        )
+      );
+    }
+    succ(j), zero => {
+      exact absurd(
+        unat_lt_le_absurd(
+          t, d, small_t,
+          comp(
+            fun (i : Interval) => le(d, trans(sym(same), unat_add_assoc(d, mul(j, d), r)) @ ~i),
+            unat_le_add_right(d, add(mul(j, d), r))
+          )
+        )
+      );
+    }
+    succ(j), succ(k) => {
+      let below := unat_division_unique(
+        d, j, r, k, t, small_r, small_t,
+        unat_add_cancel(
+          d, add(mul(j, d), r), add(mul(k, d), t),
+          trans(sym(unat_add_assoc(d, mul(j, d), r)), trans(same, unat_add_assoc(d, mul(k, d), t)))
+        )
+      );
+      exact (cong(succ, below.1), below.2);
+    }
+  }
+}
+
+computable def bnat_division_unique(
+  d, q, r, s, t : BNat, small_r : bnat_lt(r, d), small_t : bnat_lt(t, d),
+  same : bnat_add(bnat_mul(q, d), r) = bnat_add(bnat_mul(s, d), t)
+) :
+  (q = s) and (r = t) {
+  let decoded :
+    add(mul(bnat_to_unat(q), bnat_to_unat(d)), bnat_to_unat(r)) = add(
+      mul(bnat_to_unat(s), bnat_to_unat(d)), bnat_to_unat(t)
+    ) {
+    calc {
+      add(mul(bnat_to_unat(q), bnat_to_unat(d)), bnat_to_unat(r)) = add(
+        bnat_to_unat(bnat_mul(q, d)), bnat_to_unat(r)
+      ) by cong(fun (x : UNat) => add(x, bnat_to_unat(r)), sym(bnat_decode_mul(q, d)));
+      _ = bnat_to_unat(bnat_add(bnat_mul(q, d), r)) by sym(bnat_decode_add(bnat_mul(q, d), r));
+      _ = bnat_to_unat(bnat_add(bnat_mul(s, d), t)) by cong(bnat_to_unat, same);
+      _ = add(bnat_to_unat(bnat_mul(s, d)), bnat_to_unat(t)) by bnat_decode_add(bnat_mul(s, d), t);
+      _ = add(mul(bnat_to_unat(s), bnat_to_unat(d)), bnat_to_unat(t)) by cong(
+        fun (x : UNat) => add(x, bnat_to_unat(t)), bnat_decode_mul(s, d)
+      );
+    }
+  }
+  let unary := unat_division_unique(
+    bnat_to_unat(d), bnat_to_unat(q), bnat_to_unat(r), bnat_to_unat(s), bnat_to_unat(t),
+    bnat_lt_decode(r, d, small_r), bnat_lt_decode(t, d, small_t), decoded
+  );
+  exact (bnat_decode_injective(q, s, unary.1), bnat_decode_injective(r, t, unary.2));
+}
