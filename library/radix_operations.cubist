@@ -1,0 +1,352 @@
+// Addition and multiplication of radix numerals, computed in the radix:
+// digits are added with a carry, and a numeral is multiplied by a digit
+// through the digit's bits, doubling and adding. The value of a sum or a
+// product is the sum or the product of the values.
+import bnat_division;
+import radix_numerals;
+use nat;
+
+// A leading digit is a digit.
+computable def radix_leading_digit(r : Radix, d : LeadingDigit(r)) : Digit(r) := (d.1, d.2.2);
+
+// Two digits sum to a digit, or to the radix and a digit, with one
+// carried to the next place.
+computable def DigitSum(r : Radix, n : Nat) :
+  U0 := (exists s : Digit(r). s.1 = n) or (exists s : Digit(r). r.1 + s.1 = n);
+
+// What is left after a carry is a digit: r + s = d + e < r + r.
+computable def radix_carry_digit_below(
+  r : Radix, d, e : Digit(r), carry : r.1 + bnat_sub(d.1 + e.1, r.1) = d.1 + e.1
+) :
+  bnat_sub(d.1 + e.1, r.1) < r.1 := bnat_lt_add_cancel(
+    r.1, bnat_sub(d.1 + e.1, r.1), r.1,
+    comp(fun (i : Interval) => (carry @ ~i) < r.1 + r.1, bnat_add_lt(d.1, r.1, e.1, r.1, d.2, e.2))
+  );
+
+computable def radix_digit_carry(
+  r : Radix, d, e : Digit(r), carry : r.1 + bnat_sub(d.1 + e.1, r.1) = d.1 + e.1
+) :
+  DigitSum(r, d.1 + e.1) := right(
+    ((bnat_sub(d.1 + e.1, r.1), radix_carry_digit_below(r, d, e, carry)), carry)
+  );
+
+computable def radix_digit_sum(r : Radix, d, e : Digit(r)) :
+  DigitSum(r, d.1 + e.1) := match bnat_lt_decide(d.1 + e.1, r.1) return DigitSum(r, d.1 + e.1) {
+    left below => left(((d.1 + e.1, below), refl(d.1 + e.1)));
+    right not_below => radix_digit_carry(
+      r, d, e, bnat_add_sub(d.1 + e.1, r.1, bnat_le_of_not_lt(d.1 + e.1, r.1, not_below))
+    );
+  };
+
+// A digit sum in the leading place: a nonzero digit, or a carry to a new
+// leading one.
+computable def radix_leading_sum(
+  r : Radix, d : LeadingDigit(r), e : Digit(r), sum : DigitSum(r, d.1 + e.1)
+) :
+  RadixPositive(r) := match sum return RadixPositive(r) {
+    left digit => radix_leading(
+      (
+        digit.1.1,
+        comp(fun (i : Interval) => 0 < (digit.2 @ ~i), bnat_positive_add(d.1, e.1, d.2.1)),
+        digit.1.2
+      )
+    );
+    right digit => radix_append(digit.1, radix_one(r));
+  };
+
+// A digit sum in a lower place, over the places above, which take the
+// carry as carried.
+computable def radix_append_sum(
+  r : Radix, d, e : Digit(r), rest, carried : RadixPositive(r), sum : DigitSum(r, d.1 + e.1)
+) :
+  RadixPositive(r) := match sum return RadixPositive(r) {
+    left digit => radix_append(digit.1, rest);
+    right digit => radix_append(digit.1, carried);
+  };
+
+// A digit added to a positive numeral.
+computable def radix_positive_add_digit(r : Radix, p : RadixPositive(r), e : Digit(r)) :
+  RadixPositive(r) := match p {
+    radix_leading(d) => radix_leading_sum(r, d, e, radix_digit_sum(r, radix_leading_digit(r, d), e));
+    radix_append(d, rest) => radix_append_sum(
+      r, d, e, rest, radix_positive_succ(r, rest), radix_digit_sum(r, d, e)
+    );
+  };
+
+// Addition, place by place from the last digit.
+computable def radix_positive_add(r : Radix, p, q : RadixPositive(r)) :
+  RadixPositive(r) := match p {
+    radix_leading(d) => radix_positive_add_digit(r, q, radix_leading_digit(r, d));
+    radix_append(d, rest) => match q {
+      radix_leading(e) => radix_positive_add_digit(
+        r, radix_append(d, rest), radix_leading_digit(r, e)
+      );
+      radix_append(e, more) => radix_append_sum(
+        r, d, e, radix_positive_add(r, rest, more),
+        radix_positive_succ(r, radix_positive_add(r, rest, more)), radix_digit_sum(r, d, e)
+      );
+    };
+  };
+
+computable def radix_add(r : Radix, m, n : RadixNat(r)) : RadixNat(r) := match m, n {
+    radix_zero, _ => n;
+    radix_positive(p), radix_zero => m;
+    radix_positive(p), radix_positive(q) => radix_positive(radix_positive_add(r, p, q));
+  };
+
+// The radix times a numeral: a zero digit appended.
+computable def radix_positive_shift(r : Radix, p : RadixPositive(r)) :
+  RadixPositive(r) := radix_append(radix_digit_zero(r), p);
+
+computable def radix_positive_double(r : Radix, p : RadixPositive(r)) :
+  RadixPositive(r) := radix_positive_add(r, p, p);
+
+// n * q for a positive natural n, by n's bits: doubling and adding in the
+// radix.
+computable def radix_positive_scale(r : Radix, n : BPositive, q : RadixPositive(r)) :
+  RadixPositive(r) := match n {
+    bp_one => q;
+    bp_even(m) => radix_positive_double(r, radix_positive_scale(r, m, q));
+    bp_odd(m) => radix_positive_add(r, q, radix_positive_double(r, radix_positive_scale(r, m, q)));
+  };
+
+// x + n * q for a natural n.
+computable def radix_positive_add_scale(
+  r : Radix, x : RadixPositive(r), n : Nat, q : RadixPositive(r)
+) :
+  RadixPositive(r) := match n {
+    b_zero => x;
+    b_positive(m) => radix_positive_add(r, x, radix_positive_scale(r, m, q));
+  };
+
+// The bits of a positive natural.
+computable def nat_positive_bits(n : Nat, positive : 0 < n) : BPositive := match n {
+    b_zero => absurd(positive);
+    b_positive(p) => p;
+  };
+
+computable def nat_positive_bits_value(n : Nat, positive : 0 < n) :
+  b_positive(nat_positive_bits(n, positive)) = n := match n {
+    b_zero => absurd(positive);
+    b_positive(p) => refl(b_positive(p));
+  };
+
+// Multiplication, digit by digit of the first factor: the leading digit
+// times q, and at each further place, the product above shifted, plus the
+// digit times q.
+computable def radix_positive_mul(r : Radix, p, q : RadixPositive(r)) :
+  RadixPositive(r) := match p {
+    radix_leading(d) => radix_positive_scale(r, nat_positive_bits(d.1, d.2.1), q);
+    radix_append(d, rest) => radix_positive_add_scale(
+      r, radix_positive_shift(r, radix_positive_mul(r, rest, q)), d.1, q
+    );
+  };
+
+computable def radix_mul(r : Radix, m, n : RadixNat(r)) : RadixNat(r) := match m, n {
+    radix_zero, _ => radix_zero;
+    radix_positive(p), radix_zero => radix_zero;
+    radix_positive(p), radix_positive(q) => radix_positive(radix_positive_mul(r, p, q));
+  };
+
+// The values. A carried place: w * b + s = v * b + n, where w = v + 1 and
+// b + s = n.
+computable def radix_carried_value(v, w, b, s, n : Nat, w_value : w = succ(v), carry : b + s = n) :
+  w * b + s = v * b + n {
+  calc {
+    w * b + s = succ(v) * b + s by cong(fun (x : Nat) => x * b + s, w_value);
+    _ = (v * b + b) + s by cong(fun (x : Nat) => x + s, nat_succ_mul(v, b));
+    _ = v * b + (b + s) by nat_add_assoc(v * b, b, s);
+    _ = v * b + n by cong(fun (x : Nat) => v * b + x, carry);
+  }
+}
+
+computable def radix_leading_sum_value(
+  r : Radix, d : LeadingDigit(r), e : Digit(r), sum : DigitSum(r, d.1 + e.1)
+) :
+  radix_positive_to_nat(r, radix_leading_sum(r, d, e, sum)) = d.1 + e.1 := match sum as s return (
+    radix_positive_to_nat(r, radix_leading_sum(r, d, e, s)) = d.1 + e.1
+  ) {
+    left digit => digit.2;
+    right digit => trans(cong(fun (x : Nat) => x + digit.1.1, nat_one_mul(r.1)), digit.2);
+  };
+
+computable def radix_append_sum_value(
+  r : Radix, d, e : Digit(r), rest, carried : RadixPositive(r),
+  carried_value : radix_positive_to_nat(r, carried) = succ(radix_positive_to_nat(r, rest)),
+  sum : DigitSum(r, d.1 + e.1)
+) :
+  radix_positive_to_nat(r, radix_append_sum(r, d, e, rest, carried, sum)) = radix_positive_to_nat(
+    r, rest
+  ) * r.1 + (d.1 + e.1) := match sum as s return (
+    radix_positive_to_nat(r, radix_append_sum(r, d, e, rest, carried, s)) = radix_positive_to_nat(
+      r, rest
+    ) * r.1 + (d.1 + e.1)
+  ) {
+    left digit => cong(fun (x : Nat) => radix_positive_to_nat(r, rest) * r.1 + x, digit.2);
+    right digit => radix_carried_value(
+      radix_positive_to_nat(r, rest), radix_positive_to_nat(r, carried), r.1, digit.1.1, d.1 + e.1,
+      carried_value, digit.2
+    );
+  };
+
+computable def radix_positive_add_digit_value(r : Radix, p : RadixPositive(r), e : Digit(r)) :
+  radix_positive_to_nat(r, radix_positive_add_digit(r, p, e)) = radix_positive_to_nat(r, p) + e.1 := match p {
+    radix_leading(d) => radix_leading_sum_value(
+      r, d, e, radix_digit_sum(r, radix_leading_digit(r, d), e)
+    );
+    radix_append(d, rest) => trans(
+      radix_append_sum_value(
+        r, d, e, rest, radix_positive_succ(r, rest), radix_positive_succ_value(r, rest),
+        radix_digit_sum(r, d, e)
+      ), sym(nat_add_assoc(radix_positive_to_nat(r, rest) * r.1, d.1, e.1))
+    );
+  };
+
+// Two places add: (a + c) * b + (d + e) = (a * b + d) + (c * b + e).
+computable def radix_place_add(a, c, b, d, e : Nat) :
+  (a + c) * b + (d + e) = (a * b + d) + (c * b + e) {
+  calc {
+    (a + c) * b + (d + e) = (a * b + c * b) + (d + e) by cong(
+      fun (x : Nat) => x + (d + e), nat_add_mul(a, c, b)
+    );
+    _ = (a * b + d) + (c * b + e) by nat_add_interchange(a * b, c * b, d, e);
+  }
+}
+
+computable def radix_positive_add_value(r : Radix, p, q : RadixPositive(r)) :
+  radix_positive_to_nat(r, radix_positive_add(r, p, q)) = radix_positive_to_nat(r, p) + radix_positive_to_nat(
+    r, q
+  ) := match p {
+    radix_leading(d) => trans(
+      radix_positive_add_digit_value(r, q, radix_leading_digit(r, d)),
+      nat_add_comm(radix_positive_to_nat(r, q), d.1)
+    );
+    radix_append(d, rest) => match q {
+      radix_leading(e) => radix_positive_add_digit_value(
+        r, radix_append(d, rest), radix_leading_digit(r, e)
+      );
+      radix_append(e, more) => trans(
+        radix_append_sum_value(
+          r, d, e, radix_positive_add(r, rest, more),
+          radix_positive_succ(r, radix_positive_add(r, rest, more)),
+          radix_positive_succ_value(r, radix_positive_add(r, rest, more)), radix_digit_sum(r, d, e)
+        ),
+        trans(
+          cong(fun (x : Nat) => x * r.1 + (d.1 + e.1), radix_positive_add_value(r, rest, more)),
+          radix_place_add(
+            radix_positive_to_nat(r, rest), radix_positive_to_nat(r, more), r.1, d.1, e.1
+          )
+        )
+      );
+    };
+  };
+
+computable def radix_add_value(r : Radix, m, n : RadixNat(r)) :
+  radix_to_nat(r, radix_add(r, m, n)) = radix_to_nat(r, m) + radix_to_nat(r, n) := match m, n {
+    radix_zero, _ => refl(radix_to_nat(r, n));
+    radix_positive(p), radix_zero => sym(nat_add_zero(radix_positive_to_nat(r, p)));
+    radix_positive(p), radix_positive(q) => radix_positive_add_value(r, p, q);
+  };
+
+// Doubling and adding by bits: with v = m * q, v + v = 2m * q and
+// q + (v + v) = (2m + 1) * q.
+computable def radix_scale_even_value(m : BPositive, q, v : Nat, v_value : v = b_positive(m) * q) :
+  v + v = b_positive(bp_even(m)) * q {
+  calc {
+    v + v = b_positive(m) * q + b_positive(m) * q by cong(fun (x : Nat) => x + x, v_value);
+    _ = (b_positive(m) + b_positive(m)) * q by sym(nat_add_mul(b_positive(m), b_positive(m), q));
+    _ = b_positive(bp_even(m)) * q by cong(fun (x : Nat) => x * q, bnat_add_self(b_positive(m)));
+  }
+}
+
+computable def radix_scale_odd_value(m : BPositive, q, v : Nat, v_value : v = b_positive(m) * q) :
+  q + (v + v) = b_positive(bp_odd(m)) * q {
+  calc {
+    q + (v + v) = q + b_positive(bp_even(m)) * q by cong(
+      fun (x : Nat) => q + x, radix_scale_even_value(m, q, v, v_value)
+    );
+    _ = b_positive(bp_even(m)) * q + q by nat_add_comm(q, b_positive(bp_even(m)) * q);
+    _ = b_positive(bp_odd(m)) * q by sym(nat_succ_mul(b_positive(bp_even(m)), q));
+  }
+}
+
+computable def radix_positive_scale_value(r : Radix, n : BPositive, q : RadixPositive(r)) :
+  radix_positive_to_nat(r, radix_positive_scale(r, n, q)) = b_positive(n) * radix_positive_to_nat(
+    r, q
+  ) := match n {
+    bp_one => sym(nat_one_mul(radix_positive_to_nat(r, q)));
+    bp_even(m) => trans(
+      radix_positive_add_value(r, radix_positive_scale(r, m, q), radix_positive_scale(r, m, q)),
+      radix_scale_even_value(
+        m, radix_positive_to_nat(r, q), radix_positive_to_nat(r, radix_positive_scale(r, m, q)),
+        radix_positive_scale_value(r, m, q)
+      )
+    );
+    bp_odd(m) => trans(
+      radix_positive_add_value(r, q, radix_positive_double(r, radix_positive_scale(r, m, q))),
+      trans(
+        cong(
+          fun (x : Nat) => radix_positive_to_nat(r, q) + x,
+          radix_positive_add_value(r, radix_positive_scale(r, m, q), radix_positive_scale(r, m, q))
+        ),
+        radix_scale_odd_value(
+          m, radix_positive_to_nat(r, q), radix_positive_to_nat(r, radix_positive_scale(r, m, q)),
+          radix_positive_scale_value(r, m, q)
+        )
+      )
+    );
+  };
+
+computable def radix_positive_add_scale_value(
+  r : Radix, x : RadixPositive(r), n : Nat, q : RadixPositive(r)
+) :
+  radix_positive_to_nat(r, radix_positive_add_scale(r, x, n, q)) = radix_positive_to_nat(r, x) + n * radix_positive_to_nat(
+    r, q
+  ) := match n {
+    b_zero => sym(nat_add_zero(radix_positive_to_nat(r, x)));
+    b_positive(m) => trans(
+      radix_positive_add_value(r, x, radix_positive_scale(r, m, q)),
+      cong(fun (y : Nat) => radix_positive_to_nat(r, x) + y, radix_positive_scale_value(r, m, q))
+    );
+  };
+
+// A place multiplies: ((a * c) * b + 0) + d * c = (a * b + d) * c.
+computable def radix_place_mul(a, b, c, d : Nat) : ((a * c) * b + 0) + d * c = (a * b + d) * c {
+  calc {
+    ((a * c) * b + 0) + d * c = (a * c) * b + d * c by cong(
+      fun (x : Nat) => x + d * c, nat_add_zero((a * c) * b)
+    );
+    _ = a * (c * b) + d * c by cong(fun (x : Nat) => x + d * c, nat_mul_assoc(a, c, b));
+    _ = a * (b * c) + d * c by cong(fun (x : Nat) => a * x + d * c, nat_mul_comm(c, b));
+    _ = (a * b) * c + d * c by cong(fun (x : Nat) => x + d * c, sym(nat_mul_assoc(a, b, c)));
+    _ = (a * b + d) * c by sym(nat_add_mul(a * b, d, c));
+  }
+}
+
+computable def radix_positive_mul_value(r : Radix, p, q : RadixPositive(r)) :
+  radix_positive_to_nat(r, radix_positive_mul(r, p, q)) = radix_positive_to_nat(r, p) * radix_positive_to_nat(
+    r, q
+  ) := match p {
+    radix_leading(d) => trans(
+      radix_positive_scale_value(r, nat_positive_bits(d.1, d.2.1), q),
+      cong(fun (x : Nat) => x * radix_positive_to_nat(r, q), nat_positive_bits_value(d.1, d.2.1))
+    );
+    radix_append(d, rest) => trans(
+      radix_positive_add_scale_value(
+        r, radix_positive_shift(r, radix_positive_mul(r, rest, q)), d.1, q
+      ),
+      trans(
+        cong(
+          fun (x : Nat) => (x * r.1 + 0) + d.1 * radix_positive_to_nat(r, q),
+          radix_positive_mul_value(r, rest, q)
+        ), radix_place_mul(radix_positive_to_nat(r, rest), r.1, radix_positive_to_nat(r, q), d.1)
+      )
+    );
+  };
+
+computable def radix_mul_value(r : Radix, m, n : RadixNat(r)) :
+  radix_to_nat(r, radix_mul(r, m, n)) = radix_to_nat(r, m) * radix_to_nat(r, n) := match m, n {
+    radix_zero, _ => refl(0);
+    radix_positive(p), radix_zero => sym(nat_mul_zero(radix_positive_to_nat(r, p)));
+    radix_positive(p), radix_positive(q) => radix_positive_mul_value(r, p, q);
+  };
