@@ -551,6 +551,15 @@ ticks the query's budget. Values are identical on every walk.
   walk alone, warm, in a process of its own: `2/3 + 1/6` 0.54 against 0.71
   ms (+31%, the reading), the BNat product 12.4 against 12.5 ms, the wide
   product 81.1 against 70.9 ms.
+- **The evaluation baseline** (`tests/fixtures/evaluation-baseline.json`,
+  version 10 still) is recorded again after this and the pruning below, at
+  `3a548750`: every outcome and every phase's calls and failures are as
+  recorded. The runtime's counters move on its 21 runtime workloads, the
+  Euclid and factorial walks up to their fallback by about a quarter more
+  steps (`euclid-3` 3,711 to 4,687, against the test's bound of 4,703), and
+  the unary products by under 2%. The kernel's counters that move had moved
+  on main already since the fixture's recording at `1f7db8e4`: main's tree
+  and this one give the same, as `euclid-3`'s 26,944 query steps.
 
 ## Closed-environment pruning
 
