@@ -17,7 +17,17 @@ form the runtime computes among them, and M1; the
 [runtime report](../../reports/shared-runtime-evaluation.md#typed-readback-w1)
 records the correspondence as implemented and where it reads this note
 more precisely. No observation changes, and nothing here changes the
-kernel. W2 is next ([8](#8-work-items)).
+kernel. W2 is implemented (2026-10-30): the fallback per node of
+[section 5](#5-fallback-in-mid-computation-d4), with its tests and M2. A
+value form reads back from the query it already makes, keeping main's
+retention, and restarts where that readback refuses; all 193 constructs'
+value forms now compute in the runtime, none restarting. The
+[runtime report](../../reports/shared-runtime-evaluation.md#the-fallback-per-node-w2)
+records the design, where it reads section 5 more precisely, and M2: the
+kernel's ticks fall by 2 to 53% on the workloads that fall back, but the
+kernel still computes a transport's base wherever its rule reads it, so
+NUM1's arithmetic stays the kernel's work and the library Euclid's 7 and 8
+still stop with `K344`. W3 waits on M3 ([8](#8-work-items)).
 
 ## Summary
 
