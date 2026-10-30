@@ -456,7 +456,14 @@ export class RuntimeQuery {
               const instance = this.#node(c[0]);
               if (instance.kind !== "Sort") fail("input", "A constructor requires a declared instance.");
               this.#descriptor(instance.payload, n.payload);
-              returned(this.#value({ tag: "Con", signature: instance.payload, index: n.payload, instance: annotation(c[0]), args: [] })); break;
+              // Its instance, an annotation no value form's walk forces,
+              // keeps no environment when it is closed, as a declared type
+              // with closed parameters is: kept, it would hold, through every
+              // constructor value, the frames it was made in, and with them
+              // the computation that made it (#scope, read once a node).
+              const kept = this.#scope(c[0]).vars.size ? env : null;
+              returned(this.#value({ tag: "Con", signature: instance.payload, index: n.payload, instance: this.#delay(c[0], kept), args: [] }));
+              break;
             }
             // An eliminator of any admitted signature is a value; only the
             // clause of the constructor it meets is ever demanded.

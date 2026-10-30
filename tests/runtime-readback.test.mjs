@@ -440,7 +440,7 @@ const mutations = [
   ["swapped pair components", "value", "pair", [["first: delay(c[1]), second: delay(c[2])", "first: delay(c[2]), second: delay(c[1])"]]],
   ["a constructor's index", "value", "flag", [["index: n.payload, instance", "index: n.payload ^ 1, instance"]]],
   ["a constructor's signature", "value", "flag", [["signature: instance.payload, index", "signature: instance.payload + 1, index"]]],
-  ["a constructor's instance", "value", "boxed", [["instance: annotation(c[0]), args", "instance: this.#delay(c[0], null), args"]]],
+  ["a constructor's instance", "value", "boxed", [["instance: this.#delay(c[0], kept), args", "instance: this.#delay(c[0], null), args"]]],
   ["a dropped instance", "value", "observed_instance", [["{ tag: \"Type\", node: cell.code, env: this.#forReadback ? this.#pruned(cell.code, env) : null }", "{ tag: \"Type\" }"]]],
   ["a λ's body", "value", "constant", [["body: c[1], env, domain", "body: this.#node(c[1]).kind === \"Point\" ? c[0] : c[1], env, domain"]]],
   ["a λ's symbol", "value", "pairing", [["symbol: n.payload, body: c[1], env, domain",

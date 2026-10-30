@@ -321,6 +321,27 @@ def bound_once : UNat and UNat := (fun (n : UNat) => (fun (m : UNat) => typed(UN
   assert.ok(cancelled.stats.steps < 10000, `g24(tt) took ${cancelled.stats.steps} steps, cancelled once`);
 });
 
+// A constructor's instance, an annotation the value form's walk never
+// forces, keeps no environment when it is closed: a value computed through
+// a long recursion keeps nothing of the computation, which its instance's
+// frames held before. An open instance keeps its environment, and reads
+// back as the kernel's term (tests/runtime-readback.test.mjs, boxed).
+test("a closed constructor instance keeps no environment, so a value keeps nothing of its computation", async t => {
+  const { query } = await setup(t, `
+import lists; use unat;
+inductive Lamp { dark; lit; }
+def toggle(f : Lamp) : Lamp := match f { dark => lit; lit => dark; };
+def rep(n : UNat) : List(U0, Unit) := match n { zero => nil; succ(m) => cons(tt, rep(m)); };
+def parity(xs : List(U0, Unit)) : Lamp := induction xs return Lamp { nil => dark; cons(x, rest) with below => toggle(below); };
+def lamp : Lamp := parity(append(rep(10 * 100), rep(10 * 100)));
+`);
+  const runtime = query("lamp"), lamp = await runtime.observe();
+  assert.deepEqual([lamp.kind, lamp.index, lamp.args.length], ["Con", 0, 0], "an even count of toggles is dark");
+  assert.ok(runtime.stats.allocatedCells > 100000, `the parity took ${runtime.stats.allocatedCells} cells`);
+  const { runtimeObjects } = runtime.retainedObjects();
+  assert.ok(runtimeObjects < 50, `the value keeps ${runtimeObjects} objects`);
+});
+
 // A query reads the kernel when its walk first demands a node, a definition
 // or a signature: what it never demands is never copied.
 test("a query copies only what its walk demands", async t => {

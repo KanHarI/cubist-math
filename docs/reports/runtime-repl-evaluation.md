@@ -552,6 +552,83 @@ ticks the query's budget. Values are identical on every walk.
   ms (+31%, the reading), the BNat product 12.4 against 12.5 ms, the wide
   product 81.1 against 70.9 ms.
 
+## Closed-environment pruning
+
+EVAL4's item, 2026-10-30, after the sharing above. A constructor's
+instance, the `Sort` of its declared type at its parameters, keeps no
+environment when it is closed (the `Con` case of `#run` in
+`web/cubical-runtime.mjs`). The instance is an annotation no value form's
+walk forces, so its cell stayed unforced for as long as the constructor
+value lived, and kept the environment it was delayed in: the frames of the
+function that built the value, their arguments and, through each frame's
+parent, the computation that called it. A number's every bit, a list's
+every cell and any computed result held its history so. Whether the
+instance is closed is read from the variables free in it (`#scope`, once
+per node, counted in the query's work and cells), and its node is read at
+the constructor's force anyway. An instance that mentions a variable, a
+type parameter bound by a generic function, keeps its environment as
+before. Pruning changes no value: a closed code means the same under any
+environment, and readback reads it alike, as it binds no variable there.
+
+**Where it pays, and where it did not.** Each variant was measured on
+main's runtime, before the sharing, against main on the probe's workloads,
+in the same harness as above:
+
+- every closed code delayed, computations included: the retained objects
+  fall as far, and further where a list keeps unforced closed fields
+  (list parity 2,496,182 to 835,228), but deciding that a code is closed
+  reads its whole syntax, λ bodies and types included: `2/3 + 1/6` took
+  50,199 steps against 28,290 and copied 5,231 nodes against 1,264;
+- every closed annotation, a pair's or an injection's type, a motive and a
+  λ's domain besides the instance: no further fall (the wide inverse
+  retains 13,574 either way, list parity 8 objects fewer), at 38,224 steps
+  and 3,305 copied nodes for `2/3 + 1/6`;
+- an open instance pruned to the frames its variables need, copied, as
+  W1's `#pruned` does for a type value in a query made for readback: no
+  fall over the closed instance's on any workload (`2/3 + 1/6` retained
+  1,409 against 1,364, the copies themselves), and 3.5% more steps on a
+  generic list;
+- closed leaves among computations, such as a list's `tt`: list parity's
+  retained objects fall from 1,958,367 to 1,477,021, its list being a
+  definition the query keeps anyway, for 2.6% more steps on `2/3 + 1/6`
+  than the instance alone and 28% more copied nodes.
+
+The closed instance alone was kept.
+
+**Measurements**, against the sharing commit on the same walks:
+
+- the 193 constructs' walks: no value moves; retained objects 31,188 to
+  6,123 (−80%), none growing; steps +0.4%, cells +0.6%, copied nodes +1.9%;
+- the probe's workloads, retained objects after the walk:
+
+| Workload | Main | Sharing | Sharing and pruning | Steps, sharing to pruning |
+| --- | ---: | ---: | ---: | --- |
+| `(2 * 255, 2 * 255)` | 9,251 | 4,619 | 2,055 | 33,425 to 33,426 |
+| `count_into(2 * 255, 0)` | 10,248 | 10,236 | 2,055 | 67,735 to 67,736 |
+| `doubling(8)` | 1,870 | 1,870 | 1,036 | 15,109 to 15,110 |
+| list parity, 200,000, at the cap | 2,496,182 | 2,495,885 | 1,958,046 | the cap |
+| `parity(append(rep(10 * 100), rep(10 * 100)))` | 99,830 | 68,887 | 24 | 811,381 to 811,400 |
+| BNat product of two 20-digit numerals | 108,198 | 107,205 | 559 | 649,672 to 649,688 |
+| `2/3 + 1/6` | 1,886 | 1,841 | 1,328 | 29,888 to 30,199 |
+| the wide inverse | 172,598 | 171,157 | 12,133 | 1,201,691 to 1,202,007 |
+| `(2^128 - 1) * (2^128 - 1)`, binary integers | 737,578 | 656,504 | 1,861 | 3,841,853 to 3,841,992 |
+| `bint_decide(2^128 - 1, -1)` | 4,253 | 3,323 | 3,202 | 48,900 to 49,037 |
+
+- the REPL probe's heap after a collection with the query alive, main
+  against both commits: the wide product 54.9 to 1.1 MiB, the wide inverse
+  13.9 to 2.4 MiB, the BNat product 8.1 to 0.3 MiB, list parity at the cap
+  488.1 to 452.4 MiB (its list is a definition, which the query keeps).
+  The process's peak barely moves (530 to 520 MiB for the wide product),
+  being mostly the checked library's: the walk's garbage is collected as it
+  goes either way.
+
+**Tests.** `tests/cubical-runtime.test.mjs`: the parity of
+`append(rep(10 * 100), rep(10 * 100))`, over 100,000 cells of computation,
+keeps under 50 runtime objects, where the sharing commit's runtime keeps
+68,887. The readback mutation of a constructor's instance
+(`tests/runtime-readback.test.mjs`) now drops an open instance's
+environment, and still fails its oracle.
+
 ## Findings
 
 **Sharing.** The kernel's weak-head cache is keyed by interned syntax, so
@@ -573,7 +650,10 @@ shared (`relayed-calls-24`).
 calibrated in bytes. At the cap the probe measured a process peak of 510 MiB
 (`euclid(6).1`) and 910 MiB with every cell retained (list parity), against
 about 140–165 MiB for the kernel's walk of the same setups. Closed-environment
-pruning and a byte calibration remain EVAL4 work.
+pruning and a byte calibration remain EVAL4 work. Since 2026-10-30 a closed
+constructor instance keeps no environment
+([pruning](#closed-environment-pruning)), and a computed value no longer
+keeps the computation that made it.
 
 **Responsiveness.** The runtime runs inside the check, synchronously, as
 the kernel's queries do: the browser worker answers no message during an

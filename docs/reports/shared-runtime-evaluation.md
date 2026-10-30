@@ -31,7 +31,9 @@ the correspondence it implements ([below](#typed-readback-w1)); no checker,
 REPL or page reads a value back yet. Update of 2026-10-30: a call written
 twice in one scope, a function's body or a top-level root, is one cell in
 each instance of the scope, read for such calls when it is first entered
-([sharing of repeated calls](runtime-repl-evaluation.md#sharing-of-repeated-calls)).
+([sharing of repeated calls](runtime-repl-evaluation.md#sharing-of-repeated-calls)),
+and a constructor's instance keeps no environment when it is closed
+([closed-environment pruning](runtime-repl-evaluation.md#closed-environment-pruning)).
 The rest of this report describes the query as #289 added it.
 
 ## Boundary and representation

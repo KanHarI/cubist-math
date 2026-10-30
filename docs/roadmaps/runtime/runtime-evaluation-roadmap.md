@@ -426,7 +426,7 @@ scope, as in the work plan.
 | NUM2 | New binary-backed Z and Q, ring/domain/field laws and default APIs. Generic fractions (#279), binary integers (#280, #281) and the binary-rational API, released on folded normal forms (#283); binary generic ring numerals and the default `Z`/`Q` migration, with casts and rendering, on the same gate (2026-10-26). The rational inverses' full normal forms remain targets | NUM1; current quotients, rings and fractions | L |
 | EVAL2 | Memoized full normalization; implemented | EVAL0; independent of EVAL1 | M |
 | EVAL3 | Closure evaluator for a specified data fragment. A first internal query for ordinary data (#289), which computes REPL and print value forms (REPL integration); higher sorts, patterns and typed readback remain | EVAL0 and semantic contract | L |
-| EVAL4 | Explicit evaluation stack and bounded runtime. #289's machine loop and a synchronous observation for the checker, and sharing of repeated calls (2026-10-30); a responsive snapshot for asynchronous use, memory calibration and closed-environment pruning remain | EVAL3 design; implement alongside it | M |
+| EVAL4 | Explicit evaluation stack and bounded runtime. #289's machine loop and a synchronous observation for the checker, sharing of repeated calls and closed-environment pruning (2026-10-30); a responsive snapshot for asynchronous use and memory calibration remain | EVAL3 design; implement alongside it | M |
 | EVAL5 | Lazy observation and typed readback. The observation contract is implemented: demand marks (#304–#306) and folded normal forms (#309, #310); typed readback remains | EVAL3, EVAL4 | L |
 | EVAL6 | Packed BNat runtime values and checked specialization | NUM0–NUM2, EVAL3, EVAL4; new profile | L |
 | EVAL7 | Efficient checked divisibility and search over BNat. **Implemented** on 2026-10-28: the library modules (part one), and the archive's Euclid consumers moved to the library's `euclid` with its divisibility and primality deleted from the archive (part two) | NUM1, EVAL0; independent of the new evaluator | M |
@@ -1247,11 +1247,22 @@ EVAL4's items:
   0.04% more. A call that two applications
   each make, which the kernel's cache shares once substituted, is not
   shared (`relayed-calls-24`).
+- **Closed-environment pruning: done** on 2026-10-30
+  ([report](../../reports/runtime-repl-evaluation.md#closed-environment-pruning)),
+  where it pays: a constructor's instance, an annotation no value form
+  forces, keeps no environment when it is closed, and a computed value no
+  longer keeps, through its instance, the computation that made it. The
+  retained objects of the constructs' walks fall by four fifths, the wide
+  binary-integer product's from 656,504 to 1,861, for under 1% more steps.
+  Pruning every closed code, every closed annotation, or an open instance
+  to the frames it needs was measured and not kept: deciding that a code
+  is closed reads its whole syntax, which cost the small walks up to three
+  quarters more steps, and the rest bought no further fall.
 - Open: a responsive snapshot copy for asynchronous use, narrowed by the
   lazy copy, which reads inside observations, between the slices at which
   `observe` yields, to the η check's walk of a function's syntax and a
-  declared type's descriptors, each within one transition; memory
-  calibration; and closed-environment pruning.
+  declared type's descriptors, each within one transition; and memory
+  calibration.
 
 **For the user's decision, recorded on 2026-10-28 and not scheduled:**
 whether the runtime may show a path constructor applied to its data with

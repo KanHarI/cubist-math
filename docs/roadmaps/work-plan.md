@@ -981,7 +981,8 @@ Each step lands in focused PRs under the review rule above.
       sorts, leaving path and composition demand unsupported, so that `BInt`
       and `BQ` values evaluate. User-facing use also needs EVAL4's open items:
       a responsive snapshot copy, memory calibration and closed-environment
-      pruning.
+      pruning (pruning and the sharing of repeated calls done on
+      2026-10-30, below).
       - **Value forms, done on 2026-10-26**
         ([report](../reports/runtime-repl-evaluation.md)): `evaluate e` in
         the CLI REPL, the REPL page, the reference pages' REPL bar and the
@@ -1033,6 +1034,12 @@ Each step lands in focused PRs under the review rule above.
         retained objects grow by at most one against main on the
         constructs' walks and the probe's workloads. A call two
         applications each make is not shared (`relayed-calls-24`).
+      - **EVAL4's closed-environment pruning, done on 2026-10-30**
+        ([report](../reports/runtime-repl-evaluation.md#closed-environment-pruning)):
+        a closed constructor instance keeps no environment, so a computed
+        value no longer keeps the computation that made it; the
+        constructs' walks retain four fifths fewer objects for under 1%
+        more steps.
    4. **Typed readback** (EVAL5): read runtime values back into kernel terms
       by their types, with the written readback correspondence and the
       applicable EVAL8 review. Decided on 2026-10-28
