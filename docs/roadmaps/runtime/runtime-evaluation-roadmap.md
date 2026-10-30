@@ -1377,7 +1377,9 @@ The [typed readback note](typed-readback.md) of 2026-10-28 specifies the
 readback, its correspondence and the observations it moves. The user
 accepted every recommendation the same day (D1–D6): readback serves
 displays and a per-node fallback, and no verdict consumes one. Its W1,
-readback and its oracle tests, and W2, the per-node fallback, are next.
+readback and its oracle tests, is done; W2, the per-node fallback, is
+held (2026-10-30), since it runs slower in wall time than the whole-walk
+restart it replaces.
 
 Provide typed readback for demanded data and a separately specified way to
 inspect suspended fields. Keep function bodies as closures until application
