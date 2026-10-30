@@ -86,7 +86,6 @@ export const proofCatalog = [
 
   { id: "field_arithmetic", topic: "fields", title: "Fields · arithmetic identities" },
   { id: "field_homomorphisms", topic: "fields", title: "Fields · unital homomorphisms are injective" },
-  { id: "natural_minimum", topic: "arithmetic", title: "Natural numbers · least witnesses" },
   { id: "formal_series", topic: "polynomials", title: "Formal series · convolution and ring identities" },
   { id: "polynomial_support", topic: "polynomials", title: "Polynomials · finite coefficient support" },
   { id: "polynomial_ring", topic: "polynomials", title: "Polynomials form a commutative ring" },
@@ -113,23 +112,6 @@ export const proofCatalog = [
   { id: "polynomial_annihilator", topic: "algebraic-extensions", title: "Algebraic elements · annihilator ideals and irreducibility" },
 
   { id: "cubical_paths", topic: "homotopy", title: "Cubical paths · computation, composition and pushouts", backend: "cubical" },
-  { id: "radix_uniqueness", topic: "arithmetic", title: "Radix notation · uniqueness of bounded remainders" },
-  { id: "radix_equivalence", topic: "arithmetic", title: "Arbitrary radix and Nat · full equivalence" },
-  { id: "radix_binary_equivalence", topic: "arithmetic", title: "Binary and arbitrary radix · direct digit equivalence" },
-  { id: "radix_univalence_transfer", topic: "arithmetic", title: "Factorial across representations · univalence transport" },
-  { id: "binary_induction", topic: "arithmetic", title: "Binary numbers · dependent induction" },
-  { id: "binary_equivalence", topic: "arithmetic", title: "Binary and unary naturals · equivalence" },
-  { id: "binary_arithmetic_correct", topic: "arithmetic", title: "Binary arithmetic · compatibility with Nat" },
-  { id: "binary_univalence_transfer", topic: "arithmetic", title: "Binary and unary factorial · univalence transport" },
-  { id: "radix_induction", topic: "arithmetic", title: "Radix numbers · dependent induction" },
-  { id: "radix_digit_laws", topic: "arithmetic", title: "Radix digits · increment and overflow laws" },
-  { id: "radix_decode", topic: "arithmetic", title: "Radix evaluation · successor and Nat round trip" },
-  { id: "radix_arithmetic_correct", topic: "arithmetic", title: "Radix arithmetic · compatibility with Nat" },
-  { id: "binary_naturals", topic: "arithmetic", title: "Binary naturals · inductive digits and binary literals" },
-  { id: "binary_arithmetic", topic: "arithmetic", title: "Binary arithmetic · 10! = 3628800" },
-  { id: "radix_naturals", topic: "arithmetic", title: "Arbitrary radix · finite digits and inductive numerals" },
-  { id: "radix_arithmetic", topic: "arithmetic", title: "Arbitrary radix · carries, addition and multiplication" },
-  { id: "radix_factorial", topic: "arithmetic", title: "One factorial algorithm · base 2 and base 10" },
   { id: "subgroup_images", topic: "algebra", title: "Subgroups · images, adjunction and surjective factorization" },
   { id: "group_cosets", topic: "algebra", title: "Cosets · normality, quotient paths and homomorphism fibers" },
   { id: "quotient_descent", topic: "sets-maps", title: "Quotients · constructive descent and unique factorization" },
@@ -393,7 +375,6 @@ export const proofCatalog = [
   { id: "suspension_types", topic: "homotopy", title: "Suspension · definitions from the declared pushout" },
   { id: "suspension", topic: "homotopy", title: "Suspension & the circle · foundations" },
   { id: "basics", topic: "basic-logic", title: "Functions, pairs & induction · examples" },
-  { id: "primes", topic: "arithmetic", title: "Natural numbers · bounded least-witness search and factorial" },
 ];
 
 export function proofsInTopic(topic) {

@@ -41,8 +41,10 @@ test("the complete canonical .cubist corpus checks with the sole native kernel",
   // classical_axioms (K2.5's in-place migration), added h1_truncation's 6
   // and classical_axioms' 7; and least elements (NT3) added unat's 2 order
   // laws, the library's unat_least_elements (13) and polynomial_degree's
-  // classical_least.
+  // classical_least; and NT5 deleted the archive's binary and radix
+  // numerals, natural_minimum and primes' last 3 (331), with the library's
+  // lexemes (8) and lists (7), which only binary_naturals imported.
   assert.deepEqual(report.importErrors, []);
-  assert.equal(report.declarations.length, 3873, "The corpus must not silently lose modules.");
+  assert.equal(report.declarations.length, 3527, "The corpus must not silently lose modules.");
   t.diagnostic(JSON.stringify(report.counts));
 });
