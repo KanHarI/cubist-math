@@ -208,7 +208,9 @@ Moved to the library:
 - The language reference's binary numbers section and the quick reference
   show `bnat` and `nat`; the Cubist guide names the radix modules.
 
-Left for NT5, which deletes the modules:
+Left for NT5, which deletes the modules. NT5 did so on 2026-10-30; its row
+in the [plan](../roadmaps/archive-retirement.md#number-theory-in-the-library)
+records what became of each consumer.
 
 - `tests/cubical-transfers.test.mjs`, with `tests/fixtures/factorial-transfer.cubist`
   and `tests/translator/number-transport.mjs`: it builds Glue transports of

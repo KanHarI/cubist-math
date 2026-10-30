@@ -103,7 +103,8 @@ stays within its stated contract.
 - EVAL7 moves primality and divisibility to `library/`, as step NT2 of moving
   all of the archive's number theory there. The archive's `euclid`, `primes`
   and numeral modules are deleted once their consumers move
-  ([archive retirement](../archive-retirement.md#number-theory-in-the-library)).
+  ([archive retirement](../archive-retirement.md#number-theory-in-the-library));
+  NT5 deleted the last of them on 2026-10-30.
 - The [work plan](../work-plan.md#first-actions) orders these steps after the
   site-publication fix and B8 of the
   [debugging plan](rational-normalization-debug-plan.md).
@@ -394,14 +395,14 @@ deliverable alongside the semiring isomorphism. It permits checked
 transport of dependent constructions; it does not make unary and binary
 constructor syntax definitionally equal.
 
-The archive already contains useful source evidence:
-[canonical binary data](../../../archive/first-library/binary_naturals.cubist),
-[bitwise arithmetic](../../../archive/first-library/binary_arithmetic.cubist),
-[round trips and equivalence](../../../archive/first-library/binary_equivalence.cubist),
-and [arithmetic correctness](../../../archive/first-library/binary_arithmetic_correct.cubist).
-Reuse their mathematics and checked examples while building the foundational
-modules in `library/`; do not make the library depend on archived `primes`
-or other archive-only prerequisites. Keep numeral types and basic arithmetic
+The archive contained useful source evidence: canonical binary data,
+bitwise arithmetic, round trips and equivalence, and arithmetic correctness
+(`binary_naturals`, `binary_arithmetic`, `binary_equivalence` and
+`binary_arithmetic_correct`). Their mathematics was reused for the
+foundational modules in `library/`, which depend on no archive module; NT4
+checked each result against its library counterpart
+([correspondence](../../reports/radix-numerals.md#binary-numerals)), and NT5
+deleted them on 2026-10-30. Keep numeral types and basic arithmetic
 below the algebraic model layer to avoid an import cycle through `algebra`.
 
 ## Milestones
@@ -1437,10 +1438,11 @@ cases, and resource accounting that includes large-integer work and readback.
 
 ### EVAL7: reduce the algorithm's work
 
-The archive's [divisibility test](../../../archive/first-library/primes.cubist)
-searches quotient candidates up to the dividend, testing multiplication and
-equality. Prime-divisor search nests these tests. Its bounded search also
-unwinds and rebuilds witness wrappers after finding an early witness.
+The archive's divisibility test, in `primes` (deleted by NT2, and the
+module by NT5), searched quotient candidates up to the dividend, testing
+multiplication and equality. Prime-divisor search nested these tests. Its
+bounded search also unwound and rebuilt witness wrappers after finding an
+early witness.
 
 Develop a checked BNat remainder-based divisibility decision and a search
 with tighter bounds and an explicit early-exit structure. Use NUM1's

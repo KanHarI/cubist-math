@@ -1571,7 +1571,7 @@ export class Translator {
       }
       case "binaryNumber": {
         // A binary literal is a selected notation's literal rule's, as any
-        // numeric token is (L2.10c), as binary.(0b1101) (L2.10j).
+        // numeric token is (L2.10c), as nat.(0b1101) (L2.10j).
         if(env.get(SELECTION)?.complete)return this.literalTerm({...n,kind:"literal",text:n.spelling??`0b${n.digits}`},scope,expected);
         if(!this.nameBased)throw unselectedLiteral(n.spelling??`0b${n.digits}`);
         if(n.digits.length>256)throw Error("Binary literals are limited to 256 significant bits.");

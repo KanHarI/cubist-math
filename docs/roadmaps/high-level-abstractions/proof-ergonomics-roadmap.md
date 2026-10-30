@@ -126,7 +126,7 @@ rules.
 
 For example, addition recurses on its first argument, so `0 + n` computes to
 `n`. The proof that `n + 0 = n` is the existing
-[`nat_add_zero`](../../../archive/first-library/primes.cubist) lemma. Applying that lemma
+[`unat_add_zero`](../../../library/unat.cubist) lemma. Applying that lemma
 automatically inside a larger expression is an initial simplifier use case.
 
 Lean supplies useful precedents for a registry of simplification lemmas and an
@@ -279,7 +279,7 @@ A box marked moved names the item's new owner.
 
 ### 0. Establish examples and remove straightforward repetition
 
-- [ ] Select representative proofs from `primes`, `paths`, `finite_dependent_counts`,
+- [ ] Select representative proofs from `unat` (at first `primes`), `paths`, `finite_dependent_counts`,
   `group_operations`, and `field_vector_spaces`. Record source token counts,
   repeated explicit parameters, checking time, kernel steps, and arena usage.
   Keep the original public statements and assumption lists as a baseline.
@@ -328,13 +328,13 @@ work. Publish measured examples without claiming an unmeasured percentage gain.
 Example, checked in the [implemented arithmetic sample](../../examples/proof-ergonomics/implemented/arithmetic.cubist):
 
 ```text
-import primes;
-use nat;
+import unat;
+use unat;
 
-def add_zero_twice(n : Nat) : (n + 0) + 0 = n {
+def add_zero_twice(n : UNat) : (n + 0) + 0 = n {
   calc {
-    (n + 0) + 0 = n + 0 by nat_add_zero(n + 0);
-    _ = n by nat_add_zero(n);
+    (n + 0) + 0 = n + 0 by unat_add_zero(n + 0);
+    _ = n by unat_add_zero(n);
   }
 }
 ```
@@ -376,11 +376,11 @@ the previous checked state intact.
 Example, checked in the implemented arithmetic sample as `add_zero_twice_simp`:
 
 ```text
-import primes;
-use nat;
+import unat;
+use unat;
 
-def add_zero_twice(n : Nat) : (n + 0) + 0 = n {
-  simp only [nat_add_zero];
+def add_zero_twice(n : UNat) : (n + 0) + 0 = n {
+  simp only [unat_add_zero];
 }
 ```
 
@@ -731,7 +731,7 @@ Use existing checks as applicable, adding focused tests for each implementation:
 ```sh
 npm test -- tests/cubical-program.test.mjs
 npm test -- tests/unfolding-syntax.test.mjs
-npm test -- archive/first-library/primes.cubist
+npm test -- library/unat.cubist
 npm test -- archive/first-library/paths_.cubist
 npm run test:browser
 make lint

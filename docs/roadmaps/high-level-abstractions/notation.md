@@ -949,8 +949,7 @@ the same name-based reading. There were 117 such literals in 9 files: three
 test modules and six archive modules. The `nat` view has no `literal` rule,
 so `use nat;` alone would refuse them, and after this slice a literal
 outside any view is an error. So the module that declares `BinaryNat`,
-[`archive/first-library/binary_naturals.cubist`](../../../archive/first-library/binary_naturals.cubist),
-declares a `binary` view whose `literal` rule reads `0b` tokens into the
+the archive's `binary_naturals`, declares a `binary` view whose `literal` rule reads `0b` tokens into the
 same constructors. A module that mixes the two selects one and qualifies
 the other, as in
 [`cubist-tests/computability_evaluation.cubist`](../../../cubist-tests/computability_evaluation.cubist):
@@ -966,6 +965,13 @@ A binary literal's parse computes to the earlier expansion, so the
 migration checked that each elaborates to a definitionally equal term
 rather than an identical one. The printer qualifies a binary value wherever the
 surrounding view is not `binary`.
+
+Since then, NT4 of the
+[archive retirement](../archive-retirement.md#number-theory-in-the-library)
+moved the test modules that read these literals to the library's binary
+`Nat` and its `bnat` notation, and NT5 deleted `binary_naturals` and the
+archive modules that used it on 2026-10-30; the printer's `binary` display
+went with them.
 
 ## L2.10k. Fields with a partial inverse
 
@@ -1108,7 +1114,9 @@ binary natural data can make a numeral's input logarithmic in its value
 without adding a kernel primitive. It does not make normalization of
 ordinary unary `Nat` results logarithmic or remove evaluation limits by
 itself. This slice needs its own representation, resource limits and
-print-back contract. The archive's `BinaryNat` notation is a useful pilot.
+print-back contract. The archive's `BinaryNat` notation was a pilot; since
+NUM0 and NUM1, public `Nat` is binary, and `nat` reads decimal and `0b`
+literals into its bits.
 
 ### L2.10g. Decidable propositions
 
