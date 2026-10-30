@@ -233,3 +233,44 @@ computable def bnat_le_mul(a, b, c, d : BNat, ab : bnat_le(a, b), cd : bnat_le(c
       )
     )
   );
+
+// What is at most and not below is equal, on the bits.
+computable def bordering_le_not_lt(
+  order : BOrdering, below : BOrderingLe(order), not_less : BOrderingLt(order) -> Void
+) :
+  BOrderingEqual(order) := match order {
+    b_less => absurd(not_less(tt));
+    b_equal => tt;
+    b_greater => absurd(below);
+  };
+
+computable def bnat_le_not_lt_equal(
+  a, b : BNat, below : bnat_le(a, b), not_less : bnat_lt(a, b) -> Void
+) :
+  a = b := bnat_equal_path(a, b, bordering_le_not_lt(bnat_compare(a, b), below, not_less));
+
+// A sum with a positive summand is positive, on the bits.
+computable def bnat_positive_add(a, c : BNat, positive : bnat_lt(b_zero, a)) :
+  bnat_lt(b_zero, bnat_add(a, c)) := match a, c {
+    b_zero, _ => absurd(positive);
+    b_positive(p), b_zero => tt;
+    b_positive(p), b_positive(q) => tt;
+  };
+
+// Strict bounds add: a + c < b + d.
+computable def bnat_add_lt(a, b, c, d : BNat, ab : bnat_lt(a, b), cd : bnat_lt(c, d)) :
+  bnat_lt(bnat_add(a, c), bnat_add(b, d)) := bnat_lt_from_decoding(
+    bnat_add(a, c), bnat_add(b, d),
+    comp(
+      fun (i : Interval) => (bnat_decode_add(a, c) @ ~i) < (bnat_decode_add(b, d) @ ~i),
+      unat_le_add(
+        succ(bnat_to_unat(a)), bnat_to_unat(b), bnat_to_unat(c), bnat_to_unat(d),
+        bnat_lt_decode(a, b, ab),
+        unat_le_trans(
+          bnat_to_unat(c), succ(bnat_to_unat(c)), bnat_to_unat(d),
+          unat_le_step(bnat_to_unat(c), bnat_to_unat(c), unat_le_refl(bnat_to_unat(c))),
+          bnat_lt_decode(c, d, cd)
+        )
+      )
+    )
+  );

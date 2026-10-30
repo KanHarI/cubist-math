@@ -55,6 +55,35 @@ computable def nat_mul_assoc(a, b, c : Nat) : (a * b) * c = a * (b * c) := bnat_
 
 computable def nat_mul_add(a, b, c : Nat) : a * (b + c) = a * b + a * c := bnat_mul_add(a, b, c);
 
+computable def nat_add_mul(a, b, c : Nat) : (a + b) * c = a * c + b * c {
+  calc {
+    (a + b) * c = c * (a + b) by nat_mul_comm(a + b, c);
+    _ = c * a + c * b by nat_mul_add(c, a, b);
+    _ = a * c + c * b by cong(fun (x : Nat) => x + c * b, nat_mul_comm(c, a));
+    _ = a * c + b * c by cong(fun (x : Nat) => a * c + x, nat_mul_comm(c, b));
+  }
+}
+
+// succ(a) * b = a * b + b.
+computable def nat_succ_mul(a, b : Nat) : succ(a) * b = a * b + b {
+  calc {
+    succ(a) * b = (a + 1) * b by cong(fun (x : Nat) => x * b, bnat_succ_offset(a));
+    _ = a * b + 1 * b by nat_add_mul(a, 1, b);
+    _ = a * b + b by cong(fun (x : Nat) => a * b + x, nat_one_mul(b));
+  }
+}
+
+// Sums regroup: (a + b) + (c + d) = (a + c) + (b + d).
+computable def nat_add_interchange(a, b, c, d : Nat) : (a + b) + (c + d) = (a + c) + (b + d) {
+  calc {
+    (a + b) + (c + d) = a + (b + (c + d)) by nat_add_assoc(a, b, c + d);
+    _ = a + ((b + c) + d) by cong(fun (x : Nat) => a + x, sym(nat_add_assoc(b, c, d)));
+    _ = a + ((c + b) + d) by cong(fun (x : Nat) => a + (x + d), nat_add_comm(b, c));
+    _ = a + (c + (b + d)) by cong(fun (x : Nat) => a + x, nat_add_assoc(c, b, d));
+    _ = (a + c) + (b + d) by sym(nat_add_assoc(a, c, b + d));
+  }
+}
+
 computable def nat_zero_ne_succ(n : Nat, p : 0 = succ(n)) : Void := bnat_zero_ne_succ(n, p);
 
 computable def nat_succ_injective(a, b : Nat, p : succ(a) = succ(b)) :
