@@ -1034,7 +1034,15 @@ Each step lands in focused PRs under the review rule above.
       value and by origin, internal to the runtime query, with its oracle
       over every value form the runtime computes, the note's mutations and
       M1 ([report](../reports/shared-runtime-evaluation.md#typed-readback-w1));
-      no observation changes. W2 (the fallback per node) is next.
+      no observation changes. W2, the fallback per node, is held (decided
+      on 2026-10-30): implemented on branch `typed-readback-w2`, it keeps
+      every value form and saves 2–53% of the kernel's ticks on the
+      workloads that fall back, but runs slower in wall time on nearly
+      all of them (the library Euclid by 2–100%, `factorial(40)` by 8%),
+      because a composition at a data sort reads its base's weak head and
+      a fallback that forces nothing leaves that base, the rest of the
+      computation, to the kernel. The whole-walk restart stays until a
+      design faster end to end is ready.
    5. **The archive's number theory in the library**
       ([NT1–NT5](archive-retirement.md#number-theory-in-the-library)):
       1. NT1: the unary order lemmas move to `unat`. **Done** on 2026-10-28.
