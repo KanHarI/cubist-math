@@ -529,3 +529,113 @@ rationals' terms keep their sharing: about 2,000 nodes as a DAG for 2.5 to
 prime rows and `binary-factorial-40` read back 11 nodes fewer, in 52
 steps fewer; the readback before the review's fixes gives this table's
 figures on the merged tree, so main's merge, not the fixes, changed them.
+
+## Typed readback M3
+
+M3 of the [typed readback note](../roadmaps/runtime/typed-readback.md#9-measurements-to-take),
+2026-10-30: is a printed normal form cheaper when the runtime computes its
+data? **W3 is not taken: M3 shows no gain** on the corpora's printed `!!`,
+and a gain elsewhere only where a large value is data that no certificate
+holds.
+
+`node tools/folded-readback-probe.mjs` computes `print(evaluate(!!e));`,
+which the REPL's `evaluate !!e;` checks, in two ways:
+
+- **kernel**, as today: the kernel's folded normal form of `e`
+  (`checker.normalForm`, `normalizeFolded`);
+- **runtime**, as W3's row has it: a query made with origins walks the
+  value form, as `valueFormOf` walks it but spending no query of the
+  directive's fuel; `R(root)` is read back with origins; and the kernel's
+  folded normal form of `R(root)` is shown. A value the runtime cannot
+  compute keeps the kernel's path: a demand it refuses (W2 is held, so the
+  kernel computes the whole normal form again, as `valueFormOf` restarts),
+  a stop at its limits, or a readback past the kernel's syntax depth
+  (K344). The sample then includes the runtime's wasted work.
+
+Each sample, one print by one path, is a process of its own. The workloads
+are the note's, with the library Euclid in place of the archive's, deleted,
+and the terms the contracts check under `!!_`, shown here as prints
+(`expecting !!_` stays on the kernel, D1): each is the REPL entry after its
+setup, whose last declaration's commit cleared the kernel's weak-head,
+normal-form and folded caches (`cc_kernel_commit_checkpoint`). The corpora's
+are every printed `!!` of the Cubist test modules (14) and of the language
+reference's examples (12), each where it stands, after the directives
+before it. The contracts print no `!!`. Ticks are the kernel's query steps;
+steps are the runtime's, its walk's and then its readback's; a time is the
+`!!`'s own, from after the term's check to its decoded normal form, the
+display excluded, from one cold sample. The run was at `0657ab6c` (main
+`6aeeba86` and the probe) with a clean tree and a fresh `make wasm`, Node
+24.13.0, macOS arm64 (Apple M3 Pro, 36 GiB), one process at a time with no
+other heavy job. An earlier run of the same procedure, from a scratch copy
+of the probe, gave the same ticks, steps and texts for every sample, and
+times in the same direction.
+
+| Workload | Kernel's `!!` | By the runtime: walk + readback steps, then kernel ticks | Time, kernel → runtime | Text |
+| --- | ---: | --- | --- | --- |
+| `euclid(0)` | 13,461 ticks | 19,778 + 523 steps, 12,980 ticks | 1.3 → 5.4 ms | same |
+| `euclid(3)`, `(4)`, `(5)`, `(6)`, `(10)` | 32,189 to 829,229 ticks | falls back at a composition after 3,711 to 4,434 steps; the kernel's ticks | 2.4 → 4.1 ms to 49 → 77 ms | same |
+| `euclid(7)` | K344 after 640,479 ticks | falls back after 4,673 steps; K344 | 34.8 → 37.8 ms | same K344 |
+| `factorial(40)` | 38,385,880 ticks | falls back after 3,765 steps | 1,208 → 1,351 ms | same |
+| `count_into(2 * 254, 0)` | 44,242 ticks | 66,911 + 4,072 steps, 1,527 ticks | 4.0 → 8.8 ms | same |
+| `count_into(2 * 255, 0)` | K344 after 42,882 ticks | 67,172 + 4,088 steps, 1,533 ticks | 3.0 → 11.3 ms | `510` where the kernel stops |
+| `12345678901234567890 * 98765432109876543210` | 738,630 ticks | 652,265 + 1,049 steps, 395 ticks | 45 → 27 ms | same |
+| the wide binary-integer product | 7,837,762 ticks | 4,329,349 + 2,416 steps, 8,479 ticks | 480 → 90 ms | same |
+| `integers.(-340282366920938463463374607431768211455)`, a contract's | 1,264,220 ticks | 489,152 + 1,312 steps, 8,200 ticks | 69 → 17 ms | same |
+| `bint_decide(340282366920938463463374607431768211455, -1)` | 1,317,557 ticks | 49,978 + 3,688 steps, 1,304,501 ticks | 75 → 82 ms | same |
+| `2/3 + 1/6` | 58,376 ticks | 28,282 + 3,186 steps, 40,185 ticks | 7.0 → 15.0 ms | same |
+| the wide inverse, `bq_inv(…)` | 636,746 ticks | 1,202,748 + 8,526 steps, 457,266 ticks | 46 → 89 ms | same |
+| `bq_decide(1/2, 2/3)` | 64,705 ticks | 24,000 + 4,395 steps, 54,857 ticks | 7.3 → 13.0 ms | same |
+| `bq_decide(1/2 + 1/3, 5/6)` | 78,600 ticks | falls back at a path constructor after 44,542 steps | 8.7 → 14.0 ms | same |
+| `typed(BQ, 18446744073709551615/340282366920938463463374607431768211455)`, a contract's | 1,384,186 ticks | 794,516 + 6,015 steps, 1,259,075 ticks | 85 → 123 ms | same |
+| `typed(BQ, 18446744073709551615.125)`, a contract's | 205,459 ticks | 464,638 + 3,520 steps, 40,900 ticks | 23 → 34 ms | same |
+| `rat(int(2, 0), 2)`, a contract's and the reference's | 43,086 ticks | 6,141 + 777 steps, 42,238 ticks | 5.0 → 8.1 ms | same |
+| `rationals.(18446744073709551615/340282366920938463463374607431768211455)`, a contract's | 1,404,058 ticks | 794,548 + 6,015 steps, 1,261,177 ticks | 79 → 118 ms | same |
+| `rat_inv(rationals.(-340282366920938463463374607431768211455/18446744073709551615))`, a contract's | 630,195 ticks | 1,202,892 + 8,526 steps, 457,008 ticks | 49 → 83 ms | same |
+| `euclid(5).2`, a contract's | 317,210 ticks | falls back after 4,322 steps | 24 → 28 ms | same |
+| `bnat_divmod_correct(121, positive_bits(11))`, a contract's | 102,270 ticks | 19,849 + 1,380 steps, 100,614 ticks | 8.2 → 13.4 ms | same |
+| `least_divisor(121, tt).2.2.1`, a contract's | 275,924 ticks | falls back after 20,290 steps | 24.1 → 24.6 ms | same |
+
+The corpora: every text is the kernel's. The Cubist test modules' 14 printed
+`!!` take 16,949 ticks by the kernel, 4.0 ms in all; by the runtime the same
+16,949 ticks, 5,161 steps and 17.1 ms, two of them falling back (at a
+composition in `!!euclid(3)` and in `!!one_three_related`). The reference's
+12, all computed by the runtime, take 44,813 ticks and 8.5 ms by the kernel,
+and 43,741 ticks, 9,813 steps and 27.0 ms by the runtime. Most of these are
+functions, such as `!!and_swap`: a non-data root is read back by its origin,
+the term asked for, so the kernel's work is the same, and the runtime's
+query, walk and readback come on top. The reference's largest,
+`rat(int(2, 0), 2)`, is in the table. Each process's peak, 131 to 680 MiB, is its setup's: the two
+paths' peaks differ by at most 66 MiB, either way.
+
+**Why there is no gain.** A folded normal form keeps certificates named, and
+reading them back so is what origins are for (the note's 3.4): inside a
+non-data part every cell is read by its origin, data included, and a
+definition reference is kept. So the kernel's folded normalization of
+`R(root)` computes again the data that a certificate's arguments hold, as
+its own normalization of `e` does: with the data outside its certificate
+`bint_mul_nonzero(class(…), class(…), …)` computed, `2/3 + 1/6`'s readback
+still takes 40,185 ticks to normalize, against the kernel's 58,376 for the
+whole, and a decision's refutation, a function, keeps 99% of
+`bint_decide`'s. The runtime saves only the data outside every non-data
+part, and adds its own walk, which for the wide inverse alone takes
+1,202,748 steps against the kernel's 636,746 ticks for the whole normal
+form. Where a value is data throughout, as an integer is, a class of two
+binary naturals, the kernel's normalization of `R(root)` only copies it
+(8,479 ticks against 7,837,762 for the wide product), and the runtime's
+path is 1.7 to 5.3 times faster. The library Euclid falls back at a
+composition for every input measured but 0, as its value form does, and so
+does `factorial(40)`. With W2 their walks would go on: Euclid's normal form
+holds certificates, as the rationals' do, and `factorial(40)`'s is a
+number, data throughout, which a later M3 would measure.
+`count_into(2 * 255, 0)` shows `510` where the kernel's walk stops with
+K344, as its value form does already: it is the reference's example of the
+kernel's depth guard, not a `!!` the corpora use.
+
+So the gains are the products of 39- and 20-digit numerals, one wide integer
+literal and the depth guard's example, against losses on every rational and
+decision measured and on every small value and function, and the
+runtime's wasted steps on every fallback. No printed `!!` of the corpora
+gains. W3 would add a second path for `!!`, with its fallback, for none of
+them; printed `!!` and the REPL's `evaluate !!e;` stay on the kernel's
+folded normal form. The probe stays, so that M3 can be taken again, as
+after W2.

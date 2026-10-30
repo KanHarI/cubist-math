@@ -8,12 +8,13 @@
 //            runtime cannot compute, a demand it refuses, a stop at its
 //            limits or a readback past the kernel's syntax depth (K344),
 //            keeps today's path, whose work the sample then includes.
-// Each sample, one print by one path, is a fresh process: the print's
-// setup is checked first, and the print runs in a declaration transaction
-// of its own, which finds the kernel's caches cleared by the end of the
-// one before. The workloads are the note's and the contracts' `!!_` terms,
-// each as a REPL entry, and every printed `!!` of the Cubist test modules
-// and of the language reference's examples, in its own module or session.
+// Each sample, one print by one path, is a fresh process. The workloads
+// are the note's and the terms the contracts check under `!!_`, each the
+// REPL entry after its setup, whose last declaration's commit cleared the
+// kernel's weak-head, normal-form and folded caches
+// (cc_kernel_commit_checkpoint); and every printed `!!` of the Cubist test
+// modules and of the language reference's examples, where it stands, after
+// the directives before it.
 // Ticks are the kernel's query steps (cc_kernel_work), steps the runtime's;
 // times and the process's peak memory are one machine's observations.
 // Neither path's answer is evidence.

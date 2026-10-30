@@ -1034,7 +1034,12 @@ Each step lands in focused PRs under the review rule above.
       value and by origin, internal to the runtime query, with its oracle
       over every value form the runtime computes, the note's mutations and
       M1 ([report](../reports/shared-runtime-evaluation.md#typed-readback-w1));
-      no observation changes. W2 (the fallback per node) is next.
+      no observation changes. W2 (the fallback per node) is next. M3 was
+      taken on 2026-10-30
+      ([report](../reports/shared-runtime-evaluation.md#typed-readback-m3)):
+      printed `!!` through the runtime gains on no printed `!!` of the
+      corpora and runs slower on rationals, so W3 is not taken and printed
+      `!!` stays on the kernel's folded normal form.
    5. **The archive's number theory in the library**
       ([NT1–NT5](archive-retirement.md#number-theory-in-the-library)):
       1. NT1: the unary order lemmas move to `unat`. **Done** on 2026-10-28.
