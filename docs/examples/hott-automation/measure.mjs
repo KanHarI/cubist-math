@@ -11,6 +11,7 @@ import createCubical from "../../../web/dist/cubical.mjs";
 import { CubicalProgram } from "../../../web/cubical-program.mjs";
 import { cubicalSourceFile } from "../../../web/cubical-sources.mjs";
 import { parse, tokenize } from "../../../web/cubist/parser.mjs";
+import { sourceReader } from "../../../tools/module-sources.mjs";
 
 const root = new URL("../../../", import.meta.url);
 const selection = [
@@ -26,19 +27,23 @@ const selection = [
   ["paths_", "right_unit"],
   ["paths_", "transport_constant"],
   ["paths_", "transport_ap"],
-  // Equivalence construction, and transport along univalence.
+  // Equivalence construction, and transport along univalence. Transport
+  // along ua by UnivalenceBeta was binary_univalence_transfer's
+  // univalence_transfer_equality until NT5 deleted that module (2026-10-30).
   ["equivalence_from_inverse", "equiv_from_inverse"],
-  ["binary_univalence_transfer", "univalence_transfer_equality"],
+  ["circle", "successor_transport"],
   ["group_hom_universes", "group_hom_ext_at"],
   ["quotient_descent", "quotient_rec_beta"],
 ];
 const modules = [...new Set(selection.map(([module]) => module))];
+// The selected modules are the archive's; the program resolves their
+// imports as the archive's resolve, in the archive and then in the library.
 const readSource = name => readFile(new URL(`archive/first-library/${cubicalSourceFile(name)}`, root), "utf8");
 // A universe-generic definition (G0) is one checked declaration, measured
 // like any other.
 const observations = new Map();
 let current = null;
-const program = new CubicalProgram(await createCubical(), readSource, {
+const program = new CubicalProgram(await createCubical(), sourceReader(), {
   collectReferences: false,
   onDeclarationStart(module, syntax, checker) {
     current = { binding: `${module}__${syntax.name.text}`, started: performance.now(),
@@ -74,8 +79,8 @@ program.kernel.withGrowingBudget = operation => {
 // immediately precedes the translator's define.
 const checker = program.checker, infer = checker.infer, define = checker.define;
 let lastContextFreeSteps = 0;
-checker.infer = function (term, context) {
-  const before = this.steps, result = infer.call(this, term, context);
+checker.infer = function (term, context, ...rest) {
+  const before = this.steps, result = infer.call(this, term, context, ...rest);
   if (context === undefined) lastContextFreeSteps = this.steps - before;
   return result;
 };
@@ -85,7 +90,10 @@ checker.define = function (...args) {
 };
 // Fresh session: the whole import graph, checked once in a new kernel.
 const fresh = await program.check(modules.map(module => `import ${module};`).join("\n"), "hott_baseline");
-if (!fresh.complete) throw new Error(`Baseline did not fully check: ${JSON.stringify(fresh.gaps)}`);
+// The checked module only imports, so the check is whole when every import
+// loads and every imported declaration checks.
+if (fresh.gaps.length || !fresh.imports.every(d => d.verified))
+  throw new Error(`Baseline did not fully check: ${JSON.stringify(fresh.gaps)}`);
 const freshObservations = new Map(observations);
 observations.clear();
 
