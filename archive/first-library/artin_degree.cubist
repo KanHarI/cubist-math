@@ -2,7 +2,6 @@ import unat;
 import artin_equivariance;
 import finite_linear_lifts;
 import extension_degree;
-import natural_minimum;
 
 // A family of n spanning vectors bounds the size of any basis by n. The
 // proof lifts a basis through the family's surjection and applies the checked
@@ -30,7 +29,7 @@ def finite_spanning_basis_size_bound(
     exact coordinate_injection_bound(K, n, m, lift_, injective);
   }
   exact mere_eliminate(
-    X, le(m, n), natural_order_prop(m, n), bound,
+    X, le(m, n), unat_le_is_prop(m, n), bound,
     finite_linear_lift(K, C, V, f, family_linear_surjective(K, V, n, vectors, spanning), m, h)
   );
 }
@@ -41,7 +40,7 @@ def finite_spanning_dimension_bound(
 ) :
   le(m, n) {
   exact mere_eliminate(
-    FiniteBasis(K, V, m), le(m, n), natural_order_prop(m, n),
+    FiniteBasis(K, V, m), le(m, n), unat_le_is_prop(m, n),
     (
       fun (basis : FiniteBasis(K, V, m)) => finite_spanning_basis_size_bound(
         K, V, n, vectors, spanning, m, basis
@@ -108,7 +107,7 @@ def finite_subgroup_fixed_degree_upper_bound(
         )
       ), finite_extension_prop(R, intermediate_overfield(K, E, M)),
       (
-        fun (proof : FiniteExtension(R, intermediate_overfield(K, E, M))) => natural_order_prop(
+        fun (proof : FiniteExtension(R, intermediate_overfield(K, E, M))) => unat_le_is_prop(
           extension_degree(R, intermediate_overfield(K, E, M), proof), n
         )
       )
@@ -271,7 +270,7 @@ def finite_independent_dimension_bound(
 ) :
   le(n, m) {
   exact mere_eliminate(
-    FiniteBasis(K, V, m), le(n, m), natural_order_prop(n, m),
+    FiniteBasis(K, V, m), le(n, m), unat_le_is_prop(n, m),
     (
       fun (basis : FiniteBasis(K, V, m)) => finite_independent_basis_size_bound(
         K, V, n, vectors, independent, m, basis
@@ -323,7 +322,7 @@ def finite_subgroup_fixed_degree_lower_bound(
     );
   }
   exact mere_eliminate(
-    Basis, le(n, d), natural_order_prop(n, d), fromBasis,
+    Basis, le(n, d), unat_le_is_prop(n, d), fromBasis,
     finite_subgroup_evaluation_basis(K, E, H, n, finite)
   );
 }

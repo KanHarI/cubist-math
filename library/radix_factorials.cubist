@@ -1,0 +1,158 @@
+// One factorial algorithm in every radix: the pair (k, k!) stepped from
+// (0, 1), counting and multiplying in the radix, n times by n's bits
+// (bnat_iterate). Its value is n!, so it is n! converted. 10! = 3,628,800
+// is computed in binary, in base 10 and in base 2, and carried from binary
+// to every radix along the univalence path.
+import radix_conversion;
+use nat;
+
+computable def radix_factorial_step(r : Radix, state : RadixNat(r) and RadixNat(r)) :
+  RadixNat(r)
+  and RadixNat(r) := (radix_succ(r, state.1), radix_mul(r, radix_succ(r, state.1), state.2));
+
+computable def radix_factorial_pair(r : Radix, n : Nat) :
+  RadixNat(r)
+  and RadixNat(r) := bnat_iterate(
+    U0, RadixNat(r) and RadixNat(r), radix_factorial_step(r), n,
+    (radix_zero, radix_positive(radix_one(r)))
+  );
+
+computable def radix_factorial(r : Radix, n : Nat) : RadixNat(r) := radix_factorial_pair(r, n).2;
+
+// The pair after n steps is (n, n!).
+computable def RadixFactorialPair(r : Radix, n : Nat, state : RadixNat(r) and RadixNat(r)) :
+  U0 := (radix_to_nat(r, state.1) = n) and (radix_to_nat(r, state.2) = factorial(n));
+
+computable def radix_factorial_step_value(
+  r : Radix, n : Nat, state : RadixNat(r) and RadixNat(r),
+  previous : RadixFactorialPair(r, n, state)
+) :
+  RadixFactorialPair(r, succ(n), radix_factorial_step(r, state)) {
+  let count : radix_to_nat(r, radix_succ(r, state.1)) = succ(n) :=
+    trans(radix_succ_value(r, state.1), cong(succ, previous.1));
+  let product : radix_to_nat(r, radix_mul(r, radix_succ(r, state.1), state.2)) = factorial(succ(n)) {
+    calc {
+      radix_to_nat(r, radix_mul(r, radix_succ(r, state.1), state.2)) = radix_to_nat(
+        r, radix_succ(r, state.1)
+      ) * radix_to_nat(r, state.2) by radix_mul_value(r, radix_succ(r, state.1), state.2);
+      _ = succ(n) * factorial(n) by trans(
+        cong(fun (x : Nat) => x * radix_to_nat(r, state.2), count),
+        cong(fun (x : Nat) => succ(n) * x, previous.2)
+      );
+      _ = factorial(succ(n)) by sym(nat_factorial_succ(n));
+    }
+  }
+  exact (count, product);
+}
+
+computable def radix_factorial_pair_value(r : Radix, n : Nat) :
+  RadixFactorialPair(r, n, radix_factorial_pair(r, n)) := nat_peano(
+    U0, fun (m : Nat) => RadixFactorialPair(r, m, radix_factorial_pair(r, m)),
+    (refl(0), sym(nat_factorial_zero)),
+    fun (m : Nat, previous : RadixFactorialPair(r, m, radix_factorial_pair(r, m))) => comp(
+      fun (i : Interval) => RadixFactorialPair(
+        r, succ(m),
+        bnat_iterate_succ(
+          U0, RadixNat(r) and RadixNat(r), radix_factorial_step(r), m,
+          (radix_zero, radix_positive(radix_one(r)))
+        ) @ ~i
+      ), radix_factorial_step_value(r, m, radix_factorial_pair(r, m), previous)
+    ), n
+  );
+
+// Its value is n!.
+computable def radix_factorial_value(r : Radix, n : Nat) :
+  radix_to_nat(r, radix_factorial(r, n)) = factorial(n) := radix_factorial_pair_value(r, n).2;
+
+// So the radix factorial is the binary one, converted.
+computable def radix_factorial_nat(r : Radix, n : Nat) :
+  radix_factorial(r, n) = nat_to_radix(r, factorial(n)) := trans(
+    sym(radix_roundtrip(r, radix_factorial(r, n))),
+    cong(nat_to_radix(r), radix_factorial_value(r, n))
+  );
+
+computable def radix_factorial_zero(r : Radix) :
+  radix_factorial(r, 0) = radix_positive(radix_one(r)) := refl(radix_factorial(r, 0));
+
+computable def radix_factorial_succ(r : Radix, n : Nat) :
+  radix_factorial(r, succ(n)) = radix_mul(r, nat_to_radix(r, succ(n)), radix_factorial(r, n)) := radix_injective(
+    r, radix_factorial(r, succ(n)), radix_mul(r, nat_to_radix(r, succ(n)), radix_factorial(r, n)),
+    trans(
+      radix_factorial_value(r, succ(n)),
+      trans(
+        nat_factorial_succ(n),
+        sym(
+          trans(
+            radix_mul_value(r, nat_to_radix(r, succ(n)), radix_factorial(r, n)),
+            trans(
+              cong(
+                fun (x : Nat) => x * radix_to_nat(r, radix_factorial(r, n)),
+                radix_nat_roundtrip(r, succ(n))
+              ), cong(fun (x : Nat) => succ(n) * x, radix_factorial_value(r, n))
+            )
+          )
+        )
+      )
+    )
+  );
+
+// An equation of factorials carries along the univalence path: from binary
+// to a radix, transported forward, and from a radix to binary, back.
+computable def radix_factorial_from_nat(r : Radix, n, value : Nat, same : factorial(n) = value) :
+  radix_factorial(r, n) = comp(fun (i : Interval) => radix_path(r) @ i, value) := trans(
+    trans(radix_factorial_nat(r, n), sym(radix_transport(r, factorial(n)))),
+    cong(fun (x : Nat) => comp(fun (i : Interval) => radix_path(r) @ i, x), same)
+  );
+
+computable def nat_factorial_from_radix(
+  r : Radix, n : Nat, value : RadixNat(r), same : radix_factorial(r, n) = value
+) :
+  factorial(n) = comp(fun (i : Interval) => radix_path(r) @ ~i, value) := trans(
+    trans(sym(radix_factorial_value(r, n)), sym(radix_transport_reverse(r, radix_factorial(r, n)))),
+    cong(fun (x : RadixNat(r)) => comp(fun (i : Interval) => radix_path(r) @ ~i, x), same)
+  );
+
+// 10! = 3,628,800, computed in binary, and carried to every radix.
+computable def nat_factorial_ten : factorial(10) = 3628800 := refl(3628800);
+
+computable def radix_factorial_ten(r : Radix) :
+  radix_factorial(r, 10) = comp(fun (i : Interval) => radix_path(r) @ i, 3628800) := radix_factorial_from_nat(
+    r, 10, 3628800, nat_factorial_ten
+  );
+
+// 3,628,800 in base 10 and in base 2, where the digits are the bits.
+computable def radix_ten_3628800 : RadixNat(radix_ten) := radix_positive(
+  radix_append(
+    (0, tt),
+    radix_append(
+      (0, tt),
+      radix_append(
+        (8, tt),
+        radix_append(
+          (8, tt), radix_append((2, tt), radix_append((6, tt), radix_leading((3, tt, tt))))
+        )
+      )
+    )
+  )
+);
+
+computable def radix_two_3628800 :
+  RadixNat(radix_two) := nat_to_radix(radix_two, 0b1101110101111100000000);
+
+// 10! computed digit by digit in base 10 and in base 2, and carried from
+// each to binary.
+computable def radix_factorial_ten_base_ten :
+  radix_factorial(radix_ten, 10) = radix_ten_3628800 := refl(radix_ten_3628800);
+
+computable def radix_factorial_ten_base_two :
+  radix_factorial(radix_two, 10) = radix_two_3628800 := refl(radix_two_3628800);
+
+computable def nat_factorial_ten_from_base_ten :
+  factorial(10) = comp(fun (i : Interval) => radix_path(radix_ten) @ ~i, radix_ten_3628800) := nat_factorial_from_radix(
+    radix_ten, 10, radix_ten_3628800, radix_factorial_ten_base_ten
+  );
+
+computable def nat_factorial_ten_from_base_two :
+  factorial(10) = comp(fun (i : Interval) => radix_path(radix_two) @ ~i, radix_two_3628800) := nat_factorial_from_radix(
+    radix_two, 10, radix_two_3628800, radix_factorial_ten_base_two
+  );

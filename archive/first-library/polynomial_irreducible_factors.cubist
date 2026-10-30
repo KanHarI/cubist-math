@@ -133,7 +133,7 @@ def polynomial_irreducible_factor(
   let witness_ :=
     merely(NonunitDivisorAt(K, p, cp), typed(NonunitDivisorAt(K, p, cp), (p, self, refl(cp))));
   let inhabited := merely((exists n : UNat. P(n)), typed((exists n : UNat. P(n)), (cp, witness_)));
-  obtain (n, candidate, least) := natural_minimum(
+  obtain (n, candidate, least) := classical_least(
     P, (fun (i : UNat) => mere_is_prop(NonunitDivisorAt(K, p, i))), inhabited
   );
   let extract : NonunitDivisorAt(K, p, n) -> IrreducibleFactor(K, p) {

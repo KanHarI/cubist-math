@@ -1,0 +1,112 @@
+// Least elements of predicates on public binary Nat. A decidable predicate
+// that holds at some n has a least element: the search decides 0, 1, 2, ...
+// in turn, and the first where it holds ends the search, at n at the latest.
+// So the search stops at the least element, however large the witness. A
+// least element is unique, so for a predicate valued in propositions having
+// one is a proposition, and its mere existence gives it.
+// unat_least_elements has the same on unary UNat.
+import h1_truncation;
+import bnat_order_laws;
+import nat;
+use nat;
+
+// n is the least natural where P holds.
+computable def IsLeast(P : Nat -> U0, n : Nat) : U0 := P(n) and (forall m : Nat. P(m) -> n <= m);
+
+// The least natural where P holds, with its certificate.
+computable def Least(P : Nat -> U0) : U0 := exists n : Nat. IsLeast(P, n);
+
+// P holds nowhere below d.
+computable def NoneBelow(P : Nat -> U0, d : Nat) : U0 := forall m : Nat. m < d -> P(m) -> Void;
+
+computable def none_below_zero(P : Nat -> U0) :
+  NoneBelow(P, 0) := fun (m : Nat, smaller : m < 0, holds : P(m)) => bnat_lt_zero(m, smaller);
+
+// Where P fails, the bound moves up by one.
+computable def none_below_succ(P : Nat -> U0, d : Nat, none : NoneBelow(P, d), fails : P(d) -> Void) :
+  NoneBelow(P, succ(d)) := fun (m : Nat, smaller : m < succ(d), holds : P(m)) => match bnat_lt_succ_cases(
+    m, d, smaller
+  ) return Void {
+    left below => none(m, below, holds);
+    right same => fails(comp(fun (i : Interval) => P(same @ i), holds));
+  };
+
+// Where P holds, and nowhere below, is the least.
+computable def least_at(P : Nat -> U0, d : Nat, holds : P(d), none : NoneBelow(P, d)) :
+  Least(P) := (
+    d, holds,
+    fun (m : Nat, other : P(m)) => bnat_le_of_not_lt(
+      m, d, fun (smaller : m < d) => none(m, smaller, other)
+    )
+  );
+
+// The search with k candidates to go: from a candidate d, with P nowhere
+// below it and P(d + k), it finds the least.
+computable def LeastSearch(P : Nat -> U0, k : Nat) :
+  U0 := forall d : Nat. NoneBelow(P, d) -> P(d + k) -> Least(P);
+
+// With none to go, P holds at the candidate.
+computable def least_search_zero(P : Nat -> U0) :
+  LeastSearch(P, 0) := fun (d : Nat, none : NoneBelow(P, d), holds : P(d + 0)) => least_at(
+    P, d, comp(fun (i : Interval) => P(nat_add_zero(d) @ i), holds), none
+  );
+
+// Otherwise the candidate is decided: where P holds the search ends, and
+// where it fails the next candidate goes on, with one fewer to go.
+computable def least_search_succ(
+  P : Nat -> U0, decide : forall n : Nat. Decidable(U0, P(n)), k : Nat, onward : LeastSearch(P, k)
+) :
+  LeastSearch(P, succ(k)) := fun (d : Nat, none : NoneBelow(P, d), holds : P(d + succ(k))) => match decide(
+    d
+  ) return Least(P) {
+    left here => least_at(P, d, here, none);
+    right fails => onward(
+      succ(d), none_below_succ(P, d, none, fails),
+      comp(fun (i : Interval) => P(nat_succ_add_shift(d, k) @ ~i), holds)
+    );
+  };
+
+// The least natural where a decidable P holds, from a witness n: the search
+// from 0 with n candidates to go, by nat's Peano recursion.
+computable def least_element(
+  P : Nat -> U0, decide : forall n : Nat. Decidable(U0, P(n)), n : Nat, holds : P(n)
+) :
+  Least(P) := nat_peano(
+    U0, LeastSearch(P), least_search_zero(P), least_search_succ(P, decide), n, 0,
+    none_below_zero(P), comp(fun (i : Interval) => P(nat_zero_add(n) @ ~i), holds)
+  );
+
+// A least element is unique: each is at most the other.
+computable def least_unique(
+  P : Nat -> U0, m, n : Nat, least_m : IsLeast(P, m), least_n : IsLeast(P, n)
+) :
+  m = n := bnat_le_antisymmetric(m, n, least_m.2(n, least_n.1), least_n.2(m, least_m.1));
+
+// For a predicate valued in propositions, being least is a proposition.
+computable def is_least_is_prop(P : Nat -> U0, prop_ : forall n : Nat. IsProp(U0, P(n)), n : Nat) :
+  IsProp(U0, IsLeast(P, n)) := fun (u, v : IsLeast(P, n)) => path i => (
+    prop_(n, u.1, v.1) @ i,
+    pi_is_prop(
+      U0, Nat, fun (m : Nat) => P(m) -> n <= m,
+      fun (m : Nat) => pi_is_prop(
+        U0, P(m), fun (other : P(m)) => n <= m, fun (other : P(m)) => bnat_le_is_prop(n, m)
+      ), u.2, v.2
+    ) @ i
+  );
+
+// So is having a least element, since a least element is unique.
+computable def least_is_prop(P : Nat -> U0, prop_ : forall n : Nat. IsProp(U0, P(n))) :
+  IsProp(U0, Least(P)) := fun (u, v : Least(P)) => subtype_injective(
+    U0, Nat, IsLeast(P), is_least_is_prop(P, prop_), u, v, least_unique(P, u.1, v.1, u.2, v.2)
+  );
+
+// So a decidable predicate valued in propositions that merely holds
+// somewhere has a least element.
+computable def least_element_from_mere(
+  P : Nat -> U0, prop_ : forall n : Nat. IsProp(U0, P(n)), decide : forall n : Nat.
+  Decidable(U0, P(n)), somewhere : Trunc(U0, exists n : Nat. P(n))
+) :
+  Least(P) := mere_eliminate(
+    U0, U0, exists n : Nat. P(n), Least(P), least_is_prop(P, prop_),
+    fun (found : exists n : Nat. P(n)) => least_element(P, decide, found.1, found.2), somewhere
+  );

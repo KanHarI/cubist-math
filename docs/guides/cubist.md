@@ -302,18 +302,16 @@ older universe-polymorphic library are still in progress. Data types are
 and radix numbers are declared this way. The archive's `w` module still declares
 well-founded trees `W(U, V, A, B)` and `wrec`, but nothing imports it.
 
-`binary_naturals` declares the notation `binary`, whose literal rule reads
-`0b110` as a binary natural number: `binary.(0b110)`, or `0b110` after
-`use binary;`, computes to `binary_positive(binary_bit0(binary_bit1(binary_one)))`,
-and `binary.(0b0)` to `binary_zero`. Leading zeroes are ignored; malformed
-digits are rejected. There is a parser limit of 256 significant bits, subject
-also to kernel term depth limits. No machine-number conversion is used.
-Decimal literals are unary `UNat` numerals where `use unat;` selects the
-naturals' notation, and an operator or numeral outside any selection is an
-error. Import
-`binary_arithmetic` for `binary_add`, `binary_mul`, `binary_of_nat` and the
-axiom-free proof `binary_factorial_ten`. `radix_factorial` checks the same
-generic radix algorithm at base 2 and base 10; its parameter is radix minus two.
+The notation `nat` reads `0b110` as a binary natural number:
+`nat.(0b110)`, or `0b110` after `use nat;`, computes to
+`b_positive(bp_even(bp_odd(bp_one)))`, the same bits as `6`, and `0b0` to
+`b_zero`. Leading zeroes are ignored; malformed digits are rejected. No
+machine-number conversion is used. Decimal literals are unary `UNat`
+numerals where `use unat;` selects the unary naturals' notation, and an
+operator or numeral outside any selection is an error. The library's
+`radix_numerals` declares positional numerals in every radix at least two
+over binary `Nat`, and `radix_factorials` computes 10! with one algorithm
+in base 2 and in base 10 and carries it from binary along a univalence path.
 
 Dedicated
 calculation blocks, implicit arguments, and editor completion are future work.

@@ -1,0 +1,112 @@
+// NT4's positional numerals over binary Nat, in every radix at least two:
+// arithmetic computed in the radix, conversion both ways, uniqueness, the
+// univalence path, and one factorial algorithm.
+// Authority: docs/roadmaps/archive-retirement.md#number-theory-in-the-library
+import radix_factorials;
+use nat;
+
+# test(radix.equivalence)
+# expect_axioms([])
+computable def radix_nat_equivalence(r : Radix) :
+  ContrEquiv(U0, Nat, RadixNat(r)) := radix_equiv(r);
+
+# test(radix.uniqueness)
+# expect_axioms([])
+computable def radix_numeral_unique(
+  r : Radix, m, n : RadixNat(r), same : radix_to_nat(r, m) = radix_to_nat(r, n)
+) :
+  m = n := radix_injective(r, m, n, same);
+
+# test(radix.add_value)
+# expect_axioms([])
+computable def radix_sum_value(r : Radix, m, n : RadixNat(r)) :
+  radix_to_nat(r, radix_add(r, m, n)) = radix_to_nat(r, m) + radix_to_nat(r, n) := radix_add_value(
+    r, m, n
+  );
+
+# test(radix.mul_value)
+# expect_axioms([])
+computable def radix_product_value(r : Radix, m, n : RadixNat(r)) :
+  radix_to_nat(r, radix_mul(r, m, n)) = radix_to_nat(r, m) * radix_to_nat(r, n) := radix_mul_value(
+    r, m, n
+  );
+
+# test(radix.factorial_value)
+# expect_axioms([])
+computable def radix_factorial_is_factorial(r : Radix, n : Nat) :
+  radix_to_nat(r, radix_factorial(r, n)) = factorial(n) := radix_factorial_value(r, n);
+
+# test(radix.factorial_ten)
+# expect_axioms([])
+computable def factorial_ten_in_every_radix(r : Radix) :
+  radix_factorial(r, 10) = comp(fun (i : Interval) => radix_path(r) @ i, 3628800) := radix_factorial_ten(
+    r
+  );
+
+// The successor carries through the last digits; sums and products carry
+// in the radix.
+# test(radix.successor_carry)
+evaluate radix_succ(radix_ten, nat_to_radix(radix_ten, 399)) expecting radix_positive(
+  radix_append((0, _), radix_append((0, _), radix_leading((4, _))))
+);
+# test(radix.add_carry)
+evaluate radix_add(radix_ten, nat_to_radix(radix_ten, 399), nat_to_radix(radix_ten, 87)) expecting radix_positive(
+  radix_append((6, _), radix_append((8, _), radix_leading((4, _))))
+);
+# test(radix.mul)
+evaluate radix_mul(radix_ten, nat_to_radix(radix_ten, 399), nat_to_radix(radix_ten, 87)) expecting radix_positive(
+  radix_append(
+    (3, _), radix_append((1, _), radix_append((7, _), radix_append((4, _), radix_leading((3, _)))))
+  )
+);
+# test(radix.zero)
+evaluate radix_mul(radix_ten, nat_to_radix(radix_ten, 399), radix_zero) expecting typed(
+  RadixNat(radix_ten), radix_zero
+);
+
+// Conversion from binary, by the bits, in any radix: 255 in base 16, and
+// 2^80 in base 10 and back. Each bit doubles the numeral; in the kernel's
+// queries a conversion of about 96 bits stops with K344 at the syntax depth
+// guard.
+# test(radix.base_sixteen)
+evaluate nat_to_radix((16, tt), 255) expecting radix_positive(
+  radix_append((15, _), radix_leading((15, _)))
+);
+# test(radix.to_decimal)
+evaluate nat_to_radix(radix_ten, 3628800) expecting radix_ten_3628800;
+# test(radix.from_decimal)
+evaluate radix_to_nat(radix_ten, radix_ten_3628800) expecting 3628800;
+# test(radix.wide_roundtrip)
+evaluate radix_to_nat(radix_ten, nat_to_radix(radix_ten, 1208925819614629174706176)) expecting 1208925819614629174706176;
+
+// Transport along the univalence path computes the conversions.
+# test(radix.transport)
+evaluate comp(fun (i : Interval) => radix_path(radix_ten) @ i, 3628800) expecting radix_ten_3628800;
+# test(radix.transport_back)
+evaluate comp(fun (i : Interval) => radix_path(radix_ten) @ ~i, radix_ten_3628800) expecting 3628800;
+# test(radix.transported_mul)
+evaluate comp(
+  fun (i : Interval) => (radix_path(radix_ten) @ i) -> (radix_path(radix_ten) @ i)
+  -> (radix_path(radix_ten) @ i), mul
+)(nat_to_radix(radix_ten, 12), nat_to_radix(radix_ten, 34)) expecting radix_positive(
+  radix_append((8, _), radix_append((0, _), radix_leading((4, _))))
+);
+
+// One factorial, digit by digit in base 10 and base 2.
+# test(radix.factorial_base_ten)
+evaluate radix_factorial(radix_ten, 10) expecting radix_ten_3628800;
+# test(radix.factorial_base_two)
+evaluate radix_factorial(radix_two, 5) expecting radix_positive(
+  radix_append(
+    (0, _),
+    radix_append(
+      (0, _),
+      radix_append(
+        (0, _),
+        radix_append((1, _), radix_append((1, _), radix_append((1, _), radix_leading((1, _)))))
+      )
+    )
+  )
+);
+# test(radix.factorial_thirty)
+evaluate radix_to_nat(radix_ten, radix_factorial(radix_ten, 30)) expecting 265252859812191058636308480000000;

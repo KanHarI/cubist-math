@@ -120,7 +120,7 @@ def polynomial_divides_cutoff_le(
   exact mere_eliminate(
     (exists r : Polynomial(K). q = polynomial_mul(K, p, r)),
     le(polynomial_cutoff(K, p), polynomial_cutoff(K, q)),
-    natural_order_prop(polynomial_cutoff(K, p), polynomial_cutoff(K, q)), useQuotient, divides
+    unat_le_is_prop(polynomial_cutoff(K, p), polynomial_cutoff(K, q)), useQuotient, divides
   );
 }
 

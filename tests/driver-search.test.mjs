@@ -251,8 +251,9 @@ test("instruction coverage: the report pins what it measured, and the exit statu
   const passed = coverage(["--modules=basics", `--trajectories=${trajectories}`], report);
   assert.equal(passed.status, 0, passed.stderr + passed.stdout);
   // basics and the unat it imports: unat's order lemmas and equality
-  // decision (NT1 of the archive retirement) added 8.
-  assert.match(passed.stdout, /41 of 41 declarations in 1 module, 0 gaps/);
+  // decision (NT1 of the archive retirement) added 8, and its order's
+  // antisymmetry and propositionality (NT3) 2.
+  assert.match(passed.stdout, /43 of 43 declarations in 1 module, 0 gaps/);
   assert.match(passed.stdout, /Coverage complete\./);
   const written = JSON.parse(await readFile(report, "utf8"));
   assert.equal(written.success, true);

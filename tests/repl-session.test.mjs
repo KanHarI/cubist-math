@@ -143,8 +143,8 @@ test("inhabitation directives check evidence and preserve the session after refu
 
 test("plain evaluation preserves selected notation and non-computing assumption diagnostics", async t => {
   const repl = await session(t);
-  await repl.run("import binary_arithmetic; use binary;");
-  assert.deepEqual(texts(await repl.run("evaluate binary_succ(0b111);")), ["value: 0b1000"]);
+  await repl.run("import nat; use nat;");
+  assert.deepEqual(texts(await repl.run("evaluate bnat_succ(0b111);")), ["value: 8"]);
   await repl.run("import h1_classical;");
   const previous = repl.previous, accepted = [...repl.accepted];
   assert.deepEqual(texts(await repl.run("evaluate double_negation;")), [
@@ -152,7 +152,7 @@ test("plain evaluation preserves selected notation and non-computing assumption 
   ]);
   assert.equal(repl.previous, previous);
   assert.deepEqual(repl.accepted, accepted);
-  assert.deepEqual(texts(await repl.run("evaluate binary_succ(0b1);")), ["value: 0b10"]);
+  assert.deepEqual(texts(await repl.run("evaluate bnat_succ(0b1);")), ["value: 2"]);
 });
 
 test("plain evaluation displays like print after selecting a call-form model", async t => {

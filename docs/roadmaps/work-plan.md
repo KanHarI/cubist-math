@@ -117,7 +117,8 @@ NT1–NT5). That covers:
   binary `Nat`;
 - `primes`' nine unary order lemmas, moved to `unat` for the archive's other
   areas;
-- its least-witness search with `natural_minimum`;
+- its least-witness search with `natural_minimum`, whose consumers moved
+  to the library's `least_elements` and `unat_least_elements` (NT3);
 - the binary and radix numerals.
 
 Then 20 modules leave the archive. Whether the counting results of the same
@@ -1048,8 +1049,15 @@ Each step lands in focused PRs under the review rule above.
            the reference, the tests, the evaluation baseline (version 10)
            and the runtime probe move to it; the archive's `euclid` and
            `primes`' divisibility and primality are deleted.
-      3. NT3: least elements.
-      4. NT4: binary and radix numerals.
+      3. NT3: least elements. **Done** on 2026-10-30: `least_elements`
+         over binary `Nat` and `unat_least_elements` over `UNat`; the
+         archive's polynomial degrees use them.
+      4. NT4: binary and radix numerals. **Done** on 2026-10-30
+         ([report](../reports/radix-numerals.md)): the binary results
+         checked against `bnat_*`, and radix numerals rebuilt over binary
+         `Nat` in `radix_numerals`, `radix_operations`, `radix_conversion`
+         and `radix_factorials`, with a univalence path to `Nat` and 10!
+         carried along it; the numeral fixtures import the library.
       5. NT5: the remaining 19 archive modules are deleted.
 
       This depends only on NUM1 and can proceed alongside 3 and 4.
