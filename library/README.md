@@ -82,13 +82,13 @@ deleted on 2026-10-28 (EVAL7, step NT2 of the
 [archive retirement](../docs/roadmaps/archive-retirement.md#number-theory-in-the-library)).
 `least_elements` finds the least element of a decidable predicate over
 public `Nat`, and `unat_least_elements` over `UNat`, for the archive's
-polynomial degrees; since 2026-10-30 (step NT3) nothing uses the archive's
-least-witness search or `natural_minimum`.
+polynomial degrees (step NT3).
 `radix_numerals`, `radix_operations`, `radix_conversion` and
 `radix_factorials` build positional numerals in every radix at least two
 over public `Nat`, with their arithmetic, their equivalence with `Nat` and
-its univalence path, and one factorial algorithm (step NT4); they rebuild
-the archive's `radix_*` modules.
+its univalence path, and one factorial algorithm (step NT4). With them the
+library holds all of the archive's number theory, whose modules NT5
+deleted on 2026-10-30.
 
 | Module | Contents | Assumptions |
 | --- | --- | --- |

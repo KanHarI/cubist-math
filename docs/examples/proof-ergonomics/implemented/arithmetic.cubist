@@ -1,6 +1,6 @@
 // Checked arithmetic ergonomics examples.
 // Current checked counterparts: ../current/arithmetic.cubist.
-import primes;
+import unat;
 use unat;
 
 // calc retains the listed witnesses and their composition order.

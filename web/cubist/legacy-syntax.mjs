@@ -125,7 +125,7 @@ export const reservedBindingRenaming = (sources, preferred = historicalRenaming,
 // The unary foundation's fixed relocation. Historical source keeps its
 // checked structure; only these declaration/module spellings move. The NUM0
 // alias module is bypassed by historicalModulePaths, not rewritten as itself.
-// The order lemmas from le_zero on were primes' until NT1 moved them to unat
+// The order lemmas from le_zero on were the archive's until NT1 moved them to unat
 // (docs/roadmaps/archive-retirement.md).
 export const unaryNaturalRenaming = Object.freeze({nat:"unat",Nat:"UNat",
   ...Object.fromEntries([

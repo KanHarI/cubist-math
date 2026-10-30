@@ -1,7 +1,7 @@
 // From tests/universe-generic.test.mjs: Rewriting matches a generic rule's
 // universe only where it is a bare variable.
 
-import primes;
+import unat;
 use unat;
 
 def Id(U < UU0, A : U) := A;

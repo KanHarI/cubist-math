@@ -100,8 +100,8 @@ milestone does not resume them. Their old B-package IDs are retained in the
 `archive/first-library/` is not rebuilt as it is and is not relied on. Where
 the library implements a part of it, that part is removed from the archive and
 its dependents import the library instead; the archive keeps checking
-completely until it retires. So far `nat`'s arithmetic (from `primes`) and
-`sets` (for `hlevels`) are gone. What the library builds differently is not
+completely until it retires. So far `nat`'s arithmetic (from `primes`),
+`sets` (for `hlevels`) and the archive's number theory (NT1–NT5) are gone. What the library builds differently is not
 migrated in place: the archive's `set_quotients` are predicate quotients
 over its truncation, and its `equivalences` are
 bijections and half-adjoint equivalences, where the library has contractible
@@ -119,10 +119,11 @@ NT1–NT5). That covers:
   areas;
 - its least-witness search with `natural_minimum`, whose consumers moved
   to the library's `least_elements` and `unat_least_elements` (NT3);
-- the binary and radix numerals.
+- the binary and radix numerals (NT4).
 
-Then 20 modules leave the archive. Whether the counting results of the same
-catalog area are included is open.
+20 modules have left the archive: `euclid` (NT2) and, on 2026-10-30, the
+other 19 (NT5). Whether the counting results of the same catalog area are
+included is open.
 
 **Governing requirement.** Computability is expressible and preserved.
 Every applicable release extends the canonicity fixture; results with no
@@ -335,7 +336,7 @@ and `univalence` exhaust the kernel's step budget.
 | I0.2 | Archive the first library | Done: 368 sources in `archive/first-library/`; keep it as regression evidence. Its prelude `nat` moved to `library/` on 2026-10-04, and `sets` gave way to the library's `hlevels` on 2026-10-05 |
 | I0.3 | Start `library/` | Done: the modules listed above, self-contained since 2026-10-04; broader topic coverage is deferred |
 | I0.4 | Remove local scratch state | Recorded done on 2026-09-25 |
-| I0.5 | Retire the archive | **Direction adopted on 2026-10-20**, not scheduled; after the runtime phase. One early part is scheduled in it (2026-10-26): all of the archive's number theory moves to the library and leaves the archive ([NT1–NT5](archive-retirement.md#number-theory-in-the-library), with EVAL7 as NT2). [Archive retirement](archive-retirement.md): confine new archive dependencies and migrate helper-only fixtures and reference examples (R1), remove the legacy truncation assumptions' other consumers (R2, K2.5), decide per results-catalog area what the library rebuilds before deletion (R3), move or retire every remaining archive consumer, including the 26 mathematical regression fixtures and two H1 slices retained by R1 (R4). R4 verifies that none of the original 65 fixtures, 5 reference pages, 22 tests or 13 tools, nor their replacements, depends on the archive; then R5 deletes the directory, its module root and archive-only machinery |
+| I0.5 | Retire the archive | **Direction adopted on 2026-10-20**, not scheduled; after the runtime phase. One early part is scheduled in it (2026-10-26): all of the archive's number theory moves to the library and leaves the archive ([NT1–NT5](archive-retirement.md#number-theory-in-the-library), with EVAL7 as NT2), done on 2026-10-30. [Archive retirement](archive-retirement.md): confine new archive dependencies and migrate helper-only fixtures and reference examples (R1), remove the legacy truncation assumptions' other consumers (R2, K2.5), decide per results-catalog area what the library rebuilds before deletion (R3), move or retire every remaining archive consumer, including the 26 mathematical regression fixtures and two H1 slices retained by R1 (R4). R4 verifies that none of the original 65 fixtures, 5 reference pages, 22 tests or 13 tools, nor their replacements, depends on the archive; then R5 deletes the directory, its module root and archive-only machinery |
 | L0.1 | Non-computing dependencies, `computable`, `evaluate` | Done; extensions have explicit L2.9 packages below |
 | D0.1 | Checked-reference harness | Done: accept/reject examples, excerpts, CLI and REPL transcripts; sketches must be labelled |
 | D0.2 | Reference chapters and quick reference | Chapter 5 done with G0. Chapter 6 rewritten on 2026-09-30, when H1 became the default: declarations, parameters, `match`, structural recursion, dependent matches, path and truncation clauses, with the library's Nat, `add` and W quoted as checked, inspectable excerpts. An H1 chapter waits for D2.1. Quick reference done on 2026-09-27: `proof.html` gives each construct one checked example and a link to its chapter section; add an entry with each new construct (`inductive` and `match` on declared types added on 2026-09-30) |
@@ -1058,7 +1059,11 @@ Each step lands in focused PRs under the review rule above.
          `Nat` in `radix_numerals`, `radix_operations`, `radix_conversion`
          and `radix_factorials`, with a univalence path to `Nat` and 10!
          carried along it; the numeral fixtures import the library.
-      5. NT5: the remaining 19 archive modules are deleted.
+      5. NT5: the remaining 19 archive modules are deleted. **Done** on
+         2026-10-30: `primes`, `natural_minimum`, `binary_*` and
+         `radix_*`; their consumers moved to the library or to
+         self-contained sources, one unused import removed from
+         `finite_cardinalities`, and the catalog's module table updated.
 
       This depends only on NUM1 and can proceed alongside 3 and 4.
 3. **Alongside the runtime phase: K2.5's `axiom` definitions**, the

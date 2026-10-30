@@ -36,20 +36,21 @@ export const lexemeText = t => {
   catch { return null; }
 };
 
-// A binary number from the archive's binary_naturals, in normal form:
-// binary_zero is 0b0, and binary_positive(p) holds binary_bit0 and
-// binary_bit1 digits, the last digit outermost, around the leading binary_one.
+// A binary natural of the library's bnat, in normal form, as its digits:
+// b_zero is 0b0, and b_positive(p) holds bp_even and bp_odd digits, 0 and 1,
+// the last digit outermost, around the leading bp_one. The printers show the
+// value in decimal.
 const constructorOf = (t, signature) => {
   const head = t?.tag === "App" ? t.fn : t;
   return head?.tag === "Con" && head.sort?.tag === "Sort" && head.sort.signature === signature ? head.index : null;
 };
-export const binaryDigits = (t, naturalSignature = "binary_naturals__BinaryNat", positiveSignature = "binary_naturals__BinaryPositive") => {
-  const natural = constructorOf(t, naturalSignature);
+export const binaryDigits = t => {
+  const natural = constructorOf(t, "bnat__BNat");
   if (natural === 0 && t.tag === "Con") return "0b0";
   if (natural !== 1 || t.tag !== "App") return null;
   let digits = "", p = t.arg;
   for (;;) {
-    const index = constructorOf(p, positiveSignature);
+    const index = constructorOf(p, "bnat__BPositive");
     if (index === 0 && p.tag === "Con") return `0b1${digits}`;
     if ((index !== 1 && index !== 2) || p.tag !== "App") return null;
     digits = (index === 1 ? "0" : "1") + digits;

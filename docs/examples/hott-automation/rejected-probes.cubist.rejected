@@ -1,7 +1,7 @@
 // Probes that are rejected today. tests/hott-automation.test.mjs checks each
 // rejection and its reason. The .rejected suffix keeps this file out of globs
 // of checked sources.
-import primes;
+import unat;
 import paths_;
 
 // Must stay rejected: these laws do not hold by conversion.

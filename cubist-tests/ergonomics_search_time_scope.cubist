@@ -3,7 +3,7 @@
 // Checking slow_step advances a fake clock by five seconds, as if that
 // later statement were slow. No rewrite search runs while it is checked.
 
-import primes;
+import unat;
 use unat;
 
 def slow_step(n : UNat) : n = n {

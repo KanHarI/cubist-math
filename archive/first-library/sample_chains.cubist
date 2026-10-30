@@ -1,6 +1,5 @@
 import unat;
 import field_logic;
-import primes;
 use unat;
 
 // Finite quadrature DATA: n edges, n+1 sampled vertices, and n tags.

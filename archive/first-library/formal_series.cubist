@@ -1,6 +1,5 @@
 import unat;
 import field_arithmetic;
-import primes;
 use unat;
 
 // Formal coefficient functions. There is deliberately no equality of

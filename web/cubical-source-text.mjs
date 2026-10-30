@@ -141,14 +141,12 @@ function render(term, symbols, limit, context, state) {
     ? `face(${equation(formula[0][0])}, ${parts.join(", ")})`
     : `face_when(${formula.length ? formula.map(clause => clause.length ? clause.map(text => `on(${equation(text)})`).join(" and ") : "1").join(" or ") : "0"}, ${parts.join(", ")})`;
   // A natural number reads back where a notation that reads it as itself is
-  // selected, and as that notation's, unat.(n) first, where none is; a binary
-  // number, where binary is (L2.10j). Otherwise it prints as constructors
-  // (null here).
+  // selected, and as that notation's, unat.(n) first, where none is.
+  // Otherwise it prints as constructors (null here).
   const natural = n => {
     const entries = symbols.unat__UNat?.printing?.filter(entry => entry.identityNumeral) ?? [];
     return readBack([...entries.filter(entry => entry.notation === "unat"), ...entries.filter(entry => entry.notation !== "unat")], String(n));
   };
-  const bits = text => readBack(symbols.binary_naturals__binary_literal?.printing?.filter(entry => entry.literal) ?? [], text);
   // The rebuilt binary carrier prints decimal magnitudes directly from its
   // bits. Use a notation known to read this exact parser, including aliases;
   // without one, a numeral rule that reads binary naturals as themselves,
@@ -159,7 +157,7 @@ function render(term, symbols, limit, context, state) {
     const readings = [...symbols.bnat_notation__bnat_literal?.printing?.filter(entry => entry.literal) ?? [],
       ...symbols.bnat__BNat?.printing?.filter(entry => entry.identityNumeral) ?? []];
     if (!readings.length) return null;
-    const digits = binary(t, "bnat__BNat", "bnat__BPositive");
+    const digits = binary(t);
     return digits === null ? null : readBack(readings, BigInt(digits).toString(10));
   };
   // The variables bound where the printer is. A bound variable shows as its
@@ -341,8 +339,6 @@ function render(term, symbols, limit, context, state) {
       case "App": case "LApp": {
         const number=numeral(t),unary=number===null?null:natural(number);
         if(unary)return unary;
-        const digits=binary(t),shown=digits&&bits(digits);
-        if(shown)return shown;
         const decimal=binaryNatural(t);
         if(decimal)return decimal;
         // The standard source Nat's eliminator has the existing induction
@@ -400,7 +396,7 @@ function render(term, symbols, limit, context, state) {
         if (printing?.theoryNumeral) {
           const at = (symbols[head.name].assumed ?? 0) + (symbols[head.name].implicit ?? 0);
           const [model, n] = args.slice(at), unary = n ? numeral(n) : null;
-          const digits = n && unary === null ? binary(n, "bnat__BNat", "bnat__BPositive") : null;
+          const digits = n && unary === null ? binary(n) : null;
           const value = unary !== null && unary <= 256 ? String(unary) : digits ? BigInt(digits).toString(10) : null;
           const name = model?.tag === "Var" ? variable(model.name)
             : model?.tag === "DefRef" && !symbols[model.name]?.printing?.some(entry => entry.modelRules)
@@ -491,8 +487,6 @@ function render(term, symbols, limit, context, state) {
       case "Con": {
         const n=numeral(t),unary=n===null?null:natural(n);
         if(unary)return unary;
-        const digits=binary(t),shown=digits&&bits(digits);
-        if(shown)return shown;
         return binaryNatural(t) ?? (t.name ? atom(qualifiedText(t.name, t)) : fallback(t));
       }
       case "Path":

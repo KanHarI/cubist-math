@@ -11,7 +11,7 @@ import { migrationSourceReader } from "../tools/migration-sources.mjs";
 import { checkProgram } from "./check-program.mjs";
 
 const library = name => readFile(new URL(`../archive/first-library/${name}.cubist`, import.meta.url), "utf8");
-const original = `import primes; use unat;
+const original = `import unat; use unat;
 def moved(C : UNat -> U0, p : 0 + 0 = 0, v : C(0 + 0)) : C(0) {
   exact transport(C, 0 + 0, 0, p, v);
 }
@@ -212,7 +212,7 @@ test("dependents are checked against edited definitions they mention", async () 
   const originals = {
     // n + 0 does not reduce for a variable n, so the edited pick is not
     // convertible with the original.
-    dependency_fixture: `import primes; use unat;
+    dependency_fixture: `import unat; use unat;
 def double(n : UNat) := n + n;
 def four : double(2) = 4 {
   exact refl(4);

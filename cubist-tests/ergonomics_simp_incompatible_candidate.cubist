@@ -1,7 +1,7 @@
 // From tests/proof-ergonomics.test.mjs: A quantified rule with an
 // incompatible parameter type leaves later rules available.
 
-import primes;
+import unat;
 use unat;
 
 computable def through(f : UNat -> UNat, n : UNat) : f(n + 0) = f(n) {

@@ -1,6 +1,6 @@
 // From tests/proof-ergonomics.test.mjs: Imported simp registrations are
 // scoped: unat_add_zero by default at priority 7, and as units.
-import primes;
+import unat;
 use unat;
 
 simp_rule unat_add_zero priority 7;

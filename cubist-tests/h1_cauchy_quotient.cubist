@@ -1,6 +1,6 @@
 import complete_fields;
 import set_quotients;
-import primes;
+import unat;
 import h1_truncation;
 use unat;
 

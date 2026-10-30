@@ -106,7 +106,6 @@ The new C checker builds independently to `web/dist/cubical.mjs` and
 ```
 make cubical-wasm
 node --test tests/cubical-wasm.test.mjs
-node --test tests/cubical-transfers.test.mjs
 ```
 
 `wasm/cubical_bridge.c` exposes session tokens and integer syntax handles. It
@@ -124,21 +123,12 @@ Current independent WASM tests cover:
 - rejection of invalid endpoints, malformed contexts and forged Glue witnesses;
 - distinct interval and face lattices, including dimension 63;
 - checking a compact expression denoting `2^22` without computing its unary value;
-- all 13 declarations from the actual `binary_naturals.cubist` source;
+- the 27 declarations of the library's binary numbers, `bnat`;
 - computational transport along the Glue universe path for the identity
   equivalence of `Nat`, without a univalence axiom;
-- every declaration of `binary_arithmetic`, `binary_induction`, `radix_naturals`,
-  `radix_arithmetic`, and `radix_factorial`, through a native elaborator;
-- `factorial_ten_from_binary`, about the existing `Nat` factorial, using the
-  binary arithmetic compatibility proofs without materializing its unary value;
-- the binary/Nat, radix/Nat and direct binary/radix inverse laws, converted to
-  checked contractible-fiber equivalences and actual Glue universe paths;
-- transport of the manual factorial proofs in all four requested directions,
-  including radix bases 2 and 10, followed by the derived computation law and
-  arithmetic compatibility to identify the original target factorial;
-- seven concrete transferred factorial statements in
-  `tests/fixtures/factorial-transfer.cubist`, including the existing
-  `Nat` statement `factorial(10) = nat_3628800`.
+- `radix_factorials`' 10! in binary, base 2 and base 10, through a native
+  elaborator, and 10! carried from base 10 to binary along the univalence
+  path `radix_path`, without a large expression.
 
 The source translator now handles W formation/introduction/induction, sums and
 dependent matches, binary literals, dependent pair induction (`pair_induction`),
@@ -150,35 +140,22 @@ is reported as untranslated and never replaced by an assumed declaration.
 through the native C API. Closed definitions are checked before registration;
 later terms retain references to those definitions. Binary function
 extensionality compiles to an interval path between functions, without an axiom.
-The three manual factorial proofs pass: the binary development uses approximately
-43,657 nodes / 2.3 MB, and the two generic-radix instances together use approximately
-349,389 nodes / 17 MB. These are complete source checks, not imported certificates.
 
-The combined four-direction Glue transfer check uses approximately 1.35 million
-arena nodes and 67 MB. Scanning its complete arena finds no closed successor
-chain larger than **10**. JavaScript builds syntax; the C/WASM checker verifies
-the inverse proofs, equivalences, universe paths and transported equalities.
-No univalence, function extensionality, choice or LEM axiom is registered.
-Dependency traversal verifies that each result contains actual Glue/composition,
-and that a binary-to-radix transfer never uses the target's manual factorial
-theorem. Conversely, radix-to-binary/Nat transfers do not use the binary manual
-factorial theorem. Separate digit-conversion certificates identify the numerals.
-
-The transport computation law is first registered as a checked function of an
-arbitrary argument, then applied to each factorial endpoint. Keeping this shared
-proof folded avoids repeated checking of a large substituted beta body. The
-initial direct-body radix check exhausted the existing work budget; this
-factoring solves it without increasing that budget or changing a kernel rule.
-
-`tests/translator/number-transport.mjs` contains the checked-definition
-assembly for this migration. The production half-adjoint `Equiv` declarations
-remain explicitly untranslated: their source inverse laws build the cubical
-contractible-fiber witnesses instead. The generic production `Equiv` API still
-needs migration; these helpers do not silently substitute an unchecked witness.
+Until 2026-10-30, `tests/cubical-transfers.test.mjs` also transported the
+archive's manual factorial proofs between its unary, binary and radix
+numerals in all four directions, along Glue universe paths that JavaScript
+built from their inverse laws, within 2.5 million arena nodes and 128 MB,
+and with no unary numeral above 24, the length of a binary literal that
+its parser counted in unary.
+NT5 of the
+[archive retirement](../roadmaps/archive-retirement.md#number-theory-in-the-library)
+retired it with those modules. The library states the same transports in
+Cubist: `radix_conversion`'s `radix_path`, from a checked equivalence, and
+`radix_factorials`, which carries 10! along it.
 
 The website's regular proof inspector **still uses the production Id/J kernel**.
 The new backend is not its default. The general production `idtoequiv isEquiv`
 API, strict identity elimination compatibility, higher inductive types and full
-library translation remain unfinished. The compact factorial transfer acceptance
-test now passes natively. The production transfer proofs are documented
-separately in [binary-radix.md](../tactical/binary-radix.md).
+library translation remain unfinished. The archive's transfer proofs are
+documented in [binary-radix.md](../tactical/binary-radix.md), a dated
+checkpoint.

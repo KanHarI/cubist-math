@@ -212,7 +212,7 @@ on 2026-10-05 (L4.4).
   three parts: A1a folds `refl`, `sym`, `trans` and `cong`, with E0's
   dependent reversal and congruence; A1b folds `transport`, `apd_path` and both
   induction forms; A1c adds matching views and aliases.
-  - Arithmetic sources such as [primes](../../../archive/first-library/primes.cubist) use
+  - Arithmetic sources such as [unat](../../../library/unat.cubist) use
     these builtins without importing `paths`. The definitions therefore belong
     to a session prelude with a stable logical operation identity across imports.
     Register each generic definition lazily through declaration transactions;
@@ -1171,7 +1171,7 @@ The matcher, resource limits and witness reconstruction must support it first.
 | [proof-rewrite.mjs](../../../web/translator/proof-rewrite.mjs) | Traversal (A2), congruence lines (A3), alias and view matching (A1), fillers (E1) |
 | [path-algebra.mjs](../../../web/translator/path-algebra.mjs), [paths](../../../archive/first-library/paths_.cubist), [path_actions](../../../archive/first-library/path_actions.cubist) | Prelude bodies, C3 laws, dependent path operations (E0), double composition and squares (E2), missing lemmas |
 | [suspension_types](../../../archive/first-library/suspension_types.cubist), [suspension](../../../archive/first-library/suspension.cubist), [circle](../../../archive/first-library/circle.cubist) | Evidence only (archived): replaced by H1 declarations in the rebuild |
-| [homotopy_paths](../../../archive/first-library/homotopy_paths.cubist), [field_extensionality](../../../archive/first-library/field_extensionality.cubist), [primes](../../../archive/first-library/primes.cubist) | Conversion audit of proofs by induction (A7) |
+| [homotopy_paths](../../../archive/first-library/homotopy_paths.cubist), [field_extensionality](../../../archive/first-library/field_extensionality.cubist), the archive's `primes` (deleted by NT5) | Conversion audit of proofs by induction (A7) |
 | [loop_words](../../../archive/first-library/loop_words.cubist) | Reflective loop normalizer (C4) |
 | [simp-registry.mjs](../../../web/translator/simp-registry.mjs) | Aliases, distinct conversion/equality entries, bounded `hlevel_rule` and `ext_rule` registries |
 | [hlevels](../../../library/hlevels.cubist), [truncation](../../../archive/first-library/truncation.cubist), [bijection_equality](../../../archive/first-library/bijection_equality.cubist) | Numeric h-level templates and their aliases (D0a) |
@@ -1346,7 +1346,8 @@ The observations above explain the original proposal, not the current API.
 These three declarations check in the native kernel:
 
 ```text
-import primes;
+import unat;
+use unat;
 
 // Sigma extensionality: the second component is a PathP over the first.
 def sigma_line(A : U0, B : A -> U0, a, a2 : A, b : B(a), b2 : B(a2), p : a = a2,
@@ -1357,16 +1358,16 @@ def sigma_line(A : U0, B : A -> U0, a, a2 : A, b : B(a), b2 : B(a2), p : a = a2,
 
 // Rewriting in a dependent position: the dependent argument follows its
 // transport filler. One line, no composition.
-def filler_rewrite(B : Nat -> U0, R : U0, f : (forall a : Nat. B(a) -> R), n : Nat,
+def filler_rewrite(B : UNat -> U0, R : U0, f : (forall a : UNat. B(a) -> R), n : UNat,
   v : B(n + 0)) :
-  f(n + 0, v) = f(n, transport(B, n + 0, n, nat_add_zero(n), v)) {
-  exact path i => f(nat_add_zero(n) @ i,
-    fill(fun (j : Interval) => B(nat_add_zero(n) @ j), v, i));
+  f(n + 0, v) = f(n, transport(B, n + 0, n, unat_add_zero(n), v)) {
+  exact path i => f(unat_add_zero(n) @ i,
+    fill(fun (j : Interval) => B(unat_add_zero(n) @ j), v, i));
 }
 
 // Several positions rewritten at once.
-def multi_hole(g : Nat -> Nat -> Nat, n, m : Nat) : g(n + 0, m + 0) = g(n, m) {
-  exact path i => g(nat_add_zero(n) @ i, nat_add_zero(m) @ i);
+def multi_hole(g : UNat -> UNat -> UNat, n, m : UNat) : g(n + 0, m + 0) = g(n, m) {
+  exact path i => g(unat_add_zero(n) @ i, unat_add_zero(m) @ i);
 }
 ```
 
@@ -1442,7 +1443,7 @@ The library proved several of these laws by induction. Since A7,
 use conversion instead. The former `field_sigma_eta` pair-induction helper in
 [field_extensionality](../../../archive/first-library/field_extensionality.cubist) has been
 removed; `field_subtype_ext` now uses judgmental Sigma eta directly.
-[primes](../../../archive/first-library/primes.cubist) used to define `nat_eq_sym`,
+The archive's `primes` used to define `nat_eq_sym`,
 `nat_eq_trans` and `nat_congruence` by path induction; the historical arithmetic
 measurements in this document include them. The current corpus uses `sym`,
 `trans`, and `cong` directly. A statement that `rfl`
