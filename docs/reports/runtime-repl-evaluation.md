@@ -14,7 +14,15 @@ binary integers and rationals compute their value forms in the runtime
 [#324](https://github.com/KanHarI/cubist-math/pull/324) a query copies from
 the kernel only what its walk reaches; the sections that follow
 describe the integration as it now stands, and the first slice's
-measurements are kept as they were taken.
+measurements are kept as they were taken. Update of 2026-10-30: W2 of
+[typed readback](../roadmaps/runtime/typed-readback.md) replaces the
+fallback of step 4 below by a fallback per node: the runtime reads the node
+it does not execute back into a kernel term, asks the kernel's head query
+for it and goes on with that head, and the whole walk is computed again
+only where that readback refuses
+([shared runtime report](shared-runtime-evaluation.md#the-fallback-per-node-w2)).
+The 37 constructs and the transports below that fell back now compute in
+the runtime that way.
 
 ## What computes what
 
@@ -38,7 +46,7 @@ so do files and the command-line checker.
 3. `valueForm` (`web/translator/evaluation.mjs`), unchanged, walks the value
    form; its head query is the runtime's `observeNow`, synchronous, one
    query of the directive's fuel per head as the kernel's head query spends.
-4. **The fallback, specified once:** a `RuntimeError` of kind
+4. **The fallback, specified once** (until W2, above): a `RuntimeError` of kind
    `unsupported` from the snapshot or any observation abandons the
    runtime's walk, which is not shown, and the same walk is computed again
    from the start by the kernel's head queries (`demandQueries`), exactly
