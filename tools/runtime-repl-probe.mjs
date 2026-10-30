@@ -13,7 +13,11 @@
 // query's root back by value before it is disposed of (M1 of
 // docs/roadmaps/runtime/typed-readback.md): the readback's work and its
 // counters, the arena's growth, and the DAG and tree sizes of the term, its
-// time likewise taken out.
+// time likewise taken out. The heap is also sampled during the entry, at
+// every eighth call of performance.now, which the runtime makes at its
+// deadline checks, every 1,024 steps: its peak above the entry's start,
+// live cells and garbage not yet collected, is the entry's
+// `peakHeapMiB` (docs/reports/runtime-repl-evaluation.md#the-budgets-calibrated).
 //   node tools/runtime-repl-probe.mjs                 every workload, both paths
 //   node tools/runtime-repl-probe.mjs NAME[,NAME] [runtime|kernel|readback]
 import { execFileSync } from "node:child_process";
@@ -154,7 +158,14 @@ if (!child) {
       }
       const check = program.checkEntry.bind(program);
       program.checkEntry = async (...args) => (captured = await check(...args));
-      const started = performance.now(), [answer] = await session.run(entry), elapsed = performance.now() - started - measuring;
+      const now = performance.now.bind(performance);
+      let peakHeap = before.heap, samples = 0;
+      performance.now = () => {
+        if ((++samples & 7) === 0) peakHeap = Math.max(peakHeap, process.memoryUsage().heapUsed);
+        return now();
+      };
+      const started = now(), [answer] = await session.run(entry), elapsed = now() - started - measuring;
+      performance.now = now;
       const after = program.kernel.work();
       globalThis.gc?.();
       console.log(JSON.stringify({ workload: name, path, entry, result: answer.text.slice(0, 120), kind: answer.kind,
@@ -162,6 +173,7 @@ if (!child) {
         kernelQuerySteps: Number(after.querySteps - before.work.querySteps), kernelQueries: Number(after.queries - before.work.queries),
         arenaNodes: program.kernel.arena().nodes - before.arena,
         heapAfterGcMiB: +((process.memoryUsage().heapUsed - before.heap) / 1048576).toFixed(1),
+        peakHeapMiB: +((peakHeap - before.heap) / 1048576).toFixed(1),
         processMaxRssMiB: Math.round(process.resourceUsage().maxRSS / 1024),
         revision: execFileSync("git", ["rev-parse", "--short", "HEAD"], { cwd: root, encoding: "utf8" }).trim(),
         modified: execFileSync("git", ["status", "--porcelain", "--untracked-files=normal"], { cwd: root, encoding: "utf8" }).trim() !== "",

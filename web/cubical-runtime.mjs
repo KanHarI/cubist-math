@@ -71,6 +71,17 @@ const yieldTask = typeof setImmediate === "function" ? () => new Promise(setImme
     channel.port2.postMessage(null);
   });
 
+// The default budgets, as calibrated on 2026-10-30
+// (docs/reports/runtime-repl-evaluation.md, the budgets calibrated): a walk
+// allocates about one cell for every two steps, so 20M cells, the budget
+// that binds, is about 40M steps and half a second of evaluation; its heap
+// stays under 10 MiB where the cells die young, and peaked near 600 MiB
+// where a definition keeps a list of 200,000. 100M steps binds first only
+// for a walk allocating under one cell for every five steps, and the time
+// limit, 30 seconds a part unless the declaration's own is nearer, is a
+// backstop. A cell is an object or a reference counted at allocation, not
+// a byte, and allocation is cumulative: live memory is collected as it
+// goes, and the budget does not depend on when.
 class Budget {
   constructor(options) {
     this.maxSteps = options.maxSteps ?? 100000000;

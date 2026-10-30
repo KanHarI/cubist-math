@@ -629,6 +629,66 @@ keeps under 50 runtime objects, where the sharing commit's runtime keeps
 (`tests/runtime-readback.test.mjs`) now drops an open instance's
 environment, and still fails its oracle.
 
+## The budgets, calibrated
+
+EVAL4's memory calibration, 2026-10-30, after the sharing and the pruning
+above. The runtime stops at 100M steps (E487), 20M allocated cells (E488)
+or its time limit, the declaration's when one is set and otherwise 30
+seconds a part (E489, or the declaration's E629). A cell is an object or a
+reference counted when it is allocated, over the whole query: the budget is
+deterministic, and a stop at it is reproducible whatever the collector
+does. What the budgets mean was measured by the REPL probe's runtime path,
+which now also samples the heap during the entry (`peakHeapMiB`: the peak,
+above the entry's start, of the heap at every eighth call of
+`performance.now`, which the runtime makes every 1,024 steps), three cold
+processes a workload, at the pruning commit, Node 24.13.0, macOS arm64
+(Apple M3 Pro), on a machine shared with other jobs. Steps and cells at a
+stop are the scratch harness's, the probe recording none for a stop.
+
+| Workload | Steps | Cells | Cells a step | Entry ms | Peak heap MiB | Heap after GC MiB | Peak RSS MiB |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `relayed-calls-24`, E488 | 39,307,538 | 20,000,000 | 0.51 | 475 | 9 | 0.8 | 111 |
+| list parity, 200,000, E488 | 34,293,564 | 20,000,000 | 0.58 | 662 | 593 | 452 | 844 |
+| `(2^128 - 1) * (2^128 - 1)`, binary integers | 3,841,983 | 2,152,712 | 0.56 | 121 | 67 | 1.1 | 519 |
+| the wide inverse | 1,201,998 | 676,650 | 0.56 | 81 | 67 | 2.5 | 654 |
+| BNat product of two 20-digit numerals | 649,679 | 364,416 | 0.56 | 39 | 57 | 0.3 | 270 |
+| `count_into(2 * 255, 0)` | 67,727 | 38,819 | 0.57 | 22 | 12 | 0.9 | 133 |
+
+**In time.** Every walk measured allocates 0.51 to 0.58 cells a step, so
+the allocation budget binds first, at 34M to 40M steps: about half a second
+here, 12 to 19 ns a step. The work budget, 100M steps, would take 1.2 to 2
+seconds at those rates, and binds first only for a walk that allocates
+under one cell for every five steps, which none measured does. The time
+limit of 30 seconds a part is about one and a half to two and a half
+billion steps at those rates: a backstop, which a declaration's own time
+limit reaches first.
+
+**In bytes.** Where cells die young, as each relayed call's do, 20M cells
+peak at 9 MiB of heap. The worst measured is list parity, whose definition
+keeps a list of 200,000 while its parity forces every cell: it peaks at 593
+MiB at the budget, about 31 bytes for each cell allocated, and its process
+at 844 MiB. A walk that kept every cell it allocated would hold more; none
+measured does. Before the pruning a computed value kept the computation
+that made it, which these walks no longer do: the wide product's heap after
+a collection, with the query alive, fell from 54.9 to 1.1 MiB.
+
+**The budgets stay as they are.** Users and tests rely on E487's and
+E488's numbers, and the measurements give no reason to move them: the
+allocation budget is the one that binds, at about half a second, and the
+memory it allows peaked under 600 MiB on the worst workload measured.
+Raising it would buy longer computations at the price of the worst case's
+memory, which would want a budget on live memory, and the heap is no
+deterministic measure; lowering the work budget to the allocation budget's
+steps would change no outcome measured. The calibration is recorded where
+the budgets are set (`Budget` in `web/cubical-runtime.mjs`) and in the CLI
+guide.
+
+**Tests.** `tests/cubical-runtime.test.mjs`: at a thousandth of each
+default budget, 100,000 steps and 20,000 cells, the relayed calls stop at
+the allocation budget, between 25,000 and 50,000 steps (37,553): the
+default budgets' relation, held where the runtime's allocation per step
+would change it.
+
 ## Findings
 
 **Sharing.** The kernel's weak-head cache is keyed by interned syntax, so
@@ -653,7 +713,9 @@ about 140–165 MiB for the kernel's walk of the same setups. Closed-environment
 pruning and a byte calibration remain EVAL4 work. Since 2026-10-30 a closed
 constructor instance keeps no environment
 ([pruning](#closed-environment-pruning)), and a computed value no longer
-keeps the computation that made it.
+keeps the computation that made it; the budgets are
+[calibrated](#the-budgets-calibrated): 20M cells is about 40M steps and half
+a second, and peaked under 600 MiB of heap on the worst workload measured.
 
 **Responsiveness.** The runtime runs inside the check, synchronously, as
 the kernel's queries do: the browser worker answers no message during an

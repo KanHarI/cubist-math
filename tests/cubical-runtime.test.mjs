@@ -565,6 +565,25 @@ test("an allocation stop preserves observations that need no further allocation"
   assert.ok(runtime.retainedObjects().runtimeObjects > 0);
 });
 
+// The budgets' calibration (docs/reports/runtime-repl-evaluation.md, the
+// budgets calibrated): a walk allocates about one cell for every two steps,
+// so the allocation budget, 20M cells, binds at about 40M steps, before
+// the work budget, 100M; the work budget binds first only for a walk that
+// allocates under one cell for every five steps. Here at a hundred
+// thousandth of each, on calls that leave only garbage.
+test("at the default budgets' ratio, the allocation budget binds first, near half the work budget", async t => {
+  const { query } = await setup(t, `
+def both(a, b : Unit) : Unit := unit_induction(fun (x : Unit) => Unit, b, a);
+def g0(u : Unit) : Unit := u;
+${Array.from({ length: 16 }, (_, i) => `def h${i}(u : Unit) : Unit := g${i}(u);\ndef g${i + 1}(u : Unit) : Unit := both(g${i}(u), h${i}(u));`).join("\n")}
+def calls : Unit := g16(tt);
+`);
+  const runtime = query("calls", { maxSteps: 100000, maxCells: 20000 });
+  let stop;
+  await assert.rejects(runtime.observe(), error => (stop = error, fails("resource")(error) && error.limit === 20000));
+  assert.ok(stop.stats.steps > 25000 && stop.stats.steps < 50000, `the allocation budget bound at ${stop.stats.steps} steps`);
+});
+
 test("work, allocation, cancellation and disposal have controlled failures", async t => {
   const { query } = await setup(t, "def value : Unit := (fun (x : Unit) => x)(tt);");
   assert.throws(() => query("value", { maxSteps: 1 }), fails("budget"));
