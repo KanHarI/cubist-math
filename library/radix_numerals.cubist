@@ -40,6 +40,8 @@ computable def Digit(r : Radix) : U0 := Fin(r.1);
 
 computable def LeadingDigit(r : Radix) : U0 := exists d : Nat. (0 < d) and (d < r.1);
 
+computable def radix_leading_digit(r : Radix, d : LeadingDigit(r)) : Digit(r) := (d.1, d.2.2);
+
 computable def radix_digit_zero(r : Radix) : Digit(r) := (0, radix_above_zero(r));
 
 computable def radix_leading_one(r : Radix) : LeadingDigit(r) := (1, tt, radix_above_one(r));
@@ -114,7 +116,8 @@ computable def radix_leading_succ_value(
   ) {
     left below => refl(succ(d.1));
     right carry => trans(
-      nat_add_zero(1 * r.1), trans(nat_one_mul(r.1), sym(radix_last_digit(r, (d.1, d.2.2), carry)))
+      nat_add_zero(1 * r.1),
+      trans(nat_one_mul(r.1), sym(radix_last_digit(r, radix_leading_digit(r, d), carry)))
     );
   };
 

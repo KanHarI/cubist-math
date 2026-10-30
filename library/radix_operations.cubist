@@ -6,9 +6,6 @@ import bnat_division;
 import radix_numerals;
 use nat;
 
-// A leading digit is a digit.
-computable def radix_leading_digit(r : Radix, d : LeadingDigit(r)) : Digit(r) := (d.1, d.2.2);
-
 // Two digits sum to a digit, or with a carry to the radix and a digit:
 // d + e - r, since r + (d + e - r) = d + e < r + r. A computed digit's
 // bound is the comparison's own evidence; the order laws refute only the
