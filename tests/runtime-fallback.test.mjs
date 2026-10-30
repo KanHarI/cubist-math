@@ -260,9 +260,19 @@ print(evaluate((fun (n : UNat) => typed(UNat and UNat, (n, comp(fun (j : Interva
 // where the kernel computes a transported base, and the value form fails
 // with the kernel's K344, as the kernel's queries alone fail.
 test("a kernel stop in a fallback is reported as the kernel's", async t => {
-  const { runtime, kernel } = await printed(t, "import euclid;\nuse nat;\nprint(evaluate(euclid(7).1));\n");
+  // What the runtime's observations threw: the kernel's error, not a
+  // refusal that would restart the walk.
+  const observeNow = RuntimeQuery.prototype.observeNow, thrown = [];
+  RuntimeQuery.prototype.observeNow = function (...args) {
+    try { return observeNow.apply(this, args); } catch (error) { thrown.push(error.constructor.name); throw error; }
+  };
+  let outcomes;
+  try { outcomes = await printed(t, "import euclid;\nuse nat;\nprint(evaluate(euclid(7).1));\n"); }
+  finally { RuntimeQuery.prototype.observeNow = observeNow; }
+  const { runtime, kernel } = outcomes;
   assert.deepEqual(texts(runtime), ["K344: Native prototype syntax depth exceeds 512."]);
   assert.deepEqual(texts(kernel), texts(runtime));
+  assert.deepEqual(thrown, ["KernelError"]);
 });
 
 // No node is asked twice: each term the fallback reads back is asked of
