@@ -729,6 +729,21 @@ nodes are copied in the workloads measured. What still runs within one
 transition is the η check's walk of a function's syntax and a declared
 type's descriptors.
 
+Recorded on 2026-10-30, for EVAL4's last item: a responsive snapshot copy
+is **not needed now**. No path observes a query asynchronously: the value
+form's walk, the one user of the runtime, calls `observeNow`
+(`runtimeQueries` in `web/translator/translate.mjs`), and `observe` serves
+the tests alone. Since the sharing of repeated calls, a scope's reading
+(`#sharing`) runs within one transition too, bounded by the scope's
+syntax: at most 263 nodes and 0.41 ms in the probe's workloads, 115 nodes
+and 0.17 ms in the constructs' walks. Within a transition the budget still
+checks its limits, its deadline and a signal already aborted every 1,024
+steps; only a cancellation that arrives during one cannot be seen until it
+ends. A caller that observes asynchronously, as a worker answering
+messages during an evaluation would, would need these stretches, each
+bounded by one scope's, one function's or one signature's syntax, to yield
+or be bounded; until one exists, the item waits for it.
+
 **Fixed on main by #321.** The list-parity setup's evaluation by the
 kernel's queries reported "Invalid cubical session." on main `e7b67376` too:
 nested eliminators overflowed the 2 MiB WASM stack, placed after the static

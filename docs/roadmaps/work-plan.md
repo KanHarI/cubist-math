@@ -982,7 +982,8 @@ Each step lands in focused PRs under the review rule above.
       and `BQ` values evaluate. User-facing use also needs EVAL4's open items:
       a responsive snapshot copy, memory calibration and closed-environment
       pruning (pruning, memory calibration and the sharing of repeated
-      calls done on 2026-10-30, below).
+      calls done on 2026-10-30, and the snapshot copy not needed while no
+      path observes asynchronously, below).
       - **Value forms, done on 2026-10-26**
         ([report](../reports/runtime-repl-evaluation.md)): `evaluate e` in
         the CLI REPL, the REPL page, the reference pages' REPL bar and the
@@ -1045,6 +1046,10 @@ Each step lands in focused PRs under the review rule above.
         20M cells, the budget that binds, is about 40M steps and half a
         second, and peaked under 600 MiB of heap on the worst workload
         measured; the budgets stay as they are.
+      - **EVAL4's responsive snapshot copy: not needed now** (recorded on
+        2026-10-30): no path observes a query asynchronously, the value
+        form's walk being synchronous, as the kernel's queries are; the
+        item waits for a caller that observes asynchronously.
    4. **Typed readback** (EVAL5): read runtime values back into kernel terms
       by their types, with the written readback correspondence and the
       applicable EVAL8 review. Decided on 2026-10-28
