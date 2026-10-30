@@ -13,8 +13,11 @@ import { checkProgram } from "./check-program.mjs";
 import { watchReadbacks, disagreements } from "./runtime-readback-oracle.mjs";
 
 // The value form of `evaluate e` and `print(evaluate(e))` is observed by the
-// runtime (web/cubical-runtime.mjs, EVAL3/EVAL4), and demand it reports
-// unsupported is computed again, whole, by the kernel's head queries
+// runtime (web/cubical-runtime.mjs, EVAL3/EVAL4). A node it does not
+// execute falls back per node (W2 of docs/roadmaps/runtime/typed-readback.md,
+// tests/runtime-fallback.test.mjs): it is read back and the runtime goes on
+// with the kernel's weak head of it; only where that readback refuses is
+// the value form computed again, whole, by the kernel's head queries
 // (valueFormOf in web/translator/translate.mjs). Each value it shows is the
 // one the kernel's queries alone show, which runtimeEvaluation: false asks
 // for; where the kernel's queries stop, at the syntax depth guard, the
@@ -108,22 +111,20 @@ async function alternately(t, source, { reader = sourceReader(), options = {} } 
   return Object.assign(pairs, { readbacks: watched.outcomes });
 }
 const twice = terms => terms.map(term => `print(evaluate(${term}));\nprint(evaluate(${term}));`).join("\n");
-// What computed each value form: the runtime, or the demand it refused.
-const computedBy = pairs => pairs.map(pair => pair.by === "runtime" ? "runtime" : pair.unsupported);
-const pathConstructor = "Execution of a path constructor is not implemented.";
-const pathApplied = "Runtime execution of PApp is not implemented.";
-const composition = "Runtime execution of Comp is not implemented.";
+// What computed each value form: the runtime alone, the runtime with nodes
+// it sent through the fallback per node, or, on a restart, the demand it
+// reported unsupported.
+const computedBy = pairs => pairs.map(pair => pair.by !== "runtime" ? pair.unsupported : pair.fallbacks || pair.shortcuts ? "per node" : "runtime");
 
 // The runtime executes the point constructors of any declared type, higher
 // or truncated too, and its eliminators' clauses for them, as the kernel's
-// iota does. A path constructor, a path applied and a composition are
-// refused where the walk meets them, never decided from the value's type:
-// the fallback computes the whole value form again by the kernel's queries.
+// iota does. A path constructor, a path applied and a composition fall back
+// per node where the walk meets them, never decided from the value's type.
 // The kernel selects an eliminator's path clause only under a dimension
 // binder, as in the composition rule an eliminator applied to a
 // transported value takes; at an endpoint, a path constructor computes to
-// its boundary first. Either is demand the runtime refuses.
-test("point constructors of a quotient, a circle and a truncation compute in the runtime, and their paths fall back", async t => {
+// its boundary first, by syntax.
+test("point constructors of a quotient, a circle and a truncation compute in the runtime, and their paths fall back per node", async t => {
   const pairs = await alternately(t, `import quotients;
 import h1_truncation;
 use unat;
@@ -158,17 +159,17 @@ ${twice([
   assert.deepEqual(pairs.map(pair => pair.text), ["class(3)", "base", "(class(3), tt)", "(3, tt)", "base", "class(6)", "point(3)",
     "point(4)", "gpoint(2)", "loop", "relate(1, 3, tt)", "(tt, class(6))", "squash(point(1), point(2))",
     "base", "base", "class(2)", "point(2)", "<composition>", "<composition>"]);
-  assert.deepEqual(computedBy(pairs), [...Array(9).fill("runtime"), pathConstructor, pathConstructor, "runtime", pathConstructor,
-    ...Array(4).fill(pathApplied), composition, composition]);
-  // Every fallback follows a runtime query, which met the demand itself.
-  for (const pair of pairs) if (pair.by === "kernel") assert.ok(pair.runtime.snapshotNodes > 0);
+  assert.deepEqual(computedBy(pairs), [...Array(9).fill("runtime"), "per node", "per node", "runtime", ...Array(7).fill("per node")]);
+  // At an endpoint, a path applied, a path constructor's too, is settled by
+  // syntax, the kernel asked nothing.
+  assert.deepEqual(pairs.slice(13, 17).map(pair => [pair.shortcuts, pair.fallbacks]), Array(4).fill([1, 0]));
 });
 
 // Binary integers and rationals are set quotients, of differences of binary
 // naturals and of fractions over them: their arithmetic, inverses and
 // decisions compute in the runtime, with components past 64 and 128 bits,
 // and inside pairs, sums and lists. A decision that finds two values equal
-// holds the quotient's path constructor, which falls back.
+// holds the quotient's path constructor, which falls back per node.
 test("binary integer and rational value forms compute in the runtime", async t => {
   const wide = "340282366920938463463374607431768211455", q = (n, d) => `class((bnat.(${n}), bnat.(${d})))`;
   const fraction = (n, d) => `class((${n}, ${d}, <fun>))`;
@@ -194,7 +195,7 @@ ${twice([
     `(${fraction(q(1, 0), q(2, 0))}, ${q(0, 3)})`, `left(${fraction(q(4, 0), q(4, 0))})`,
     `cons(${fraction(q(1, 0), q(2, 0))}, cons(${fraction(q(6, 0), q(12, 0))}, nil))`,
   ]);
-  assert.deepEqual(computedBy(pairs), [...Array(9).fill("runtime"), pathConstructor, ...Array(4).fill("runtime"), pathConstructor,
+  assert.deepEqual(computedBy(pairs), [...Array(9).fill("runtime"), "per node", ...Array(4).fill("runtime"), "per node",
     ...Array(3).fill("runtime")]);
   // The query copies what the walk reaches: for `2/3 + 1/6`, under a tenth
   // of the 32,015 nodes the closure of its judgement holds, the field's
@@ -214,10 +215,11 @@ const undecided = {
 // The binary integer and rational contracts (tests/fixtures/contracts/), each
 // evaluated term printed in place of its directive, whose expected value
 // stays on the kernel's queries: every value form is the kernel's. The
-// domain's zero decision of a zero integer holds a path constructor.
+// domain's zero decision of a zero integer holds a path constructor, which
+// falls back per node.
 for (const [file, expected] of [
   ["binary_integer_contracts", Array(5).fill("runtime")],
-  ["binary_integer_domain_contracts", ["runtime", "runtime", pathConstructor, "runtime", "runtime", "runtime"]],
+  ["binary_integer_domain_contracts", ["runtime", "runtime", "per node", "runtime", "runtime", "runtime"]],
   ["binary_rational_contracts", Array(30).fill("runtime")],
 ]) test(`the value forms of ${file} are the kernel's, computed in the runtime`, async t => {
   const path = fileURLToPath(new URL(`./fixtures/contracts/${file}.cubist`, import.meta.url)), source = await readFile(path, "utf8");
@@ -229,7 +231,7 @@ for (const [file, expected] of [
   // Each runtime value form is read back; within the oracle's budget of 2M
   // steps a normal form, all but the widest values' full normal forms are
   // decided.
-  assert.equal(pairs.readbacks.length, expected.filter(by => by === "runtime").length);
+  assert.equal(pairs.readbacks.length, expected.length);
   assert.deepEqual(pairs.readbacks.filter(readback => readback.value === "budget").map(readback => readback.source.replace(/\s+/g, " ")),
     undecided[file]);
 });
@@ -249,17 +251,20 @@ print(evaluate(count_into(2 * 255, 0)));
 });
 
 // The library's Euclid (library/euclid.cubist) computes by NUM1's strong
-// recursion, which transports along offset paths: the runtime refuses its
-// compositions, and the kernel's queries compute each value form, the
-// certificate's function shown as such. 7! + 1 = 71 * 71 takes the search
-// past the kernel's syntax depth guard.
-test("the library Euclid's value forms fall back from the runtime at NUM1's compositions", async t => {
+// recursion, which transports along offset paths: the runtime sends each
+// composition through the fallback per node, and the kernel computes its
+// head, the certificate's function shown as such. 7! + 1 = 71 * 71 takes
+// the search past the kernel's syntax depth guard: the transport whose
+// base is the rest of the search is the kernel's to compute, as its rule
+// inspects that base, and it stops there with K344, as the kernel's
+// queries alone stop.
+test("the library Euclid's value forms fall back per node at NUM1's compositions", async t => {
   const pairs = await alternately(t, `import euclid;
 use nat;
 ${twice(["euclid(3)", "euclid(4).1", "euclid(4)", "euclid(5).1", "euclid(6).1", "factorial(5)"])}
 `);
   assert.deepEqual(pairs.map(pair => pair.text), ["(7, (tt, <fun>), tt)", "5", "(5, (tt, <fun>), tt)", "11", "7", "120"]);
-  assert.deepEqual(computedBy(pairs), Array(6).fill(composition));
+  assert.deepEqual(computedBy(pairs), Array(6).fill("per node"));
   const { runtime, kernel } = await bothWays(t, "import euclid;\nuse nat;\nprint(evaluate(euclid(7).1));");
   assert.deepEqual(outcomes(runtime), ["K344: Native prototype syntax depth exceeds 512."]);
   assert.deepEqual(outcomes(runtime), outcomes(kernel));

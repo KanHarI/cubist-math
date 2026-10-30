@@ -470,19 +470,25 @@ export class Translator {
   }
   // The value form of an evaluated term (DM3, valueForm in evaluation.mjs),
   // observed by the runtime (EVAL3/EVAL4, web/cubical-runtime.mjs): a closed
-  // judgement's data executes with shared closures, building no kernel
-  // syntax, and only the heads the walk shows are demanded. Its one
-  // fallback is demand the runtime reports unsupported, such as a path
-  // applied, a composition, Glue or a path constructor: the kernel's head
-  // queries, `kernel`, then compute the whole walk again from the start, as
-  // they did before the runtime, and nothing the runtime computed is shown.
-  // A runtime stop at its limits is reported, not retried. Neither answer
-  // is evidence: the kernel's queries certify nothing either. Which
-  // computed it is recorded on the print directive (valueFormRecord), with
-  // the runtime's counters, and on a fallback the demand it did not support.
-  // No type decides the fallback beforehand: a value of a quotient or
-  // another higher sort has a point constructor at its weak head, which the
-  // runtime executes, or a composition, which it refuses where it meets it.
+  // judgement's data executes with shared closures, and only the heads the
+  // walk shows are demanded. A node the runtime does not execute, such as a
+  // path applied, a composition, Glue or a path constructor, falls back per
+  // node (W2 of docs/roadmaps/runtime/typed-readback.md): the runtime reads
+  // it back and goes on with the kernel's weak head of it, and a head it
+  // cannot interpret, such as a formal composition or a glue value, is
+  // completed by the kernel's head queries, `kernel`, from there, as they
+  // walk a whole value. Where that readback refuses, at a higher-order
+  // recursive hypothesis or past the kernel's syntax depth, the runtime
+  // reports the demand unsupported, and the kernel's head queries compute
+  // the whole walk again from the start, as they did before the runtime. A
+  // runtime stop at its limits is reported, not retried, and a kernel stop
+  // in a fallback is the kernel's. Neither answer is evidence: the kernel's
+  // queries certify nothing either. Which computed it is recorded on the
+  // print directive (valueFormRecord), with the runtime's counters, its
+  // fallbacks among them, and on a restart the demand it did not support.
+  // No type decides a fallback beforehand: a value of a quotient or another
+  // higher sort has a point constructor at its weak head, which the runtime
+  // executes, or a composition, which falls back where the walk meets it.
   valueFormOf(result,scope,node,kernel) {
     let query=null,unsupported=null;
     try {
@@ -509,18 +515,29 @@ export class Translator {
   // The runtime's answers to the value form's walk, read as the kernel's
   // (demandQueries): a head is an observation, whose spine names it by the
   // kernel's node kinds, and each spends a query of the evaluation's fuel,
-  // as the head query it stands for does. An observation's signature is the
-  // kernel's index at the query's snapshot, which no kernel operation
-  // changes before the walk ends.
+  // as the head query it stands for does, and one more for each node the
+  // runtime sent to the kernel's head query. An opaque head is the kernel's
+  // handle, never asked again, and from there `kernel` answers: its spine,
+  // and the heads of its parts, kernel handles. An observation's signature
+  // is the kernel's index at the query's snapshot, which no kernel
+  // operation changes before the walk ends.
   runtimeQueries(scope,query,kernel) {
     const checker=this.checker,shape=(kind,children=[])=>({root:{kind,children},args:[]});
     return {
-      head:handle=>{scope.spend("queries");return query.observeNow(handle,checker.runtimeLimits());},
-      spine:head=>head.kind==="Con"?{root:{kind:"Con",id:head},args:head.args}
+      head:(handle,node)=>{
+        if(typeof handle==="number")return kernel.head(handle,node);
+        scope.spend("queries");
+        const asked=query.stats.fallbacks,head=query.observeNow(handle,checker.runtimeLimits());
+        if(query.stats.fallbacks>asked)scope.spend("queries",query.stats.fallbacks-asked);
+        return head.kind==="Opaque"?head.head:head;
+      },
+      spine:head=>typeof head==="number"?kernel.spine(head)
+        :head.kind==="Con"?{root:{kind:"Con",id:head},args:head.args}
         :head.kind==="Pair"?shape("Pair",[0,head.first,head.second])
         :head.kind==="Inl"||head.kind==="Inr"?shape(head.kind,[0,head.item])
         :shape({Function:"Lam",LevelFunction:"LLam",PathAbstraction:"PLam",Type:"U"}[head.kind]??head.kind),
-      constructor:head=>checker.shownConstructorOf(head.signature,head.index),
+      constructor:id=>typeof id==="number"?kernel.constructor(id):checker.shownConstructorOf(id.signature,id.index),
+      glueSystem:kernel.glueSystem,
       fieldOrder:kernel.fieldOrder,
     };
   }

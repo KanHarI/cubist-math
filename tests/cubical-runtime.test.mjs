@@ -104,7 +104,7 @@ def unit_match : Unit := unit_induction(fun (x : Unit) => Unit, tt, tt);
   }
 });
 
-test("two fields share a demanded argument and unsupported siblings remain suspended", async t => {
+test("two fields share a demanded argument and a cubical sibling is computed only when demanded", async t => {
   const { query } = await setup(t, `
 def shared : Unit and Unit := (fun (x : Unit) => typed(Unit and Unit, (x, x)))((fun (y : Unit) => y)(tt));
 inductive Circle { base; loop : base = base; }
@@ -118,11 +118,14 @@ def abstraction : Unit and (tt = tt) := (tt, refl(tt));
   assert.deepEqual(await shared.observe(pair.second), { kind: "Point" });
   assert.equal(shared.stats.beta, beta);
   assert.ok(shared.stats.hits > hits);
+  // The path applied at its endpoint is the endpoint of its annotation,
+  // by syntax (W2's shortcut): nothing is read back, and the kernel is not
+  // asked.
   const suspended = query("suspended"), fields = await suspended.observe();
-  for (let i = 0; i < 2; i++) {
-    await assert.rejects(suspended.observe(fields.second), fails("unsupported"));
-    assert.deepEqual(await suspended.observe(fields.first), { kind: "Point" });
-  }
+  assert.equal(suspended.stats.shortcuts, 0);
+  assert.deepEqual(await suspended.observe(fields.first), { kind: "Point" });
+  assert.deepEqual((({ kind, index, arity }) => ({ kind, index, arity }))(await suspended.observe(fields.second)), { kind: "Con", index: 0, arity: 0 });
+  assert.deepEqual([suspended.stats.shortcuts, suspended.stats.fallbacks, suspended.readbackStats.readbacks], [1, 0, 0]);
   // A path abstraction is a weak head; only applying it is cubical demand.
   const abstraction = query("abstraction"), parts = await abstraction.observe();
   assert.deepEqual(await abstraction.observe(parts.second), { kind: "PathAbstraction" });
@@ -235,10 +238,13 @@ def returned : tt = tt := path i => reflexive @ i;
   assert.equal(cons.arity, 2);
   assert.equal(await unary(prepend, kernel.signatures.get("unat__UNat").index, cons.args[0]), 1);
   // path i => p @ i contracts to p in the kernel, by reading the
-  // application's interval formula; the runtime does not interpret
-  // formulas, and says so.
-  await assert.rejects(query("returned").observe(), fails("unsupported"));
+  // application's interval formula, which the runtime does not interpret:
+  // the kernel's head of the abstraction read back decides (W2), here
+  // reflexive's path abstraction, asked once.
+  const returned = query("returned");
+  assert.equal((await returned.observe()).kind, "PathAbstraction");
   assert.equal(kernelHead("returned"), "PLam");
+  assert.equal(returned.stats.fallbacks, 1);
 });
 
 test("observeNow runs the same machine at once, under the same limits", async t => {
@@ -543,10 +549,13 @@ test("observation deadlines exclude idle time and expiry leaves the query usable
 });
 
 // A path constructor, the squash among them, and a point constructor with a
-// position whose cube is a path type are refused when demanded, not because
-// their signature occurs; the point constructors beside them compute.
-test("path constructors and cubical positions are refused only when demanded", async t => {
-  const { query } = await setup(t, `
+// position whose cube is a path type are not executed: where the walk
+// demands one, not because its signature occurs, it falls back per node
+// (W2), and the kernel's head, applied as the term applies it, is opaque.
+// The point constructors beside them compute, and a path constructor at an
+// endpoint is its annotation's endpoint, by syntax.
+test("path constructors and cubical positions fall back only when demanded, to opaque heads", async t => {
+  const { query, kernel } = await setup(t, `
 import h1_truncation;
 inductive Cube { cbase; pack(p : cbase = cbase); }
 inductive Circle { base; loop : base = base; }
@@ -559,15 +568,26 @@ def circle_endpoint : Circle := loop @ 1;
 def unused_loop : Unit := (fun (p : base = base) => tt)(loop);
 def squashed := Trunc.squash(typed(Trunc(U0, Unit), point(tt)), typed(Trunc(U0, Unit), point(tt)));
 `);
-  const refused = message => error => fails("unsupported")(error) && error.message === message;
+  // An opaque head's constructor and its count of arguments, as the
+  // kernel's spine names them, and the nodes sent to the kernel: the
+  // constructor, then its application to each argument.
+  const opaque = async name => {
+    const runtime = query(name), observed = await runtime.observe();
+    assert.equal(observed.kind, "Opaque", name);
+    const { root, args } = kernel.spine(observed.head);
+    const record = [...kernel.signatures.values()].find(signature => signature.index === kernel.node(root.children[0]).payload);
+    return [root.kind, record.constructors[root.payload], args.length, runtime.stats.fallbacks];
+  };
   assert.deepEqual(await query("unused_cube").observe(), { kind: "Point" });
   assert.equal((await query("cube_leaf").observe()).kind, "Con");
-  await assert.rejects(query("cube_path").observe(), refused("Execution of a constructor with cubical recursive positions is not implemented."));
+  assert.deepEqual(await opaque("cube_path"), ["Con", "pack", 1, 2]);
   assert.deepEqual((({ kind, index, args, arity }) => ({ kind, index, args, arity }))(await query("circle_value").observe()),
     { kind: "Con", index: 0, args: [], arity: 0 });
-  await assert.rejects(query("circle_loop").observe(), refused("Execution of a path constructor is not implemented."));
-  await assert.rejects(query("squashed").observe(), refused("Execution of a path constructor is not implemented."));
-  await assert.rejects(query("circle_endpoint").observe(), refused("Runtime execution of PApp is not implemented."));
+  assert.deepEqual(await opaque("circle_loop"), ["Con", "loop", 0, 1]);
+  assert.deepEqual(await opaque("squashed"), ["Con", "squash", 2, 3]);
+  const endpoint = query("circle_endpoint");
+  assert.deepEqual((({ kind, index }) => ({ kind, index }))(await endpoint.observe()), { kind: "Con", index: 0 });
+  assert.deepEqual([endpoint.stats.shortcuts, endpoint.stats.fallbacks], [1, 0]);
   assert.deepEqual(await query("unused_loop").observe(), { kind: "Point" });
 });
 
@@ -651,20 +671,29 @@ def deep := parity(100 * 100);
 });
 
 // The library's Euclid computes by NUM1's strong recursion, which
-// transports along offset paths: its prime is demand the runtime refuses at
-// a composition, having built no kernel syntax.
-test("the library Euclid's prime stops the runtime at a composition, allocating no native syntax", async t => {
+// transports along offset paths: the runtime sends each composition it
+// meets through the fallback per node (W2), reading it back into kernel
+// syntax and going on with the kernel's head, and computes the prime.
+test("the library Euclid's prime computes in the runtime, its compositions falling back per node", async t => {
   const { query, kernel } = await setup(t, `
 import euclid; use nat;
 def four := euclid(4);
 def five := euclid(5);
 `);
-  for (const name of ["four", "five"]) {
+  // A binary natural, b_zero or b_positive(p), p bp_one, bp_even(q) = 2q
+  // or bp_odd(q) = 2q + 1, observed.
+  const positive = async (runtime, handle) => {
+    const value = await runtime.observe(handle);
+    return value.index === 0 ? 1 : 2 * await positive(runtime, value.args[0]) + value.index - 1;
+  };
+  for (const [name, prime] of [["four", 5], ["five", 11]]) {
     const before = kernel.arena().nodes, runtime = query(name, { milliseconds: budget(30000) }), pair = await runtime.observe();
     assert.equal(pair.kind, "Pair");
-    await assert.rejects(runtime.observe(pair.first), error => fails("unsupported")(error)
-      && error.message === "Runtime execution of Comp is not implemented.");
-    assert.equal(kernel.arena().nodes, before, "runtime allocated native substitution syntax");
+    const number = await runtime.observe(pair.first);
+    assert.equal(number.index, 1, name);
+    assert.equal(await positive(runtime, number.args[0]), prime, name);
+    assert.ok(runtime.stats.fallbacks > 0 && runtime.readbackStats.readbacks > 0, name);
+    assert.ok(kernel.arena().nodes > before, "the fallback's readbacks build kernel syntax");
     const retained = runtime.retainedObjects();
     assert.ok(retained.runtimeObjects > 0);
     assert.ok(retained.snapshotNodes < 5000);

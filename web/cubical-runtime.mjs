@@ -1,9 +1,12 @@
 // EVAL3/EVAL4 execution query. It produces observations of checked values,
 // never kernel evidence. Its readback (EVAL5's typed readback, W1 of
 // docs/roadmaps/runtime/typed-readback.md) gives a value as a closed kernel
-// term, which no verdict consumes; cubical execution remains EVAL8 work.
+// term, which no verdict consumes. A node it does not execute, such as a
+// composition, it reads back and asks the kernel's head query for, and goes
+// on with that head (W2, the fallback per node); cubical execution itself
+// remains EVAL8 work.
 import { InstructionGraph } from "./cubical-instructions.mjs";
-import { KernelFault, faultToken } from "./cubical-kernel.mjs";
+import { KernelError, KernelFault, faultToken } from "./cubical-kernel.mjs";
 
 export class RuntimeError extends Error {
   constructor(kind, message) { super(message); this.kind = kind; }
@@ -43,6 +46,14 @@ const rebuiltSlots = {
   PApp: { 1: null }, Con: { 0: null }, Unglue: { 0: null },
 };
 const none = new Set();
+// The weak heads of the kernel's the machine goes on with after a fallback
+// (W2): a node it makes a value of at once, or a constructor applied to at
+// most its arguments. Any other head is opaque (#settle).
+const values = new Set(["Lam", "LLam", "PLam", "Pair", "Inl", "Inr", "Point", "Elim", "U", "Pi", "Sigma", "Path", "Sum", "Unit", "Void",
+  "Sort", "LPi"]);
+// The kernel's refusal of a term past its syntax depth (K344, ck_make in
+// kernel/src/term_store.c), which a readback meets where it would build one.
+const syntaxDepth = "Native prototype syntax depth exceeds 512.";
 // The closures memo's key for the empty environment.
 const topLevel = Object.freeze({});
 const memos = () => Object.fromEntries(["value", "outer", "origin", "level"].map(mode => [mode, { cells: new WeakMap(), closures: new WeakMap() }]));
@@ -62,8 +73,10 @@ class Budget {
     this.milliseconds = options.milliseconds ?? 30000;
     for (const n of [this.maxSteps, this.maxCells, this.slice, this.milliseconds])
       if (!Number.isSafeInteger(n) || n < 1) throw new TypeError("Runtime limits must be positive safe integers.");
+    // fallbacks counts the nodes sent to the kernel's head query, and
+    // shortcuts those the syntax-only conditions settled (W2).
     this.stats = { steps: 0, allocatedCells: 0, forces: 0, hits: 0, beta: 0, iota: 0, maxFrames: 0, snapshotNodes: 0,
-      snapshotDefinitions: 0 };
+      snapshotDefinitions: 0, fallbacks: 0, shortcuts: 0 };
   }
   start({ milliseconds = this.milliseconds, signal } = {}) {
     if (!Number.isSafeInteger(milliseconds) || milliseconds < 1)
@@ -109,7 +122,7 @@ function judged(kernel, judgement, budget) {
   const checked = graph.judgement(judgement);
   if (checked.kind !== "typing" || checked.context.length)
     fail("input", "Runtime execution requires a closed, assumption-free typing judgement.");
-  return { kernel, held: kernel.handleToken(), nodes: new Map(), signatures: new Map(), scopes: new Map(),
+  return { kernel, graph, held: kernel.handleToken(), nodes: new Map(), signatures: new Map(), scopes: new Map(),
     expression: checked.term, type: checked.type };
 }
 
@@ -163,7 +176,12 @@ export class RuntimeQuery {
   // Readback's memo, by mode, of cells and of closures by environment and
   // code (3.5); each readback is an epoch of its own.
   #memo = memos(); #epoch = 0;
-  #readStats = { readbacks: 0, writes: 0, hits: 0, cells: 0, rebuilt: 0, bindings: 0 };
+  #readStats = { readbacks: 0, writes: 0, hits: 0, unstable: 0, cells: 0, rebuilt: 0, bindings: 0 };
+  // The fallback per node (W2): the kernel's head of each term it asked
+  // for, so that no node is asked twice, and the cell each handle a
+  // readback made stands for, so that the kernel's answer, meeting that
+  // handle again, goes on with the cell instead of computing it again.
+  #asked = new Map(); #readCells = new Map();
   constructor(kernel, judgement, options = {}) {
     this.#budget = new Budget(options);
     this.#origins = options.origins === true;
@@ -234,12 +252,13 @@ export class RuntimeQuery {
     }
     return items;
   }
+  // A constructor's descriptor; one the machine does not execute has a
+  // reason it is refused, and only constructors without one make values.
   #descriptor(signature, index) {
     const signatures = this.#image.signatures;
     if (!signatures.has(signature)) signatures.set(signature, descriptors(this.#kernel(), signature, this.#budget));
     const c = signatures.get(signature)[index];
     if (!c) fail("input", "A constructor requires an admitted signature.");
-    if (c.refused) fail("unsupported", c.refused);
     return c;
   }
   // The machine for one demanded cell. It pauses after each slice of work:
@@ -278,6 +297,10 @@ export class RuntimeQuery {
           if (cell.operation === "apply") {
             push({ operation: "apply", argument: cell.argument }); force(cell.fn); continue;
           }
+          // The kernel's answer to a fallback, meeting a handle a readback
+          // made for a cell, goes on with that cell (W2).
+          const known = cell.env || !this.#readCells.size ? undefined : this.#readCells.get(cell.code);
+          if (known && known !== cell && known.state !== 1) { force(known); continue; }
           const n = this.#node(cell.code), c = n.children, env = cell.env;
           const delay = id => this.#delay(id, env);
           switch (n.kind) {
@@ -308,14 +331,18 @@ export class RuntimeQuery {
             case "Fst": case "Snd":
               push({ operation: "project", second: n.kind === "Snd" }); force(delay(c[0])); break;
             case "Point": returned(this.#value({ tag: "Point" })); break;
-            case "UnitRec": push({ operation: "unit", body: delay(c[1]) }); force(delay(c[2])); break;
+            // The unit and sum frames keep their node, which a fallback
+            // rebuilds where their target's head is opaque (W2).
+            case "UnitRec": push({ operation: "unit", body: delay(c[1]), node: cell.code, env }); force(delay(c[2])); break;
             case "Inl": case "Inr": returned(this.#value({ tag: n.kind, type: delay(c[0]), item: delay(c[1]) })); break;
             case "SumRec":
-              push({ operation: "sum", left: delay(c[1]), right: delay(c[2]) }); force(delay(c[3])); break;
+              push({ operation: "sum", left: delay(c[1]), right: delay(c[2]), node: cell.code, env }); force(delay(c[3])); break;
             case "Con": {
               const instance = this.#node(c[0]);
               if (instance.kind !== "Sort") fail("input", "A constructor requires a declared instance.");
-              this.#descriptor(instance.payload, n.payload);
+              // A path constructor, the squash among them, or one with a
+              // cubical position: the fallback.
+              if (this.#descriptor(instance.payload, n.payload).refused) { force(this.#fallback(n, cell.code, env, push)); break; }
               returned(this.#value({ tag: "Con", signature: instance.payload, index: n.payload, instance: delay(c[0]), args: [] })); break;
             }
             // An eliminator of any admitted signature is a value; only the
@@ -330,7 +357,9 @@ export class RuntimeQuery {
             // type mentions can hold whole computations.
             case "U": case "Pi": case "Sigma": case "Path": case "Sum": case "Unit": case "Void": case "Sort": case "LPi":
               returned(this.#value({ tag: "Type", node: cell.code, env: this.#forReadback ? this.#pruned(cell.code, env) : null })); break;
-            default: fail("unsupported", `Runtime execution of ${n.kind} is not implemented.`);
+            // A composition, a path applied, Glue, unglue, a glue value or
+            // abort: the fallback per node.
+            default: force(this.#fallback(n, cell.code, env, push));
           }
           continue;
         }
@@ -347,18 +376,27 @@ export class RuntimeQuery {
             }
             cell.state = 2; cell.value = value; break;
           }
+          // A frame whose value is an opaque head rebuilds the node it
+          // stands for, that head in the place it consumes, and sends it
+          // through the fallback (W2).
           case "project":
+            if (value.tag === "Opaque") { force(this.#consume([this.#given(value.head)], ([pair]) => this.#write(frame.second ? "Snd" : "Fst", 0, pair))); break; }
             if (value.tag !== "Pair") fail("input", "Projection of a non-pair.");
             force(frame.second ? value.second : value.first); break;
           case "unit":
+            if (value.tag === "Opaque") { force(this.#consumed(frame, 2, value.head)); break; }
             if (value.tag !== "Point") fail("input", "Unit elimination of a non-unit.");
             force(frame.body); break;
           case "sum":
+            if (value.tag === "Opaque") { force(this.#consumed(frame, 3, value.head)); break; }
             if (!["Inl", "Inr"].includes(value.tag)) fail("input", "Sum elimination of a non-sum.");
             force(this.#apply(value.tag === "Inl" ? frame.left : frame.right, value.item)); break;
           case "apply": {
             const argument = frame.argument;
-            if (value.tag === (frame.level ? "LLam" : "Lam")) {
+            if (value.tag === "Opaque") {
+              force(this.#consume([this.#given(value.head), frame.level ? { kind: "level", code: argument.code, env: argument.env }
+                : { kind: "cell", cell: argument, mode: this.#mode }], ([fn, x]) => this.#write(frame.level ? "LApp" : "App", 0, fn, x)));
+            } else if (value.tag === (frame.level ? "LLam" : "Lam")) {
               budget.stats.beta++;
               // The frame records the node of the function it applied, whose
               // binder, at its domain, a readback telescope binds (3.3).
@@ -379,6 +417,10 @@ export class RuntimeQuery {
           }
           case "eliminate": {
             const e = frame.eliminator;
+            if (value.tag === "Opaque") {
+              force(this.#consume([{ kind: "value", value: e, mode: this.#mode }, this.#given(value.head)], ([fn, x]) => this.#write("App", 0, fn, x)));
+              break;
+            }
             if (value.tag !== "Con" || value.signature !== e.signature)
               fail("input", "An eliminator requires a constructor of its signature.");
             const descriptor = this.#descriptor(e.signature, value.index);
@@ -412,24 +454,29 @@ export class RuntimeQuery {
   // weak head is then taken in turn. The body is inspected, never evaluated.
   *#head(cell) {
     let value = yield* this.#run(cell);
-    for (let f; (f = this.#eta(value));) {
-      value = yield* this.#run(this.#delay(f, value.env));
+    for (let next; (next = this.#eta(value));) {
+      value = yield* this.#run(next);
       // η leaves the cell holding the λ: the head is kept for its readback.
       if (this.#forReadback) this.#heads.set(cell, value);
     }
     return value;
   }
+  // The cell η continues with, or null.
   #eta(value) {
     // The kernel contracts path i => p @ i to p when i is not free in p,
-    // which reads dimension formulas this fragment does not interpret.
-    if (value.tag === "PLam" && this.#node(value.body).kind === "PApp")
-      fail("unsupported", "Runtime η of a path abstraction is not implemented.");
-    if (value.tag !== "Lam" && value.tag !== "LLam") return 0;
+    // which reads dimension formulas this fragment does not interpret: the
+    // kernel's head of the abstraction read back decides, and where the
+    // kernel keeps the abstraction, the runtime does (W2).
+    if (value.tag === "PLam" && this.#node(value.body).kind === "PApp") {
+      const term = this.#fallbackRead({ kind: "value", value, mode: this.#mode });
+      return this.#headOf(term) === term ? null : this.#ask(term);
+    }
+    if (value.tag !== "Lam" && value.tag !== "LLam") return null;
     const body = this.#node(value.body);
-    if (body.kind !== (value.tag === "Lam" ? "App" : "LApp")) return 0;
+    if (body.kind !== (value.tag === "Lam" ? "App" : "LApp")) return null;
     const argument = this.#node(body.children[1]);
     return argument.kind === "Var" && argument.payload === value.symbol && !this.#free(body.children[0], value.symbol)
-      ? body.children[0] : 0;
+      ? this.#delay(body.children[0], value.env) : null;
   }
   // Whether a variable occurs free in syntax, as ck_term_free decides it:
   // Π, λ, Σ and their level forms bind their payload in their second child.
@@ -447,12 +494,123 @@ export class RuntimeQuery {
     }
     return false;
   }
+  // The fallback per node (W2, section 5 of
+  // docs/roadmaps/runtime/typed-readback.md), for a node the machine does
+  // not execute: a composition, a path applied, Glue, unglue, a glue value,
+  // abort, or a constructor it refuses. It forces none of the node's parts.
+  // First, the kernel's conditions for the node that read syntax only, as
+  // ck_expose and weak check them: a path applied at the endpoint 0 or 1
+  // under its Path annotation is that endpoint of the annotation; a
+  // composition with a tube on the total face is that tube's end, the one
+  // part read back, at its dimension's end (cc_kernel_endpoint_term); a
+  // transport on the total face is its base; and an unglue whose Glue type
+  // has the total face applies that face's equivalence's first projection
+  // to the value. Where one holds, the machine goes on with the part it
+  // selects, and nothing the rule discards is read back. Otherwise the node
+  // is read back as its closure and its weak head asked of the kernel. It
+  // gives the cell the machine forces next, after any frames it pushes.
+  #fallback(n, code, env, push) {
+    const c = n.children, delay = id => this.#delay(id, env), stats = this.#budget.stats;
+    switch (n.kind) {
+      case "PApp": {
+        const type = c[1] && this.#node(c[1]), end = type?.kind === "Path" ? this.#endpoint(n.payload) : null;
+        if (end === null) break;
+        stats.shortcuts++;
+        return delay(type.children[end + 1]);
+      }
+      case "Comp": case "HComp": case "Trans": {
+        let tube = c[1] && this.#node(c[1]);
+        while (tube && !this.#total(tube.payload)) tube = tube.children[1] && this.#node(tube.children[1]);
+        if (!tube) break;
+        stats.shortcuts++;
+        if (n.kind === "Trans") return delay(c[2]);
+        const read = this.#fallbackRead({ kind: "closure", code: tube.children[0], env, mode: this.#mode });
+        this.#budget.tick(); this.#kernel();
+        return this.#delay(this.#image.graph.endpointTerm(read, n.payload, 1), null);
+      }
+      case "Unglue": {
+        const type = this.#node(c[0]);
+        let piece = type.kind === "Glue" && type.children[1] && this.#node(type.children[1]);
+        while (piece && !this.#total(piece.payload)) piece = piece.children[2] && this.#node(piece.children[2]);
+        if (!piece) break;
+        stats.shortcuts++;
+        push({ operation: "apply", argument: delay(c[1]) }); push({ operation: "project", second: false });
+        return delay(piece.children[1]);
+      }
+    }
+    return this.#ask(this.#fallbackRead({ kind: "closure", code, env, mode: this.#mode }));
+  }
+  // A formula of the kernel's, read as weak and ck_expose read it: an
+  // interval formula's endpoint, 0 or 1, or null for any other; and
+  // whether a face is the total one.
+  #formula(id) { this.#budget.tick(); return this.#kernel().inspectFormula(id); }
+  #endpoint(id) {
+    const { sort, clauses } = this.#formula(id);
+    if (sort !== "interval") return null;
+    return !clauses.length ? 0 : clauses.length === 1 && !clauses[0][0] && !clauses[0][1] ? 1 : null;
+  }
+  #total(id) {
+    const { sort, clauses } = this.#formula(id);
+    return sort === "face" && clauses.length === 1 && !clauses[0][0] && !clauses[0][1];
+  }
+  // A fallback reads back by value, or, in a query made with origins, as a
+  // normal form (3.4). Where readback refuses, at a higher-order recursive
+  // hypothesis (3.7) or a term past the kernel's syntax depth (K344), the
+  // fallback is unsupported, and the walk restarts on the kernel's queries.
+  get #mode() { return this.#origins ? "outer" : "value"; }
+  #fallbackRead(start) {
+    try { return this.#read(start); }
+    catch (error) {
+      if (error instanceof KernelError && error.message === syntaxDepth)
+        fail("unsupported", "Readback of a term past the kernel's syntax depth is not implemented.");
+      throw error;
+    }
+  }
+  // The kernel's weak head of a term read back (cc_kernel_whnf, under the
+  // kernel's step budget, as the head queries have it), asked once: a head
+  // is its own head. Then the cell the machine goes on with.
+  #ask(term) { return this.#settle(this.#headOf(term)); }
+  #headOf(term) {
+    let head = this.#asked.get(term);
+    if (head === undefined) {
+      this.#budget.tick(); this.#budget.stats.fallbacks++;
+      head = this.#kernel().head(term);
+      this.#budget.allocate(2); this.#asked.set(term, head).set(head, head);
+    }
+    return head;
+  }
+  // A head of the kernel's goes on as its syntax in the empty environment,
+  // copied as the walk reaches it, where it is a value the machine makes or
+  // a constructor it executes, applied to at most its arguments. Any other
+  // head, a formal composition, a glue value or a path constructor applied,
+  // is opaque: its cell holds it, it is never asked again, and a frame that
+  // consumes it rebuilds its node around it.
+  #settle(head) {
+    let n = this.#node(head), args = 0;
+    for (; n.kind === "App"; args++) n = this.#node(n.children[0]);
+    const instance = n.kind === "Con" && this.#node(n.children[0]);
+    const constructor = instance?.kind === "Sort" && this.#descriptor(instance.payload, n.payload);
+    if (constructor ? !constructor.refused && args <= constructor.count : !args && values.has(n.kind)) return this.#delay(head, null);
+    return this.#ready(this.#value({ tag: "Opaque", head }));
+  }
+  // A frame's opaque head consumed: the node the frame stands for, built
+  // from its parts read back with the head in its place, through the
+  // fallback. The unit and sum frames rebuild their node one level, the
+  // head as its target.
+  #consume(parts, build) { return this.#ask(this.#fallbackRead({ kind: "frame", frame: { parts, results: [], stable: true, build } })); }
+  #consumed(frame, slot, head) {
+    return this.#ask(this.#fallbackRead({ kind: "frame", frame: this.#rebuild(this.#node(frame.node), frame.env, this.#mode, null, { [slot]: head }) }));
+  }
+  #given(handle) { return { kind: "given", handle }; }
   // An observation is the weak head the kernel computes for the represented
   // term, classified: a constructor applied to all of its arguments or to
   // the first ones (`arity` tells which), a pair, an injection, the point, a
   // term or level function, a path abstraction, or a type. A function's
-  // parts and a type's are not exposed. Nothing is published once the query
-  // is disposed.
+  // parts and a type's are not exposed. A head of the kernel's that the
+  // runtime does not interpret, such as a formal composition or a glue
+  // value, is opaque: the observation gives the kernel's handle of it, which
+  // the query's generation keeps valid (W2). Nothing is published once the
+  // query is disposed.
   #observation(value) {
     this.#open(); this.#budget.check();
     const wrap = c => this.#wrap(c);
@@ -469,6 +627,7 @@ export class RuntimeQuery {
       case "LLam": return Object.freeze({ kind: "LevelFunction" });
       case "PLam": return Object.freeze({ kind: "PathAbstraction" });
       case "Type": return Object.freeze({ kind: "Type" });
+      case "Opaque": return Object.freeze({ kind: "Opaque", head: value.head });
       default: fail("unsupported", `Observation of ${value.tag} is not implemented.`);
     }
   }
@@ -548,8 +707,6 @@ export class RuntimeQuery {
     this.#running = true;
     try {
       this.#budget.start(options); this.#budget.check();
-      this.#kernel();
-      this.#epoch++; this.#readStats.readbacks++;
       const mode = origins ? "outer" : "value";
       let start = { kind: "cell", cell, mode };
       if (head) {
@@ -557,13 +714,24 @@ export class RuntimeQuery {
         if (!value) fail("input", "Read back the head of an observed handle.");
         start = { kind: "value", value, mode: mode === "outer" && !data.has(value.tag) ? "origin" : mode };
       }
+      return this.#read(start);
+    } finally { this.#budget.finish(); this.#running = false; }
+  }
+  // One readback, an epoch of the memo of its own: it starts, writes kernel
+  // syntax and returns a handle only while the kernel's handles are the
+  // query's, and fails as "expired" otherwise, dropping its memo and the
+  // fallback's tables (section 7).
+  #read(start) {
+    try {
+      this.#kernel();
+      this.#epoch++; this.#readStats.readbacks++;
       const term = this.#readOut(start), kernel = this.#kernel();
       (kernel.derivedHandles ??= new Set()).add(term);
       return term;
     } catch (error) {
-      if (error instanceof RuntimeError && error.kind === "expired") this.#memo = memos();
+      if (error instanceof RuntimeError && error.kind === "expired") { this.#memo = memos(); this.#asked.clear(); this.#readCells.clear(); }
       throw error;
-    } finally { this.#budget.finish(); this.#running = false; }
+    }
   }
   // Readback's machine, with its own stack, so that a value deeper than the
   // host's stack is refused by the kernel's syntax depth (K344) when its
@@ -579,10 +747,13 @@ export class RuntimeQuery {
     for (;;) {
       budget.tick();
       if (task) {
-        const next = this.#task(task);
+        const next = this.#task(task), cell = task.kind === "cell" ? task.cell : null;
         task = null;
         if (next.parts?.length) { budget.allocate(); stack.push(next); task = next.parts[0]; }
-        else result = next.parts ? { handle: next.build([]), stable: next.stable } : next;
+        else {
+          result = next.parts ? { handle: next.build([]), stable: next.stable } : next;
+          if (cell) this.#standsFor(result.handle, cell);
+        }
         continue;
       }
       if (!stack.length) return result.handle;
@@ -591,8 +762,18 @@ export class RuntimeQuery {
       if (frame.results.length < frame.parts.length) { task = frame.parts[frame.results.length]; continue; }
       stack.pop();
       result = { handle: frame.build(frame.results), stable: frame.stable };
-      if (frame.memo) { budget.allocate(); frame.memo.set(frame.key, { ...result, epoch: this.#epoch }); }
+      if (frame.memo) {
+        budget.allocate(); frame.memo.set(frame.key, { ...result, epoch: this.#epoch });
+        // A cell's frame is memoized by the cell, a closure's by its code.
+        if (typeof frame.key === "object") this.#standsFor(result.handle, frame.key);
+      }
     }
+  }
+  // The cell a handle a readback made for it stands for, the first one
+  // read back to it (W2).
+  #standsFor(handle, cell) {
+    if (this.#readCells.has(handle)) return;
+    this.#budget.allocate(); this.#readCells.set(handle, cell);
   }
   #task(task) {
     switch (task.kind) {
@@ -600,11 +781,18 @@ export class RuntimeQuery {
       case "closure": return this.#closureTask(task.code, task.env, task.mode);
       case "level": return this.#levelTask(task.code, task.env);
       case "value": return this.#valueTask(task.value, task.mode);
+      // A handle given, an opaque head's, and a node the fallback builds
+      // from its parts (W2).
+      case "given": return { handle: task.handle, stable: true };
+      case "frame": return task.frame;
       default: return this.#partTask(task.code, task.env, task.mode, task.items);
     }
   }
+  // A memo entry, where it may answer: unstable entries of earlier
+  // readbacks are counted, for what the stability rule costs (M2).
   #recall(entry) {
-    if (!entry || !(entry.stable || entry.epoch === this.#epoch)) return null;
+    if (!entry) return null;
+    if (!(entry.stable || entry.epoch === this.#epoch)) { this.#readStats.unstable++; return null; }
     this.#readStats.hits++;
     return entry;
   }
@@ -661,12 +849,19 @@ export class RuntimeQuery {
       }
       case "Lam": case "LLam": return closure(this.#made(value.node, value.tag, value.symbol, value.body), value.env);
       case "PLam": return closure(this.#made(value.node, "PLam", this.#node(value.node).payload, value.body), value.env);
-      case "Type": return closure(value.node, value.env);
+      // A value form's query keeps no type value's environment: where the
+      // type's node mentions a variable, its readback is refused.
+      case "Type":
+        if (!this.#forReadback && this.#scope(value.node).vars.size)
+          fail("unsupported", "Readback of a type value whose environment the query does not keep is not implemented.");
+        return closure(value.node, value.env);
       case "Elim": return frame([cell(value.motive), ...value.clauses.map(cell)], ([motive, ...clauses]) =>
         this.#write("Elim", value.signature, motive, clauses.reduceRight((next, clause) => this.#write("List", 0, clause, next), 0)));
       // Its λ needs the domains of the constructor's field telescope at the
       // instance, the one place readback would need types (3.7).
       case "Lift": return fail("unsupported", "Readback of a higher-order recursive hypothesis is not implemented.");
+      // A head of the kernel's, a closed term (W2).
+      case "Opaque": return { handle: value.head, stable: true };
       default: return fail("input", `Readback of ${value.tag} is not implemented.`);
     }
   }
@@ -687,6 +882,8 @@ export class RuntimeQuery {
     const cell = value.instance, [code, env] = cell.state === 2 ? [cell.value.node, cell.value.env] : [cell.code, cell.env];
     const n = code && this.#node(code);
     if (n?.kind !== "Sort" || n.payload !== value.signature) fail("input", "A constructor's instance must be its own signature's sort.");
+    if (cell.state === 2 && !this.#forReadback && this.#scope(code).vars.size)
+      fail("unsupported", "Readback of a type value whose environment the query does not keep is not implemented.");
     return [code, env];
   }
   // A function as the value holds it: its node where the value's fields are
@@ -735,14 +932,16 @@ export class RuntimeQuery {
   // back under the same environment, a term as its closure, a level as a
   // level, and a list, a tube or system chain or a read annotation rebuilt
   // one level in turn. Only nodes that are no term binder are rebuilt.
-  #rebuild(n, env, mode, items) {
+  // A child given, by its slot, takes that handle's place as it is: an
+  // opaque head the fallback rebuilds a node around (W2).
+  #rebuild(n, env, mode, items, given = {}) {
     this.#readStats.rebuilt++;
     const at = [], parts = [];
     n.children.forEach((child, i) => {
       if (!child) return;
       at.push(i);
       const rebuilt = n.kind === "List" ? (i === 1 ? items : undefined) : rebuiltSlots[n.kind]?.[i];
-      parts.push(rebuilt !== undefined ? { kind: "part", code: child, env, mode, items: rebuilt }
+      parts.push(i in given ? this.#given(given[i]) : rebuilt !== undefined ? { kind: "part", code: child, env, mode, items: rebuilt }
         : (n.kind === "List" ? items === "level" : levelSlots[n.kind]?.includes(i)) ? { kind: "level", code: child, env }
         : { kind: "closure", code: child, env, mode });
     });
@@ -890,6 +1089,6 @@ export class RuntimeQuery {
   dispose() {
     this.#disposed = true; this.#image = this.#root = this.#type = null;
     this.#definitions.clear(); this.#handles = new WeakMap(); this.#wrapped = new WeakMap();
-    this.#memo = memos(); this.#heads = new WeakMap();
+    this.#memo = memos(); this.#heads = new WeakMap(); this.#asked.clear(); this.#readCells.clear();
   }
 }

@@ -13,7 +13,10 @@
 // query's root back by value before it is disposed of (M1 of
 // docs/roadmaps/runtime/typed-readback.md): the readback's work and its
 // counters, the arena's growth, and the DAG and tree sizes of the term, its
-// time likewise taken out.
+// time likewise taken out. On the runtime path, a value form whose nodes
+// fell back per node (W2) records its fallbacks' readback counters too, as
+// `fallback`: readbacks, writes, memo hits, cells, rebuilt nodes and
+// telescope bindings (M2).
 //   node tools/runtime-repl-probe.mjs                 every workload, both paths
 //   node tools/runtime-repl-probe.mjs NAME[,NAME] [runtime|kernel|readback]
 import { execFileSync } from "node:child_process";
@@ -36,6 +39,9 @@ export const workloads = {
   "euclid-4": ["import euclid; use nat;", "evaluate euclid(4);"],
   "euclid-5-prime": ["import euclid; use nat;", "evaluate euclid(5).1;"],
   "euclid-6-prime": ["import euclid; use nat;", "evaluate euclid(6).1;"],
+  // 8! + 1 = 61 * 661 and 9! + 1 = 19 * 71 * 269.
+  "euclid-8-prime": ["import euclid; use nat;", "evaluate euclid(8).1;"],
+  "euclid-9-prime": ["import euclid; use nat;", "evaluate euclid(9).1;"],
   "euclid-10-prime": ["import euclid; use nat;", "evaluate euclid(10).1;"],
   // 7! + 1 = 71 * 71: the search's 70 candidates pass the kernel's depth guard.
   "euclid-7-prime": ["import euclid; use nat;", "evaluate euclid(7).1;"],
@@ -115,13 +121,14 @@ if (!child) {
       if (failed) throw new Error(failed.text);
       globalThis.gc?.();
       const before = { work: program.kernel.work(), arena: program.kernel.arena().nodes, heap: process.memoryUsage().heapUsed };
-      let captured = null, retained = null, readback = null, measuring = 0;
+      let captured = null, retained = null, readback = null, fallback = null, measuring = 0;
       const dispose = RuntimeQuery.prototype.dispose;
       RuntimeQuery.prototype.dispose = function () {
         const measured = performance.now();
         globalThis.gc?.();
         retained = { heapMiB: +((process.memoryUsage().heapUsed - before.heap) / 1048576).toFixed(1) };
         try { Object.assign(retained, this.retainedObjects()); } catch (error) { retained.walk = error.kind; }
+        if (path === "runtime" && this.readbackStats.readbacks) fallback = this.readbackStats;
         if (path === "readback") {
           const steps = this.stats.steps, arena = program.kernel.arena().nodes, started = performance.now();
           try {
@@ -149,7 +156,8 @@ if (!child) {
       const after = program.kernel.work();
       globalThis.gc?.();
       console.log(JSON.stringify({ workload: name, path, entry, result: answer.text.slice(0, 120), kind: answer.kind,
-        computedBy: captured?.prints?.at(-1)?.valueForm ?? null, retained, ...readback ? { readback } : {}, milliseconds: Math.round(elapsed),
+        computedBy: captured?.prints?.at(-1)?.valueForm ?? null, retained, ...readback ? { readback } : {}, ...fallback ? { fallback } : {},
+        milliseconds: Math.round(elapsed),
         kernelQuerySteps: Number(after.querySteps - before.work.querySteps), kernelQueries: Number(after.queries - before.work.queries),
         arenaNodes: program.kernel.arena().nodes - before.arena,
         heapAfterGcMiB: +((process.memoryUsage().heapUsed - before.heap) / 1048576).toFixed(1),

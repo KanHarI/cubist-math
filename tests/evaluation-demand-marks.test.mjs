@@ -627,9 +627,9 @@ test("demand marks format tightly and lint what asks for nothing more", () => {
 // report (docs/roadmaps/historical/evaluation-demand-marks/report.md)
 // records that they complete. Their folded normal forms, under !!_, are
 // quick. Each is printed twice: its value form observed by the runtime
-// (web/cubical-runtime.mjs), which reports the demand it does not support
-// and leaves it to the kernel's head queries, and by those queries alone,
-// which must show the same value.
+// (web/cubical-runtime.mjs), which sends a node it does not execute through
+// the fallback per node (W2), and by the kernel's head queries alone, which
+// must show the same value.
 const corpus = JSON.parse(readFileSync(new URL("../docs/roadmaps/historical/evaluation-demand-marks/constructs.json", import.meta.url), "utf8"));
 const slowNormalForms = new Set(["A46b-theory-labelled-parent", "B62-rational-literal", "B63-decimal-literal"]);
 const typeKinds = new Set(["U", "Pi", "Sigma", "Path", "Sum", "Unit", "Void", "Glue", "Sort", "LPi"]);
@@ -709,6 +709,8 @@ for (const setup of Object.keys(corpus.setups)) {
         const by = computed.get(runtime);
         if (by.by === "runtime") valueForms.runtime++;
         else valueForms.unsupported[by.unsupported] = (valueForms.unsupported[by.unsupported] ?? 0) + 1;
+        if (by.fallbacks) valueForms.asked++;
+        else if (by.shortcuts) valueForms.settled++;
         // No type decides a fallback: the runtime met the demand itself.
         if (by.by === "kernel") assert.ok(by.runtime, `${item.id}: the fallback follows a runtime query`);
         continue;
@@ -754,25 +756,21 @@ for (const setup of Object.keys(corpus.setups)) {
     }
   });
 }
-// What computed the value forms above, the runtime or, for the demand it
-// reports unsupported, the kernel's head queries. The four assumptions are
-// refused before anything is computed. The runtime executes the point
-// constructors of higher and truncated sorts too, and their eliminators'
-// point clauses: of the 34 constructs it refused at such a sort before, it
-// computes 21, such as a circle's base, a quotient's class and a match on
-// them, and meets a path constructor in 8, a path applied in 2 and a
-// transport's composition in 3.
-const valueForms = { runtime: 0, unsupported: {} };
+// What computed the value forms above: the runtime, or, where its fallback
+// refuses a readback and the walk restarts, the kernel's head queries. The
+// four assumptions are refused before anything is computed. The runtime
+// executes the point constructors of higher and truncated sorts too, and
+// their eliminators' point clauses. Before the fallback per node (W2), it
+// left 37 constructs to the kernel's queries whole, at a composition (20), a
+// path constructor (8), a path applied (4), η of a path abstraction (3),
+// Glue (1) and unglue (1). Now it computes all 193, sending those nodes
+// through the fallback: in 6, a path at an endpoint or a total face settles
+// each by syntax; in 31, the kernel is asked a head. None restarts.
+const valueForms = { runtime: 0, unsupported: {}, asked: 0, settled: 0 };
 test("the runtime computes the value forms of the constructs on data, ordinary and higher", () => {
-  assert.equal(valueForms.runtime, 156);
-  assert.deepEqual(valueForms.unsupported, {
-    "Runtime execution of PApp is not implemented.": 4,
-    "Runtime η of a path abstraction is not implemented.": 3,
-    "Runtime execution of Comp is not implemented.": 20,
-    "Execution of a path constructor is not implemented.": 8,
-    "Runtime execution of Glue is not implemented.": 1,
-    "Runtime execution of Unglue is not implemented.": 1,
-  });
+  assert.equal(valueForms.runtime, 193);
+  assert.deepEqual(valueForms.unsupported, {});
+  assert.deepEqual([valueForms.settled, valueForms.asked], [6, 31]);
 });
 
 // Each value form the runtime computed above is read back into a kernel
@@ -781,16 +779,18 @@ test("the runtime computes the value forms of the constructs on data, ordinary a
 // kernel's of the construct, as is the full normal form of each head the
 // walk observed; by origin, its folded normal form is the kernel's folded
 // one; and where it has at most 400 nodes as a tree, the instruction driver
-// types it at the construct's type. Within the oracle's budget of 2M steps
-// a normal form, only the three constructs whose full normal forms are slow
-// go undecided, by value.
+// types it at the construct's type. The 37 that fell back per node read
+// back with the kernel's heads in them, and the query with origins falls
+// back by origin, so their folded normal forms are compared too. Within the
+// oracle's budget of 2M steps a normal form, only the three constructs
+// whose full normal forms are slow go undecided, by value.
 const readbacks = [];
 test("each value form the runtime computes reads back to the kernel's normal forms, and the small ones type", () => {
   assert.equal(readbacks.length, valueForms.runtime);
   assert.deepEqual(disagreements(readbacks), []);
   assert.deepEqual(readbacks.filter(readback => readback.value === "budget").map(readback => readback.id).sort(), [...slowNormalForms].sort());
   assert.deepEqual(readbacks.filter(readback => readback.folded !== true), []);
-  assert.equal(readbacks.filter(readback => readback.typed === true).length, 144);
+  assert.equal(readbacks.filter(readback => readback.typed === true).length, 180);
 });
 
 // The acceptance report (docs/roadmaps/historical/evaluation-demand-marks/
