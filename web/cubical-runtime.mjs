@@ -18,9 +18,8 @@ const fail = (kind, message) => { throw new RuntimeError(kind, message); };
 // generated with at least one, and recursive positions whose cube is the
 // sort itself. Their eliminator's point clauses compute as the kernel's
 // iota does (ck_eliminate with no path application). A constructor of
-// either other kind is refused when it is demanded, with these reasons.
-const pathConstructorRefused = "Execution of a path constructor is not implemented.";
-const cubicalPositionsRefused = "Execution of a constructor with cubical recursive positions is not implemented.";
+// either other kind is refused: where the walk demands one, it falls back
+// per node (#fallback).
 // The term binders of ck_term_binder: each binds its payload in its second child.
 const binders = new Set(["Pi", "Lam", "Sigma", "LPi", "LLam"]);
 // Readback's tables (docs/roadmaps/runtime/typed-readback.md, 3.2 to 3.5).
@@ -136,16 +135,16 @@ function descriptors(kernel, index, budget) {
   budget.allocate(1 + s.constructors.length);
   return s.constructors.map(c => {
     const count = c.data + c.positions;
-    if (c.dimensions || c.generated) return { data: c.data, count, arities: null, refused: pathConstructorRefused };
+    if (c.dimensions || c.generated) return { data: c.data, count, arities: null, refused: true };
     const arities = [];
-    let type = c.type, refused = null;
+    let type = c.type, refused = false;
     for (let i = 0; i < count; i++) {
       const pi = read(type);
       if (pi.kind !== "Pi") fail("input", "Invalid admitted constructor telescope.");
       if (i >= c.data) {
         let position = read(pi.children[0]), arity = 0;
         while (position.kind === "Pi") { arity++; position = read(position.children[1]); }
-        if (position.kind !== "Var" || position.payload !== s.sort) refused = cubicalPositionsRefused;
+        if (position.kind !== "Var" || position.payload !== s.sort) refused = true;
         arities.push(arity);
       }
       type = pi.children[1];
@@ -252,8 +251,8 @@ export class RuntimeQuery {
     }
     return items;
   }
-  // A constructor's descriptor; one the machine does not execute has a
-  // reason it is refused, and only constructors without one make values.
+  // A constructor's descriptor; one the machine does not execute is
+  // refused, and only constructors that are not make values.
   #descriptor(signature, index) {
     const signatures = this.#image.signatures;
     if (!signatures.has(signature)) signatures.set(signature, descriptors(this.#kernel(), signature, this.#budget));

@@ -235,19 +235,24 @@ print(evaluate(g));
   for (const print of runtime) assert.equal(print.by.by, "runtime");
 });
 
-// A value form read back where the query kept no type value's environment
-// (a value form's query keeps none, W1): T is shown first, forced to the
-// type A -> A, and the composition's readback reads T's cell, whose node
-// mentions A. The readback refuses it, and the walk restarts on the
-// kernel's queries.
-test("a type value whose environment the value form's query does not keep restarts the walk", async t => {
-  const { runtime, kernel } = await printed(t, `
+// The other readbacks a fallback refuses restart the walk too. A value
+// form's query keeps no type value's environment (W1): T is shown first,
+// forced to the type A -> A, and the composition's readback reads T's
+// cell, whose node mentions A. And a value deeper than the kernel's syntax
+// cannot be read back (K344): n, 511, shown first, is the base of a
+// composition at UNat.
+test("a type value whose environment the value form's query does not keep, or a value past the syntax depth, restarts the walk", async t => {
+  const { runtime, kernel } = await printed(t, `import unat;
+use unat;
 print(evaluate((fun (T : U0) => typed(U0 and U0, (T, comp(fun (i : Interval) => U0, T))))((fun (A : U0) => A -> A)(Unit))));
+print(evaluate((fun (n : UNat) => typed(UNat and UNat, (n, comp(fun (j : Interval) => UNat, n))))(succ(2 * 255))));
 `);
-  assert.deepEqual(texts(runtime), ["(<type>, <type>)"]);
+  assert.equal(texts(runtime)[0], "(<type>, <type>)");
+  assert.match(texts(runtime)[1], /^\(succ\(succ\(/);
   assert.deepEqual(texts(kernel), texts(runtime));
-  assert.deepEqual([runtime[0].by.by, runtime[0].by.unsupported],
-    ["kernel", "Readback of a type value whose environment the query does not keep is not implemented."]);
+  assert.deepEqual(runtime.map(print => [print.by.by, print.by.unsupported]), [
+    ["kernel", "Readback of a type value whose environment the query does not keep is not implemented."],
+    ["kernel", "Readback of a term past the kernel's syntax depth is not implemented."]]);
 });
 
 // A kernel stop in a fallback's head query is reported as the kernel's: in

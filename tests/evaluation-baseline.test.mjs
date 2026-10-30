@@ -67,9 +67,11 @@ test("each workload's outcome, normalizations and comparisons are the recorded o
 });
 
 // The library's Euclid computes by NUM1's strong recursion, whose
-// compositions the runtime does not execute: it reports the demand
-// unsupported, and the kernel's head queries compute the value form again.
-// Its argument is a binary literal, which elaboration normalizes once.
+// compositions the runtime does not execute: it sends each through the
+// fallback per node (W2 of docs/roadmaps/runtime/typed-readback.md), reading
+// it back and asking the kernel for its head inside the runtime phase, and
+// goes on with that head, so the kernel's head queries are asked nothing
+// more. Its argument is a binary literal, which elaboration normalizes once.
 test("REPL evaluation and print show the value form, normalizing only the literal", async () => {
   const repl = await cold("euclid-3"), print = await cold("euclid-3-print"), normal = await cold("euclid-3-normal");
   assert.equal(repl.outcome.sha256, print.outcome.sha256);
@@ -78,10 +80,12 @@ test("REPL evaluation and print show the value form, normalizing only the litera
   for (const run of [repl, print]) {
     assert.equal(run.phases.normalize.calls, 1);
     assert.equal(run.phases.compare, undefined);
-    // The runtime is asked first; its one failure is the fallback.
-    assert.ok(run.phases.runtime.failures === 1 && run.runtime.steps > 0);
-    assert.equal(run.phases.runtime.nodes, 0, "the runtime builds no kernel syntax");
-    assert.ok(run.phases.demand.calls > 0);
+    // The runtime computes the value form; each fallback reads its node
+    // back, building kernel syntax, and asks one head query.
+    assert.ok(!run.phases.runtime.failures && run.runtime.steps > 0 && run.runtime.fallbacks > 0);
+    assert.ok(run.phases.runtime.nodes > 0, "the fallbacks read their nodes back");
+    assert.equal(run.phases.runtime.queries, run.runtime.fallbacks);
+    assert.equal(run.phases.demand, undefined);
     assert.ok(run.entry.querySteps < normal.entry.querySteps, "the value form costs less than the normal form");
   }
   // A divisibility decision is ordinary data: the runtime computes it,
@@ -115,16 +119,16 @@ test("REPL evaluation of !!!e normalizes once without self-comparison and agrees
 
 test("the depth failures are reproduced, with the work done before them", async () => {
   // 7! + 1 = 71 * 71: the least divisor search's 70 candidates pass the
-  // kernel's syntax depth guard, in the normal form and in the weak heads
-  // the value form asks after the runtime's fallback.
+  // kernel's syntax depth guard, in the normal form and in the weak head
+  // the runtime's fallback asks of the transport whose base is the rest of
+  // the search.
   const normal = await cold("euclid-7-prime-normal"), shown = await cold("euclid-7-prime");
-  for (const [run, phase] of [[normal, "normalize"], [shown, "demand"]]) {
+  for (const [run, phase] of [[normal, "normalize"], [shown, "runtime"]]) {
     assert.equal(run.outcome.code, "K344", phase);
     assert.equal(run.phases[phase].failures, 1, phase);
     assert.ok(run.phases[phase].querySteps > 0 && run.phases[phase].nodes > 10000, `${phase} counts the failed query's work`);
     assert.equal(run.phases.compare, undefined, `${phase} fails before any comparison`);
   }
-  assert.equal(shown.phases.runtime.failures, 1);
   // Below that depth the kernel's queries compute the library's values that
   // the archive's unary Euclid could not: its K344 began at euclid(4).
   for (const [id, value] of [["euclid-4", "(5, (tt, <fun>), tt)"], ["euclid-4-prime", "5"], ["euclid-4-prime-print", "5"],

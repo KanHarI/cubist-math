@@ -70,7 +70,16 @@ export const fixture = new URL("tests/fixtures/evaluation-baseline.json", root);
 // version 9 (tests/fixtures/evaluation-baseline.json at main 27c0cc38). The
 // unary arithmetic workloads import unat alone; their entries are
 // unchanged.
-export const version = 10;
+// Version 11 falls back per node (W2 of
+// docs/roadmaps/runtime/typed-readback.md): a node the runtime does not
+// execute, as NUM1's compositions, is read back and its weak head asked of
+// the kernel inside the runtime phase, which now builds kernel syntax and
+// spends kernel queries, and the walk goes on in the runtime instead of
+// starting again on the kernel's head queries (the demand phase). Outcomes
+// are unchanged; the runtime's own counters grow, as it computes what the
+// restart left to the kernel, and the kernel's work falls where the walk
+// had forced what a transport's base or a fallback node needs.
+export const version = 11;
 
 const euclid = "import euclid; use nat;", unary = "import unat; use unat;", circle = "import circle; use unat;";
 // The library's Euclid construction and its prerequisites stay fixed for
@@ -148,7 +157,7 @@ export const phases = {
   normalize: "kernel.normalize, wherever it is asked: the kernel's normalization, whose result is syntax (no separate readback)",
   decode: "checker.syntax.decode of a normal form, inside checker.normalForm: kernel syntax into terms",
   demand: "checker.derivedHead, outside other phases: the weak heads a pattern's parts demand",
-  runtime: "checker.runtimeQuery and RuntimeQuery.observeNow, outside other phases: the runtime's snapshot and observations of a value form",
+  runtime: "checker.runtimeQuery and RuntimeQuery.observeNow, outside other phases: the runtime's snapshot and observations of a value form, with the readbacks and kernel head queries of its fallbacks per node",
   inventory: "checker.evaluated's own work: the closedness, assumption and kernel-extension inventory",
   compare: "checker.equal, outside other phases: comparing types, normal forms and patterns' parts",
   render: "checker.displayText, outside other phases: printing a value or message",
