@@ -1046,7 +1046,12 @@ Each step lands in focused PRs under the review rule above.
            and the runtime probe move to it; the archive's `euclid` and
            `primes`' divisibility and primality are deleted.
       3. NT3: least elements.
-      4. NT4: binary and radix numerals.
+      4. NT4: binary and radix numerals. **Done** on 2026-10-30
+         ([report](../reports/radix-numerals.md)): the binary results
+         checked against `bnat_*`, and radix numerals rebuilt over binary
+         `Nat` in `radix_numerals`, `radix_operations`, `radix_conversion`
+         and `radix_factorials`, with a univalence path to `Nat` and 10!
+         carried along it; the numeral fixtures import the library.
       5. NT5: the remaining 19 archive modules are deleted.
 
       This depends only on NUM1 and can proceed alongside 3 and 4.

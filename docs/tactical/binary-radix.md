@@ -1,5 +1,13 @@
 # Binary numbers, arbitrary radix, and proof transfer
 
+**Rebuilt in the library on 2026-10-30** (step NT4 of the
+[archive retirement](../roadmaps/archive-retirement.md#number-theory-in-the-library),
+[report](../reports/radix-numerals.md)): binary `Nat` is the library's
+natural numbers, and `radix_numerals`, `radix_operations`,
+`radix_conversion` and `radix_factorials` rebuild the radix development over
+it, with transport along a Glue path. This checkpoint describes the
+archive's modules, which NT5 deletes.
+
 The mathematical sources now prove `10! = 3628800` using inductive binary numbers,
 using one generic radix development instantiated at bases 2 and 10, and by
 transporting the results among these representations and unary `Nat`.
