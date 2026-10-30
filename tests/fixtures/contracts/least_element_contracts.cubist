@@ -1,0 +1,55 @@
+// NT3's least elements of decidable predicates over public binary Nat
+// (library/least_elements.cubist): the search and its mere-existence form
+// use no assumption, and the search computes the least element, however
+// large the witness.
+// Authority: docs/roadmaps/archive-retirement.md#number-theory-in-the-library
+import least_elements;
+use nat;
+
+# test(least_elements.search)
+# expect_axioms([])
+computable def binary_least_element(
+  P : Nat -> U0, decide : forall n : Nat. Decidable(U0, P(n)), n : Nat, holds : P(n)
+) :
+  Least(P) := least_element(P, decide, n, holds);
+
+# test(least_elements.from_mere)
+# expect_axioms([])
+computable def binary_least_element_from_mere(
+  P : Nat -> U0, prop_ : forall n : Nat. IsProp(U0, P(n)), decide : forall n : Nat.
+  Decidable(U0, P(n)), somewhere : Trunc(U0, exists n : Nat. P(n))
+) :
+  Least(P) := least_element_from_mere(P, prop_, decide, somewhere);
+
+// Test predicates: k <= n, and k <= n * n, decided by the binary comparison.
+computable def at_least(k, n : Nat) : U0 := k <= n;
+
+computable def at_least_decide(k : Nat) :
+  forall n : Nat. Decidable(U0, at_least(k, n)) := fun (n : Nat) => bnat_le_decide(k, n);
+
+computable def square_at_least(k, n : Nat) : U0 := k <= n * n;
+
+computable def square_at_least_decide(k : Nat) :
+  forall n : Nat. Decidable(U0, square_at_least(k, n)) := fun (n : Nat) => bnat_le_decide(k, n * n);
+
+// The search stops at the least element, whatever the witness.
+# test(least_elements.witness_is_least)
+evaluate least_element(at_least(5), at_least_decide(5), 5, tt).1 expecting 5;
+# test(least_elements.zero)
+evaluate least_element(at_least(0), at_least_decide(0), 7, tt).1 expecting 0;
+# test(least_elements.square)
+evaluate least_element(square_at_least(50), square_at_least_decide(50), 10, tt).1 expecting 8;
+# test(least_elements.far_witness)
+evaluate least_element(at_least(60), at_least_decide(60), 1000000, tt).1 expecting 60;
+
+// The certificate: P holds at the least element, and the minimality
+// certificate is a function, observed by its weak head.
+# test(least_elements.certificate)
+evaluate least_element(at_least(5), at_least_decide(5), 100, tt) expecting (5, tt, !_);
+
+// Mere existence gives the least element, which computes.
+# test(least_elements.mere)
+evaluate least_element_from_mere(
+  at_least(5), fun (n : Nat) => bnat_le_is_prop(5, n), at_least_decide(5),
+  merely(U0, exists n : Nat. at_least(5, n), (9, tt))
+).1 expecting 5;

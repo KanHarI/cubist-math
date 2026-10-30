@@ -1,0 +1,48 @@
+// NT3's least elements of decidable predicates over unary UNat
+// (library/unat_least_elements.cubist), which the archive's polynomial
+// degrees use: the search, the propositionality of least elements and the
+// mere-existence form use no assumption, and the search computes.
+// Authority: docs/roadmaps/archive-retirement.md#number-theory-in-the-library
+import unat_least_elements;
+use unat;
+
+# test(unat_least_elements.search)
+# expect_axioms([])
+computable def unary_least_element(
+  P : UNat -> U0, decide : forall n : UNat. Decidable(U0, P(n)), n : UNat, holds : P(n)
+) :
+  UNatLeast(P) := unat_least_element(P, decide, n, holds);
+
+# test(unat_least_elements.least_is_prop)
+# expect_axioms([])
+computable def unary_least_is_prop(P : UNat -> U0, prop_ : forall n : UNat. IsProp(U0, P(n))) :
+  IsProp(U0, UNatLeast(P)) := unat_least_is_prop(P, prop_);
+
+# test(unat_least_elements.from_mere)
+# expect_axioms([])
+computable def unary_least_element_from_mere(
+  P : UNat -> U0, prop_ : forall n : UNat. IsProp(U0, P(n)), decide : forall n : UNat.
+  Decidable(U0, P(n)), somewhere : Trunc(U0, exists n : UNat. P(n))
+) :
+  UNatLeast(P) := unat_least_element_from_mere(P, prop_, decide, somewhere);
+
+// A test predicate, k <= n, with its decision by recursion on both.
+computable def at_least(k, n : UNat) : U0 := k <= n;
+
+computable def at_least_decide(k, n : UNat) : Decidable(U0, at_least(k, n)) := match k, n {
+    zero, _ => left(tt);
+    succ(i), zero => right(fun (v : Void) => v);
+    succ(i), succ(j) => at_least_decide(i, j);
+  };
+
+# test(unat_least_elements.far_witness)
+evaluate unat_least_element(at_least(5), at_least_decide(5), 9, tt).1 expecting 5;
+# test(unat_least_elements.zero)
+evaluate unat_least_element(at_least(0), at_least_decide(0), 3, tt).1 expecting 0;
+# test(unat_least_elements.certificate)
+evaluate unat_least_element(at_least(5), at_least_decide(5), 9, tt) expecting (5, tt, !_);
+# test(unat_least_elements.mere)
+evaluate unat_least_element_from_mere(
+  at_least(5), fun (n : UNat) => unat_le_is_prop(5, n), at_least_decide(5),
+  merely(U0, exists n : UNat. at_least(5, n), (9, tt))
+).1 expecting 5;

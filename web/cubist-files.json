@@ -2476,7 +2476,7 @@
   },
   {
    "path": "library/bnat_order_laws.cubist",
-   "summary": "Order laws of binary naturals: a comparison reversed, what is not below is at or above, irreflexivity, positive products, the successor's place in the order, cancellation of a strict sum, monotone products, and the non-strict decision. Positive results keep the binary comparison's evidence; unary order refutes only impossible branches."
+   "summary": "Order laws of binary naturals: a comparison reversed, what is not below is at or above, antisymmetry, irreflexivity, positive products, the successor's place in the order, cancellation of a strict sum, monotone products, and the non-strict decision. Positive results keep the binary comparison's evidence; unary order refutes only impossible branches."
   },
   {
    "path": "library/bnat_order.cubist",
@@ -2563,6 +2563,10 @@
    "summary": "Public integers `Z`, an alias of `BInt` from `binary_integers`: `int(a, b)` over `Nat`, negation, addition, multiplication and their ring laws, quotient induction and equations, the `integers` commutative ring, decidable equality (`int_decide`, and `int_decide_zero` with compact certificates), no zero divisors (`int_mul_nonzero`), zero not one, and the cast `int_of_nat`, injective and preserving zero, one, addition and multiplication, which agrees with the ring's numerals (`int_of_nat_numeral`). Literals enter binary magnitudes directly."
   },
   {
+   "path": "library/least_elements.cubist",
+   "summary": "Least elements of predicates on public `Nat`: `IsLeast(P, n)`, `Least(P)`, and the least element of a decidable predicate from a witness (`least_element`). The search decides 0, 1, 2, … in turn by `nat`'s Peano recursion on the candidates to go, so it stops at the least element, however large the witness. A least element is unique (`least_unique`), so for a predicate valued in propositions having one is a proposition (`least_is_prop`), and its mere existence gives it (`least_element_from_mere`)."
+  },
+  {
    "path": "library/lexemes.cubist",
    "summary": "Literals' characters (L2.10c): `Glyph`, `Lexeme`, a list of glyphs, and `Parsed(A)`, a parse's value or the position it refuses; `Succeeded`, `parse_answer` and `parsed_value`, by which a literal's term holds `tt` as evidence its parse succeeded; and small parsers, `leading_digits` and `natural_literal`, for notations' literal rules."
   },
@@ -2611,12 +2615,16 @@
    "summary": "Squares with named edges (L2.8): `Square(a0_, a1_, a_0, a_1)`, a path from its left edge to its right edge over its bottom and top edges, each edge named by its corners `a00`…`a11`. The reflexive square, the naturality square of a homotopy, transposition and both flips, double composition with its filler (`trans` is its case with a constant first edge), and horizontal and vertical composition, each by conversion. Two squares on the same three sides have equal tops (`top_unique`); so a square is an equation of composites (`square_to_path`), and back (`path_to_square`), and a homotopy's naturality (`naturality_path`) and a map's action on a composite (`cong_trans`) follow."
   },
   {
+   "path": "library/unat_least_elements.cubist",
+   "summary": "Least elements over unary `UNat`, by structural recursion, for clients indexed by unary naturals such as the archive's polynomial degrees: `UNatIsLeast`, `UNatLeast`, the search `unat_least_element`, uniqueness and propositionality (`unat_least_unique`, `unat_least_is_prop`), and the least element from mere existence (`unat_least_element_from_mere`)."
+  },
+  {
    "path": "library/unat_models.cubist",
    "summary": "The unary commutative-semiring model, without importing binary arithmetic. Re-exported by `bnat_models`."
   },
   {
    "path": "library/unat.cubist",
-   "summary": "Structural unary `UNat` with `zero`/`succ`, unary notation, arithmetic, order and their laws, predecessor, successor injectivity, decidable equality (`unat_decide`), cancellation and trichotomy. The order is reflexive, transitive and total, only 0 is at most 0, a bound at a successor splits, and sums bound their summands."
+   "summary": "Structural unary `UNat` with `zero`/`succ`, unary notation, arithmetic, order and their laws, predecessor, successor injectivity, decidable equality (`unat_decide`), cancellation and trichotomy. The order is reflexive, transitive, antisymmetric and total, and a proposition; only 0 is at most 0, a bound at a successor splits, and sums bound their summands."
   },
   {
    "path": "library/univalence.cubist",

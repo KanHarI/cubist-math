@@ -162,7 +162,7 @@ def polynomial_ideal_principal(
       )
     );
   }
-  let minima := natural_minimum(
+  let minima := classical_least(
     P, (fun (n : UNat) => mere_is_prop(IdealCutoffWitness(K, I, n))),
     mere_map(
       (exists g : Polynomial(K). polynomial_ideal_members(K, I, g) and PolynomialNonzero(K, g)),
