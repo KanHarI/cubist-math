@@ -13,7 +13,11 @@
 // query's root back by value before it is disposed of (M1 of
 // docs/roadmaps/runtime/typed-readback.md): the readback's work and its
 // counters, the arena's growth, and the DAG and tree sizes of the term, its
-// time likewise taken out.
+// time likewise taken out. The heap is also sampled during the entry, at
+// every eighth call of performance.now, which the runtime makes at its
+// deadline checks, every 1,024 steps: its peak above the entry's start,
+// live cells and garbage not yet collected, is the entry's
+// `peakHeapMiB` (docs/reports/runtime-repl-evaluation.md#the-budgets-calibrated).
 //   node tools/runtime-repl-probe.mjs                 every workload, both paths
 //   node tools/runtime-repl-probe.mjs NAME[,NAME] [runtime|kernel|readback]
 import { execFileSync } from "node:child_process";
@@ -61,11 +65,20 @@ export const workloads = {
     "evaluate doubling(8);"],
   // The same non-recursive call twice, through 24 definitions: the kernel
   // caches weak heads by shared syntax, so each g_i(tt) is computed once;
-  // the runtime shares a thunk by occurrence, so g_24(tt) costs 2^24 calls.
+  // the runtime shares a call written twice in one application of a body
+  // (EVAL4), so each g_i is applied once too. Before, it computed 2^24 calls.
   "duplicated-calls-24": [["def both(a, b : Unit) : Unit := unit_induction(fun (x : Unit) => Unit, b, a);",
     "def g0(u : Unit) : Unit := u;",
     ...Array.from({ length: 24 }, (_, i) => `def g${i + 1}(u : Unit) : Unit := both(g${i}(u), g${i}(u));`)].join(" "),
     "evaluate g24(tt);"],
+  // The same call relayed: once in g_(i + 1)'s body and once in h_i's, an
+  // application of its own. The kernel's cache shares the two by their
+  // syntax once substituted; the runtime shares within one application
+  // only, so g_24(tt) still costs it 2^24 calls.
+  "relayed-calls-24": [["def both(a, b : Unit) : Unit := unit_induction(fun (x : Unit) => Unit, b, a);",
+    "def g0(u : Unit) : Unit := u;",
+    ...Array.from({ length: 24 }, (_, i) => `def h${i}(u : Unit) : Unit := g${i}(u); def g${i + 1}(u : Unit) : Unit := both(g${i}(u), h${i}(u));`)]
+    .join(" "), "evaluate g24(tt);"],
   "binary-factorial-40": ["import nat; use nat;", "evaluate factorial(40);"],
   "binary-product": ["import nat; use nat;", "evaluate 12345678901234567890 * 98765432109876543210;"],
   "binary-rational": ["import binary_rationals; use binary_rationals;", "evaluate 2/3 + 1/6;"],
@@ -145,7 +158,14 @@ if (!child) {
       }
       const check = program.checkEntry.bind(program);
       program.checkEntry = async (...args) => (captured = await check(...args));
-      const started = performance.now(), [answer] = await session.run(entry), elapsed = performance.now() - started - measuring;
+      const now = performance.now.bind(performance);
+      let peakHeap = before.heap, samples = 0;
+      performance.now = () => {
+        if ((++samples & 7) === 0) peakHeap = Math.max(peakHeap, process.memoryUsage().heapUsed);
+        return now();
+      };
+      const started = now(), [answer] = await session.run(entry), elapsed = now() - started - measuring;
+      performance.now = now;
       const after = program.kernel.work();
       globalThis.gc?.();
       console.log(JSON.stringify({ workload: name, path, entry, result: answer.text.slice(0, 120), kind: answer.kind,
@@ -153,6 +173,7 @@ if (!child) {
         kernelQuerySteps: Number(after.querySteps - before.work.querySteps), kernelQueries: Number(after.queries - before.work.queries),
         arenaNodes: program.kernel.arena().nodes - before.arena,
         heapAfterGcMiB: +((process.memoryUsage().heapUsed - before.heap) / 1048576).toFixed(1),
+        peakHeapMiB: +((peakHeap - before.heap) / 1048576).toFixed(1),
         processMaxRssMiB: Math.round(process.resourceUsage().maxRSS / 1024),
         revision: execFileSync("git", ["rev-parse", "--short", "HEAD"], { cwd: root, encoding: "utf8" }).trim(),
         modified: execFileSync("git", ["status", "--porcelain", "--untracked-files=normal"], { cwd: root, encoding: "utf8" }).trim() !== "",

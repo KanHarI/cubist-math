@@ -116,7 +116,8 @@ stays within its stated contract.
   is demand the runtime reports unsupported. Sharing a call written twice,
   which the kernel's weak-head cache shares by syntax and the runtime
   computes twice ([`duplicated-calls-24`](../../reports/runtime-repl-evaluation.md#findings)),
-  is EVAL4 work.
+  is EVAL4 work; done on 2026-10-30 within each instance of a scope
+  ([report](../../reports/runtime-repl-evaluation.md#sharing-of-repeated-calls)).
 
 ## Goal and current failure
 
@@ -425,7 +426,7 @@ scope, as in the work plan.
 | NUM2 | New binary-backed Z and Q, ring/domain/field laws and default APIs. Generic fractions (#279), binary integers (#280, #281) and the binary-rational API, released on folded normal forms (#283); binary generic ring numerals and the default `Z`/`Q` migration, with casts and rendering, on the same gate (2026-10-26). The rational inverses' full normal forms remain targets | NUM1; current quotients, rings and fractions | L |
 | EVAL2 | Memoized full normalization; implemented | EVAL0; independent of EVAL1 | M |
 | EVAL3 | Closure evaluator for a specified data fragment. A first internal query for ordinary data (#289), which computes REPL and print value forms (REPL integration); higher sorts, patterns and typed readback remain | EVAL0 and semantic contract | L |
-| EVAL4 | Explicit evaluation stack and bounded runtime. #289's machine loop and a synchronous observation for the checker; a responsive snapshot for asynchronous use, memory calibration, closed-environment pruning and sharing of repeated calls remain | EVAL3 design; implement alongside it | M |
+| EVAL4 | Explicit evaluation stack and bounded runtime. #289's machine loop and a synchronous observation for the checker, sharing of repeated calls, closed-environment pruning and memory calibration (2026-10-30); a responsive snapshot for asynchronous use waits for a caller that observes asynchronously, of which there is none | EVAL3 design; implement alongside it | M |
 | EVAL5 | Lazy observation and typed readback. The observation contract is implemented: demand marks (#304–#306) and folded normal forms (#309, #310); typed readback remains | EVAL3, EVAL4 | L |
 | EVAL6 | Packed BNat runtime values and checked specialization | NUM0–NUM2, EVAL3, EVAL4; new profile | L |
 | EVAL7 | Efficient checked divisibility and search over BNat. **Implemented** on 2026-10-28: the library modules (part one), and the archive's Euclid consumers moved to the library's `euclid` with its divisibility and primality deleted from the archive (part two) | NUM1, EVAL0; independent of the new evaluator | M |
@@ -1202,9 +1203,11 @@ and falls back on 37 (135 and 58, 18 of them from the value's type, on
 `euclid(4)`'s value form and the primes of `euclid(4)` and `euclid(5)`,
 where the kernel's queries stop with K344; `euclid(6).1` stops at the
 runtime's 20M-cell cap. A computation written twice in nested functions,
-which the kernel's weak-head cache shares by syntax, is computed twice by the
-runtime: the report's `duplicated-calls-24` stops at the cap where the
-kernel's queries answer.
+which the kernel's weak-head cache shares by syntax, was computed twice by
+the runtime: the report's `duplicated-calls-24` stopped at the cap where the
+kernel's queries answer. Since 2026-10-30 it computes `tt` (EVAL4's sharing,
+below); a call that two applications each make, `relayed-calls-24`, still
+stops there.
 
 Decided on 2026-10-26: constructor patterns stay on the kernel's queries
 until typed readback and the applicable EVAL8 review, since a pattern's
@@ -1228,13 +1231,54 @@ EVAL4's items:
   holds 32,015, and takes 28,170 steps against the kernel walk's 32,755
   ticks. The wide inverse and a decision of distinct wide integers still
   take more steps than the kernel's walk takes ticks, though not more time.
-- Open: a responsive snapshot copy for asynchronous use, narrowed by the
-  lazy copy, which reads inside observations, between the slices at which
-  `observe` yields, to the η check's walk of a function's syntax and a
-  declared type's descriptors, each within one transition; memory
-  calibration; closed-environment pruning; and sharing of repeated calls, a
-  memo whose retention is measured: a per-environment memo of delayed
-  syntax was tried and withdrawn, as the report records.
+- **Sharing of repeated calls: done** on 2026-10-30
+  ([report](../../reports/runtime-repl-evaluation.md#sharing-of-repeated-calls)).
+  A call written twice in one scope, a function's body or a top-level
+  root, is one cell in each instance of the scope: the frame each β makes,
+  or the query. A scope is read for such calls when it is first entered,
+  up to its λs, and its instance's memo hands the cell to each later delay
+  and drops it at the last, so it keeps a cell only while a delay of it
+  there is still to come: the per-environment memo of delayed syntax,
+  tried and withdrawn, kept every cell for as long as its environment
+  lived. `duplicated-calls-24` computes `tt` in 3,524 steps; against main,
+  on the same walks, no value moves, the retained objects grow by at most
+  one on the constructs' walks and the probe's workloads, and the archive's
+  `euclid(5).1`, where the withdrawn memo raised them 2.5 times, retains
+  0.04% more. A call that two applications
+  each make, which the kernel's cache shares once substituted, is not
+  shared (`relayed-calls-24`).
+- **Closed-environment pruning: done** on 2026-10-30
+  ([report](../../reports/runtime-repl-evaluation.md#closed-environment-pruning)),
+  where it pays: a constructor's instance, an annotation no value form
+  forces, keeps no environment when it is closed, and a computed value no
+  longer keeps, through its instance, the computation that made it. The
+  retained objects of the constructs' walks fall by four fifths, the wide
+  binary-integer product's from 656,504 to 1,861, for under 1% more steps.
+  Pruning every closed code, every closed annotation, or an open instance
+  to the frames it needs was measured and not kept: deciding that a code
+  is closed reads its whole syntax, which cost the small walks up to three
+  quarters more steps, and the rest bought no further fall.
+- **Memory calibration: done** on 2026-10-30
+  ([report](../../reports/runtime-repl-evaluation.md#the-budgets-calibrated)).
+  Every walk measured allocates about one cell for every two steps, so the
+  allocation budget, 20M cells, binds first, at 34M to 40M steps, about
+  half a second; its heap peaked at 9 MiB where the cells die young and at
+  593 MiB on the worst workload measured, list parity, whose definition
+  keeps its list. The work budget binds first only for a walk allocating
+  under one cell for every five steps, and the 30-second time limit is a
+  backstop. The budgets stay as they are; the REPL probe records the
+  entry's peak heap.
+- **A responsive snapshot copy for asynchronous use: not needed now**
+  (recorded on 2026-10-30,
+  [report](../../reports/runtime-repl-evaluation.md#findings)). No path
+  observes a query asynchronously: the value form's walk calls
+  `observeNow`, and `observe` serves the tests alone. The lazy copy
+  narrowed the item to the stretches that run within one transition, the
+  η check's walk of a function's syntax, a declared type's descriptors and,
+  since the sharing, a scope's reading (at most 263 nodes and 0.41 ms in
+  the workloads measured), each bounded by its syntax and checked against
+  the budget's limits and deadline, but not yielding. It waits for a caller
+  that observes asynchronously.
 
 **For the user's decision, recorded on 2026-10-28 and not scheduled:**
 whether the runtime may show a path constructor applied to its data with

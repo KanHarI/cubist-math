@@ -281,6 +281,67 @@ test("definition sharing does not depend on syntax interning", async t => {
   assert.equal(query.stats.beta, beta);
 });
 
+// A call written twice in one scope, a function's body or a top-level root,
+// is one cell in each of the scope's instances (#sharing, #share): it is
+// computed once, as the kernel's weak-head cache computes it once by its
+// syntax. The frame's memo hands the cell on and drops it at its last delay,
+// so a body that writes a call twice keeps no more than one that binds it
+// once; and a force cancelled midway resets as before, and computes the
+// same value when observed again, still sharing.
+test("a call written twice in a scope is one cell in each of its instances, kept no longer than its delays", async t => {
+  const { query } = await setup(t, `
+import unat; use unat;
+def both(a, b : Unit) : Unit := unit_induction(fun (x : Unit) => Unit, b, a);
+def g0(u : Unit) : Unit := u;
+${Array.from({ length: 24 }, (_, i) => `def g${i + 1}(u : Unit) : Unit := both(g${i}(u), g${i}(u));`).join("\n")}
+def calls : Unit := g24(tt);
+def written_twice : UNat and UNat := (fun (n : UNat) => typed(UNat and UNat, (n * n, n * n)))(30);
+def bound_once : UNat and UNat := (fun (n : UNat) => (fun (m : UNat) => typed(UNat and UNat, (m, m)))(n * n))(30);
+`);
+  const calls = query("calls");
+  assert.deepEqual(await calls.observe(), { kind: "Point" });
+  assert.equal(calls.stats.shared, 24, "each g_i shares its second call");
+  assert.ok(calls.stats.steps < 10000, `g24(tt) took ${calls.stats.steps} steps`);
+  const square = async name => {
+    const runtime = query(name), pair = await runtime.observe(), natural = (await runtime.observe(pair.first)).signature;
+    assert.deepEqual([await unary(runtime, natural, pair.first), await unary(runtime, natural, pair.second)], [900, 900]);
+    return { stats: runtime.stats, retained: runtime.retainedObjects().runtimeObjects };
+  };
+  const twice = await square("written_twice"), once = await square("bound_once");
+  assert.equal(twice.stats.shared, 1);
+  assert.equal(twice.stats.iota, once.stats.iota, "one multiplication either way");
+  assert.ok(twice.retained <= once.retained, `written twice, ${twice.retained} objects retained; bound once, ${once.retained}`);
+  // Cancelled at its first yield, the query computes the same value when
+  // observed again, without repeating the 2^24 calls.
+  const cancelled = query("calls", { slice: 50 }), controller = new AbortController();
+  const pending = cancelled.observe(cancelled.root, { signal: controller.signal });
+  setImmediate(() => controller.abort());
+  await assert.rejects(pending, fails("cancelled"));
+  assert.deepEqual(await cancelled.observe(), { kind: "Point" });
+  assert.ok(cancelled.stats.steps < 10000, `g24(tt) took ${cancelled.stats.steps} steps, cancelled once`);
+});
+
+// A constructor's instance, an annotation the value form's walk never
+// forces, keeps no environment when it is closed: a value computed through
+// a long recursion keeps nothing of the computation, which its instance's
+// frames held before. An open instance keeps its environment, and reads
+// back as the kernel's term (tests/runtime-readback.test.mjs, boxed).
+test("a closed constructor instance keeps no environment, so a value keeps nothing of its computation", async t => {
+  const { query } = await setup(t, `
+import lists; use unat;
+inductive Lamp { dark; lit; }
+def toggle(f : Lamp) : Lamp := match f { dark => lit; lit => dark; };
+def rep(n : UNat) : List(U0, Unit) := match n { zero => nil; succ(m) => cons(tt, rep(m)); };
+def parity(xs : List(U0, Unit)) : Lamp := induction xs return Lamp { nil => dark; cons(x, rest) with below => toggle(below); };
+def lamp : Lamp := parity(append(rep(10 * 100), rep(10 * 100)));
+`);
+  const runtime = query("lamp"), lamp = await runtime.observe();
+  assert.deepEqual([lamp.kind, lamp.index, lamp.args.length], ["Con", 0, 0], "an even count of toggles is dark");
+  assert.ok(runtime.stats.allocatedCells > 100000, `the parity took ${runtime.stats.allocatedCells} cells`);
+  const { runtimeObjects } = runtime.retainedObjects();
+  assert.ok(runtimeObjects < 50, `the value keeps ${runtimeObjects} objects`);
+});
+
 // A query reads the kernel when its walk first demands a node, a definition
 // or a signature: what it never demands is never copied.
 test("a query copies only what its walk demands", async t => {
@@ -294,10 +355,11 @@ def value : Unit and UNat := (helper(tt), unused_);
   assert.deepEqual([runtime.stats.snapshotNodes, runtime.stats.snapshotDefinitions], [0, 0]);
   const pair = await runtime.observe();
   // The root's definition: its reference, the application of an identity
-  // that ascribes its type, without the type, and the pair, without its
-  // components or their definitions.
+  // that ascribes its type, without the type, and the pair with its
+  // components' syntax, read for calls written twice when the definition's
+  // value is entered (#sharing), but not their definitions.
   assert.equal(runtime.stats.snapshotDefinitions, 1);
-  assert.equal(runtime.stats.snapshotNodes, 5);
+  assert.equal(runtime.stats.snapshotNodes, 9);
   assert.deepEqual(await runtime.observe(pair.first), { kind: "Point" });
   assert.equal(runtime.stats.snapshotDefinitions, 2, "helper, and still not the unused component");
   // Demanded, the second component's definitions are copied: unused_, the
@@ -327,7 +389,9 @@ test("unread syntax expires with the kernel's handles, and what was read survive
   // committed or rolled back, which move or drop the handles made since.
   for (const accept of [false, true]) {
     const transaction = new CubicalDeclarationTransaction(kernel, program.checker), unit = graph.unit(), point = graph.point();
-    const applied = graph.apply(graph.lambda(graph.extend(unit, "y"), point), point);
+    // The λ's body, read when the λ is first forced, is read by nothing
+    // before.
+    const y = graph.extend(unit, "y"), applied = graph.apply(graph.lambda(y, graph.variable(y)), point);
     const inner = new RuntimeQuery(kernel, graph.pair(graph.sigma(graph.extend(unit, "x"), unit), point, applied));
     t.after(() => inner.dispose());
     const pair = await inner.observe();
@@ -419,9 +483,9 @@ test("a session with spent handle generations holds no handles, before or after"
   const facade = { ...module, _cb_generation: token => spent ? 0 : module._cb_generation(token) };
   const kernel = new CubicalKernel(facade), g = new InstructionGraph(kernel);
   t.after(() => kernel.dispose());
-  const unit = g.unit(), point = g.point();
+  const unit = g.unit(), point = g.point(), y = g.extend(unit, "y");
   const before = new RuntimeQuery(kernel, g.pair(g.sigma(g.extend(unit, "x"), unit), point,
-    g.apply(g.lambda(g.extend(unit, "y"), point), point)));
+    g.apply(g.lambda(y, g.variable(y)), point)));
   t.after(() => before.dispose());
   const pair = before.observeNow();
   assert.deepEqual(before.observeNow(pair.first), { kind: "Point" });
@@ -499,6 +563,25 @@ test("an allocation stop preserves observations that need no further allocation"
   assert.deepEqual(await runtime.observe(pair.first), { kind: "Point" });
   assert.equal(runtime.stats.allocatedCells, maxCells);
   assert.ok(runtime.retainedObjects().runtimeObjects > 0);
+});
+
+// The budgets' calibration (docs/reports/runtime-repl-evaluation.md, the
+// budgets calibrated): a walk allocates about one cell for every two steps,
+// so the allocation budget, 20M cells, binds at about 40M steps, before
+// the work budget, 100M; the work budget binds first only for a walk that
+// allocates under one cell for every five steps. Here at a hundred
+// thousandth of each, on calls that leave only garbage.
+test("at the default budgets' ratio, the allocation budget binds first, near half the work budget", async t => {
+  const { query } = await setup(t, `
+def both(a, b : Unit) : Unit := unit_induction(fun (x : Unit) => Unit, b, a);
+def g0(u : Unit) : Unit := u;
+${Array.from({ length: 16 }, (_, i) => `def h${i}(u : Unit) : Unit := g${i}(u);\ndef g${i + 1}(u : Unit) : Unit := both(g${i}(u), h${i}(u));`).join("\n")}
+def calls : Unit := g16(tt);
+`);
+  const runtime = query("calls", { maxSteps: 100000, maxCells: 20000 });
+  let stop;
+  await assert.rejects(runtime.observe(), error => (stop = error, fails("resource")(error) && error.limit === 20000));
+  assert.ok(stop.stats.steps > 25000 && stop.stats.steps < 50000, `the allocation budget bound at ${stop.stats.steps} steps`);
 });
 
 test("work, allocation, cancellation and disposal have controlled failures", async t => {
