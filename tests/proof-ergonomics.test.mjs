@@ -700,7 +700,7 @@ test("a conditional rule with unprovable premises does not stop simplification",
       type:`g(${args}, (a + 0) + 0) = g(${args}, a)`};
   };
   const few=goal(20),many=goal(70);
-  const result=await program.check(`import primes; use unat;
+  const result=await program.check(`import unat; use unat;
     def c(x : UNat) := x;
     def c_zero(x : UNat, h : x = 0) : c(x) = 0 { rw [h] at lhs; }
     simp_rule c_zero priority 50;

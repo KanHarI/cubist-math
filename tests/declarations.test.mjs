@@ -30,7 +30,7 @@ test("removed theorem declarations are rejected in both source forms", () => {
 test("axiom and opaque are not declarations, and imports come first", () => {
   assert.throws(() => parse("axiom assumed : UNat;"), /Expected a declaration or directive: def, computable def/);
   assert.throws(() => parse("opaque def boxed := 0;"), /Expected a declaration or directive: def, computable def/);
-  assert.throws(() => parse("def zero_again := 0;\nimport primes;"), /^Error: Imports must come before declarations\.$/);
+  assert.throws(() => parse("def zero_again := 0;\nimport unat;"), /^Error: Imports must come before declarations\.$/);
   // `axiom` starts an expression and is reserved; `opaque` is an ordinary name.
   assert.throws(() => parse("def axiom(n : UNat) := n;"),
     /^Error: axiom is reserved, as a keyword or a built-in type of the language; pick another name\.$/);

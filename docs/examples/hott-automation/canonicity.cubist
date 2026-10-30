@@ -4,7 +4,7 @@
 // compute it, and each is marked computable, so it may use no assumption. A
 // failure here means a kernel or library change has stopped an
 // assumption-free result from computing.
-import primes;
+import unat;
 import circle;
 import hlevels;
 import quotients;

@@ -1,6 +1,5 @@
 import unat;
 import field_closeness;
-import primes;
 use unat;
 
 // Actual natural moduli are combined explicitly. No countable choice is used.

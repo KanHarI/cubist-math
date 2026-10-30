@@ -1,7 +1,7 @@
 // From tests/proof-ergonomics.test.mjs: Rewrite errors identify the selected
 // rule and explain an unproved premise. Each error is reported at the rule
 // it names: tests/proof-ergonomics.test.mjs checks where.
-import primes;
+import unat;
 use unat;
 
 // Error: E442: Rewrite occurrence 2 was not found (1 eligible matches). Remaining goal: n + 0 = n.

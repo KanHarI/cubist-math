@@ -1,7 +1,7 @@
 // From tests/proof-ergonomics.test.mjs: Freezing a simplified hypothesis
 // preserves its witness for dependent proofs.
 
-import primes;
+import unat;
 use unat;
 
 // Warning: W702: stable is never used after this let: remove it.
