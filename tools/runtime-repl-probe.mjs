@@ -9,10 +9,11 @@
 // process runs with --expose-gc), so that retained memory is the query's
 // live graph, not its garbage. That collection and count happen inside the
 // entry, and their time is taken out of the entry's. The readback path is
-// the runtime path that also reads the query's root back by value before it
-// is disposed of (M1 of docs/roadmaps/runtime/typed-readback.md): the
-// readback's work and its counters, the arena's growth, and the DAG and
-// tree sizes of the term, its time likewise taken out.
+// the runtime path with its query made for readback, which reads the
+// query's root back by value before it is disposed of (M1 of
+// docs/roadmaps/runtime/typed-readback.md): the readback's work and its
+// counters, the arena's growth, and the DAG and tree sizes of the term, its
+// time likewise taken out.
 //   node tools/runtime-repl-probe.mjs                 every workload, both paths
 //   node tools/runtime-repl-probe.mjs NAME[,NAME] [runtime|kernel|readback]
 import { execFileSync } from "node:child_process";
@@ -132,6 +133,16 @@ if (!child) {
         measuring += performance.now() - measured;
         return dispose.call(this);
       };
+      if (path === "readback") {
+        // The query the value form asks for, made for readback.
+        const checker = program.checker, made = checker.runtimeQuery;
+        checker.runtimeQuery = judgement => {
+          const asked = made.call(checker, judgement);
+          if (!asked) return null;
+          dispose.call(asked);
+          return new RuntimeQuery(program.kernel, judgement, { ...checker.runtimeLimits(), readback: true });
+        };
+      }
       const check = program.checkEntry.bind(program);
       program.checkEntry = async (...args) => (captured = await check(...args));
       const started = performance.now(), [answer] = await session.run(entry), elapsed = performance.now() - started - measuring;

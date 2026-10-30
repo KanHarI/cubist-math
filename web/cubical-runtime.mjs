@@ -151,22 +151,22 @@ export class RuntimeQuery {
   // failed publishes nothing more, as nothing computed after a failure is
   // kept, though its snapshot was copied before.
   #fault;
-  // A query made with { origins: true }, for normal-form readback, keeps
-  // each forced cell's code and environment, its origin (3.4); value forms
-  // keep none.
-  #origins;
-  // A query made with { heads: true } keeps the head an observation
-  // computed by η, by the cell it was asked of, which keeps the λ, for
-  // readback(handle, { head: true }): only the tests of the observed heads
-  // read it, so value forms keep none.
-  #keepHeads; #heads = new WeakMap();
+  // A query made for readback, with { readback: true }, keeps what readback
+  // reads beyond what an observation needs: each type value's environment,
+  // pruned to the bindings its node uses, and the head an observation
+  // computed by η, by the cell it was asked of, which keeps the λ. With
+  // { origins: true }, for normal-form readback, it keeps each forced
+  // cell's code and environment too, its origin (3.4). Value forms make no
+  // such query, and keep what an observation needs alone.
+  #forReadback; #origins; #heads = new WeakMap();
   // Readback's memo, by mode, of cells and of closures by environment and
   // code (3.5); each readback is an epoch of its own.
   #memo = memos(); #epoch = 0;
   #readStats = { readbacks: 0, writes: 0, hits: 0, cells: 0, rebuilt: 0, bindings: 0 };
   constructor(kernel, judgement, options = {}) {
     this.#budget = new Budget(options);
-    this.#origins = options.origins === true; this.#keepHeads = options.heads === true;
+    this.#origins = options.origins === true;
+    this.#forReadback = this.#origins || options.readback === true;
     this.#fault = faultToken(kernel.module);
     try {
       this.#budget.start(options);
@@ -323,10 +323,12 @@ export class RuntimeQuery {
               returned(this.#value({ tag: "Elim", signature: n.payload, motive: delay(c[0]), clauses: this.#list(c[1], env) })); break;
             // A type former is its own weak head. Its parts stay unevaluated;
             // Glue, which can reduce on its faces, is cubical demand. It
-            // keeps its node, which readback reads it from, and of its
-            // environment only the bindings the node uses (#pruned).
+            // keeps its node, which readback reads it from, and, in a query
+            // made for readback, of its environment the bindings the node
+            // uses (#pruned). A value form's keeps none: the bindings a
+            // type mentions can hold whole computations.
             case "U": case "Pi": case "Sigma": case "Path": case "Sum": case "Unit": case "Void": case "Sort": case "LPi":
-              returned(this.#value({ tag: "Type", node: cell.code, env: this.#pruned(cell.code, env) })); break;
+              returned(this.#value({ tag: "Type", node: cell.code, env: this.#forReadback ? this.#pruned(cell.code, env) : null })); break;
             default: fail("unsupported", `Runtime execution of ${n.kind} is not implemented.`);
           }
           continue;
@@ -412,7 +414,7 @@ export class RuntimeQuery {
     for (let f; (f = this.#eta(value));) {
       value = yield* this.#run(this.#delay(f, value.env));
       // η leaves the cell holding the λ: the head is kept for its readback.
-      if (this.#keepHeads) this.#heads.set(cell, value);
+      if (this.#forReadback) this.#heads.set(cell, value);
     }
     return value;
   }
@@ -524,14 +526,14 @@ export class RuntimeQuery {
   get readbackStats() { return { ...this.#readStats }; }
   // The closed kernel term a handle's cell stands for, R(cell) of
   // docs/roadmaps/runtime/typed-readback.md, internal: no user path reads a
-  // value back yet (W1). Read back by value, it is every value the runtime
-  // computed, functions included, as the β-redexes its closures stand for,
-  // so that the kernel performs every substitution (D2); with { origins },
-  // on a query made with them, a normal-form readback: data by its value
-  // outside every non-data part, and each non-data part as the computation
-  // it was forced from (3.4). With { head }, on a query made with heads, the
-  // head an observation of the handle returned after η is read back instead
-  // of its cell. No type is
+  // value back yet (W1), and only a query made for readback is read back.
+  // Read back by value, it is every value the runtime computed, functions
+  // included, as the β-redexes its closures stand for, so that the kernel
+  // performs every substitution (D2); with { origins }, on a query made
+  // with them, a normal-form readback: data by its value outside every
+  // non-data part, and each non-data part as the computation it was forced
+  // from (3.4). With { head }, the head an observation of the handle
+  // returned after η is read back instead of its cell. No type is
   // consulted. The term is admitted to the normalize queries as derived
   // (D3): the written correspondence, under EVAL8's review, is its
   // justification, and only tests type it by instructions. A readback
@@ -540,8 +542,8 @@ export class RuntimeQuery {
   // dropping its memo (section 7). Its work and cells are the query's.
   readback(handle = this.root, options = {}) {
     const cell = this.#begin(handle), { origins = false, head = false } = options;
+    if (!this.#forReadback) fail("input", "Read back a query made for readback.");
     if (origins && !this.#origins) fail("input", "Read back by origin a query made with origins.");
-    if (head && !this.#keepHeads) fail("input", "Read back a head from a query made with heads.");
     this.#running = true;
     try {
       this.#budget.start(options); this.#budget.check();

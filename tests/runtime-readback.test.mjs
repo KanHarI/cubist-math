@@ -33,8 +33,10 @@ async function setup(t, source) {
   const judgement = name => defined.get(name) ?? graph.lookup(kernel.definitions.get(`main__${name}`));
   // A definition's checked term, which normalize accepts.
   const term = name => { const handle = graph.judgement(judgement(name)).term; (kernel.derivedHandles ??= new Set()).add(handle); return handle; };
+  // A query made for readback, unless the options say otherwise, as
+  // { readback: false } makes a value form's.
   const query = (made, options = {}, Query = RuntimeQuery) => {
-    const runtime = new Query(kernel, typeof made === "string" ? judgement(made) : made, options);
+    const runtime = new Query(kernel, typeof made === "string" ? judgement(made) : made, { readback: true, ...options });
     t.after(() => runtime.dispose());
     return runtime;
   };
@@ -188,9 +190,9 @@ def boxed := (fun (A : U0) => fun (a : A) => typed(Box(A), box(a)))(Unit, tt);
 });
 
 // η leaves a cell holding its λ, so R(root) never reads back the head an
-// observation computed: a query made with heads keeps that head, read back
-// on its own, and its full normal form is its cell's. A query made without
-// them, as a value form's is, keeps none, and reads none back.
+// observation computed: a query made for readback keeps that head, read
+// back on its own, and its full normal form is its cell's. A value form's
+// query keeps none, and is not read back.
 test("the head an observation computed by η reads back to its cell's full normal form", async t => {
   const s = await setup(t, `
 import lists; use unat;
@@ -200,7 +202,7 @@ def prepend := fun (xs : List(U0, UNat)) => cons(1, xs);
 def toggle := fun (f : Flag) => match f return Flag { disabled => enabled; enabled => disabled; };
 `);
   for (const [name, kind] of [["successor", "Con"], ["prepend", "App"], ["toggle", "Elim"]]) {
-    const runtime = s.query(name, { heads: true }), observed = s.walk(runtime);
+    const runtime = s.query(name), observed = s.walk(runtime);
     assert.equal(observed[0], runtime.root, name);
     const head = runtime.readback(runtime.root, { head: true }), cell = runtime.readback();
     assert.deepEqual([s.kernel.node(cell).kind, s.kernel.node(head).kind], ["Lam", kind], name);
@@ -208,36 +210,45 @@ def toggle := fun (f : Flag) => match f return Flag { disabled => enabled; enabl
     for (const handle of observed) assert.ok(s.same(s.normal(runtime.readback(handle, { head: true })), s.normal(runtime.readback(handle))), name);
     // The kept head is retained, and counted: more objects than a value
     // form's query holds after the same walk.
-    const plain = s.query(name);
+    const plain = s.query(name, { readback: false });
     s.walk(plain);
     assert.throws(() => plain.readback(plain.root, { head: true }), fails("input"), name);
     assert.ok(runtime.retainedObjects().runtimeObjects > plain.retainedObjects().runtimeObjects, name);
   }
   // For successor, three more: the constructor value, its instance cell and
   // its argument list.
-  const [kept, plain] = [{ heads: true }, {}].map(options => { const runtime = s.query("successor", options); s.walk(runtime); return runtime; });
+  const [kept, plain] = [{}, { readback: false }].map(options => { const runtime = s.query("successor", options); s.walk(runtime); return runtime; });
   assert.equal(kept.retainedObjects().runtimeObjects, plain.retainedObjects().runtimeObjects + 3);
 });
 
-// A type value keeps of its environment only the bindings its node uses,
-// so a value form whose result is a type retains nothing of the
-// computation that chose it: traverse(100 * 100) retains what traverse(10
-// * 10) does, the 13 objects the runtime retained before readback.
-test("a type value keeps only the bindings its node uses", async t => {
+// A value form's query keeps no environment for a type value, so one whose
+// result is a type retains nothing of the computation that chose it, even
+// where the type mentions that computation's input: traverse(100 * 100),
+// a recursion down to Unit, and traverse2(n, n) at 100 * 100, down to
+// Tag(n), each retain the 13 objects the runtime retained before readback.
+// A query made for readback keeps, of a type value's environment, the
+// bindings its node uses, which its readback reads: Unit none, A -> A
+// A's and not n's, Tag(n) n's.
+test("a value form keeps no type's environment, and readback the bindings a type uses", async t => {
   const s = await setup(t, `
 import unat; use unat;
+inductive Tag(n : UNat) { tag; }
 def traverse(n : UNat) : U0 := match n { zero => Unit; succ(k) => traverse(k); };
+def traverse2(n, original : UNat) : U0 := match n { zero => Tag(original); succ(k) => traverse2(k, original); };
 def far := traverse(100 * 100);
-def near := traverse(10 * 10);
+def dependent := (fun (n : UNat) => traverse2(n, n))(100 * 100);
+def small := (fun (n : UNat) => traverse2(n, n))(3);
 def endo := (fun (A : U0) => fun (n : UNat) => A -> A)(Unit, 100 * 100);
 `);
-  const retained = name => { const runtime = s.query(name); s.walk(runtime); return runtime.retainedObjects().runtimeObjects; };
-  assert.deepEqual([retained("far"), retained("near")], [13, 13]);
-  // A -> A keeps A's binding, which its readback reads, and not n's.
-  const endo = s.query("endo");
-  s.walk(endo);
-  assert.ok(endo.retainedObjects().runtimeObjects < 10);
-  assert.ok(s.same(s.normal(endo.readback()), s.normal(s.term("endo"))));
+  const walked = (name, options) => { const runtime = s.query(name, options); s.walk(runtime); return runtime; };
+  const retained = (name, options) => walked(name, options).retainedObjects().runtimeObjects;
+  assert.deepEqual(["far", "dependent"].map(name => retained(name, { readback: false })), [13, 13]);
+  assert.throws(() => walked("far", { readback: false }).readback(), fails("input"));
+  assert.equal(retained("far"), 13);
+  assert.ok(retained("endo") < 10);
+  // Read back by value, each type value is the kernel's, Tag(3) and
+  // Unit -> Unit.
+  for (const name of ["small", "endo"]) assert.ok(s.same(s.normal(walked(name).readback()), s.normal(s.term(name))), name);
 });
 
 // With origins, a non-data part is read back as the computation it was
@@ -407,7 +418,7 @@ const mutations = [
   ["a constructor's index", "value", "flag", [["index: n.payload, instance", "index: n.payload ^ 1, instance"]]],
   ["a constructor's signature", "value", "flag", [["signature: instance.payload, index", "signature: instance.payload + 1, index"]]],
   ["a constructor's instance", "value", "boxed", [["instance: delay(c[0]), args", "instance: this.#delay(c[0], null), args"]]],
-  ["a dropped instance", "value", "observed_instance", [["{ tag: \"Type\", node: cell.code, env: this.#pruned(cell.code, env) }", "{ tag: \"Type\" }"]]],
+  ["a dropped instance", "value", "observed_instance", [["{ tag: \"Type\", node: cell.code, env: this.#forReadback ? this.#pruned(cell.code, env) : null }", "{ tag: \"Type\" }"]]],
   ["a λ's body", "value", "constant", [["body: c[1], env, domain", "body: this.#node(c[1]).kind === \"Point\" ? c[0] : c[1], env, domain"]]],
   ["a λ's symbol", "value", "pairing", [["symbol: n.payload, body: c[1], env, domain",
     "symbol: this.#node(c[1]).kind === \"App\" ? this.#kernel().symbol(\"mutated\") : n.payload, body: c[1], env, domain"]]],
@@ -469,7 +480,7 @@ def captured := (fun (A : U0) => fun (x : A) => fun (u : Unit) => typed(A and A,
     },
   };
   const verdict = (Query, oracle, name) => {
-    const judgement = s.judgement(name), runtime = s.query(judgement, { origins: oracle === "folded", heads: oracle === "heads" }, Query);
+    const judgement = s.judgement(name), runtime = s.query(judgement, { origins: oracle === "folded" }, Query);
     runtime.judgement = judgement;
     const observed = s.walk(runtime);
     if (name === "observed_instance") runtime.observeNow(runtime.observeNow().instance);

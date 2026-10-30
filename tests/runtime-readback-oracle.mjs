@@ -6,9 +6,10 @@
 //   - By value, with origins off: the full normal form of R(root) is the
 //     kernel's full normal form of the evaluated term (3.6, claim 3).
 //   - Observed heads: each head an observation returned after η, read back,
-//     has the full normal form of the cell it was asked of; the query is
-//     made with heads, which keeps them, and otherwise is the one the
-//     runtime would make.
+//     has the full normal form of the cell it was asked of.
+// The value form is computed by a query made for readback, which keeps
+// those heads and its type values' bindings, and otherwise is the one the
+// runtime would make.
 //   - By origin: a query made with origins walks the same value form, and
 //     the folded normal form of its R(root) is the kernel's folded normal
 //     form of the term (3.4's target).
@@ -65,8 +66,7 @@ export const disagreements = outcomes => outcomes.filter(outcome => ![outcome.va
 // (undecided), or the readback's failure; the heads' undecided comparisons
 // are counted apart (`undecidedHeads`). `typing` is the largest tree size
 // of R(root) typed. The value form is computed by a query of class `Query`,
-// made, where the runtime would make one, with heads, which only the
-// observed heads' oracle reads.
+// made for readback where the runtime would make one.
 export function watchReadbacks({ steps = 2000000, typing = 0, Query = RuntimeQuery } = {}) {
   const outcomes = [], valueFormOf = Translator.prototype.valueFormOf;
   Translator.prototype.valueFormOf = function (result, scope, node, kernel) {
@@ -77,7 +77,7 @@ export function watchReadbacks({ steps = 2000000, typing = 0, Query = RuntimeQue
       const asked = made.call(checker, judgement);
       if (!asked) return null;
       asked.dispose();
-      query = new Query(checker.kernel, judgement, { ...checker.runtimeLimits(), heads: true });
+      query = new Query(checker.kernel, judgement, { ...checker.runtimeLimits(), readback: true });
       const observeNow = query.observeNow;
       query.observeNow = (handle, options) => { observed.push(handle); return observeNow.call(query, handle, options); };
       query.dispose = () => {};
