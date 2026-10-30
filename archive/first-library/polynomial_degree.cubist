@@ -1,21 +1,38 @@
+// The library's modules come first, so that the archive's truncation names
+// (truncation, through polynomial_ring) shadow h1_truncation's, which
+// unat_least_elements brings: a later import shadows an earlier one.
 import unat;
+import unat_least_elements;
 import polynomial_ring;
-import natural_minimum;
+import finite_basis_search;
 use unat;
+
+// The least natural where a predicate valued in propositions merely holds:
+// excluded middle decides the predicate, and the library finds the least
+// (unat_least_elements).
+def classical_least(
+  P : UNat -> U0, prop_ : (forall n : UNat. Proposition(P(n))),
+  inhabited : Mere(exists n : UNat. P(n))
+) :
+  UNatLeast(P) {
+  exact unat_least_element_from_mere(
+    P, prop_, (fun (k : UNat) => excluded_middle(P(k), prop_(k))), inhabited
+  );
+}
 
 // The cutoff is the least support bound. It is zero for the zero polynomial
 // and degree+1 otherwise; this avoids giving zero a misleading leading term.
-def polynomial_minimum(K : AlgebraicField, p : Polynomial(K)) := natural_minimum(
+def polynomial_minimum(K : AlgebraicField, p : Polynomial(K)) := classical_least(
   SeriesSupport(K, polynomial_coefficients(K, p)),
   series_support_prop(K, polynomial_coefficients(K, p)), polynomial_support(K, p)
 );
 
 def polynomial_cutoff(K : AlgebraicField, p : Polynomial(K)) := sigma_first(
-  UNat, MinimumAt(SeriesSupport(K, polynomial_coefficients(K, p))), polynomial_minimum(K, p)
+  UNat, UNatIsLeast(SeriesSupport(K, polynomial_coefficients(K, p))), polynomial_minimum(K, p)
 );
 
 def polynomial_cutoff_data(K : AlgebraicField, p : Polynomial(K)) := sigma_second(
-  UNat, MinimumAt(SeriesSupport(K, polynomial_coefficients(K, p))), polynomial_minimum(K, p)
+  UNat, UNatIsLeast(SeriesSupport(K, polynomial_coefficients(K, p))), polynomial_minimum(K, p)
 );
 
 def polynomial_cutoff_support(K : AlgebraicField, p : Polynomial(K)) :

@@ -205,6 +205,26 @@ computable def bnat_succ_lt_succ(a, b : BNat, smaller : bnat_lt(a, b)) :
     )
   );
 
+// A comparison at most equal both ways round is equal.
+computable def bordering_le_antisymmetric(
+  order : BOrdering, forward : BOrderingLe(order), backward : BOrderingLe(bordering_flip(order))
+) :
+  BOrderingEqual(order) := match order {
+    b_less => absurd(backward);
+    b_equal => tt;
+    b_greater => absurd(forward);
+  };
+
+// Order is antisymmetric, on the bits: the comparison is equal.
+computable def bnat_le_antisymmetric(a, b : BNat, ab : bnat_le(a, b), ba : bnat_le(b, a)) :
+  a = b := bnat_equal_path(
+    a, b,
+    bordering_le_antisymmetric(
+      bnat_compare(a, b), ab,
+      comp(fun (i : Interval) => BOrderingLe(bnat_compare_flip(a, b) @ i), ba)
+    )
+  );
+
 computable def bnat_lt_le_absurd(a, b : BNat, smaller : bnat_lt(a, b), below : bnat_le(b, a)) :
   Void := unat_lt_le_absurd(
     bnat_to_unat(a), bnat_to_unat(b), bnat_lt_decode(a, b, smaller), bnat_le_decode(b, a, below)

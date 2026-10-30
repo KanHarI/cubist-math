@@ -4,7 +4,9 @@ use unat;
 // What remains of the first library's prime numbers, over unat's arithmetic
 // and order: a bounded search for the least witness of a decidable
 // predicate, and the unary factorial. Divisibility, primality and Euclid's
-// theorem are the library's (divisibility, prime_numbers, euclid).
+// theorem are the library's (divisibility, prime_numbers, euclid). The
+// search has no consumer: least elements are the library's
+// (least_elements, and unat_least_elements over UNat).
 // Every definition below is checked from source. No axioms and no imported
 // instruction snapshots.
 

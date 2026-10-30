@@ -43,6 +43,16 @@ computable def nat_add_comm(a, b : Nat) : a + b = b + a := bnat_add_comm(a, b);
 computable def nat_add_cancel(k, a, b : Nat, p : k + a = k + b) :
   a = b := bnat_add_cancel(k, a, b, p);
 
+// A successor moves across a sum: succ(a) + b = a + succ(b).
+computable def nat_succ_add_shift(a, b : Nat) : succ(a) + b = a + succ(b) {
+  calc {
+    succ(a) + b = b + succ(a) by nat_add_comm(succ(a), b);
+    _ = succ(b + a) by sym(bnat_succ_add(b, a));
+    _ = succ(a + b) by cong(succ, nat_add_comm(b, a));
+    _ = a + succ(b) by bnat_succ_add(a, b);
+  }
+}
+
 computable def nat_mul_zero(n : Nat) : n * 0 = 0 := bnat_mul_zero(n);
 
 computable def nat_one_mul(n : Nat) : 1 * n = n := bnat_one_mul(n);

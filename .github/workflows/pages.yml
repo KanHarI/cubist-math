@@ -14,7 +14,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # The full suite alone takes about 27 minutes on a runner, and test:site
+    # follows it: at 30 every publish after #334 was cancelled.
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
         with:

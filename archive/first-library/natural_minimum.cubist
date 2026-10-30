@@ -2,7 +2,9 @@ import unat;
 import finite_basis_search;
 
 // A least natural satisfying a proposition is unique, so it can be recovered
-// from mere existence without a choice function.
+// from mere existence without a choice function. No module imports this one:
+// least elements are the library's (unat_least_elements), and
+// polynomial_degree's classical_least decides by excluded middle.
 def natural_order_prop(n : UNat) :=
   induction n as k return (forall m : UNat. Proposition(le(k, m))) {
     zero => fun (m : UNat, a, b : Unit) => trans(sym(unit_equal(a)), unit_equal(b));
