@@ -128,7 +128,8 @@ is the factorial.
 | `radix_of_nat`: from unary, a successor at a time | `nat_to_radix`: from binary, by its bits (`radix_conversion`) | rebuilt |
 | `radix_factorial(extra, n : UNat)`, `radix_factorial_step`, `radix_factorial_value_step`, `radix_factorial_zero` | `radix_factorial(r, n : Nat)`, `radix_factorial_succ`, `radix_factorial_zero` (`radix_factorials`) | rebuilt |
 | `radix_positive_to_nat`, `radix_to_nat`: to unary (`radix_decode`) | `radix_positive_to_nat`, `radix_to_nat`: to binary `Nat` | rebuilt |
-| `radix_decode_leading`, `radix_decode_append`, `radix_decode_one`, `radix_decode_shift_zero`, `radix_decode_shift_one` | by computation | — |
+| `radix_decode_leading`, `radix_decode_append`, `radix_decode_one` | by computation | — |
+| `radix_decode_shift_zero`, `radix_decode_shift_one` | not stated: for a variable radix and numeral they do not hold by computation alone, and follow from `nat_add_zero` and `nat_one_mul` | — |
 | `RadixLeadingIncrement`, `RadixAppendIncrement`, `radix_decode_leading_increment`, `radix_decode_append_increment` | `radix_leading_succ_value`, `radix_append_succ_value`, `radix_carried_value` | rebuilt |
 | `radix_decode_positive_succ`, `radix_decode_succ`, `radix_nat_roundtrip` | `radix_positive_succ_value`, `radix_succ_value`, `radix_nat_roundtrip` | rebuilt |
 | `radix_nat_no_smaller_self`, `radix_nat_small_not_large`, `radix_eval_succ`, `radix_cancel_block`, `radix_division_zero`, `radix_division_successor`, `radix_division_unique` (`radix_uniqueness`) | `unat_division_unique`, `bnat_division_unique` (`bnat_division`) | rebuilt, in general |
@@ -177,7 +178,7 @@ Limits, measured on this branch at `65888504` with `node cli/repl.mjs`:
 | Entry | The kernel's queries (`evaluate !!…`, `evaluate … expecting`) | The REPL's value form |
 | --- | --- | --- |
 | `nat_to_radix(radix_ten, n)` and back | 2^80 (25 digits); 30 digits stop with K344 | 60 digits; 100 digits stop with E488 at the 20,000,000-cell budget |
-| `radix_factorial(radix_ten, n)` | 35!; 40! and 50! stop with K344 | 50!; 60! stops with E488 |
+| `radix_factorial(radix_ten, n)` | 35!; 40! and 50! stop with K344 | 60!; decoding it, `radix_to_nat(radix_ten, radix_factorial(radix_ten, 60))`, stops with E488 |
 | `radix_factorial(r, 30)`, `r` 2 and 16 | computes | — |
 | `factorial(n)`, `nat`'s binary factorial | 40! | 50! stops with K344 |
 
