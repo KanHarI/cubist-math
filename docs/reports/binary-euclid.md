@@ -249,7 +249,9 @@ with the test IDs `euclid.*`. `prime_numbers` keeps its name: the archive's
   `7` and `120`, and stop at `euclid(7).1` with K344 either way. The
   runtime's own limits, which the archive's `euclid(5)` and `euclid(6)`
   reached, are exercised by `duplicated-calls-24`: E488 at the allocation
-  cap, not retried, and E629 under a 150 ms declaration limit.
+  cap, not retried, and E629 under a 150 ms declaration limit. (Since
+  EVAL4's sharing of repeated calls, 2026-10-30, `duplicated-calls-24`
+  computes, and those tests use `relayed-calls-24`.)
   `tests/cubical-runtime.test.mjs` checks that the library's prime stops the
   query at a composition with no native syntax allocated, and keeps the
   archive workload's other checks on unary recursion defined in the test:

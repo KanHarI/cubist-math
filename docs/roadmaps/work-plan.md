@@ -1024,6 +1024,15 @@ Each step lands in focused PRs under the review rule above.
         parts. A stop at the runtime's limits stays reported, not retried;
         sharing a call written twice, which the kernel's weak-head cache
         shares by syntax and the runtime computes twice, is EVAL4 work.
+      - **EVAL4's sharing of repeated calls, done on 2026-10-30**
+        ([report](../reports/runtime-repl-evaluation.md#sharing-of-repeated-calls)):
+        a call written twice in a function's body or a top-level root is
+        one cell in each instance of it, kept in the instance's memo only
+        until its last delay there. `duplicated-calls-24` computes `tt`,
+        where the runtime stopped at its cap; no value form changes, and the
+        retained objects grow by at most one against main on the
+        constructs' walks and the probe's workloads. A call two
+        applications each make is not shared (`relayed-calls-24`).
    4. **Typed readback** (EVAL5): read runtime values back into kernel terms
       by their types, with the written readback correspondence and the
       applicable EVAL8 review. Decided on 2026-10-28

@@ -61,11 +61,20 @@ export const workloads = {
     "evaluate doubling(8);"],
   // The same non-recursive call twice, through 24 definitions: the kernel
   // caches weak heads by shared syntax, so each g_i(tt) is computed once;
-  // the runtime shares a thunk by occurrence, so g_24(tt) costs 2^24 calls.
+  // the runtime shares a call written twice in one application of a body
+  // (EVAL4), so each g_i is applied once too. Before, it computed 2^24 calls.
   "duplicated-calls-24": [["def both(a, b : Unit) : Unit := unit_induction(fun (x : Unit) => Unit, b, a);",
     "def g0(u : Unit) : Unit := u;",
     ...Array.from({ length: 24 }, (_, i) => `def g${i + 1}(u : Unit) : Unit := both(g${i}(u), g${i}(u));`)].join(" "),
     "evaluate g24(tt);"],
+  // The same call relayed: once in g_(i + 1)'s body and once in h_i's, an
+  // application of its own. The kernel's cache shares the two by their
+  // syntax once substituted; the runtime shares within one application
+  // only, so g_24(tt) still costs it 2^24 calls.
+  "relayed-calls-24": [["def both(a, b : Unit) : Unit := unit_induction(fun (x : Unit) => Unit, b, a);",
+    "def g0(u : Unit) : Unit := u;",
+    ...Array.from({ length: 24 }, (_, i) => `def h${i}(u : Unit) : Unit := g${i}(u); def g${i + 1}(u : Unit) : Unit := both(g${i}(u), h${i}(u));`)]
+    .join(" "), "evaluate g24(tt);"],
   "binary-factorial-40": ["import nat; use nat;", "evaluate factorial(40);"],
   "binary-product": ["import nat; use nat;", "evaluate 12345678901234567890 * 98765432109876543210;"],
   "binary-rational": ["import binary_rationals; use binary_rationals;", "evaluate 2/3 + 1/6;"],

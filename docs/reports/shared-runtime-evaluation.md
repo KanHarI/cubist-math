@@ -28,8 +28,11 @@ observable
 Update of 2026-10-29: the query reads its values back into closed kernel
 terms, W1 of [typed readback](../roadmaps/runtime/typed-readback.md), with
 the correspondence it implements ([below](#typed-readback-w1)); no checker,
-REPL or page reads a value back yet. The rest of this report describes the
-query as #289 added it.
+REPL or page reads a value back yet. Update of 2026-10-30: a call written
+twice in one scope, a function's body or a top-level root, is one cell in
+each instance of the scope, read for such calls when it is first entered
+([sharing of repeated calls](runtime-repl-evaluation.md#sharing-of-repeated-calls)).
+The rest of this report describes the query as #289 added it.
 
 ## Boundary and representation
 
@@ -522,7 +525,8 @@ went, the rest as closures. `unary-510`, the pair of two 510s, is 513 deep:
 its readback is refused with the kernel's K344 after 8,189 steps and 2,043
 writes, as the kernel refuses to build the pair. `list-parity-200000` and
 `duplicated-calls-24` stop at the runtime's allocation cap (E488), and so
-do their readbacks, within two steps. `euclid-3-expecting`,
+do their readbacks, within two steps (`duplicated-calls-24` computes since
+EVAL4's sharing of repeated calls). `euclid-3-expecting`,
 `euclid-5-expecting` and `euclid-5-folded` make no runtime query. The
 rationals' terms keep their sharing: about 2,000 nodes as a DAG for 2.5 to
 12.5 million as a tree. At `804841d4`, before main's merge, the Euclid
