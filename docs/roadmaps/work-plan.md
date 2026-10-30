@@ -1052,7 +1052,12 @@ Each step lands in focused PRs under the review rule above.
       3. NT3: least elements. **Done** on 2026-10-30: `least_elements`
          over binary `Nat` and `unat_least_elements` over `UNat`; the
          archive's polynomial degrees use them.
-      4. NT4: binary and radix numerals.
+      4. NT4: binary and radix numerals. **Done** on 2026-10-30
+         ([report](../reports/radix-numerals.md)): the binary results
+         checked against `bnat_*`, and radix numerals rebuilt over binary
+         `Nat` in `radix_numerals`, `radix_operations`, `radix_conversion`
+         and `radix_factorials`, with a univalence path to `Nat` and 10!
+         carried along it; the numeral fixtures import the library.
       5. NT5: the remaining 19 archive modules are deleted.
 
       This depends only on NUM1 and can proceed alongside 3 and 4.

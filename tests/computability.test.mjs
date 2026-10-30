@@ -16,11 +16,11 @@ test("evaluate reports the normal form, and a failed evaluation makes its module
   // Only the evaluations that pass have values; each that fails states its
   // error in the module.
   // The module selects unat, so the binary value is qualified (L2.10j).
-  assert.deepEqual(result.evaluations.map(item => item.value), ["4", "binary.(0b10001111)"]);
+  assert.deepEqual(result.evaluations.map(item => item.value), ["4", "bnat.(143)"]);
   assert.equal(result.complete, false, "a failed evaluation makes the module incomplete");
 });
 test("computable and evaluate parse and format stably; their keywords cannot be bound", () => {
-  const source = `import primes;
+  const source = `import unat;
 computable def one := 1;
 computable def two := 2;
 def uses_names(computable_ : UNat) : UNat {

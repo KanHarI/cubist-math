@@ -2356,11 +2356,11 @@
   },
   {
    "path": "cubist-tests/wasm_bad_factorial.cubist",
-   "summary": "A false factorial value, refused."
+   "summary": "A false value of `nat`'s factorial, refused."
   },
   {
    "path": "cubist-tests/wasm_binary_literal.cubist",
-   "summary": "The binary naturals checked in WASM, and a false binary literal equation refused."
+   "summary": "The library's binary naturals (`bnat`) checked in WASM, and a false binary literal equation refused."
   },
   {
    "path": "cubist-tests/wasm_invalid_paths.cubist",
@@ -2460,7 +2460,7 @@
   },
   {
    "path": "library/bnat_division.cubist",
-   "summary": "Division with remainder by a positive divisor, high bits first, with one comparison and at most one subtraction a bit (`bnat_divmod`), and its certificate: `q * d + r = n` and `r < d` (`bnat_divmod_correct`). A multiple of the divisor leaves remainder zero (`bnat_remainder_zero`). The bitwise difference with a borrow that it subtracts with, `bnat_sub`, is `a - b` for `b <= a`."
+   "summary": "Division with remainder by a positive divisor, high bits first, with one comparison and at most one subtraction a bit (`bnat_divmod`), and its certificate: `q * d + r = n` and `r < d` (`bnat_divmod_correct`). A multiple of the divisor leaves remainder zero (`bnat_remainder_zero`). The bitwise difference with a borrow that it subtracts with, `bnat_sub`, is `a - b` for `b <= a`. Quotient and remainder are unique (`bnat_division_unique`)."
   },
   {
    "path": "library/bnat_equality.cubist",
@@ -2476,7 +2476,7 @@
   },
   {
    "path": "library/bnat_order_laws.cubist",
-   "summary": "Order laws of binary naturals: a comparison reversed, what is not below is at or above, antisymmetry, irreflexivity, positive products, the successor's place in the order, cancellation of a strict sum, monotone products, and the non-strict decision. Positive results keep the binary comparison's evidence; unary order refutes only impossible branches."
+   "summary": "Order laws of binary naturals: a comparison reversed, what is not below is at or above, antisymmetry, irreflexivity, positive products, the successor's place in the order, cancellation of a strict sum, monotone products, the non-strict decision, equality from at most and not below, positive sums, and sums of strict bounds. Positive results keep the binary comparison's evidence; unary order refutes only impossible branches."
   },
   {
    "path": "library/bnat_order.cubist",
@@ -2597,6 +2597,22 @@
   {
    "path": "library/quotients.cubist",
    "summary": "Set quotients as a declared type: the quotient of a type by a relation, with a class for each element and a path between related classes. It is a set; it has induction into families of sets, of any universe below `UU0`; and a map into a set that respects the relation descends to it, uniquely. No representative is chosen. For an equivalence relation valued in propositions, related elements are exactly those with equal classes (`quotient_effective`, `class_path_equiv`): relatedness to an element descends into [`propositions`](propositions.cubist)' `Prop(U)`. Induction into a family of propositions needs only the classes (`quotient_induction_prop`), and a map of two arguments that respects the relation in each descends (`descend2`)."
+  },
+  {
+   "path": "library/radix_conversion.cubist",
+   "summary": "Binary `Nat` to radix numerals by its bits (`nat_to_radix`), and back by value. A number has one numeral in each radix (`radix_injective`, from unique quotients and remainders), so the conversions are inverse and an equivalence (`radix_equiv`), and by univalence a path `Nat = RadixNat(r)` (`radix_path`), along which transport converts both ways and binary addition and multiplication are the radix ones (`radix_add_operation`, `radix_mul_operation`)."
+  },
+  {
+   "path": "library/radix_factorials.cubist",
+   "summary": "One factorial algorithm in every radix (`radix_factorial`): the pair (k, k!) stepped n times by n's bits, counting and multiplying in the radix. Its value is n! (`radix_factorial_value`), so it is n! converted, and factorial equations carry along the univalence path both ways. 10! = 3,628,800 is computed in binary (`nat_factorial_ten`) and carried to every radix (`radix_factorial_ten`), and computed digit by digit in base 10 and base 2 and carried back to binary."
+  },
+  {
+   "path": "library/radix_numerals.cubist",
+   "summary": "Positional numerals in every radix at least two, over binary `Nat`: `Radix`, digits (`Digit(r)`, which is `Fin(r.1)`) and nonzero leading digits, positive numerals `RadixPositive(r)` (a leading digit, then further digits, the last outermost) and `RadixNat(r)`, so no numeral has a leading zero; the value `radix_to_nat`, by Horner's rule in binary; and the successor, which carries past the last digit, with its value law. `radix_ten` and `radix_two` are the radices 10 and 2."
+  },
+  {
+   "path": "library/radix_operations.cubist",
+   "summary": "Addition and multiplication of radix numerals, computed in the radix (`radix_add`, `radix_mul`): digits add with a carry, and a numeral is multiplied by a digit through the digit's bits, doubling and adding. The value of a sum or a product is the sum or the product of the values (`radix_add_value`, `radix_mul_value`). A computed digit's bound is its comparison's own evidence."
   },
   {
    "path": "library/rationals.cubist",

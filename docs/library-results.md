@@ -65,7 +65,13 @@ are not tagged.
 
   10! = 3,628,800 is computed in binary, in base 2 and in base 10, and carried
   between every pair of representations by transport along these
-  equivalences. [C]
+  equivalences. [C] Rebuilt in the library on 2026-10-30, over binary
+  numbers ([`radix_conversion`](../library/radix_conversion.cubist),
+  [`radix_factorials`](../library/radix_factorials.cubist)): binary numbers
+  are the library's natural numbers, positional numerals in every base
+  b ≥ 2 are equivalent to them by a univalence path, and 10! is carried
+  along it from binary to every base and back from bases 2 and 10. The
+  library's unary numbers have no factorial, so it is not carried to them.
 - **Uniqueness of finite cardinality.** If the n-element and m-element types
   are equivalent, then n = m. [C]
 - ★ **Counting functions and permutations.** There are mⁿ functions from an

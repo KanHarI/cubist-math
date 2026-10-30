@@ -370,13 +370,13 @@ test("declared pushouts: the suspension, its points and meridian, and its induct
 });
 
 test("W types: binary positive numbers, their constructors and their recursion derive", async t => {
-  const readArchive = sourceReader();
-  const program = new CubicalProgram(await createCubical(), readArchive);
+  const readSource = sourceReader();
+  const program = new CubicalProgram(await createCubical(), readSource);
   t.after(() => program.dispose());
-  await program.check(await readArchive("binary_naturals"), "binary_naturals");
+  await program.check(await readSource("bnat"), "bnat");
   const kernel = program.kernel, rules = new Set(), failures = [];
   for (const [name, reference] of kernel.definitions) {
-    if (!name.startsWith("binary_naturals__")) continue;
+    if (!name.startsWith("bnat__")) continue;
     const { value, type } = kernel.definition(reference);
     const driver = new InstructionDriver(kernel);
     try {

@@ -680,12 +680,12 @@ def length(xs : List(U0, UNat)) : UNat := induction xs return UNat {
         </div>
         <div class="quick-entry" id="quick-binary">
           <h4>Binary literals</h4>
-          <p>Where <code>binary_naturals</code>' notation <code>binary</code> is selected, <code>0b110</code> is six in <code>BinaryNat</code>: its literal rule reads the digits and computes one constructor per bit. For decimal binary naturals, use the rebuilt <code>nat</code> notation; <code>unat</code> keeps the structural unary reader.
+          <p>Where <code>nat</code>'s notation is selected, <code>0b110</code> is six in <code>Nat</code>, the library's binary naturals: its literal rule reads the digits and computes one constructor per bit, and reads a decimal literal such as <code>6</code> into the same bits. <code>unat</code> keeps the structural unary reader.
             <a href="reference/induction.html#binary">Natural numbers and inductive types →</a></p>
-          <pre><code data-check="accept">import binary_naturals;
-use binary;
+          <pre><code data-check="accept">import nat;
+use nat;
 
-def six : BinaryNat := 0b110;</code></pre>
+def six : Nat := 0b110;</code></pre>
         </div>
         <h3 id="quick-rewriting">Equational reasoning and simplification</h3>
         <div class="quick-entry" id="quick-rfl">

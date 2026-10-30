@@ -1,0 +1,211 @@
+// Radix numerals and binary Nat are equivalent. A number converts to a
+// numeral by its bits, as that many times one (radix_operations), and back
+// by Horner's rule (radix_numerals); a number has one numeral in each radix,
+// since a value determines its last digit and the value above it, as
+// quotient and remainder. By univalence the equivalence is a path
+// Nat = RadixNat(r): transport along it converts, and carries the binary
+// operations to the radix ones.
+import univalence;
+import radix_operations;
+use nat;
+
+// n as a numeral: n times one, by n's bits.
+computable def nat_to_radix(r : Radix, n : Nat) : RadixNat(r) := match n {
+    b_zero => radix_zero;
+    b_positive(p) => radix_positive(radix_positive_scale(r, p, radix_one(r)));
+  };
+
+computable def radix_nat_roundtrip(r : Radix, n : Nat) :
+  radix_to_nat(r, nat_to_radix(r, n)) = n := match n {
+    b_zero => refl(0);
+    b_positive(p) => trans(
+      radix_positive_scale_value(r, p, radix_one(r)), nat_mul_one(b_positive(p))
+    );
+  };
+
+// Uniqueness. A positive numeral's value is positive.
+computable def radix_positive_to_nat_positive(r : Radix, p : RadixPositive(r)) :
+  0 < radix_positive_to_nat(r, p) := match p {
+    radix_leading(d) => d.2.1;
+    radix_append(d, rest) => bnat_positive_add(
+      radix_positive_to_nat(r, rest) * r.1, d.1,
+      bnat_mul_positive(
+        radix_positive_to_nat(r, rest), r.1, radix_positive_to_nat_positive(r, rest),
+        radix_above_zero(r)
+      )
+    );
+  };
+
+// Digits with one value are one digit: their bounds are propositions.
+computable def radix_digit_injective(r : Radix, d, e : Digit(r), same : d.1 = e.1) :
+  d = e := subtype_injective(
+    U0, Nat, fun (n : Nat) => n < r.1, fun (n : Nat) => bnat_lt_is_prop(n, r.1), d, e, same
+  );
+
+computable def radix_leading_digit_injective(r : Radix, d, e : LeadingDigit(r), same : d.1 = e.1) :
+  d = e := subtype_injective(
+    U0, Nat, fun (n : Nat) => (0 < n) and (n < r.1),
+    fun (n : Nat) => product_has_level(
+      U0, unat.(0), 0 < n, n < r.1, bnat_lt_is_prop(0, n), bnat_lt_is_prop(n, r.1)
+    ), d, e, same
+  );
+
+// A leading digit is a value of quotient zero, d = 0 * b + d, and a longer
+// numeral's quotient is the value above its last digit, which is positive.
+computable def radix_leading_not_append(
+  r : Radix, d : LeadingDigit(r), e : Digit(r), q : RadixPositive(r),
+  same : d.1 = radix_positive_to_nat(r, q) * r.1 + e.1
+) :
+  Void := bnat_lt_irrefl(
+    0,
+    comp(
+      fun (i : Interval) => 0 < (
+        bnat_division_unique(r.1, 0, d.1, radix_positive_to_nat(r, q), e.1, d.2.2, e.2, same).1 @ ~i
+      ), radix_positive_to_nat_positive(r, q)
+    )
+  );
+
+// Equal values: the last digits are the remainders, and the values above
+// them the quotients, by the radix.
+computable def radix_positive_injective(
+  r : Radix, p, q : RadixPositive(r),
+  same : radix_positive_to_nat(r, p) = radix_positive_to_nat(r, q)
+) :
+  p = q {
+  match p, q {
+    radix_leading(d), radix_leading(e) => {
+      exact cong(
+        fun (x : LeadingDigit(r)) => typed(RadixPositive(r), radix_leading(x)),
+        radix_leading_digit_injective(r, d, e, same)
+      );
+    }
+    radix_leading(d), radix_append(e, more) => {
+      exact absurd(radix_leading_not_append(r, d, e, more, same));
+    }
+    radix_append(d, rest), radix_leading(e) => {
+      exact absurd(radix_leading_not_append(r, e, d, rest, sym(same)));
+    }
+    radix_append(d, rest), radix_append(e, more) => {
+      let places := bnat_division_unique(
+        r.1, radix_positive_to_nat(r, rest), d.1, radix_positive_to_nat(r, more), e.1, d.2, e.2,
+        same
+      );
+      exact path i => typed(
+        RadixPositive(r),
+        radix_append(
+          radix_digit_injective(r, d, e, places.2) @ i,
+          radix_positive_injective(r, rest, more, places.1) @ i
+        )
+      );
+    }
+  }
+}
+
+computable def radix_injective(
+  r : Radix, m, n : RadixNat(r), same : radix_to_nat(r, m) = radix_to_nat(r, n)
+) :
+  m = n := match m, n {
+    radix_zero, radix_zero => refl(typed(RadixNat(r), radix_zero));
+    radix_zero,
+    radix_positive(q) => absurd(
+      bnat_lt_irrefl(
+        0, comp(fun (i : Interval) => 0 < (same @ ~i), radix_positive_to_nat_positive(r, q))
+      )
+    );
+    radix_positive(p),
+    radix_zero => absurd(
+      bnat_lt_irrefl(
+        0, comp(fun (i : Interval) => 0 < (same @ i), radix_positive_to_nat_positive(r, p))
+      )
+    );
+    radix_positive(p),
+    radix_positive(q) => cong(
+      fun (x : RadixPositive(r)) => typed(RadixNat(r), radix_positive(x)),
+      radix_positive_injective(r, p, q, same)
+    );
+  };
+
+computable def radix_roundtrip(r : Radix, m : RadixNat(r)) :
+  nat_to_radix(r, radix_to_nat(r, m)) = m := radix_injective(
+    r, nat_to_radix(r, radix_to_nat(r, m)), m, radix_nat_roundtrip(r, radix_to_nat(r, m))
+  );
+
+// The equivalence, and its path of types by univalence.
+computable def radix_equiv(r : Radix) : ContrEquiv(U0, Nat, RadixNat(r)) := inverse_equiv(
+  U0, Nat, RadixNat(r), nat_to_radix(r), radix_to_nat(r), radix_roundtrip(r), radix_nat_roundtrip(r)
+);
+
+computable def radix_path(r : Radix) :
+  Nat =[U0] RadixNat(r) := glue_path(U0, Nat, RadixNat(r), radix_equiv(r));
+
+// Transport along the path converts, both ways.
+computable def radix_transport(r : Radix, n : Nat) :
+  comp(fun (i : Interval) => radix_path(r) @ i, n) = nat_to_radix(r, n) := glue_path_transport(
+    U0, Nat, RadixNat(r), radix_equiv(r), n
+  );
+
+computable def radix_transport_reverse(r : Radix, m : RadixNat(r)) :
+  comp(fun (i : Interval) => radix_path(r) @ ~i, m) = radix_to_nat(r, m) := glue_path_transport_reverse(
+    U0, Nat, RadixNat(r), radix_equiv(r), m
+  );
+
+// Conversion preserves the successor, addition and multiplication.
+computable def nat_to_radix_succ(r : Radix, n : Nat) :
+  nat_to_radix(r, succ(n)) = radix_succ(r, nat_to_radix(r, n)) := radix_injective(
+    r, nat_to_radix(r, succ(n)), radix_succ(r, nat_to_radix(r, n)),
+    trans(
+      radix_nat_roundtrip(r, succ(n)),
+      sym(trans(radix_succ_value(r, nat_to_radix(r, n)), cong(succ, radix_nat_roundtrip(r, n))))
+    )
+  );
+
+computable def nat_to_radix_add(r : Radix, a, b : Nat) :
+  nat_to_radix(r, a + b) = radix_add(r, nat_to_radix(r, a), nat_to_radix(r, b)) := radix_injective(
+    r, nat_to_radix(r, a + b), radix_add(r, nat_to_radix(r, a), nat_to_radix(r, b)),
+    trans(
+      radix_nat_roundtrip(r, a + b),
+      sym(
+        trans(
+          radix_add_value(r, nat_to_radix(r, a), nat_to_radix(r, b)),
+          trans(
+            cong(
+              fun (x : Nat) => x + radix_to_nat(r, nat_to_radix(r, b)), radix_nat_roundtrip(r, a)
+            ), cong(fun (x : Nat) => a + x, radix_nat_roundtrip(r, b))
+          )
+        )
+      )
+    )
+  );
+
+computable def nat_to_radix_mul(r : Radix, a, b : Nat) :
+  nat_to_radix(r, a * b) = radix_mul(r, nat_to_radix(r, a), nat_to_radix(r, b)) := radix_injective(
+    r, nat_to_radix(r, a * b), radix_mul(r, nat_to_radix(r, a), nat_to_radix(r, b)),
+    trans(
+      radix_nat_roundtrip(r, a * b),
+      sym(
+        trans(
+          radix_mul_value(r, nat_to_radix(r, a), nat_to_radix(r, b)),
+          trans(
+            cong(
+              fun (x : Nat) => x * radix_to_nat(r, nat_to_radix(r, b)), radix_nat_roundtrip(r, a)
+            ), cong(fun (x : Nat) => a * x, radix_nat_roundtrip(r, b))
+          )
+        )
+      )
+    )
+  );
+
+// Along the path, binary addition and multiplication are the radix ones.
+computable def radix_add_operation(r : Radix) :
+  comp(fun (i : Interval) => (radix_path(r) @ i) -> (radix_path(r) @ i) -> (radix_path(r) @ i), add) = radix_add(
+    r
+  ) := glue_path_operation(
+    U0, Nat, RadixNat(r), radix_equiv(r), add, radix_add(r), nat_to_radix_add(r)
+  );
+
+computable def radix_mul_operation(r : Radix) :
+  comp(fun (i : Interval) => (radix_path(r) @ i) -> (radix_path(r) @ i) -> (radix_path(r) @ i), mul) = radix_mul(
+    r
+  ) := glue_path_operation(
+    U0, Nat, RadixNat(r), radix_equiv(r), mul, radix_mul(r), nat_to_radix_mul(r)
+  );

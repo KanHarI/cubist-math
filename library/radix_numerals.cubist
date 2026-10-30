@@ -1,0 +1,169 @@
+// Positional numerals in every radix at least two, over binary Nat. A
+// numeral is zero, or a nonzero leading digit followed by further digits,
+// the last digit outermost, so that a number has one numeral in each radix
+// (radix_conversion). Digits and values are binary naturals: a numeral's
+// value is read by Horner's rule, v * b + d at each digit.
+import bnat_order_laws;
+import finite_sets;
+use nat;
+
+// A radix: a natural number at least two.
+computable def Radix : U0 := exists b : Nat. 2 <= b;
+
+computable def radix_two : Radix := (2, tt);
+
+computable def radix_ten : Radix := (10, tt);
+
+// A radix is above zero and above one. Both are read off its bits, so a
+// closed radix gives tt.
+computable def bnat_two_le_above_zero(b : Nat, two_le : 2 <= b) : 0 < b := match b {
+    b_zero => absurd(two_le);
+    b_positive(p) => tt;
+  };
+
+computable def bnat_two_le_above_one(b : Nat, two_le : 2 <= b) : 1 < b := match b {
+    b_zero => absurd(two_le);
+    b_positive(p) => match p {
+      bp_one => absurd(two_le);
+      bp_even(q) => tt;
+      bp_odd(q) => tt;
+    };
+  };
+
+computable def radix_above_zero(r : Radix) : 0 < r.1 := bnat_two_le_above_zero(r.1, r.2);
+
+computable def radix_above_one(r : Radix) : 1 < r.1 := bnat_two_le_above_one(r.1, r.2);
+
+// A digit is a natural number below the radix; a leading digit is a
+// nonzero digit.
+computable def Digit(r : Radix) : U0 := Fin(r.1);
+
+computable def LeadingDigit(r : Radix) : U0 := exists d : Nat. (0 < d) and (d < r.1);
+
+computable def radix_leading_digit(r : Radix, d : LeadingDigit(r)) : Digit(r) := (d.1, d.2.2);
+
+computable def radix_digit_zero(r : Radix) : Digit(r) := (0, radix_above_zero(r));
+
+computable def radix_leading_one(r : Radix) : LeadingDigit(r) := (1, tt, radix_above_one(r));
+
+// A positive numeral: its leading digit, then each further digit, the last
+// (least significant) outermost. Zero is separate, so no numeral has a
+// leading zero.
+inductive RadixPositive(r : Radix) : U0 {
+  radix_leading(d : LeadingDigit(r));
+  radix_append(d : Digit(r), rest : RadixPositive(r));
+}
+
+inductive RadixNat(r : Radix) : U0 {
+  radix_zero;
+  radix_positive(p : RadixPositive(r));
+}
+
+computable def radix_one(r : Radix) : RadixPositive(r) := radix_leading(radix_leading_one(r));
+
+// The value of a numeral, by Horner's rule in binary.
+computable def radix_positive_to_nat(r : Radix, p : RadixPositive(r)) : Nat := match p {
+    radix_leading(d) => d.1;
+    radix_append(d, rest) => radix_positive_to_nat(r, rest) * r.1 + d.1;
+  };
+
+computable def radix_to_nat(r : Radix, n : RadixNat(r)) : Nat := match n {
+    radix_zero => 0;
+    radix_positive(p) => radix_positive_to_nat(r, p);
+  };
+
+// The successor: the next digit when it is below the radix, and otherwise a
+// carry, zero here and one more in the places above. The decision is an
+// argument, so that the value law below can take its two cases.
+computable def radix_leading_succ(
+  r : Radix, d : LeadingDigit(r), fits : Decidable(U0, succ(d.1) < r.1)
+) :
+  RadixPositive(r) := match fits return RadixPositive(r) {
+    left below => radix_leading((succ(d.1), bnat_zero_lt_succ(d.1), below));
+    right carry => radix_append(radix_digit_zero(r), radix_one(r));
+  };
+
+computable def radix_append_succ(
+  r : Radix, d : Digit(r), rest, carried : RadixPositive(r), fits : Decidable(U0, succ(d.1) < r.1)
+) :
+  RadixPositive(r) := match fits return RadixPositive(r) {
+    left below => radix_append((succ(d.1), below), rest);
+    right carry => radix_append(radix_digit_zero(r), carried);
+  };
+
+computable def radix_positive_succ(r : Radix, p : RadixPositive(r)) : RadixPositive(r) := match p {
+    radix_leading(d) => radix_leading_succ(r, d, bnat_lt_decide(succ(d.1), r.1));
+    radix_append(d, rest) => radix_append_succ(
+      r, d, rest, radix_positive_succ(r, rest), bnat_lt_decide(succ(d.1), r.1)
+    );
+  };
+
+computable def radix_succ(r : Radix, n : RadixNat(r)) : RadixNat(r) := match n {
+    radix_zero => radix_positive(radix_one(r));
+    radix_positive(p) => radix_positive(radix_positive_succ(r, p));
+  };
+
+// A digit whose successor is not below the radix is the last digit.
+computable def radix_last_digit(r : Radix, d : Digit(r), carry : (succ(d.1) < r.1) -> Void) :
+  succ(d.1) = r.1 := bnat_le_not_lt_equal(succ(d.1), r.1, bnat_le_succ_of_lt(d.1, r.1, d.2), carry);
+
+// The successor adds one to the value.
+computable def radix_leading_succ_value(
+  r : Radix, d : LeadingDigit(r), fits : Decidable(U0, succ(d.1) < r.1)
+) :
+  radix_positive_to_nat(r, radix_leading_succ(r, d, fits)) = succ(d.1) := match fits as decision return (
+    radix_positive_to_nat(r, radix_leading_succ(r, d, decision)) = succ(d.1)
+  ) {
+    left below => refl(succ(d.1));
+    right carry => trans(
+      nat_add_zero(1 * r.1),
+      trans(nat_one_mul(r.1), sym(radix_last_digit(r, radix_leading_digit(r, d), carry)))
+    );
+  };
+
+// A carried place: w * b + s = v * b + n, where w = v + 1 and b + s = n.
+computable def radix_carried_value(v, w, b, s, n : Nat, w_value : w = succ(v), carry : b + s = n) :
+  w * b + s = v * b + n {
+  calc {
+    w * b + s = succ(v) * b + s by cong(fun (x : Nat) => x * b + s, w_value);
+    _ = (v * b + b) + s by cong(fun (x : Nat) => x + s, nat_succ_mul(v, b));
+    _ = v * b + (b + s) by nat_add_assoc(v * b, b, s);
+    _ = v * b + n by cong(fun (x : Nat) => v * b + x, carry);
+  }
+}
+
+computable def radix_append_succ_value(
+  r : Radix, d : Digit(r), rest, carried : RadixPositive(r),
+  carried_value : radix_positive_to_nat(r, carried) = succ(radix_positive_to_nat(r, rest)),
+  fits : Decidable(U0, succ(d.1) < r.1)
+) :
+  radix_positive_to_nat(r, radix_append_succ(r, d, rest, carried, fits)) = succ(
+    radix_positive_to_nat(r, rest) * r.1 + d.1
+  ) := match fits as decision return (
+    radix_positive_to_nat(r, radix_append_succ(r, d, rest, carried, decision)) = succ(
+      radix_positive_to_nat(r, rest) * r.1 + d.1
+    )
+  ) {
+    left below => sym(bnat_succ_add(radix_positive_to_nat(r, rest) * r.1, d.1));
+    right carry => trans(
+      radix_carried_value(
+        radix_positive_to_nat(r, rest), radix_positive_to_nat(r, carried), r.1, 0, succ(d.1),
+        carried_value, trans(nat_add_zero(r.1), sym(radix_last_digit(r, d, carry)))
+      ), sym(bnat_succ_add(radix_positive_to_nat(r, rest) * r.1, d.1))
+    );
+  };
+
+computable def radix_positive_succ_value(r : Radix, p : RadixPositive(r)) :
+  radix_positive_to_nat(r, radix_positive_succ(r, p)) = succ(radix_positive_to_nat(r, p)) := match p {
+    radix_leading(d) => radix_leading_succ_value(r, d, bnat_lt_decide(succ(d.1), r.1));
+    radix_append(d, rest) => radix_append_succ_value(
+      r, d, rest, radix_positive_succ(r, rest), radix_positive_succ_value(r, rest),
+      bnat_lt_decide(succ(d.1), r.1)
+    );
+  };
+
+computable def radix_succ_value(r : Radix, n : RadixNat(r)) :
+  radix_to_nat(r, radix_succ(r, n)) = succ(radix_to_nat(r, n)) := match n {
+    radix_zero => refl(1);
+    radix_positive(p) => radix_positive_succ_value(r, p);
+  };

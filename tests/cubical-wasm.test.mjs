@@ -40,8 +40,8 @@ function derive(k, raw, expected = 0, assumptions = [], mask = 0n) {
   return { expression: term, type };
 }
 // The same for syntax with names and dimensions, as the elaborator checks it.
-// Archive modules, each checked as a program's main module.
-async function archive(t, ...names) {
+// Modules, each checked as a program's main module.
+async function modules(t, ...names) {
   const program = new CubicalProgram(producerModule, sourceReader(), { collectReferences: false });
   t.after(() => program.dispose());
   for (const name of names) {
@@ -139,10 +139,10 @@ test("named syntax preserves path binders and sharing across checks", t => {
   assert.throws(() => { term.name = "changed"; }, TypeError);
 });
 
-test("the actual binary source checks entirely in cubical WASM", async t => {
+test("the library's binary source checks entirely in cubical WASM", async t => {
   const { result } = await checkTestModule(t, "wasm_binary_literal", { module: producerModule });
-  // Its 6 declarations and the 4 of its binary notation's parser.
-  assert.equal(result.imports.filter(d=>d.sourceModule==="binary_naturals" && d.verified).length,10);
+  // The 27 declarations of bnat, the binary core.
+  assert.equal(result.imports.filter(d=>d.sourceModule==="bnat" && d.verified).length,27);
 });
 
 test("dependent pair induction checks its motive and both branch arguments natively", t => {
@@ -184,17 +184,17 @@ test("the kernel computes transport through Glue without a univalence axiom", t 
   assert.throws(() => elaborate(k, forged), /Type mismatch/);
 });
 
-test("native elaboration checks all manual factorial sources while retaining checked definitions", async t => {
-  const program = await archive(t, "binary_arithmetic", "binary_induction", "radix_factorial");
-  for(const name of ["binary_arithmetic__binary_factorial_ten", "radix_factorial__radix_factorial_ten_base_two", "radix_factorial__radix_factorial_ten_base_ten"]) {
+test("native elaboration checks the factorial computations while retaining checked definitions", async t => {
+  const program = await modules(t, "radix_factorials");
+  for(const name of ["radix_factorials__nat_factorial_ten", "radix_factorials__radix_factorial_ten_base_two", "radix_factorials__radix_factorial_ten_base_ten"]) {
     const view=program.inspect(name),checked=program.checker.checkView(view.expression,view.type);
     assert.ok(checked.arenaNodes<500000 && checked.arenaBytes<32*1024*1024);
   }
 });
 
-test("the existing UNat factorial theorem checks cubically without a million-successor expression",async t=>{
-  const program = await archive(t, "binary_arithmetic_correct");
-  const view=program.inspect("binary_arithmetic_correct__factorial_ten_from_binary"),checked=program.checker.checkView(view.expression,view.type);
+test("10! carried from base 10 to binary checks cubically without a large expression",async t=>{
+  const program = await modules(t, "radix_factorials");
+  const view=program.inspect("radix_factorials__nat_factorial_ten_from_base_ten"),checked=program.checker.checkView(view.expression,view.type);
   assert.ok(checked.arenaNodes<500000 && checked.arenaBytes<32*1024*1024);
 });
 
