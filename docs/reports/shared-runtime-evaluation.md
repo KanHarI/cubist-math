@@ -205,7 +205,7 @@ these results forces the final prime certificates.
 ## Typed readback (W1)
 
 W1 of [typed readback](../roadmaps/runtime/typed-readback.md), 2026-10-29,
-on main `bfca6cad`, with its first review's fixes on 2026-10-30, main
+on main `bfca6cad`, with its first two reviews' fixes on 2026-10-30, main
 `b05b4c5d` merged. `RuntimeQuery.readback(handle, options)` gives the
 closed kernel term a value stands for, R of the note's section 3. It is
 internal: no checker, REPL or page calls it, so no value form, observation,
@@ -221,40 +221,44 @@ the note more precisely than the note's text.
   (`binder`): a readback telescope binds the frame as that function's
   binder, a term or level λ, at the domain written in that node.
 - Term and level functions and path abstractions keep the node they were
-  made from, and a type value its node, where it kept none before, and of
-  the environment it was made in only the bindings the node uses: the
-  frames a readback telescope of the node would bind, copied in order, each
-  the parent of the next (`#pruned`). Lookup there finds what lookup in the
-  whole environment found, since no frame dropped binds a variable nearer
-  than the one kept for it, and a node with no children, such as `Unit`,
-  keeps none. A constructor's instance is read from its instance cell:
-  unforced, its code and environment; forced, those its type value keeps.
-  So a constructor value keeps no copy of its own.
-- A query made with `{ origins: true }` keeps each forced cell's code and
-  environment, or an application cell's two cells: its origin (3.4). Value
-  forms make no such query.
-- After η, an observation's head is no cell's value: a query made with
-  `{ heads: true }` keeps it, by the cell asked, for
-  `readback(handle, { head: true })`, and `retainedObjects` counts it.
-  Only the tests of the observed heads read it, so value forms make no
-  such query.
+  made from, and so does a type value, where it kept none before. A
+  constructor's instance is read from its instance cell: unforced, its code
+  and environment; forced, those its type value keeps. So a constructor
+  value keeps no copy of its own.
+- Readback reads only a query made for readback, `{ readback: true }`,
+  which keeps what readback reads beyond what an observation needs:
+  - of a type value's environment, the bindings its node uses: the frames
+    a readback telescope of the node would bind, copied in order, each the
+    parent of the next (`#pruned`). Lookup there finds what lookup in the
+    whole environment found, since no frame dropped binds a variable nearer
+    than the one kept for it, and a node with no children, such as `Unit`,
+    keeps none;
+  - after η, an observation's head, which is no cell's value, by the cell
+    asked, for `readback(handle, { head: true })`; `retainedObjects`
+    counts it;
+  - with `{ origins: true }`, which implies `{ readback: true }`, each
+    forced cell's code and environment, or an application cell's two
+    cells: its origin (3.4).
 
-A value form keeps main's values, counters and retained objects, except
-where it holds a type value whose node mentions a bound variable: the
-pruning reads the node's syntax and copies the bindings it keeps, in the
-query's work and cells, and the type keeps those bindings. Main's query
-and this one, walking the same value form, give the same value for every
-one of the constructs' 156 runtime value forms, and the same counters and
-retained objects for all but three: the types of two theories' models and
-homomorphisms (A40: 44 steps become 243, and 7 retained objects 9; A49: 98
-steps become 308, and 7 objects 15) and A46b's pair, whose parts hold one
-(4,863 steps become 5,086, and 436 objects 444). They are the same on seven
-workloads the runtime computes, `unary-510` to the wide binary-integer
-product, and on `traverse(100 * 100)`, a recursion down to `Unit`, which
-retains 13 objects, where the environment kept whole retained 71,228. The
-evaluation baseline (`tools/evaluation-baseline.mjs`, one cold sample per
-workload, at `80577185`, with main's `b05b4c5d` merged) gives every one of
-its 45 workloads the outcome, kernel counters, phases and runtime counters
+  Value forms make no such query, and keep a type value's node alone: the
+  bindings a type mentions can hold whole computations.
+
+A value form keeps main's values, counters and retained objects: what a
+query made for readback adds is none of its own. Main's query and a value
+form's, walking the same value form, give the same value, counters and
+retained objects for every one of the constructs' 156 runtime value forms
+(A40, A49 and A46b among them, which paid the pruning's work when value
+forms pruned too), on seven workloads the runtime computes, `unary-510`
+to the wide binary-integer product, and on two recursions whose result is
+a type: `traverse(100 * 100)`, down to `Unit`, and `traverse2(n, n)` at
+`n = 100 * 100`, down to `Tag(n)`, each retaining 13 objects. Pruned to
+the bindings its node uses, a query made for readback retains 13 for the
+first too, where the environment kept whole retains 71,228; the second's
+`Tag(n)` keeps `n`'s binding, which its readback reads, and with it the
+computation of `100 * 100`, 71,230 objects. The evaluation baseline
+(`tools/evaluation-baseline.mjs`, one cold sample per workload, at
+`6ad47c39`, with main's `b05b4c5d` merged) gives every one of its 45
+workloads the outcome, kernel counters, phases and runtime counters
 recorded in `tests/fixtures/evaluation-baseline.json`, exactly. A frame
 records the applied function's node rather than the function value:
 recording the value, as the note's 3.3 words it, kept each applied
@@ -355,11 +359,17 @@ that read one are unstable.
 4. **A frame records the applied function's node**, not the function value
    3.3 names: the node is all a telescope reads, and the value kept its
    domain cell alive (above).
-5. **A type value keeps only the bindings its node uses.** 3.2 asks it to
-   keep the environment it was made in; kept whole, a value form whose
-   result is a type retained the whole computation that chose it. The
-   pruning is 3.5's free-variable sets, which the note names as what
-   EVAL4's closed environments need for retention.
+5. **A type value keeps its environment only in a query made for
+   readback, and there only the bindings its node uses.** 3.2 asks it to
+   keep the environment it was made in, "with origins off too". Kept
+   whole, a value form whose result is a type retained the whole
+   computation that chose it; pruned, it still retained the computation of
+   an input the type mentions, `traverse2(n, n)`'s `n`, which is exactly
+   the binding readback reads. So a value form keeps none, and readback
+   reads only a query made for it. The pruning is 3.5's free-variable
+   sets, which the note names as what EVAL4's closed environments need for
+   retention. W2, whose fallback reads back in production, decides how
+   value forms switch readback on.
 6. **Unforced cells in a normal-form readback.** 3.4 has data reach the
    result by value only outside every non-data part, and 3.2 an unforced
    cell read as its closure; but an unforced cell's value may be no data,
@@ -371,7 +381,7 @@ that read one are unstable.
    instance "reads `x` by value first" thus reads it by origin; its memo
    case, one cell read in both modes, is tested by `x` itself beside
    `(fun y => y.1)(x)`.
-7. **Observed heads** are kept only by a query made with heads (above),
+7. **Observed heads** are kept only by a query made for readback (above),
    which the note does not say: no value form reads them.
 
 ### Session safety
@@ -399,10 +409,13 @@ across one, so this has no diagnostic code.
   `Unit -> Unit`, and of a constructor of `Box(A)` read back from a closure,
   which `kernel.head` eliminates, where the same constructor with its
   instance a redex is refused, as are the domains closed one by one; the
-  heads η computed, kept and counted only by a query made with heads; a
-  type value that keeps only the bindings its node uses, so that
-  `traverse(100 * 100)`, a recursion down to `Unit`, retains 13 objects, as
-  `traverse(10 * 10)` does and as the runtime did before W1, not 71,228;
+  heads η computed, kept and counted only by a query made for readback,
+  and readback refused on any other; a value form's query keeping no
+  environment for a type value, so that `traverse(100 * 100)` and
+  `traverse2(n, n)` at `100 * 100`, whose result `Tag(n)` mentions its
+  input, retain 13 objects, as the runtime did before W1, not 71,230, and a
+  query made for readback keeping the bindings a type uses, which read
+  back to the kernel's `Tag(3)` and `Unit -> Unit`;
   the four folding regressions of the note by origin, and two more, data
   read in both modes and `Marked(x.1)` in an instance and a pair's type,
   each folding away by value; expiry after a rollback and after a commit; a
@@ -416,7 +429,7 @@ across one, so this has no diagnostic code.
   compared past an undecided one, so that the η-produced index mutation is
   caught after two heads the kernel cannot normalize (K344).
 - The differential (`tests/runtime-readback-oracle.mjs`), run where the
-  value forms are checked, each by a query made with heads and otherwise
+  value forms are checked, each by a query made for readback and otherwise
   the one the runtime makes: every value form the runtime computes is read
   back by value, its full normal form compared with the kernel's of the
   term, as are those of every head the walk observed, an undecided one
@@ -444,16 +457,16 @@ across one, so this has no diagnostic code.
 
 ### M1, readback
 
-`node tools/runtime-repl-probe.mjs NAME readback` reads the query's root
-back by value after the value form's walk, before the query is disposed
-of. Each workload ran in a process of its own at `80577185`, main's
-`b05b4c5d` merged, with a clean tree, Node 24.13.0, macOS arm64, runtime
-SHA-256 prefix `d6831fca4c61f033`. Steps are readback's own work in the
-query's budget;
-writes are its kernel syntax calls, and the arena's growth the nodes they
-added, interning merging the rest; cells, rebuilt nodes and telescope
-bindings are its counters; the DAG and tree sizes are R(root)'s. Each
-readback took at most 14 ms.
+`node tools/runtime-repl-probe.mjs NAME readback` makes the value form's
+query for readback, and reads its root back by value after the value
+form's walk, before the query is disposed of. Each workload ran in a
+process of its own at `6ad47c39`, main's `b05b4c5d` merged, with a clean
+tree, Node 24.13.0, macOS arm64, runtime SHA-256 prefix
+`953396c045ff51a9`; `80577185` gave the same figures. Steps are
+readback's own work in the query's budget; writes are its kernel syntax
+calls, and the arena's growth the nodes they added, interning merging the
+rest; cells, rebuilt nodes and telescope bindings are its counters; the
+DAG and tree sizes are R(root)'s. Each readback took at most 7 ms.
 
 | Workload | Value form | Readback steps | Writes | Arena growth | Memo hits | Cells | Rebuilt | Bindings | DAG | Tree |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
