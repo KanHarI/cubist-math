@@ -1,7 +1,7 @@
-// From tests/cubical-wasm.test.mjs: the binary naturals' source checks
+// From tests/cubical-wasm.test.mjs: the library's binary naturals check
 // entirely in cubical WASM, and a false binary literal equation is refused.
-import binary_naturals;
-use binary;
+import bnat_notation;
+use bnat;
 
 // Error: E606: Type mismatch: found 0b110 = 0b110, expected 0b110 = 0b111.
 def bad_binary_literal : 0b110 = 0b111 {
