@@ -126,7 +126,7 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
       const number=numeralValue(t);
       if(!paths&&number!==null)return {kind:"Number",value:number};
       if(!paths) {
-        const digits=binaryDigits(t,"bnat__BNat","bnat__BPositive");
+        const digits=binaryDigits(t);
         if(digits!==null)return {kind:"Number",value:BigInt(digits).toString(10)};
         const parsed=parsedLiteral(t,symbols);
         if(parsed)return {kind:"Number",value:parsed.text};
@@ -177,7 +177,7 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
     if (t.tag === "Con") {
       const number=numeralValue(t);
       if(!paths&&number!==null)return {kind:"Number",value:number};
-      const digits=!paths&&binaryDigits(t,"bnat__BNat","bnat__BPositive");
+      const digits=!paths&&binaryDigits(t);
       return digits?{kind:"Number",value:BigInt(digits).toString(10)}:name(t.name ?? `constructor ${t.index}`);
     }
     if (t.tag === "Elim") return call(`${symbols[t.signature]?.name ?? t.signature}.elim`, [child(t.motive, "motive"),
