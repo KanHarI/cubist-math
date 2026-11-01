@@ -45,9 +45,7 @@ inductive Circle : U0 {
   base;
   loop : base = base;
 }
-def both(a, b : Unit) : Unit := unit_induction(fun (x : Unit) => Unit, b, a);
-def g0(u : Unit) : Unit := u;
-${Array.from({ length: 24 }, (_, i) => `def g${i + 1}(u : Unit) : Unit := both(g${i}(u), g${i}(u));`).join("\n")}
+${relayed}
 def capture : Flag := (fun (x : Flag) => (fun (f : Flag -> Flag) => (fun (x : Flag) => f(x))(disabled))(fun (y : Flag) => x))(enabled);
 def unused_path : Unit := (fun (p : tt = tt) => tt)(refl(tt));
 def unused_work : Unit := (fun (u : Unit) => tt)(g24(tt));
@@ -65,8 +63,9 @@ print(evaluate(typed(Unit and Circle, (tt, base))));
   assert.deepEqual(by(runtime), Array(6).fill("runtime"));
   assert.deepEqual(by(kernel), Array(6).fill("kernel"));
   const [, , unused, single, shared] = runtime.prints.map(print => print.valueForm);
-  // g24(tt) would cost 2^24 calls: the unused argument is never forced, and
-  // none of g0 to g24 is even copied from the kernel.
+  // g24(tt) would cost 2^24 calls, each relayed through another function
+  // (relayed, below): the unused argument is never forced, and none of g0
+  // to g24 is even copied from the kernel.
   assert.ok(unused.steps < 10000, `the unused argument took ${unused.steps} steps`);
   assert.equal(unused.snapshotDefinitions, 1);
   // Both components are the one argument thunk, computed once.
@@ -265,14 +264,46 @@ ${twice(["euclid(3)", "euclid(4).1", "euclid(4)", "euclid(5).1", "euclid(6).1", 
   assert.deepEqual(outcomes(runtime), outcomes(kernel));
 });
 
-// The same call written twice, through 24 definitions: the kernel's weak-head
-// cache shares each g_i(tt) by its syntax, and the runtime computes it twice,
-// 2^24 calls (EVAL4).
+// The same call written twice in a function's body, through 24 definitions
+// (the runtime probe's duplicated-calls-24): the kernel's weak-head cache
+// shares each g_i(tt) by its syntax, and the runtime shares it in each
+// application of g_(i + 1), whose body it reads for calls written twice
+// (#sharing in web/cubical-runtime.mjs), so each g_i is applied once.
 const duplicated = ["def both(a, b : Unit) : Unit := unit_induction(fun (x : Unit) => Unit, b, a);", "def g0(u : Unit) : Unit := u;",
   ...Array.from({ length: 24 }, (_, i) => `def g${i + 1}(u : Unit) : Unit := both(g${i}(u), g${i}(u));`)].join("\n");
+// The same call relayed: g_(i + 1) calls g_i once itself and once through
+// h_i, whose body calls it in an application of its own. The kernel's cache
+// shares the two by their syntax once substituted, g_i(tt) both; the
+// runtime shares a call within one application only, so it computes g_i(tt)
+// twice, 2^24 calls.
+const relayed = ["def both(a, b : Unit) : Unit := unit_induction(fun (x : Unit) => Unit, b, a);", "def g0(u : Unit) : Unit := u;",
+  ...Array.from({ length: 24 }, (_, i) => `def h${i}(u : Unit) : Unit := g${i}(u);\ndef g${i + 1}(u : Unit) : Unit := both(g${i}(u), h${i}(u));`)]
+  .join("\n");
+
+test("a call written twice in a function's body is computed once in each application", async t => {
+  const { runtime, kernel } = await bothWays(t, `import unat;
+use unat;
+${duplicated}
+print(evaluate(g24(tt)));
+print(evaluate(2 * 255));
+print(evaluate(typed(UNat and UNat, (2 * 255, 2 * 255))));
+`);
+  assert.deepEqual(outcomes(runtime), ["tt", "510", "(510, 510)"]);
+  assert.deepEqual(outcomes(runtime), outcomes(kernel));
+  assert.deepEqual(by(runtime), Array(3).fill("runtime"));
+  const [calls, single, pair] = runtime.prints.map(print => print.valueForm);
+  // Each g_i is applied once, its second call of g_(i - 1) handed the first
+  // one's cell: where the runtime computed 2^24 calls before, it stopped at
+  // its allocation cap.
+  assert.equal(calls.shared, 24);
+  assert.ok(calls.steps < 10000, `g24(tt) took ${calls.steps} steps`);
+  // At the top level, entered once, a call written twice is shared too.
+  assert.ok(pair.shared > single.shared);
+  assert.ok(pair.steps < 1.5 * single.steps, `the pair of two 2 * 255 took ${pair.steps} steps, one number ${single.steps}`);
+});
 
 test("a stop at the runtime's limits is reported, not retried by the kernel's queries", async t => {
-  const { runtime, kernel } = await bothWays(t, `${duplicated}\nprint(evaluate(g24(tt)));\n`);
+  const { runtime, kernel } = await bothWays(t, `${relayed}\nprint(evaluate(g24(tt)));\n`);
   assert.deepEqual(outcomes(runtime), ["E488: The runtime's evaluation of the value form exhausted its allocation budget of 20,000,000 cells."]);
   assert.equal(runtime.gaps.find(gap => gap.directive).failure, "resource");
   assert.deepEqual(outcomes(kernel), ["tt"]);
@@ -282,7 +313,7 @@ test("the declaration's time limit bounds the runtime, as it bounds the kernel's
   const program = new CubicalProgram(module, sourceReader(), { collectReferences: false });
   t.after(() => program.dispose());
   const session = new ReplSession(program);
-  assert.ok((await session.run(duplicated)).every(result => result.kind !== "error"));
+  assert.ok((await session.run(relayed)).every(result => result.kind !== "error"));
   program.kernel.setDeadline(150);
   const [answer] = await session.run("evaluate g24(tt);");
   program.kernel.setDeadline();
