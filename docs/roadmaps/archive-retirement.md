@@ -29,7 +29,8 @@ each area. What the library already builds has left the archive: `nat`'s
 arithmetic and, by NT1, the unary order lemmas (both from `primes`); by
 NT2, `euclid` and `primes`' divisibility and primality; by NT5, the rest of
 `primes`, `natural_minimum` and the binary and radix numerals, which NT3
-and NT4 rebuilt; and `sets` (for `hlevels`). What the library builds differently remains:
+and NT4 rebuilt; `sets` (for `hlevels`); and, by NT6, the counting
+modules. What the library builds differently remains:
 `set_quotients` are predicate quotients over the truncation, and
 `equivalences` are bijections and half-adjoint equivalences where the
 library has contractible maps. `truncation` and `classical` rested on the
@@ -126,12 +127,60 @@ Steps, each one or a few pull requests:
 | NT3 | Least elements: the bounded search and `natural_minimum` in the library; `polynomial_degree` and `artin_degree` import it. **Done** on 2026-10-30: the library's `least_elements` finds the least element of a decidable predicate over binary `Nat` from a witness, deciding 0, 1, 2, … by `nat`'s Peano recursion, so it stops at the least element however large the witness; a least element is unique, so for a predicate valued in propositions its mere existence gives it (`least_element_from_mere`). Every definition is `computable` and assumption-free, and source contracts evaluate the search. It computes least elements up to 63, 64 candidates, and stops with K344 at 64, the depth guard NUM1's recursion meets ([findings](../reports/binary-euclid.md#findings)). `unat_least_elements` has the same over `UNat`, by structural recursion: the archive's polynomials index their coefficients by `UNat`, and 21 modules use their degree's cutoff, so moving them to binary `Nat` is not small. `polynomial_degree` defines `classical_least`, excluded middle's decision passed to `unat_least_element_from_mere`, which `polynomial_ideals` and `polynomial_irreducible_factors` use too, and imports `finite_basis_search`, which it reached through `natural_minimum`; `artin_degree` and `polynomial_monic` needed only that unary order is a proposition, `unat`'s `unat_le_is_prop`. Nothing imports `natural_minimum` or uses `primes`' search; NT5 deletes them. `unat` gains its order's antisymmetry and propositionality, `bnat_order_laws` antisymmetry on the bits, and `nat` takes `nat_succ_add_shift` from `prime_numbers`. `node tools/audit-cubical.mjs --all` checks 374 modules and 3,873 declarations with no failure, against main's 3,857: `unat_least_elements`, a module of 13, `unat`'s 2 and `classical_least`. The driver trace was recorded again for `unat`'s two |
 | NT4 | Numerals: the binary results checked against `bnat_*` and completed; radix numerals rebuilt over binary `Nat`; the helper fixtures moved. **Done** on 2026-10-30 ([report](../reports/radix-numerals.md)): the library modules `radix_numerals`, `radix_operations`, `radix_conversion` and `radix_factorials`, with no assumption and every declaration `computable`, and general laws they use in `nat`, `bnat_order_laws` and `bnat_division` (quotient and remainder are unique); every binary result has its library counterpart or is superseded by the binary factorial; the source contracts `radix_contracts` evaluate conversions, transport along the univalence path and factorials in base 10 and base 2; `wasm_binary_literal`, `wasm_bad_factorial` and `computability_evaluation`, their JavaScript tests, three more tests and the reference's binary numbers moved to the library. The archive consumers left for NT5 are listed in the report |
 | NT5 | Delete `primes`, `natural_minimum`, `binary_*` and `radix_*` (19 modules) from the archive, update the catalog's module table and record the rebuilt results. **Done** on 2026-10-30: the 19 modules (3,353 lines) are deleted, and the catalog's module table no longer lists them; its numerals entry links the library's radix and binary modules and the [correspondence](../reports/radix-numerals.md#correspondence). Every other module that imported `primes` reached only `unat` through it: six archive modules drop the import; one unused import removed from `finite_cardinalities`, a counting module, and nothing else in the counting modules changed, so the counting decision below stays open (their 144 declarations check with unchanged, empty, assumption lists); 27 Cubist tests, the HoTT fixtures and the proof-ergonomics examples import `unat`, five JavaScript tests name it where they named `primes`, and the REPL test's mocked module list names `circle`; and 26 of those Cubist tests, R1's fixtures that imported only `primes`, now import no archive module. The instruction driver's face-step test derives `radix_factorials`' `radix_factorial_from_nat`, and its Glue test defines `ua` and `UnivalenceBeta` from a three-line source over `paths_`; `tests/cubical-transfers.test.mjs` and its two helpers retire, since the library transports along `radix_path` in Cubist, `tests/cubical-wasm.test.mjs` checks the arena of 10! carried from base 10, and the Glue builders have their own tests. The source printer's `0b` display of the archive's `BinaryNat` goes; `BNat`'s decimal display keeps the digit reader. The HoTT and ergonomics measurement scripts select `circle`'s `successor_transport` and `unat`'s `unat_add_assoc`, and run again; their recorded baselines, the saved benchmark reports and the capture-bindings costs stay dated records. `node tools/audit-cubical.mjs --all` checks 353 modules and 3,527 declarations with no failure, against 374 and 3,873: the 19 modules' 331 declarations, and the library's `lexemes` (8) and `lists` (7), which only `binary_naturals` imported; the corpus test records the count |
+| NT6 | The counting results ([below](#counting-in-the-library)), by the user's decision of 2026-11-01: rebuild them in the library, move their consumers, delete the archive's. **Done** on 2026-11-01: the library modules `type_equivalences`, `finite_cardinality`, `finite_arithmetic`, `function_counting`, `permutations`, `binomial_types` and `finite_choice`, with general laws in `contractible_maps`, `nat` (powers and binomial coefficients), `finite_sets` and `binary`, every declaration `computable` and assumption-free, and the source contracts `counting_contracts`; the archive's other areas take the results through one archive module, `counting_bridge`; the nine counting modules (1,382 lines, 144 declarations) are deleted. `node tools/audit-cubical.mjs --all` checks 365 modules and 3,834 declarations with no failure, against 353 and 3,527; the corpus test records the parts |
 
-**Open:** whether the counting results of the same catalog area count as
-number theory here: finite cardinalities, counting functions and
-permutations, binomial types and fibered counting (8 modules, 1,323 lines).
-They stay in the archive until decided. NT5 removed one unused import, of
-`primes`, from `finite_cardinalities` and changed nothing else in them.
+## Counting in the library
+
+**Decided on 2026-11-01** by the user: the counting results of the same
+catalog area, which this plan had left open, join the number theory in the
+library (step NT6). This is R3's decision for the counting part of
+"Numbers and counting": rebuild. Measured on main `d875dd08`, the counting modules are
+nine: `finite_cardinalities`, `finite_cancellation`, `function_counting`,
+`permutations`, `binomial`, `binomial_types`, `binomial_pascal`,
+`binomial_counting` and `finite_dependent_counts`, 1,382 lines and 144
+declarations, none with an assumption. The count of 2026-10-26, 8 modules
+and 1,323 lines, left out `binomial`, the unary binomial coefficients only
+`binomial_counting` used; `finite_cardinalities` has lost three lines since
+(NT1, NT5). `permutation_groups` is not among them: it is the Groups area's
+symmetric groups, and that area's `non_normal_subgroup` used `permutations`
+only for S3's six elements.
+
+| Archive source | In the library | |
+| --- | --- | --- |
+| `finite_cancellation`: swaps of `Unit or A`, cancelling a point, `finite_cardinality_unique` | `finite_cardinality`'s `fin_unique`, by `type_equivalences`' `sum_unit_cancel`, which needs no decidable equality | rebuilt |
+| `finite_cardinalities`: `HasCardinality`, `cardinality_unique` | `finite_cardinality`'s `HasCardinality` and `cardinality_unique` | rebuilt |
+| `function_counting`: `fin_product`, `finite_function_count` over unary `power_count` | `finite_arithmetic`'s `fin_sum` and `fin_product`; `function_counting`'s `fin_functions` over `nat`'s `power`, and `function_cardinality` for any finite types | rebuilt, stronger |
+| `permutations`: `finite_permutation_count`, `finite_equivalence_count` over unary `factorial_count` | `permutations`' `fin_permutations` over `nat`'s `factorial`, and `permutation_cardinality` for any finite type | rebuilt, stronger |
+| `binomial`: unary `choose`, the structural `Selections` | `nat`'s `choose`; `fin_binomials` counts the binomial type itself, so `Selections` has no counterpart | rebuilt; superseded |
+| `binomial_types`, `binomial_pascal`: Rijke's binomial type, Pascal's rule for `Fin(n + 1)` and `Fin(k + 1)` | `binomial_types`' `Binomial` over `DecidablePowerSet`, and `pascal` for all types | rebuilt, stronger |
+| `binomial_counting`: `finite_binomial_count`, and the same for sums of `Unit` | `binomial_types`' `fin_binomials`, and `binomial_cardinality` for any finite types | rebuilt, stronger |
+| `finite_dependent_counts`: `finite_mere_choice`, `uniform_fiber_count` for sets | `finite_choice`'s `fin_choice` and `finite_choice` for any finite type, and `fibered_cardinality` with no set hypotheses | rebuilt, stronger |
+
+Statements change with the encodings: counts are binary `Nat`, and
+`Fin(n)` is the numbers below n, where the archive had unary counts and
+`Unit or Fin(n - 1)`; equivalences are the library's contractible maps,
+where the archive counted by Bijection records, which between sets are
+equivalent to them; mere existence is the library's `Trunc`, which the
+archive also used since 2026-10-29. `tests/fixtures/contracts/counting_contracts.cubist`
+states that each result uses no assumption and evaluates small instances:
+2³ functions, 3! permutations, the two-element subsets of a four-element
+set, sums, products and a cancellation.
+
+The archive's linear algebra and Galois theory used the counting modules'
+vocabulary and four of their results, over the archive's unary `Fin` and
+Bijection records, which the library cannot hold. One archive module,
+`counting_bridge`, carries the library's results to them: the archive's
+`Fin(n)` is equivalent to the library's `Fin` of n's binary value, and
+`cardinality_unique`, `fin_product`, `three_permutations` and
+`uniform_fiber_count` are the library's theorems carried along that
+equivalence; the swaps of `Unit or A` and the cardinality vocabulary moved
+there unchanged, and `finite_decidable_subtypes` took the decidable-subtype
+vocabulary of `binomial_types`, its only user. The archive's
+`multiply_count` was unat's `mul` by conversion, and its users write `mul`.
+The bridge is an adapter: it brings binary `Nat` and the library modules
+it rests on into the archive's import graph (392 declarations), and it
+retires with its consumers when R3 decides the linear algebra and Galois
+areas.
 
 ## Relation to other work
 
@@ -169,4 +218,5 @@ They stay in the archive until decided. NT5 removed one unused import, of
    earlier (2026-10-26).
 4. Whether the counting results (finite cardinalities, functions and
    permutations, binomial types, fibered counting) join the number theory's
-   early migration or wait for R3.
+   early migration or wait for R3. **Decided on 2026-11-01:** they join it,
+   as NT6 ([counting in the library](#counting-in-the-library)).

@@ -1,5 +1,10 @@
 # Finite mathematics: conversion hints and checked specialization
 
+The archive's `permutations` and `binomial_pascal` were deleted on
+2026-11-01, when the library rebuilt the counting results
+([archive retirement](../roadmaps/archive-retirement.md#counting-in-the-library));
+the sections on them describe deleted sources.
+
 The native editions of `permutations`, `binomial_pascal`, and
 `kernel_quotient_image` preserve their original public theorem statements and
 assumptions. The legacy sources remain unchanged. The frontend source registry

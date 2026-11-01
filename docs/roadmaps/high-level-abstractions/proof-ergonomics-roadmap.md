@@ -279,7 +279,7 @@ A box marked moved names the item's new owner.
 
 ### 0. Establish examples and remove straightforward repetition
 
-- [ ] Select representative proofs from `unat` (at first `primes`), `paths`, `finite_dependent_counts`,
+- [ ] Select representative proofs from `unat` (at first `primes`), `paths`, `finite_choice` (at first the archive's `finite_dependent_counts`),
   `group_operations`, and `field_vector_spaces`. Record source token counts,
   repeated explicit parameters, checking time, kernel steps, and arena usage.
   Keep the original public statements and assumption lists as a baseline.

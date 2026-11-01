@@ -1,5 +1,13 @@
 # Finite types and counting
 
+**Rebuilt in the library on 2026-11-01** (step NT6 of the
+[archive retirement](../roadmaps/archive-retirement.md#counting-in-the-library)):
+`finite_cardinality`, `finite_arithmetic`, `function_counting`,
+`permutations`, `binomial_types` and `finite_choice` rebuild these results
+over binary `Nat`. This checkpoint describes the archive's counting
+modules, which were deleted the same day; its links and commands no longer
+run.
+
 All constructions below are ordinary high-level `.cubist` source. The compiler
 emits checked instructions for the same C/WASM kernel used by the workbench;
 there is no counting oracle or theorem-specific kernel rule.
