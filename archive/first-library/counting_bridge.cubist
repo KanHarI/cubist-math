@@ -8,7 +8,7 @@
 // permutations of a three-element set (permutations) and fibered counting
 // (finite_choice). The swaps of Unit or A and the cardinality vocabulary
 // moved here unchanged from the archive's counting modules, which the
-// library replaced on 2026-11-01 (docs/roadmaps/archive-retirement.md).
+// library replaced on 2026-11-02 (docs/roadmaps/archive-retirement.md).
 // This module retires with its consumers.
 import finite_choice;
 import permutations;

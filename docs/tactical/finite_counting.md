@@ -1,6 +1,6 @@
 # Finite types and counting
 
-**Rebuilt in the library on 2026-11-01** (step NT6 of the
+**Rebuilt in the library on 2026-11-02** (step NT6 of the
 [archive retirement](../roadmaps/archive-retirement.md#counting-in-the-library)):
 `finite_cardinality`, `finite_arithmetic`, `function_counting`,
 `permutations`, `binomial_types` and `finite_choice` rebuild these results

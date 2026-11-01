@@ -45,7 +45,7 @@ test("finite algebraic extensions, actual splitting fields, normality and genera
     const axioms = symbol.axioms.map(id => p.checker.assumptionLabels.get(id));
     assert.ok(axioms.every(a => allowed.test(a)), `${name}: ${axioms.join(", ")}`);
   }
-  // The intermediate finite choice, the library's since 2026-11-01 (reached
+  // The intermediate finite choice, the library's since 2026-11-02 (reached
   // through the archive's counting_bridge), is constructive: no axiom.
   assert.deepEqual(p.symbols.finite_choice__fin_choice.axioms, []);
 

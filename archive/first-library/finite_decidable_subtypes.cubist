@@ -7,7 +7,7 @@ use unat;
 // Decidable subtypes of Unit or A, by Boolean predicates: this module's
 // vocabulary, moved here unchanged from the archive's binomial_types when
 // the library replaced the binomial types (library/binomial_types.cubist)
-// on 2026-11-01. A decidable predicate is represented by a Boolean-valued
+// on 2026-11-02. A decidable predicate is represented by a Boolean-valued
 // function.
 def Bool := Unit or Unit;
 

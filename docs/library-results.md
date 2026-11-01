@@ -79,14 +79,14 @@ are not tagged.
   not carried to them. The archive's binary and radix modules were deleted
   ([correspondence](reports/radix-numerals.md#correspondence)).
 - **Uniqueness of finite cardinality.** If the n-element and m-element types
-  are equivalent, then n = m. [C] Rebuilt in the library on 2026-11-01
+  are equivalent, then n = m. [C] Rebuilt in the library on 2026-11-02
   ([`finite_cardinality`](../library/finite_cardinality.cubist)), over
   binary numbers: `Fin(n)` equivalent to `Fin(m)` gives n = m, and so the
   cardinality of a type, merely equivalent to `Fin(n)`, is unique.
 - ★ **Counting functions and permutations.** There are mⁿ functions from an
   n-element set to an m-element set. There are k! self-equivalences of a
   k-element set. Both are stated as equivalences of types. [C] Rebuilt in
-  the library on 2026-11-01
+  the library on 2026-11-02
   ([`function_counting`](../library/function_counting.cubist),
   [`permutations`](../library/permutations.cubist), on the sums and products
   of [`finite_arithmetic`](../library/finite_arithmetic.cubist)), with the
@@ -96,7 +96,7 @@ are not tagged.
 - ★ **Binomial types.** For finite sets, the type of decidable subtypes of an
   n-element set that are merely equivalent to a k-element set (Rijke's
   binomial type) has "n choose k" elements. Pascal's rule holds as an
-  equivalence of types. [T] Rebuilt in the library on 2026-11-01
+  equivalence of types. [T] Rebuilt in the library on 2026-11-02
   ([`binomial_types`](../library/binomial_types.cubist)), over the
   library's decidable powersets: Pascal's rule holds for all types, not
   only finite ones, and the binomial type of an n-element and a k-element
@@ -104,7 +104,7 @@ are not tagged.
 - **Finite choice and fibered counting.** A finite product of merely
   inhabited types is merely inhabited, with no choice axiom. A type fibered
   over an n-element base with m-element fibers has nm elements. [T] Rebuilt
-  in the library on 2026-11-01
+  in the library on 2026-11-02
   ([`finite_choice`](../library/finite_choice.cubist)): finite choice for
   every type with a finite cardinality, and fibered counting with no set
   hypotheses.

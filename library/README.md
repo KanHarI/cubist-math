@@ -94,7 +94,7 @@ deleted on 2026-10-30.
 counting results over `finite_sets`' `Fin` and `contractible_maps`'
 equivalences, with `type_equivalences` for sums, products, dependent pairs
 and functions; they replaced the archive's nine counting modules on
-2026-11-01 ([archive retirement](../docs/roadmaps/archive-retirement.md#counting-in-the-library)).
+2026-11-02 ([archive retirement](../docs/roadmaps/archive-retirement.md#counting-in-the-library)).
 
 | Module | Contents | Assumptions |
 | --- | --- | --- |

@@ -124,7 +124,7 @@ NT1–NT5). That covers:
 20 modules have left the archive: `euclid` (NT2) and, on 2026-10-30, the
 other 19 (NT5). The counting results of the same catalog area joined them
 by the user's decision of 2026-11-01 (NT6): rebuilt in the library, with
-their nine archive modules deleted on 2026-11-01.
+their nine archive modules deleted on 2026-11-02.
 
 **Governing requirement.** Computability is expressible and preserved.
 Every applicable release extends the canonicity fixture; results with no
@@ -901,7 +901,7 @@ specific slices scheduled below; they are not blanket language release gates:
 
 | Retained IDs | Deferred work |
 | --- | --- |
-| B3.1–B3.6 | Foundations beyond the library's, order, homotopy types and groups; finite counting was rebuilt on 2026-11-01 (NT6); the integers' order (the reals roadmap's R1) is B3 work |
+| B3.1–B3.6 | Foundations beyond the library's, order, homotopy types and groups; finite counting was rebuilt on 2026-11-02 (NT6); the integers' order (the reals roadmap's R1) is B3 work |
 | B4.1–B4.4 | Linear algebra, polynomials and Galois; the rationals' order and canonical form (R1) and the ordered-field interface (R2) are B4 work |
 | B5.1–B5.2 | Cauchy/Dedekind reals and analysis: the reals roadmap's R3 and R4, with the [dependencies corrected on 2026-09-28](mathematics/reals-roadmap.md#dependencies-and-acceptance) |
 | B5.3 | Full `initial CwF` development and interpreter; L5.1 instead requires a smaller H3 fixture first |
@@ -1114,7 +1114,7 @@ Each step lands in focused PRs under the review rule above.
          self-contained sources, one unused import removed from
          `finite_cardinalities`, and the catalog's module table updated.
       6. NT6: the counting results, by the user's decision of 2026-11-01.
-         **Done** on 2026-11-01: uniqueness of finite cardinality, counting
+         **Done** on 2026-11-02: uniqueness of finite cardinality, counting
          functions and permutations, Rijke's binomial types with Pascal's
          rule, and finite choice with fibered counting rebuilt in the
          library; the archive's other areas take them through
@@ -1273,7 +1273,7 @@ scheduled packages from advancing.
      readback and EVAL7;
    - all of the archive's number theory moves to the library and leaves the
      archive (NT1–NT5, with EVAL7 as NT2); counting is included, by the
-     user's decision of 2026-11-01 (NT6, done the same day);
+     user's decision of 2026-11-01 (NT6, done on 2026-11-02);
    - K2.5's `axiom` steps 1–4 run alongside;
    - simplicial ST0 and ST2 follow the phase, ahead of the categorical
      progression.

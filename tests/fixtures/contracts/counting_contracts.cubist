@@ -1,4 +1,4 @@
-// The counting results rebuilt in the library on 2026-11-01: uniqueness of
+// The counting results rebuilt in the library on 2026-11-02: uniqueness of
 // finite cardinality, counting functions and permutations, Rijke's binomial
 // types with Pascal's rule, and finite choice with fibered counting. None
 // uses an assumption; the truncated ones use the library's Trunc. Small

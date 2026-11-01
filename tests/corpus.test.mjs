@@ -44,7 +44,7 @@ test("the complete canonical .cubist corpus checks with the sole native kernel",
   // classical_least; and NT5 deleted the archive's binary and radix
   // numerals, natural_minimum and primes' last 3 (331), with the library's
   // lexemes (8) and lists (7), which only binary_naturals imported; and the
-  // counting results' move to the library (2026-11-01) deleted the
+  // counting results' move to the library (2026-11-02) deleted the
   // archive's nine counting modules (144), added counting_bridge (30),
   // moved binomial_types' 30 decidable-subtype definitions into
   // finite_decidable_subtypes, removed embedding_counts' count_multiply_comm,
