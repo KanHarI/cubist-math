@@ -238,9 +238,12 @@ the note more precisely than the note's text.
     whole environment found, since no frame dropped binds a variable nearer
     than the one kept for it, and a node with no children, such as `Unit`,
     keeps none;
-  - after η, an observation's head, which is no cell's value, by the cell
-    asked, for `readback(handle, { head: true })`; `retainedObjects`
-    counts it;
+  - each observation's head, by the cell asked, for
+    `readback(handle, { head: true })`, which refuses a cell no observation
+    returned a head for, as one only forced by another's computation; after
+    η the head is no cell's value, and `retainedObjects` counts it (since
+    W4, 2026-11-01: before, a forced cell's value stood for its head, the
+    λ where an observation would have given η's head);
   - with `{ origins: true }`, which implies `{ readback: true }`, each
     forced cell's code and environment, or an application cell's two
     cells: its origin (3.4).

@@ -186,8 +186,8 @@ export class RuntimeQuery {
   #fault;
   // A query made for readback, with { readback: true }, keeps what readback
   // reads beyond what an observation needs: each type value's environment,
-  // pruned to the bindings its node uses, and the head an observation
-  // computed by η, by the cell it was asked of, which keeps the λ. With
+  // pruned to the bindings its node uses, and the head each observation
+  // returned, by the cell it was asked of, which after η keeps the λ. With
   // { origins: true }, for normal-form readback, it keeps each forced
   // cell's code and environment too, its origin (3.4). Value forms make no
   // such query, and keep what an observation needs alone.
@@ -586,9 +586,11 @@ export class RuntimeQuery {
       // scope that made the λ.
       const instance = this.#cell({ parent: value.env, symbol: undefined, cell: null, binder: value.node });
       value = yield* this.#run(this.#delay(f, instance));
-      // η leaves the cell holding the λ: the head is kept for its readback.
-      if (this.#forReadback) this.#heads.set(cell, value);
     }
+    // The head observed is kept, by the cell asked, for its readback: after
+    // η it is no cell's value, since η leaves the cell holding the λ, and a
+    // cell forced but never observed has none to read back.
+    if (this.#forReadback) this.#heads.set(cell, value);
     return value;
   }
   #eta(value) {
@@ -710,8 +712,9 @@ export class RuntimeQuery {
   // with them, a normal-form readback: data by its value outside every
   // non-data part, and each non-data part as the computation it was forced
   // from (3.4). With { head }, the head an observation of the handle
-  // returned after η is read back instead of its cell. No type is
-  // consulted. The term is admitted to the normalize queries as derived
+  // returned, after η, is read back instead of its cell, and a handle no
+  // observation returned a head for, if only forced, is refused. No type
+  // is consulted. The term is admitted to the normalize queries as derived
   // (D3): the written correspondence, under EVAL8's review, is its
   // justification, and only tests type it by instructions. A readback
   // starts, writes kernel syntax and returns a handle only while the
@@ -729,7 +732,7 @@ export class RuntimeQuery {
       const mode = origins ? "outer" : "value";
       let start = { kind: "cell", cell, mode };
       if (head) {
-        const value = this.#heads.get(cell) ?? (cell.state === 2 ? cell.value : null);
+        const value = this.#heads.get(cell);
         if (!value) fail("input", "Read back the head of an observed handle.");
         start = { kind: "value", value, mode: mode === "outer" && !data.has(value.tag) ? "origin" : mode };
       }

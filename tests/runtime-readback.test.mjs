@@ -439,7 +439,10 @@ test("a readback stopped partway leaves no partial memo entry", async t => {
 
 // A malformed handle is refused (section 6): readback takes only the
 // query's own handles, of a query made for readback and not disposed of,
-// and a head only where an observation computed one.
+// and a head only where an observation computed one. A cell forced but
+// never observed has no head: in `made`, EVAL4's sharing makes maker(tt)
+// one cell, which observing the pair's second field forces to the λ
+// fun (n : UNat) => succ(n), while observing it gives η's head, succ.
 test("a readback refuses a handle that is not its query's own", async t => {
   const s = await setup(t, "inductive Lamp { dark; lit; }\ndef pair : Lamp and Lamp := ((fun (x : Lamp) => x)(lit), dark);");
   const [one, other, plain, gone] = [{}, {}, { readback: false }, {}].map(options => {
@@ -454,12 +457,22 @@ test("a readback refuses a handle that is not its query's own", async t => {
     assert.throws(read, fails("input"), label);
   assert.throws(() => gone.readback(handle), fails("disposed"));
   assert.ok(s.same(s.normal(one.readback(observed.first)), s.normal(other.readback(other.observeNow().first))));
+  const u = await setup(t, `import unat; use unat;
+def maker(u : Unit) : UNat -> UNat := fun (n : UNat) => succ(n);
+def made := typed((UNat -> UNat) and UNat, (maker(tt), maker(tt)(zero)));`);
+  const shared = u.query("made"), pair = shared.observeNow();
+  shared.observeNow(pair.second);
+  assert.equal(u.kernel.node(shared.readback(pair.first)).kind, "Lam", "the cell is forced, to the λ");
+  assert.throws(() => shared.readback(pair.first, { head: true }), fails("input"), "a head forced, never observed");
+  assert.equal(shared.observeNow(pair.first).kind, "Con");
+  assert.equal(u.kernel.node(shared.readback(pair.first, { head: true })).kind, "Con");
 });
 
-// Lazy annotations (section 6): a readback runs no step of the machine and
-// demands no definition, and asks the kernel nothing where it reads no
-// level. The annotations here, a pair's type and a λ's domain over a
-// computation of n, are read back as their closures, unforced.
+// Lazy annotations (section 6): a readback runs no step of the machine, no
+// force, cached or not, no β, ι, frame or shared call, and demands no
+// definition, and asks the kernel nothing where it reads no level. The
+// annotations here, a pair's type and a λ's domain over a computation of
+// n, are read back as their closures, unforced.
 test("a readback forces nothing", async t => {
   const s = await setup(t, `import unat; use unat;
 inductive Tag(n : UNat) { tag; }
@@ -471,7 +484,7 @@ def guarded := (fun (n : UNat) => fun (u : Tag(count_into(n, 0))) => tt)(2 * 200
     const runtime = s.query(name, { origins });
     s.walk(runtime);
     const [before, queries] = [runtime.stats, s.kernel.work().queries], read = runtime.readback(runtime.root, { origins });
-    for (const counter of ["forces", "beta", "iota", "snapshotDefinitions"])
+    for (const counter of ["forces", "hits", "beta", "iota", "maxFrames", "shared", "snapshotDefinitions"])
       assert.equal(runtime.stats[counter], before[counter], `${name}, origins ${origins}: ${counter}`);
     assert.equal(s.kernel.work().queries, queries, `${name}, origins ${origins}: a kernel query`);
     assert.ok(s.same(s.normal(read), s.normal(s.term(name))), `${name}, origins ${origins}`);
