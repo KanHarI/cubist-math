@@ -34,10 +34,10 @@ each instance of the scope, read for such calls when it is first entered
 ([sharing of repeated calls](runtime-repl-evaluation.md#sharing-of-repeated-calls)),
 and a constructor's instance keeps no environment when it is closed
 ([closed-environment pruning](runtime-repl-evaluation.md#closed-environment-pruning)).
-W2 reads back
-in production, inside the query: a node the runtime does not execute, which
-an observation reported unsupported, is now read back and its weak head
-asked of the kernel, and the walk goes on
+On branch `typed-readback-w2`, W2 reads back inside the query: a node the
+runtime does not execute, which an observation reported unsupported, is
+read back and its weak head asked of the kernel, and the walk goes on; it
+is held, the restart staying on main
 ([the fallback per node](#the-fallback-per-node-w2)). The rest of this
 report describes the query as #289 added it.
 
@@ -544,16 +544,22 @@ figures on the merged tree, so main's merge, not the fixes, changed them.
 
 ## The fallback per node (W2)
 
-W2 of [typed readback](../roadmaps/runtime/typed-readback.md), 2026-10-30,
-on #337's W1 with main `d27ad60d` merged. A node the runtime does not
-execute no longer abandons the value form's walk: the runtime reads it
-back, asks the kernel for its weak head and goes on with that head, the
-note's option c (D4). The whole walk is computed again on the kernel's head
-queries only where that readback refuses. Every value form is what it was,
-the constructs', the binary contracts', the Cubist test modules' prints,
-the reference's examples and the evaluation baseline's 45 outcomes. No
-verdict reads anything the fallback computed (D1), the kernel does every
-substitution (D2), and the kernel is unchanged.
+W2 of [typed readback](../roadmaps/runtime/typed-readback.md), on branch
+`typed-readback-w2`: written on 2026-10-30, held the same day as slower in
+wall time than the restart, and on 2026-11-01 rebuilt under the rule the
+user set on 2026-10-30, with main `398e89ba` merged (W1, NT4, NT5, and
+EVAL4's call sharing and closed-instance pruning, #344). A node the
+runtime does not execute no longer abandons the value form's walk: the
+runtime reads it back, asks the kernel for its weak head and goes on with
+that head, the note's option c (D4). The whole walk is computed again on
+the kernel's head queries only where that readback refuses. Every value
+form is what it was, the constructs', the binary and radix contracts', the
+Cubist test modules' prints, the reference's examples and the evaluation
+baseline's 45 outcomes. No verdict reads anything the fallback computed
+(D1), the kernel does every substitution (D2), and the kernel is
+unchanged. **W2 stays held**: it is faster end to end than the restart
+only where the kernel's own computation is costly, as `factorial(40)`, and
+slower on the library Euclid ([M2](#m2-the-fallback)).
 
 ### What the runtime does
 
@@ -561,7 +567,9 @@ substitution (D2), and the kernel is unchanged.
 not execute: a composition (`Comp`, `HComp`, `Trans`), a path applied
 (`PApp`), `Glue`, a glue value, `unglue`, `abort`, and a constructor it
 refuses, a path constructor, the squash among them, or one with a cubical
-recursive position. `#fallback` forces none of the node's parts.
+recursive position. `#fallback` forces exactly the parts the kernel's rule
+for the node reads, as the kernel's own head query tells (the rule of
+2026-10-30, which replaced "a fallback forces nothing").
 
 1. **Syntax-only conditions**, as `ck_expose` and `weak` read them
    (`kernel/src/term_expose.c`, `kernel/src/term_normalize.c`), each formula
@@ -575,14 +583,29 @@ recursive position. `#fallback` forces none of the node's parts.
    application to the value and a first projection, and forces the piece's
    equivalence, under the node's environment. Nothing the rule discards is
    read back. These count as `shortcuts`.
-2. **Otherwise the node's closure is read back** (`#read`, W1's readback
+2. **A composition or a transport asks its family's head first**, as its
+   rule's first step (`ck_reduce_composition`, `ck_hit_reduce`): the family
+   is read back, its dimension free, and its weak head asked. Where the
+   rule then reads the base's weak head, at a data sort, `Unit` or a sum
+   for a composition (`data_sort_composition`, `ck_inductive_composition`,
+   the `Unit` case) and always for a transport, whose family is a higher
+   sort, the machine computes the base first, and the node is read back
+   one level with the family as asked and the base as computed (the
+   `composition` frame); otherwise one level with the family as asked. So
+   the kernel's rule meets the family whose head it keeps and, where it
+   reads one, a base already a value. A data sort is told from a higher
+   one by the admitted record's modifier and constructor dimensions, as
+   `ck_signature_higher` reads them (`descriptors`). The tubes, which
+   mention the composition's dimension, stay the kernel's. These count as
+   `bases`.
+3. **Otherwise the node's closure is read back** (`#read`, W1's readback
    machine), by value, and, in a query made with origins, as a normal form.
-3. **The kernel's head** (`#headOf`): `kernel.head`, `cc_kernel_whnf` under
+4. **The kernel's head** (`#headOf`): `kernel.head`, `cc_kernel_whnf` under
    its growing step budget, asked once a query for each term read back
    (`#asked`), a head recorded as its own head. These count as `fallbacks`,
    and each spends a query of the evaluation's fuel, as the head query it
    is.
-4. **Going on** (`#settle`): a head whose root the machine makes a value of
+5. **Going on** (`#settle`): a head whose root the machine makes a value of
    at once, a λ, a level λ, a path abstraction, a pair, an injection, the
    point, an eliminator or a type former other than `Glue`, or a
    constructor it executes applied to at most its arity, goes on as its
@@ -593,7 +616,7 @@ recursive position. `#fallback` forces none of the node's parts.
 A frame that consumes an opaque head, a projection, a unit or sum
 elimination, a term or level application or an eliminator, rebuilds the
 node it stands for with the head in the consumed place and its other parts
-read back, and sends that through steps 3 and 4 (`#consume`, `#consumed`).
+read back, and sends that through steps 4 and 5 (`#consume`, `#consumed`).
 The unit and sum frames keep their node and environment for this, in the
 frame they already push, so no cell is added. Where an opaque head is the
 value asked, its observation is `{ kind: "Opaque", head }`, and
@@ -653,12 +676,14 @@ declaration's time limit, is reported as the kernel's.
    remove that restart at the retention above.
 2. **The stability rule** lets a memo entry answer a later readback only
    where it read forced cells and definitions with forced cells. On M2's
-   workloads (below) it turns away 46 to 516 entries of earlier fallbacks
-   per value form, against 86 to 5,267 hits, and the readbacks write at
-   most 27,586 nodes in all, where the kernel spends 23,906 to 37.6M ticks:
-   the rule costs little. The readback across forcing shows what it buys:
-   reusing the first readback's closure of `x` would hand the kernel a
-   computation it stops with K344.
+   workloads (below) it turns away 190 to 21,227 entries of earlier
+   fallbacks per value form, about as many as the memo answers (206 to
+   15,159), and the readbacks write 908 to 81,397 nodes. The readbacks
+   take about a third of W2's time in `euclid(9).1` (23 of 66 ms, cold),
+   so the entries turned away are a real share of that, though not
+   measured apart. The readback across forcing shows what the rule buys:
+   with unstable entries reused, its first print stops with K344, the
+   kernel handed the first readback's closure of `x`.
 
 ### Where the code reads the note more precisely
 
@@ -693,20 +718,34 @@ declaration's time limit, is reported as the kernel's.
    any other code is the program's, under its environment.
 7. **No node asked twice:** each term is asked once a query, a head is its
    own head, and an opaque head goes to the kernel's walk as its part's
-   head, which `demandQueries` does not ask again. In `euclid(3)`, 56
-   readbacks asked the kernel 23 heads.
+   head, which `demandQueries` does not ask again. In `euclid(3)`, 248
+   readbacks asked the kernel 118 heads.
+8. **The rule of 2026-10-30 for compositions and transports.** The rule
+   is general, a fallback forcing exactly what the kernel's rule reads;
+   the code applies it where it was asked for and measured, a
+   composition's and a transport's base, decided by the family's head.
+   Two more rules read a part's weak head that the runtime leaves to the
+   kernel: an `unglue`'s value, after its total-face condition, and a glue
+   value's base, for Glue η. Neither is in a workload measured. Telling a
+   data sort from a higher one copies `ck_signature_higher`'s two-field
+   test over the admitted record, the one place the code reads which rule
+   the kernel takes rather than asking.
 
 ### Tests
 
 - `tests/runtime-fallback.test.mjs`, the note's W2 cases, each print
   compared with the kernel's queries alone: the `slow` composition shows
-  `<fun>` in 13 ticks, `slow` neither demanded nor copied;
-  `(expensive, comp(fun (i : Interval) => Unit, expensive))` shows
-  `(tt, tt)`, its base read from the definition cell the first field
-  forced, where the kernel's queries stop with K344; the readback across
-  forcing, for a suspended `x` and for a definition first read back before
-  it has a cell, shows `(<fun>, tt, tt)` where the kernel's queries stop
-  with K344; `p @ 0` under its annotation shows `tt`, `p` neither forced
+  `<fun>`, `slow` neither demanded nor copied, two heads asked, the family's
+  and the composition's; a composition at `Unit` whose base is a countdown
+  the kernel's queries stop in with K344 shows `tt`, the base computed by
+  the runtime first; `(expensive, comp(fun (i : Interval) => Unit, expensive))`
+  shows `(tt, tt)`, its base the definition cell the first field forced;
+  a family whose head is expensive, `T(2 * 255)`, costs the kernel its
+  walk's ticks and one, and one whose head the kernel stops in with K344
+  is the kernel's stop, as for the kernel's queries alone; the readback
+  across forcing, through an `unglue` whose rule reads its value, for a
+  suspended `x` and for a definition first read back before it has a
+  cell, shows `(<fun>, tt, tt)` where the kernel's queries stop with K344; `p @ 0` under its annotation shows `tt`, `p` neither forced
   nor read back, and a total tube goes on with its variable's cell; the
   higher-order `Tree` induction's discarded hypothesis shows `tt` in the
   runtime, and the composition whose base is the hypothesis restarts and
@@ -720,12 +759,13 @@ declaration's time limit, is reported as the kernel's.
   never after it is returned.
 - Updated for W2: `tests/cubical-runtime.test.mjs` (a cubical sibling, a
   path abstraction's η, path constructors and the library Euclid's prime
-  through the fallback), `tests/runtime-evaluation.test.mjs` (what computed
-  each value form, now `per node` where it was a restart),
-  `tests/evaluation-demand-marks.test.mjs` (all 193 constructs in the
-  runtime: 6 settled by syntax alone, 31 asking the kernel, none
-  restarting), `tests/evaluation-baseline.test.mjs` with its fixture at
-  version 11, and the η mutation's site in `tests/runtime-readback.test.mjs`.
+  through the fallback, its bases computed first),
+  `tests/runtime-evaluation.test.mjs` (what computed each value form, now
+  `per node` where it was a restart), `tests/evaluation-demand-marks.test.mjs`
+  (all 193 constructs in the runtime: 6 settled by syntax alone, 31 asking
+  the kernel, none restarting), `tests/evaluation-baseline.test.mjs` with
+  its fixture at version 11, and the η mutation's site in
+  `tests/runtime-readback.test.mjs`.
 - The readback oracle (`tests/runtime-readback-oracle.mjs`) runs on every
   value form the runtime computes, those that fell back per node included,
   whose readbacks hold the kernel's heads. No comparison disagrees: of the
@@ -742,68 +782,71 @@ computes each of them per node.
 
 ### M2, the fallback
 
-`node tools/runtime-repl-probe.mjs NAME runtime` records a fallback's
-readback counters as `fallback`, and the workloads now include
-`euclid-8-prime` and `euclid-9-prime`. One sample each, a process of its
-own: the restart at main `d27ad60d`, whose runtime is W1's, and the
-fallback per node at `d103a2b5`, Node 24.13.0, macOS arm64, load average
-about 5. Steps are the runtime's, its readbacks included; ticks are the
-kernel's query steps; fallbacks are the heads asked of the kernel; writes,
-hits and turned away are the readbacks' kernel syntax calls, memo hits and
-unstable entries of earlier readbacks. No workload restarts at a `Lift`.
+Measured on 2026-11-01, end to end and cold, one process per sample, three
+samples each, medians: the restart at main `398e89ba`, whose runtime is W1
+with #344's sharing and pruning, and W2 under the rule of 2026-10-30 on the
+same tree. `node tools/runtime-repl-probe.mjs NAME runtime` gives a REPL
+entry's time, the runtime's steps (readbacks included), the kernel's
+ticks, the fallbacks (heads asked of the kernel), the bases computed
+first, and the peak heap above the entry's start; the readbacks' counters
+are its `fallback` record. Node 24.13.0, macOS arm64, no other job running.
+Every value form is the same on both, and as the kernel's alone. No
+workload restarts at a `Lift`.
 
-| Workload | Value form | Restart: steps, ticks | Per node: steps, ticks | Fallbacks | Writes, hits, turned away | Ticks saved | Time: restart, per node, kernel alone |
-| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| `euclid-3` | `(7, (tt, <fun>), tt)` | 3,711, 26,944 | 51,449, 23,906 | 23 | 760, 269, 63 | 11% | 9, 18, 7 ms |
-| `euclid-4` | `(5, (tt, <fun>), tt)` | 3,956, 61,786 | 58,377, 59,718 | 32 | 894, 276, 144 | 3% | 12, 20, 11 ms |
-| `euclid-4-prime` | `5` | 3,959, 57,053 | 26,661, 48,357 | 23 | 348, 86, 59 | 15% | 11, 16, 9 ms |
-| `euclid-5-prime` | `11` | 4,198, 160,432 | 33,113, 142,099 | 29 | 447, 97, 63 | 11% | 17, 23, 16 ms |
-| `euclid-6-prime` | `7` | 4,437, 133,848 | 35,488, 111,595 | 31 | 459, 98, 86 | 17% | 16, 22, 14 ms |
-| `euclid-7-prime` | K344 | 634,130 ticks | 507,391 ticks | 31 | 439, 103, 90 | 20% | 44, 45, 43 ms |
-| `euclid-8-prime` | K344 | 725,642 ticks | 570,491 ticks | 37 | 521, 100, 146 | 21% | 51, 50, 45 ms |
-| `euclid-9-prime` | `19` | 5,154, 722,978 | 54,509, 493,553 | 53 | 814, 126, 135 | 32% | 46, 56, 41 ms |
-| `euclid-10-prime` | `11` | 3,944, 423,409 | 57,940, 315,592 | 57 | 863, 131, 110 | 25% | 30, 37, 27 ms |
-| `binary-factorial-40` | 40! | 3,765, 38,346,979 | 464,858, 37,596,441 | 311 | 27,586, 5,267, 46 | 2% | 1,199, 1,298, 1,195 ms |
-| `binary-rational-equal` | `left(relate(…))` | 44,542, 77,516 | 69,653, 36,358 | 4 | 1,361, 521, 516 | 53% | 51, 54, 45 ms |
-| the 37 constructs that fall back | as the kernel's | 1,362, 5,689 | 8,850, 4,299 | 139, and 6 shortcuts | | 24% | |
+| Workload | Value form | Restart: steps, ticks, time | W2: steps, ticks, time | W2's fallbacks, bases | W2's time over the restart's | Peak heap, restart and W2 |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| `euclid-3` | `(7, (tt, <fun>), tt)` | 4,687, 26,944, 10 ms | 57,843, 14,153, 20 ms | 118, 60 | 2.00 | 7.0, 17.9 MiB |
+| `euclid-4` | `(5, (tt, <fun>), tt)` | 4,938, 61,786, 12 ms | 133,737, 87,481, 29 ms | 285, 134 | 2.42 | 7.0, 28.3 MiB |
+| `euclid-4-prime` | `5` | 4,943, 57,053, 11 ms | 92,027, 6,546, 23 ms | 250, 108 | 2.09 | 7.0, 23.6 MiB |
+| `euclid-5-prime` | `11` | 5,184, 160,432, 17 ms | 247,893, 14,424, 38 ms | 632, 271 | 2.24 | 7.1, 45.6 MiB |
+| `euclid-6-prime` | `7` | 5,425, 133,848, 16 ms | 199,655, 10,335, 32 ms | 430, 195 | 2.00 | 7.1, 37.1 MiB |
+| `euclid-7-prime` | K344 | 634,130 ticks, 45 ms | 39,762 ticks, 77 ms | | 1.71 | 7.1, 67.0 MiB |
+| `euclid-8-prime` | K344 | 725,642 ticks, 45 ms | 42,562 ticks, 82 ms | | 1.82 | 7.2, 68.1 MiB |
+| `euclid-9-prime` | `19` | 6,148, 722,978, 46 ms | 879,293, 34,253, 66 ms | 1,654, 793 | 1.43 | 7.2, 64.4 MiB |
+| `euclid-10-prime` | `11` | 4,939, 423,409, 32 ms | 586,531, 20,922, 51 ms | 1,025, 588 | 1.59 | 7.1, 65.3 MiB |
+| `binary-factorial-40` | 40! | 4,459, 38,346,979, 1,217 ms | 2,271,521, 216,286, 269 ms | 14,190, 7,089 | 0.22 | 6.3, 102.4 MiB |
+| `binary-rational-equal` | `left(relate(…))` | 45,789, 77,516, 53 ms | 70,225, 36,358, 59 ms | 4, 0 | 1.11 | 63.6, 63.6 MiB |
+| the 37 constructs that fall back, together | as the kernel's | 1,762, 5,689, 6.2 ms | 13,959, 3,723, 9.9 ms | 194 and 8 shortcuts, 69 | 1.60 | |
 
-**Slower rows, plainly.** In wall time the fallback per node is slower than
-the restart on every workload above but `euclid-8-prime`: by 2 to 100% on
-the library Euclid's values, 8% on `factorial(40)` and 6% on the equal
-rationals' decision. The runtime now computes what the restart left to the
-kernel, 23,000 to 461,000 steps more, and the kernel's ticks it saves are
-fewer. Nine of the 37 constructs take more ticks per node than the
-restart did, by 1 to 9 each (B39, B46, B75, B77, B79, B80, B82, A33, A36:
-small transports at data sorts, whose readback terms cost the kernel a
-few more steps than its own walk). In the baseline, `winding-minus-2` takes
-85 ticks more (0.08%).
+Process peaks are 295 to 312 MiB either way, but 330 MiB for W2's
+`factorial(40)` against 307, and about 650 MiB for the rationals' decision.
+The constructs ran in one process per tree, the 37 prints' times summed,
+three runs; 28 of the 37 take longer under W2. The binary and radix
+contract files, their evaluated terms printed, one process per file:
 
-**Where the kernel's work goes.** Most of the remaining ticks are in a few
-fallbacks: in `factorial(40)`, 153 of its 311 are compositions at a data
-sort, which take nearly all of its ticks, up to about 720,000 each. The
-kernel's rule for a composition at a
-data sort reads the weak head of its base (`data_sort_composition`,
-`kernel/src/inductive_composition.c`); the fallback forces nothing, so a
-transport's base reaches the kernel as a closure, and in NUM1's strong
-recursion that base is the rest of the computation. The kernel then
-computes it with its own substitution, as the restart did: so
-`factorial(40)` saves 2%, and `euclid(7).1` still stops with K344, in the
-head of a transport whose base is the rest of the search. Section 5's
-condition for option (b), round trips that cost more than they save, is
-not met in the kernel's ticks, which fall on every workload but the
-winding number; in time it is, on the small Euclid values, where the
-runtime's own work dominates.
+| Contract file | Value forms | Restart: ticks, time | W2: ticks, time | W2's time over the restart's |
+| --- | --- | ---: | ---: | ---: |
+| `binary_integer_contracts` | 5, none falling back | 62,989, 394 ms | 62,989, 387 ms | 0.98 |
+| `binary_integer_domain_contracts` | 6, one per node | 1,379,838, 291 ms | 19,974, 238 ms | 0.82 |
+| `binary_rational_contracts` | 30, none falling back | 200,064, 803 ms | 200,064, 843 ms | 1.05 |
+| `radix_contracts` | 14, three per node | 180,844, 273 ms | 64,725, 292 ms | 1.07 |
 
-**A measured variant, not adopted.** Section 5 forces none of a node's
-parts, since forcing one the kernel's rule does not read adds demand. A
-scratch variant asked the kernel first for the weak head of a
-composition's family, and where it was a data sort, `Unit` or a sum,
-whose rule reads the base's weak head, computed the base in the runtime
-and read it back by value: `factorial(40)` took 218,261 ticks and 275 ms
-(against 37,596,441 and 1,298 ms), `euclid-9-prime` 57,836 ticks,
-`euclid-10-prime` 29,549 and `euclid-3` 18,151, with the same values;
-`euclid-7-prime` and `euclid-8-prime` still stopped with K344, after
-70,296 and 802,592 ticks, in a head whose substitution the kernel took past
-its syntax depth. It reads the rule the kernel will take from the
-family's head, which section 5 leaves to the kernel; it is a decision for
-the note (D4), not taken here.
+**Verdict: W2 is not faster end to end, and stays held.** It is faster
+where the kernel's own computation is costly: `factorial(40)` 4.5 times,
+the domain contracts' zero decision of a zero integer 18%. It is slower on
+the library Euclid's value forms, 1.43 to 2.42 times, including the two
+the kernel's queries stop on, on the 37 constructs that fall back, 1.6
+times in all, on the radix contracts' three, 7%, and on `bq_decide` of
+equal rationals, 11%. The files without a fallback move only by noise.
+
+**Where W2's time goes.** In `euclid(9).1`, cold, 66 ms: the readbacks
+23 ms (121,082 of the 879,293 steps, 3,464 readbacks), the kernel's calls
+about 14 ms (head queries 4, syntax writes 2.5, node reads 8), and the walk
+the rest. The restart takes 46 ms, nearly all of it the kernel's 722,978
+ticks. The rule moves the transported bases into the runtime, which takes
+about 873,000 steps more for what cost the kernel about 689,000 ticks:
+its steps are no fewer than the kernel's ticks, each costs more in a cold
+process, and each base adds round trips, a family's head, a readback and
+a node's head. Why the runtime needs as many steps is not attributed; a
+likely part is that the kernel's weak-head cache shares a head by syntax
+across the whole search, where the runtime shares a call only within one
+scope instance (#344), and computes a call made in two applications twice,
+EVAL4's open item. In `euclid-4` the kernel's ticks rise by 42%, from
+61,786 to 87,481, also unattributed. Where the kernel's computation is
+costly, as `factorial(40)`'s 38M ticks, the runtime's 2.3M steps win.
+
+**Forcing nothing, on the same tree.** W2 as first built, forcing none of
+a node's parts, with #344: `euclid-3` 14 and 15 ms, `euclid-9-prime` 47 and
+52 ms, `factorial(40)` 1,278 and 1,282 ms, two samples each. It is closer
+to the restart on the Euclid values and as slow on `factorial(40)`: the
+rule of 2026-10-30 buys `factorial(40)` and costs the Euclid values.

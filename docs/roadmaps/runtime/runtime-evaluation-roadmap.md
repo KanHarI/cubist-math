@@ -1423,8 +1423,11 @@ readback, its correspondence and the observations it moves. The user
 accepted every recommendation the same day (D1–D6): readback serves
 displays and a per-node fallback, and no verdict consumes one. Its W1,
 readback and its oracle tests, is done; W2, the per-node fallback, is
-held (2026-10-30), since it runs slower in wall time than the whole-walk
-restart it replaces.
+held (2026-10-30, still on 2026-11-01): under the rule of 2026-10-30, a
+fallback forcing exactly what the kernel's rule for the node reads, it is
+faster than the whole-walk restart where the kernel's own computation is
+costly, as `factorial(40)`, and slower on the library Euclid, whose bases
+the kernel computes faster than the runtime.
 
 Provide typed readback for demanded data and a separately specified way to
 inspect suspended fields. Keep function bodies as closures until application
