@@ -236,3 +236,23 @@ value forms and for the new depth failure.
   (E488); the kernel's queries stop with K344.
 - `divides_decide(0, 0)` still falls back, at an η-expanded path
   abstraction, which this change does not touch.
+
+## Checks
+
+- `npm test` at `7e261629`: 2,144 of 2,145 tests passed; the one failure
+  counted `bnat`'s declarations, which the two casts raise from 27 to 29,
+  and passes with the count corrected (`4f2e931e`). The source contracts,
+  the Cubist tests, the library and corpus checks, the evaluation baseline
+  and the driver trace (unchanged) are among them.
+- `node tools/audit-cubical.mjs --all`: 353 modules, 3,527 declarations,
+  no failure.
+- `npm run format:cubist` and `npm run lint:cubist`: no change, no
+  warning. The Files index (`web/cubist-files.json`) is regenerated for the
+  README rows.
+- New checks: the runtime test asserts that the value forms of Euclid,
+  factorial, the least divisor and least element searches compute in the
+  runtime with no fallback, and `euclid(7).1` both ways; the runtime query
+  test reads Euclid's prime from the runtime bit by bit; the contracts
+  `euclid.witness_7`, `euclid.witness_8` and `least_elements.far_least`,
+  and the Cubist test's Peano count of 300, compute only where the
+  recursion builds no growing term.
