@@ -241,7 +241,8 @@ value forms and for the new depth failure.
 
 - `npm test` at `7e261629`: 2,144 of 2,145 tests passed; the one failure
   counted `bnat`'s declarations, which the two casts raise from 27 to 29,
-  and passes with the count corrected (`4f2e931e`). The source contracts,
+  and passes with the count corrected (`4f2e931e`); at `5415473e` all
+  2,145 passed. The source contracts,
   the Cubist tests, the library and corpus checks, the evaluation baseline
   and the driver trace (unchanged) are among them.
 - `node tools/audit-cubical.mjs --all`: 353 modules, 3,527 declarations,
