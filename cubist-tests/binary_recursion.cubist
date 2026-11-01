@@ -1,4 +1,5 @@
 import bnat_recursion;
+import bnat_peano;
 import bnat_notation;
 use bnat;
 

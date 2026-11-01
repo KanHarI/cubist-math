@@ -3,6 +3,7 @@
 // recursion uses the checked Peano or strong-recursion views below.
 import bnat_notation;
 import bnat_recursion;
+import bnat_peano;
 
 def Nat : U0 := BNat;
 

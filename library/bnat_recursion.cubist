@@ -1,5 +1,63 @@
-import bnat_peano;
+import bnat_semiring;
 import bnat_order;
+
+// Homogeneous iteration by the bits: f applied p times, as twice p/2
+// times and once more for an odd p. The strong recursion below iterates
+// its course of values this way.
+computable def bpositive_iterate(U < UU0, A : U, f : A -> A, p : BPositive, x : A) : A := match p {
+    bp_one => f(x);
+    bp_even(q) => bpositive_iterate(U, A, f, q, bpositive_iterate(U, A, f, q, x));
+    bp_odd(q) => f(bpositive_iterate(U, A, f, q, bpositive_iterate(U, A, f, q, x)));
+  };
+
+computable def bpositive_iterate_commute(U < UU0, A : U, f : A -> A, p : BPositive, x : A) :
+  bpositive_iterate(U, A, f, p, f(x)) = f(bpositive_iterate(U, A, f, p, x)) := match p {
+    bp_one => refl(f(f(x)));
+    bp_even(q) => trans(
+      cong(bpositive_iterate(U, A, f, q), bpositive_iterate_commute(U, A, f, q, x)),
+      bpositive_iterate_commute(U, A, f, q, bpositive_iterate(U, A, f, q, x))
+    );
+    bp_odd(q) => cong(
+      f,
+      trans(
+        cong(bpositive_iterate(U, A, f, q), bpositive_iterate_commute(U, A, f, q, x)),
+        bpositive_iterate_commute(U, A, f, q, bpositive_iterate(U, A, f, q, x))
+      )
+    );
+  };
+
+computable def bpositive_iterate_succ(U < UU0, A : U, f : A -> A, p : BPositive, x : A) :
+  bpositive_iterate(U, A, f, bpositive_succ(p), x) = f(bpositive_iterate(U, A, f, p, x)) := match p {
+    bp_one => refl(f(f(x)));
+    bp_even(q) => refl(f(bpositive_iterate(U, A, f, q, bpositive_iterate(U, A, f, q, x))));
+    bp_odd(q) => trans(
+      bpositive_iterate_succ(U, A, f, q, bpositive_iterate(U, A, f, bpositive_succ(q), x)),
+      trans(
+        cong(
+          fun (y : A) => f(bpositive_iterate(U, A, f, q, y)), bpositive_iterate_succ(U, A, f, q, x)
+        ), cong(f, bpositive_iterate_commute(U, A, f, q, bpositive_iterate(U, A, f, q, x)))
+      )
+    );
+  };
+
+computable def bnat_iterate(U < UU0, A : U, f : A -> A, n : BNat, x : A) : A := match n {
+    b_zero => x;
+    b_positive(p) => bpositive_iterate(U, A, f, p, x);
+  };
+
+computable def bnat_iterate_succ(U < UU0, A : U, f : A -> A, n : BNat, x : A) :
+  bnat_iterate(U, A, f, bnat_succ(n), x) = f(bnat_iterate(U, A, f, n, x)) := match n {
+    b_zero => refl(f(x));
+    b_positive(p) => bpositive_iterate_succ(U, A, f, p, x);
+  };
+
+computable def BNatFamilyTotal(U < UU0, P : BNat -> U) : U := exists n : BNat. P(n);
+
+computable def bnat_total_step(
+  U < UU0, P : BNat -> U, step : (forall n : BNat. P(n) -> P(bnat_succ(n))),
+  z : BNatFamilyTotal(U, P)
+) :
+  BNatFamilyTotal(U, P) := (bnat_succ(z.1), step(z.1, z.2));
 
 computable def bordering_lt_decide(order : BOrdering) :
   Decidable(U0, BOrderingLt(order)) := match order {
@@ -88,6 +146,50 @@ computable def bnat_lt_bound(m, a, b : BNat, smaller : bnat_lt(m, a), same : a =
     right no => absurd(no(comp(fun (i : Interval) => bnat_lt(m, same @ i), smaller)));
   };
 
+// Decrease evidence on the bits: each comparison computes to a less-than,
+// so each law holds by matching on the bits, with no transport. An odd and
+// an even numeral compare as their halves do, the low bit breaking a tie.
+computable def bordering_lt_odd_even(order : BOrdering, smaller : BOrderingLt(order)) :
+  BOrderingLt(bnat_odd_even_order(order)) := match order {
+    b_less => tt;
+    b_equal => absurd(smaller);
+    b_greater => absurd(smaller);
+  };
+
+computable def bordering_equal_even_odd(order : BOrdering, same : BOrderingEqual(order)) :
+  BOrderingLt(bnat_even_odd_order(order)) := match order {
+    b_less => absurd(same);
+    b_equal => tt;
+    b_greater => absurd(same);
+  };
+
+computable def bnat_twice_succ_lt(r : BNat, d : BPositive) :
+  bnat_lt(r, b_positive(d)) -> bnat_lt(bnat_twice_succ(r), bnat_twice(b_positive(d))) := match r {
+    b_zero => fun (smaller : Unit) => tt;
+    b_positive(p) => bordering_lt_odd_even(bpositive_compare(p, d));
+  };
+
+computable def bpositive_lt_succ(p : BPositive) :
+  BOrderingLt(bpositive_compare(p, bpositive_succ(p))) := match p {
+    bp_one => tt;
+    bp_even(q) => bordering_equal_even_odd(bpositive_compare(q, q), bpositive_equal_refl(q));
+    bp_odd(q) => bordering_lt_odd_even(
+      bpositive_compare(q, bpositive_succ(q)), bpositive_lt_succ(q)
+    );
+  };
+
+computable def bnat_lt_succ(n : BNat) : bnat_lt(n, bnat_succ(n)) := match n {
+    b_zero => tt;
+    b_positive(p) => bpositive_lt_succ(p);
+  };
+
+computable def bpositive_pred_lt(p : BPositive) :
+  bnat_lt(bpositive_pred(p), b_positive(p)) := match p {
+    bp_one => tt;
+    bp_even(q) => bnat_twice_succ_lt(bpositive_pred(q), q, bpositive_pred_lt(q));
+    bp_odd(q) => bordering_equal_even_odd(bpositive_compare(q, q), bpositive_equal_refl(q));
+  };
+
 computable def BNatBelow(U < UU0, P : BNat -> U, n : BNat) :
   U := forall m : BNat. bnat_lt(m, n) -> P(m);
 
@@ -121,14 +223,78 @@ computable def bnat_course(
     (b_zero, bnat_below_zero(U, P))
   );
 
+// Iterating the successor adds, by the bits and the offset laws.
+computable def bpositive_iterate_succ_add(p : BPositive, a : BNat) :
+  bpositive_iterate(U0, BNat, bnat_succ, p, a) = bnat_add(a, b_positive(p)) := match p {
+    bp_one => bnat_succ_offset(a);
+    bp_even(q) => trans(
+      cong(bpositive_iterate(U0, BNat, bnat_succ, q), bpositive_iterate_succ_add(q, a)),
+      trans(bpositive_iterate_succ_add(q, bnat_add(a, b_positive(q))), bnat_even_offset(a, q))
+    );
+    bp_odd(q) => trans(
+      cong(
+        bnat_succ,
+        trans(
+          cong(bpositive_iterate(U0, BNat, bnat_succ, q), bpositive_iterate_succ_add(q, a)),
+          bpositive_iterate_succ_add(q, bnat_add(a, b_positive(q)))
+        )
+      ), bnat_odd_offset(a, q)
+    );
+  };
+
+// A course's bound moves by the successor at each step.
+computable def bpositive_iterate_course_bound(
+  U < UU0, P : BNat -> U, step : (forall n : BNat. BNatBelow(U, P, n) -> P(n)), p : BPositive,
+  course : BNatCourse(U, P)
+) :
+  bpositive_iterate(
+    U, BNatCourse(U, P), bnat_total_step(U, BNatBelow(U, P), bnat_below_step(U, P, step)), p, course
+  ).1 = bpositive_iterate(U0, BNat, bnat_succ, p, course.1) := match p {
+    bp_one => refl(bnat_succ(course.1));
+    bp_even(q) => trans(
+      bpositive_iterate_course_bound(
+        U, P, step, q,
+        bpositive_iterate(
+          U, BNatCourse(U, P), bnat_total_step(U, BNatBelow(U, P), bnat_below_step(U, P, step)), q,
+          course
+        )
+      ),
+      cong(
+        bpositive_iterate(U0, BNat, bnat_succ, q),
+        bpositive_iterate_course_bound(U, P, step, q, course)
+      )
+    );
+    bp_odd(q) => cong(
+      bnat_succ,
+      trans(
+        bpositive_iterate_course_bound(
+          U, P, step, q,
+          bpositive_iterate(
+            U, BNatCourse(U, P), bnat_total_step(U, BNatBelow(U, P), bnat_below_step(U, P, step)),
+            q, course
+          )
+        ),
+        cong(
+          bpositive_iterate(U0, BNat, bnat_succ, q),
+          bpositive_iterate_course_bound(U, P, step, q, course)
+        )
+      )
+    );
+  };
+
 // The course's bound is n: a checked path, which only refutes.
 computable def bnat_course_bound(
   U < UU0, P : BNat -> U, step : (forall n : BNat. BNatBelow(U, P, n) -> P(n)), n : BNat
 ) :
-  n = bnat_course(U, P, step, n).1 := cong(
-    fun (course : BNatCourse(U, P)) => course.1,
-    bnat_peano_total(U, BNatBelow(U, P), bnat_below_zero(U, P), bnat_below_step(U, P, step), n)
-  );
+  n = bnat_course(U, P, step, n).1 := match n {
+    b_zero => refl(b_zero);
+    b_positive(p) => sym(
+      trans(
+        bpositive_iterate_course_bound(U, P, step, p, (b_zero, bnat_below_zero(U, P))),
+        bpositive_iterate_succ_add(p, b_zero)
+      )
+    );
+  };
 
 // The values below n, read from a course whose bound is n.
 computable def bnat_course_below(
@@ -258,12 +424,28 @@ computable def bnat_course_invariant_succ(
   );
 }
 
+// The invariant at each value, from the invariant below it: the strong
+// recursion is its own induction here, read at a predecessor's successor
+// through bpositive_succ_pred_cast.
+computable def bnat_course_invariant_step(
+  U < UU0, P : BNat -> U, step : (forall n : BNat. BNatBelow(U, P, n) -> P(n)), n : BNat,
+  below : BNatBelow(U, BNatCourseInvariant(U, P, step), n)
+) :
+  BNatCourseInvariant(U, P, step, n) := match n {
+    b_zero => bnat_course_invariant_zero(U, P, step);
+    b_positive(p) => bpositive_succ_pred_cast(
+      U, BNatCourseInvariant(U, P, step), p,
+      bnat_course_invariant_succ(
+        U, P, step, bpositive_pred(p), below(bpositive_pred(p), bpositive_pred_lt(p))
+      )
+    );
+  };
+
 computable def bnat_course_invariant(
   U < UU0, P : BNat -> U, step : (forall n : BNat. BNatBelow(U, P, n) -> P(n)), n : BNat
 ) :
-  BNatCourseInvariant(U, P, step, n) := bnat_peano(
-    U, BNatCourseInvariant(U, P, step), bnat_course_invariant_zero(U, P, step),
-    bnat_course_invariant_succ(U, P, step), n
+  BNatCourseInvariant(U, P, step, n) := bnat_strong_recursion(
+    U, BNatCourseInvariant(U, P, step), bnat_course_invariant_step(U, P, step), n
   );
 
 // Coherence is proved for arbitrary dependent families. No proof
@@ -293,50 +475,6 @@ computable def bnat_lt_from_decoding(m, n : BNat, p : isLt(bnat_to_unat(m), bnat
   bnat_lt(m, n) := match bnat_lt_decide(m, n) return bnat_lt(m, n) {
     left yes => yes;
     right no => absurd(no(comp(fun (i : Interval) => bnat_lt_correct(m, n) @ ~i, p)));
-  };
-
-// Decrease evidence on the bits: each comparison computes to a less-than,
-// so each law holds by matching on the bits, with no transport. An odd and
-// an even numeral compare as their halves do, the low bit breaking a tie.
-computable def bordering_lt_odd_even(order : BOrdering, smaller : BOrderingLt(order)) :
-  BOrderingLt(bnat_odd_even_order(order)) := match order {
-    b_less => tt;
-    b_equal => absurd(smaller);
-    b_greater => absurd(smaller);
-  };
-
-computable def bordering_equal_even_odd(order : BOrdering, same : BOrderingEqual(order)) :
-  BOrderingLt(bnat_even_odd_order(order)) := match order {
-    b_less => absurd(same);
-    b_equal => tt;
-    b_greater => absurd(same);
-  };
-
-computable def bnat_twice_succ_lt(r : BNat, d : BPositive) :
-  bnat_lt(r, b_positive(d)) -> bnat_lt(bnat_twice_succ(r), bnat_twice(b_positive(d))) := match r {
-    b_zero => fun (smaller : Unit) => tt;
-    b_positive(p) => bordering_lt_odd_even(bpositive_compare(p, d));
-  };
-
-computable def bpositive_lt_succ(p : BPositive) :
-  BOrderingLt(bpositive_compare(p, bpositive_succ(p))) := match p {
-    bp_one => tt;
-    bp_even(q) => bordering_equal_even_odd(bpositive_compare(q, q), bpositive_equal_refl(q));
-    bp_odd(q) => bordering_lt_odd_even(
-      bpositive_compare(q, bpositive_succ(q)), bpositive_lt_succ(q)
-    );
-  };
-
-computable def bnat_lt_succ(n : BNat) : bnat_lt(n, bnat_succ(n)) := match n {
-    b_zero => tt;
-    b_positive(p) => bpositive_lt_succ(p);
-  };
-
-computable def bpositive_pred_lt(p : BPositive) :
-  bnat_lt(bpositive_pred(p), b_positive(p)) := match p {
-    bp_one => tt;
-    bp_even(q) => bnat_twice_succ_lt(bpositive_pred(q), q, bpositive_pred_lt(q));
-    bp_odd(q) => bordering_equal_even_odd(bpositive_compare(q, q), bpositive_equal_refl(q));
   };
 
 computable def bnat_factorial_step(n : BNat, below : BNatBelow(U0, fun (m : BNat) => BNat, n)) :
