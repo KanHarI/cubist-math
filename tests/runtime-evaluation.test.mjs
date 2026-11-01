@@ -247,9 +247,15 @@ print(evaluate(count_into(2 * 255, 0)));
   assert.deepEqual(outcomes(kernel), ["508", "K344: Native prototype syntax depth exceeds 512."]);
 });
 
+// A branching strong recursion: the Fibonacci of
+// tests/fixtures/contracts/strong_recursion_contracts.cubist, which asks
+// for the values at the predecessor and at its predecessor.
+const fibonacci = (await readFile(new URL("./fixtures/contracts/strong_recursion_contracts.cubist", import.meta.url), "utf8"))
+  .split("\n").filter(line => !/^(#|import |use )/.test(line)).join("\n").replace(/\nevaluate[^;]*;/g, "");
+
 // The library's Euclid (library/euclid.cubist), its least divisor search,
-// factorial and the least element search compute by nat's strong recursion,
-// which steps the course of values by the bits and retypes nothing
+// factorial, the least element search and the Fibonacci compute by nat's
+// strong recursion, which reads each smaller value without a transport
 // (library/bnat_recursion.cubist): every value form computes in the
 // runtime, with no fallback, and the kernel's queries show the same.
 // 7! + 1 = 71 * 71 takes the search through 70 candidates, both ways.
@@ -257,16 +263,40 @@ test("the library Euclid's, factorial's and the searches' value forms compute in
   const pairs = await alternately(t, `import euclid;
 import least_elements;
 use nat;
+${fibonacci}
 ${twice(["euclid(3)", "euclid(4).1", "euclid(4)", "euclid(5).1", "euclid(6).1", "factorial(5)", "factorial(40)",
-    "least_divisor(121, tt)", "least_element(fun (n : Nat) => 5 <= n, fun (n : Nat) => bnat_le_decide(5, n), 100, tt)"])}
+    "least_divisor(121, tt)", "least_element(fun (n : Nat) => 5 <= n, fun (n : Nat) => bnat_le_decide(5, n), 100, tt)", "fib(22)"])}
 `);
   assert.deepEqual(pairs.map(pair => pair.text), ["(7, (tt, <fun>), tt)", "5", "(5, (tt, <fun>), tt)", "11", "7", "120",
-    "815915283247897734345611269596115894272000000000", "(11, tt, (11, <path>), <fun>)", "(5, tt, <fun>)"]);
-  assert.deepEqual(computedBy(pairs), Array(9).fill("runtime"));
+    "815915283247897734345611269596115894272000000000", "(11, tt, (11, <path>), <fun>)", "(5, tt, <fun>)", "17711"]);
+  assert.deepEqual(computedBy(pairs), Array(10).fill("runtime"));
   const { runtime, kernel } = await bothWays(t, "import euclid;\nuse nat;\nprint(evaluate(euclid(7).1));");
   assert.deepEqual(outcomes(runtime), ["71"]);
   assert.deepEqual(by(runtime), ["runtime"]);
   assert.deepEqual(outcomes(runtime), outcomes(kernel));
+});
+
+// The values below each n hold every smaller value once, so overlapping
+// calls share them, in the kernel's queries and in the runtime alike. Main
+// computed fib(25) by the kernel's queries in 197,821 ticks; a recursion
+// that rebuilt each smaller value took 64,203,550, and its runtime stopped
+// at its allocation budget at 22.
+test("a branching strong recursion shares its smaller values on both paths", async t => {
+  const program = new CubicalProgram(module, sourceReader(), { collectReferences: false, runtimeEvaluation: false });
+  t.after(() => program.dispose());
+  const session = new ReplSession(program);
+  const prepared = await session.run(`import euclid;\nuse nat;\n${fibonacci}`);
+  assert.deepEqual(prepared.filter(result => result.kind === "error").map(result => result.text), []);
+  const before = program.kernel.work().querySteps;
+  const [answer] = await session.run("evaluate fib(25);");
+  assert.equal(answer.text, "75025");
+  const ticks = Number(program.kernel.work().querySteps - before);
+  assert.ok(ticks < 1000000, `the kernel's queries took ${ticks} ticks`);
+  // The runtime computes it within a million steps, or, as on main, falls
+  // back at a transport; it never stops at its allocation budget.
+  const pairs = await alternately(t, `import euclid;\nuse nat;\n${fibonacci}\n${twice(["fib(22)"])}\n`);
+  assert.deepEqual(pairs.map(pair => pair.text), ["17711"]);
+  assert.ok(pairs[0].by !== "runtime" || pairs[0].steps < 1000000, `the runtime took ${pairs[0].steps} steps`);
 });
 
 // The same call written twice in a function's body, through 24 definitions

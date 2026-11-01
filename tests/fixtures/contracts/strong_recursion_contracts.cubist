@@ -1,0 +1,58 @@
+// Nat's strong recursion, branching: Fibonacci asks for the values at the
+// predecessor and at its predecessor. The values below each n hold every
+// smaller value once, so the two calls share what they reach; a recursion
+// that recomputed them takes exponential time, and its kernel queries ran
+// out of arena (K347) at 40 (docs/reports/transport-free-recursion.md).
+// The order helper uses only what main's library had, so that the same
+// cases run there.
+// Authority: docs/roadmaps/runtime/runtime-evaluation-roadmap.md#num0-and-num1-representations-algebraic-agreement-and-numerical-induction
+import euclid;
+use nat;
+
+// Below m and m below n, so below n: decided on the bits, with unary order
+// refuting the other branch.
+computable def fib_below(k, m, n : Nat, less : k < m, smaller : m < n) :
+  k < n := match bnat_lt_decide(k, n) return k < n {
+    left yes => yes;
+    right no => absurd(
+      unat_lt_le_absurd(
+        bnat_to_unat(k), bnat_to_unat(n),
+        unat_le_trans(
+          unat::succ(bnat_to_unat(k)), bnat_to_unat(m), bnat_to_unat(n), bnat_lt_decode(k, m, less),
+          unat_le_trans(
+            bnat_to_unat(m), unat::succ(bnat_to_unat(m)), bnat_to_unat(n),
+            unat_le_step(bnat_to_unat(m), bnat_to_unat(m), unat_le_refl(bnat_to_unat(m))),
+            bnat_lt_decode(m, n, smaller)
+          )
+        ), bnat_le_decode(n, k, bnat_le_of_not_lt(k, n, no))
+      )
+    );
+  };
+
+// At p, from its predecessor m: fib(1) = 1, and otherwise the values at m
+// and at m's predecessor.
+computable def fib_from(
+  p : BPositive, m : Nat, smaller : m < b_positive(p),
+  below : NatBelow(U0, fun (k : Nat) => Nat, b_positive(p))
+) :
+  Nat := match m {
+    b_zero => 1;
+    b_positive(r) => below(b_positive(r), smaller) + below(
+      bpositive_pred(r),
+      fib_below(bpositive_pred(r), b_positive(r), b_positive(p), bpositive_pred_lt(r), smaller)
+    );
+  };
+
+computable def fib_step(n : Nat, below : NatBelow(U0, fun (k : Nat) => Nat, n)) : Nat := match n {
+    b_zero => 0;
+    b_positive(p) => fib_from(p, bpositive_pred(p), bpositive_pred_lt(p), below);
+  };
+
+# test(strong_recursion.fibonacci)
+# expect_axioms([])
+computable def fib(n : Nat) : Nat := nat_strong_recursion(U0, fun (k : Nat) => Nat, fib_step, n);
+
+# test(strong_recursion.fibonacci_25)
+evaluate fib(25) expecting 75025;
+# test(strong_recursion.fibonacci_40)
+evaluate fib(40) expecting 102334155;
