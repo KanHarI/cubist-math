@@ -45,9 +45,9 @@ test("finite algebraic extensions, actual splitting fields, normality and genera
     const axioms = symbol.axioms.map(id => p.checker.assumptionLabels.get(id));
     assert.ok(axioms.every(a => allowed.test(a)), `${name}: ${axioms.join(", ")}`);
   }
-  // The intermediate finite-choice construction is constructive. Univalence
-  // transports the resulting count; it is not an extra axiom in this kernel.
-  assert.deepEqual(p.symbols.finite_dependent_counts__finite_mere_choice.axioms, []);
+  // The intermediate finite choice, the library's since 2026-11-01 (reached
+  // through the archive's counting_bridge), is constructive: no axiom.
+  assert.deepEqual(p.symbols.finite_choice__fin_choice.axioms, []);
 
   const { result: invalid } = await cases(t, "algebraic_extensions_invalid_embedding_claims");
   assert.equal(invalid.complete, false);
