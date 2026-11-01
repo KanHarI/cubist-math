@@ -1069,7 +1069,14 @@ Each step lands in focused PRs under the review rule above.
       because a composition at a data sort reads its base's weak head and
       a fallback that forces nothing leaves that base, the rest of the
       computation, to the kernel. The whole-walk restart stays until a
-      design faster end to end is ready.
+      design faster end to end is ready. W4, the applicable EVAL8 review
+      record, was written on 2026-11-01 for what is on main, W1's
+      readback fragment and the whole-walk restart
+      ([record](../reports/typed-readback-eval8.md)): the applicable
+      suites pass at `398e89ba`, no defect was found, and the record
+      notes two gaps in the readback tests and an extended browser test
+      broken on main since 2026-10-20, whose harness the same change
+      fixes. W2's boundary is reviewed when W2 lands.
    5. **The archive's number theory in the library**
       ([NT1–NT5](archive-retirement.md#number-theory-in-the-library)):
       1. NT1: the unary order lemmas move to `unat`. **Done** on 2026-10-28.
