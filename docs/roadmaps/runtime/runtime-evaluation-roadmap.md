@@ -598,6 +598,18 @@ proposition-valued restriction on the result family. Unary comparison
 evidence is used only to refute impossible negative decisions.
 
 Binary factorial uses that recursor and has checked zero/successor laws.
+
+**Transport-free recursion (2026-11-01).** Both recursions now compute
+without a transport, their statements unchanged
+([report](../../reports/transport-free-recursion.md)): the strong
+recursion iterates a course of values, a bound with the values below it,
+by the bound's bits, so that no value is retyped, and the Peano eliminator
+is that strong recursion with the step from the predecessor, read at the
+number through a cast that recurses on the bits. The advance over binary
+offsets is gone. The library's Euclid, factorial and least elements
+compute their value forms in the runtime with no fallback, and the
+kernel's queries compute `euclid(7).1`, searches of 210 candidates and
+least elements of 240, where K344 stopped them at 70, 30 and 64.
 [binary_recursion.cubist](../../../cubist-tests/binary_recursion.cubist)
 computes `0! = 1`, `5! = 120`, a data-carrying dependent witness, and digit
 counts whose recursive call halves the input. It refuses a callback at its
