@@ -175,7 +175,9 @@ and `module::name` references as continuing contracts.
   values into kernel terms, decided on 2026-10-28 with every
   recommendation accepted (D1–D6). W1, readback and its oracle tests, is
   implemented; W2, the per-node fallback, is held (2026-10-30): slower in
-  wall time, so the whole-walk restart stays.
+  wall time, so the whole-walk restart stays. W4's EVAL8 record for W1
+  and the restart is [written](../reports/typed-readback-eval8.md)
+  (2026-11-01).
 
 EVAL5's observation contract, the
 [evaluation demand marks](historical/evaluation-demand-marks.md) (DM0–DM6,

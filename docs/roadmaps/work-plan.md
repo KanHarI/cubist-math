@@ -1073,7 +1073,16 @@ Each step lands in focused PRs under the review rule above.
       ([report](../reports/shared-runtime-evaluation.md#typed-readback-m3)):
       printed `!!` through the runtime gains on no printed `!!` of the
       corpora and runs slower on rationals, so W3 is not taken and printed
-      `!!` stays on the kernel's folded normal form.
+      `!!` stays on the kernel's folded normal form. W4, the applicable
+      EVAL8 review record, was written on 2026-11-01 for what is on main,
+      W1's readback fragment and the whole-walk restart
+      ([record](../reports/typed-readback-eval8.md)): the applicable
+      suites pass at `398e89ba`; one defect, a head read back for a cell
+      no observation returned one for, was found in review and fixed, the
+      two gaps the record found in the readback tests are closed by
+      tests, and an extended browser test broken on main since
+      2026-10-20 has its harness fixed. W2's boundary is reviewed when W2
+      lands.
    5. **The archive's number theory in the library**
       ([NT1–NT5](archive-retirement.md#number-theory-in-the-library)):
       1. NT1: the unary order lemmas move to `unat`. **Done** on 2026-10-28.
