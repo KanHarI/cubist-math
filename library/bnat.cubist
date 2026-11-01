@@ -175,29 +175,6 @@ computable def bpositive_succ_pred(p : BPositive) :
     bp_odd(q) => refl(b_positive(bp_odd(q)));
   };
 
-// The same two equations as casts in any family. Each recurses on the bits
-// until both sides compute to one numeral, and then returns its value as
-// it is, so reading a value across them transports nothing.
-computable def bnat_succ_twice_succ_cast(
-  U < UU0, Q : BNat -> U, n : BNat, x : Q(bnat_succ(bnat_twice_succ(n)))
-) :
-  Q(bnat_twice(bnat_succ(n))) := match n {
-    b_zero => x;
-    b_positive(p) => x;
-  };
-
-computable def bpositive_succ_pred_cast(
-  U < UU0, Q : BNat -> U, p : BPositive, x : Q(bnat_succ(bpositive_pred(p)))
-) :
-  Q(b_positive(p)) := match p {
-    bp_one => x;
-    bp_even(q) => bpositive_succ_pred_cast(
-      U, fun (m : BNat) => Q(bnat_twice(m)), q,
-      bnat_succ_twice_succ_cast(U, Q, bpositive_pred(q), x)
-    );
-    bp_odd(q) => x;
-  };
-
 // Plain numerals read straight into bits, with no imports, so a binary value
 // prints compactly and reads back as the same bits wherever this module is
 // imported. bnat_notation adds the decimal and 0b literal reader and the
