@@ -42,10 +42,11 @@ await browserTest(async ({ browser, base }) => {
   await workbench.locator("#workbench-view").selectOption("math");
   assert.ok(await workbench.locator("#context .context-entry").count());
   assert.match(await workbench.locator("#source-back").getAttribute("href"), /proof\.html/);
-  await workbench.locator("details summary").click();
+  await workbench.locator("details summary", { hasText: "Edit native syntax" }).click();
   await workbench.locator("#syntax").fill('{"tag":"Var","name":"not_in_context"}');
   assert.equal(await workbench.locator("#normalize").isDisabled(), true);
   await workbench.locator("#check").click();
+  await workbench.locator("#diagnostic").waitFor({ timeout: 20000 });
   assert.equal(await workbench.locator("#diagnostic").isVisible(), true);
   await workbench.close();
   await page.locator("#edit-mode").click();
