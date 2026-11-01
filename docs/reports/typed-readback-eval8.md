@@ -24,8 +24,9 @@ rule ([below](#review-rounds)).
   lands, by that PR's W4 pass. The held branch waits for "a design faster
   end to end", so the boundary it would integrate may change, and a review
   of it now would review code that is not in production.
-- **W3 is not taken:** M3, in #343 (a draft, open on 2026-11-01), found no
-  gain for printed `!!` through the runtime. There is no W3 code.
+- **W3 is not taken:** M3 ([#343](shared-runtime-evaluation.md#typed-readback-m3),
+  merged into main after `398e89ba` and into this branch) found no gain for
+  printed `!!` through the runtime. There is no W3 code.
 
 ## Summary
 

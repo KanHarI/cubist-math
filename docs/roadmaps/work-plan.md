@@ -1069,9 +1069,13 @@ Each step lands in focused PRs under the review rule above.
       because a composition at a data sort reads its base's weak head and
       a fallback that forces nothing leaves that base, the rest of the
       computation, to the kernel. The whole-walk restart stays until a
-      design faster end to end is ready. W4, the applicable EVAL8 review
-      record, was written on 2026-11-01 for what is on main, W1's
-      readback fragment and the whole-walk restart
+      design faster end to end is ready. M3 was taken on 2026-10-30
+      ([report](../reports/shared-runtime-evaluation.md#typed-readback-m3)):
+      printed `!!` through the runtime gains on no printed `!!` of the
+      corpora and runs slower on rationals, so W3 is not taken and printed
+      `!!` stays on the kernel's folded normal form. W4, the applicable
+      EVAL8 review record, was written on 2026-11-01 for what is on main,
+      W1's readback fragment and the whole-walk restart
       ([record](../reports/typed-readback-eval8.md)): the applicable
       suites pass at `398e89ba`, no defect was found, the two gaps it
       found in the readback tests are closed by tests, and an extended
