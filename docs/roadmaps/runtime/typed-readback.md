@@ -17,7 +17,12 @@ form the runtime computes among them, and M1; the
 [runtime report](../../reports/shared-runtime-evaluation.md#typed-readback-w1)
 records the correspondence as implemented and where it reads this note
 more precisely. No observation changes, and nothing here changes the
-kernel. W2 is next ([8](#8-work-items)).
+kernel. W2, the fallback per node ([8](#8-work-items)), is held (decided
+on 2026-10-30): implemented on branch `typed-readback-w2`, it saves kernel
+ticks but runs slower in wall time, because a composition at a data sort
+reads its base's weak head and a fallback that forces nothing leaves that
+base to the kernel; the whole-walk restart stays until a design faster end
+to end is ready.
 
 ## Summary
 
