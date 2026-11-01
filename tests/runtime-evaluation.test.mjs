@@ -2,6 +2,7 @@ import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import createCubical from "../web/dist/cubical.mjs";
 import { parse } from "../web/cubist/parser.mjs";
@@ -250,7 +251,7 @@ print(evaluate(count_into(2 * 255, 0)));
 // A branching strong recursion: the Fibonacci of
 // tests/fixtures/contracts/strong_recursion_contracts.cubist, which asks
 // for the values at the predecessor and at its predecessor.
-const fibonacci = (await readFile(new URL("./fixtures/contracts/strong_recursion_contracts.cubist", import.meta.url), "utf8"))
+const fibonacci = readFileSync(new URL("./fixtures/contracts/strong_recursion_contracts.cubist", import.meta.url), "utf8")
   .split("\n").filter(line => !/^(#|import |use )/.test(line)).join("\n").replace(/\nevaluate[^;]*;/g, "");
 
 // The library's Euclid (library/euclid.cubist), its least divisor search,
