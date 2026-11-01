@@ -2,7 +2,7 @@
 // checked step in an ordinary declaration.
 // No other link starts at `by`, so the source view shows this one.
 
-import primes;
+import unat;
 use unat;
 
 def ordinary(B : U0, f : UNat -> B, n : UNat) : f((n + 0) + 0) = f(n) {

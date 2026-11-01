@@ -6,7 +6,9 @@
 natural numbers, and `radix_numerals`, `radix_operations`,
 `radix_conversion` and `radix_factorials` rebuild the radix development over
 it, with transport along a Glue path. This checkpoint describes the
-archive's modules, which NT5 deletes.
+archive's modules, which NT5 deleted on 2026-10-30 with
+`tests/cubical-transfers.test.mjs` and its fixtures; its commands no longer
+run.
 
 The mathematical sources now prove `10! = 3628800` using inductive binary numbers,
 using one generic radix development instantiated at bases 2 and 10, and by

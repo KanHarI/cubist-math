@@ -35,8 +35,8 @@ node tools/format-cubist.mjs --check docs/examples/proof-ergonomics/current/*.cu
 
 Each check exits 0 and prints the declaration and step counts above; the
 formatter reports `6 sources checked; 0 need formatting.` Imports resolve
-beside the source file first, then in `archive/first-library/`; these examples use bundled
-`primes`, `paths`, and `field_vector_spaces`. They introduce no axioms, universe templates, or custom
+beside the source file first, then in `library/`, then in `archive/first-library/`; these examples use
+the library's `unat` and the archive's `paths_` and `field_vector_spaces`. They introduce no axioms, universe templates, or custom
 import overrides. The empty assumption lists were also verified through the
 program API (`result.outputs.every(d => d.axioms.length === 0)`); the CLI's
 success message alone does not establish that property.

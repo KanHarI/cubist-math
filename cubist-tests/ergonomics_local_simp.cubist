@@ -1,7 +1,7 @@
 // From tests/proof-ergonomics.test.mjs: Exclusions remove defaults and
 // hypothesis simplification keeps the source.
 
-import primes;
+import unat;
 use unat;
 
 simp_rule unat_add_zero;

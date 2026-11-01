@@ -281,16 +281,19 @@ test("a derived term is its source: a constructor at a type that reduces keeps t
 });
 
 test("search: a composition whose face holds contracts by one step, and a failed congruence is not retried", async t => {
-  const readArchive = sourceReader();
+  const readSource = sourceReader();
   for (const [module, name, rule] of [
-    // Unfolding the other side here would compute 10! in unary.
-    ["binary_univalence_transfer", "binary_univalence_transfer__binary_factorial_ten_via_nat", "face"],
+    // Transports along radix_path composed by trans: the derivation meets a
+    // composition whose tube's face holds, and contracts it to that tube by
+    // one face step, before any unfolding. (On the archive's unary
+    // numerals, deleted by NT5, unfolding first computed 10! in unary.)
+    ["radix_factorials", "radix_factorials__radix_factorial_from_nat", "face"],
     // A group and its lift to U1 agree by projections, not by their pairs'
     // annotations; congruence on the pairs fails, and must not repeat.
     ["quotient_group_universal", "quotient_group_universal__killing_subgroup_respects_cosets_at", null]]) {
-    const program = new CubicalProgram(await createCubical(), readArchive);
+    const program = new CubicalProgram(await createCubical(), readSource);
     t.after(() => program.dispose());
-    await program.check(await readArchive(module), module);
+    await program.check(await readSource(module), module);
     const kernel = program.kernel, { value, type } = kernel.definition(kernel.definitions.get(name));
     const driver = new InstructionDriver(kernel), rules = new Set();
     for (const stack = [driver.check(value, type)], seen = new Set(); stack.length;) {
@@ -397,10 +400,13 @@ test("W types: binary positive numbers, their constructors and their recursion d
 });
 
 test("Glue: univalence derives, and so does a Glue term over its Glue type", async t => {
-  const readArchive = sourceReader();
-  const program = new CubicalProgram(await createCubical(), readArchive);
+  const program = new CubicalProgram(await createCubical(), sourceReader());
   t.after(() => program.dispose());
-  await program.check(await readArchive("binary_univalence_transfer"), "binary_univalence_transfer");
+  // A use of each builtin defines it; they take the archive's half-adjoint Equiv.
+  const used = await program.check(`import paths_;
+def line(A, B : U0, e : Equiv(U0, A, B)) : A = B := ua(U0, A, B, e);
+def beta(A, B : U0, e : Equiv(U0, A, B), x : A) := UnivalenceBeta(U0, A, B, e, x);`, "univalence_builtins");
+  assert.equal(used.complete, true, JSON.stringify(used.gaps));
   const kernel = program.kernel, rules = new Set();
   const derive = (value, type) => {
     const driver = new InstructionDriver(kernel);

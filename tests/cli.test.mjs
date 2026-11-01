@@ -42,7 +42,7 @@ test("CLI checks my-proof.cubist as the module my_proof", async t => {
 test("CLI reports assumptions and evaluates closed terms", async t => {
   const directory = await mkdtemp(join(tmpdir(), "cubist-cli-"));
   t.after(() => rm(directory, { recursive: true, force: true }));
-  await writeFile(join(directory, "sample.cubist"), `import primes;
+  await writeFile(join(directory, "sample.cubist"), `import unat;
 import h1_classical; use unat;
 def double(n : UNat) := n + n;
 def recover(P : U0, prop_ : IsProp(U0, P), nn : (P -> Void) -> Void) : P {

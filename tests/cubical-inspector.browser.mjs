@@ -701,7 +701,7 @@ theory Parent(U < UU0) { M : U;
   assert.equal(JSON.parse(await reductionBench.locator("#syntax").inputValue()).fn.fn.fn.tag, "LLam");
   await reductionBench.close();
   await page.locator("#edit-mode").click();
-  await page.locator("#editor").fill(`import primes;
+  await page.locator("#editor").fill(`import unat;
     use unat;
     simp_rule unat_add_zero;
     def frozen(n : UNat) : n + 0 = n { simp; }
@@ -734,7 +734,7 @@ theory Parent(U < UU0) { M : U;
   const genericTransfer=await page.evaluate(async()=>{
     const [{default:createCubical},{CubicalProgram},{saveWorkbenchTransfer}]=await Promise.all([
       import("/dist/cubical.mjs"),import("/cubical-program.mjs"),import("/workbench-transfer.mjs")]);
-    const source=`import primes; use unat;
+    const source=`import unat; use unat;
       def generic(U < UU0, n : UNat) : n + 0 = n {
         calc { n + 0 = n by unat_add_zero(n); }
       }`;

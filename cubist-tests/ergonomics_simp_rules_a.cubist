@@ -2,7 +2,7 @@
 // scoped, and conflicting named sets fail only on use. This module registers
 // unat_add_zero by default and as units; ergonomics_simp_rules_b does too, at
 // priority 7.
-import primes;
+import unat;
 use unat;
 
 simp_rule unat_add_zero;

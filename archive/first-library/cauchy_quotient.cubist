@@ -1,7 +1,6 @@
 import unat;
 import complete_fields;
 import set_quotients;
-import primes;
 use unat;
 
 // Ordinary sequences equipped with moduli, followed by an equivalence-class

@@ -1,7 +1,6 @@
 import unat;
 import finite_cancellation;
 import surjections;
-import primes;
 
 // Cardinality forgets the enumeration, retaining only its finite size.
 def HasCardinality(A : U0, n : UNat) := Mere(Bijection(Fin(n), A));

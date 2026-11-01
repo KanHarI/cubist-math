@@ -99,14 +99,9 @@ try {
       record = { source: stored };
     }
     if (record && typeof record.source === "string") {
-      const obsoleteAudit =
-        proofId === "primes" &&
-        /\bconstruction\s+primes\s*\{/.test(record.source) &&
-        !/\bconstruction\s+primes\s*\{/.test(original);
       const repositoryChanged =
         typeof record.baseline === "string" && record.baseline !== original;
       if (
-        obsoleteAudit ||
         query.get("source") === "repo" ||
         (repositoryChanged && record.source === record.baseline)
       ) {

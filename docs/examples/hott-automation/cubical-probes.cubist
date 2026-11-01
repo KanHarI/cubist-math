@@ -1,6 +1,6 @@
 // Accepted probes from the HoTT roadmap's evidence sections. Each construction
 // checks as written; later milestones must keep it checking.
-import primes;
+import unat;
 import paths_;
 use unat;
 

@@ -28,7 +28,15 @@ together with three further fixtures:
 [measure.mjs](measure.mjs) records the A7 baseline in
 [baseline.json](baseline.json). The
 [implementation checkpoint](../../tactical/hott-automation-handoff.md) records
-its results and the expected outcome of each rejected probe.
+its results and the expected outcome of each rejected probe. The recorded
+baseline, of 2026-09-25, measures transport along univalence in
+`binary_univalence_transfer`, which NT5 of the
+[archive retirement](../../roadmaps/archive-retirement.md#number-theory-in-the-library)
+deleted on 2026-10-30; the script now selects `circle`'s
+`successor_transport`, which also transports along `ua` by `UnivalenceBeta`.
+Since then the script also resolves imports in the library, where `unat`,
+`hlevels` and `classical_axioms` now are, and runs again; the record is not
+re-measured.
 
 ## Checks
 

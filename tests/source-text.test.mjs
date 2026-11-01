@@ -84,27 +84,6 @@ test("paths print as equalities when their type does not vary, and path applicat
   assert.equal(sourceText({ tag: "PLam", dim: "i", family: variable("A"), body: variable("x") }), "refl(x)");
 });
 
-test("binary numbers print as binary literals", () => {
-  // binary_naturals declares BinaryNat and BinaryPositive by their constructors.
-  const constructor = (type, index, name) => ({ tag: "Con", index, name, sort: { tag: "Sort", signature: `binary_naturals__${type}` } });
-  const zero = constructor("BinaryNat", 0, "binary_zero"), positive = p => ({ tag: "App", fn: constructor("BinaryNat", 1, "binary_positive"), arg: p });
-  const one = constructor("BinaryPositive", 0, "binary_one");
-  const bit = (digit, p) => ({ tag: "App", fn: constructor("BinaryPositive", digit ? 2 : 1, `binary_bit${digit}`), arg: p });
-  // Where binary's notation is selected they print as written, and
-  // elsewhere qualified (L2.10j).
-  const symbols = { binary_naturals__binary_literal: { printing: [{ notation: "binary", identity: "binary-reader", literal: true }] } };
-  const scope = scoped({ binary: "binary-reader" });
-  const binaryText = term => sourceText(term, symbols, 4000, { selection: "binary", selectionIdentity: "binary-reader", ...scope });
-  assert.equal(binaryText(zero), "0b0");
-  assert.equal(binaryText(positive(bit(0, bit(1, one)))), "0b110");
-  assert.equal(sourceText(positive(bit(0, bit(1, one))), symbols, 4000, scope), "binary.(0b110)");
-  assert.equal(sourceText(zero, symbols, 4000, { selection: "unat", ...scope }), "binary.(0b0)");
-  assert.equal(sourceText(zero, symbols), "binary_zero");
-  // Anything else in the same type prints as it is built.
-  assert.match(sourceText(positive(variable("p"))), /^binary_positive\(p\)$/);
-  assert.match(sourceText(positive(bit(1, variable("p")))), /^binary_positive\(binary_bit1\(p\)\)$/);
-});
-
 test("binary-natural normal forms print only through a known reader", () => {
   const constructor = (type, index, name) => ({ tag: "Con", index, name, sort: { tag: "Sort", signature: `bnat__${type}` } });
   const zero = constructor("BNat", 0, "b_zero"), positive = p => app(constructor("BNat", 1, "b_positive"), p);

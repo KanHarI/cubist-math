@@ -1,7 +1,7 @@
 // From tests/proof-ergonomics.test.mjs: Freeze withholds a rule name shadowed
 // by a named simplification set.
 
-import primes;
+import unat;
 use unat;
 
 simp_rule unat_add_zero;

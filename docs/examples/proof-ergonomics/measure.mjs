@@ -7,29 +7,32 @@ import { cpus } from "node:os";
 import { fileURLToPath } from "node:url";
 import { parse, tokenize } from "../../../web/cubist/parser.mjs";
 import { benchmark } from "../../../web/benchmark-runner.mjs";
+import { libraryModules } from "../../../web/cubist/modules.mjs";
+import { sourceReader } from "../../../tools/module-sources.mjs";
 
 const root = new URL("../../../", import.meta.url);
 const selection = [
-  ["primes", "nat_add_assoc"],
+  ["unat", "unat_add_assoc"],
   ["paths_", "right_unit"],
   ["finite_dependent_counts", "finite_uniform_fiber_count"],
   ["group_operations", "group_conjugate_multiply"],
   ["field_vector_spaces", "field_scalar_laws"],
 ];
-const readSource = name => readFile(new URL(`archive/first-library/${name}.cubist`, root), "utf8");
+// unat is the library's; the other modules are the archive's.
+const sourcePath = name => `${libraryModules.includes(name) ? "library" : "archive/first-library"}/${name}.cubist`;
 const report = await benchmark({ modules: selection.map(([module]) => module),
-  limitMs: 1000, readSource });
+  limitMs: 1000, readSource: sourceReader() });
 if (report.importErrors.length || report.counts.failed || report.counts.blocked || report.counts.optimize)
   throw new Error(`Baseline did not fully check: ${JSON.stringify(report.counts)}`);
 
 const selected = await Promise.all(selection.map(async ([module, name]) => {
-  const source = await readSource(module);
+  const source = await readFile(new URL(sourcePath(module), root), "utf8");
   const declaration = parse(source).declarations.find(d => d.name.text === name);
   if (!declaration) throw new Error(`Missing baseline declaration ${module}.${name}`);
   const row = report.declarations.find(d => d.module === module && d.name === name);
   if (row?.category !== "checked") throw new Error(`Unchecked baseline ${module}.${name}`);
   const text = source.slice(declaration.start, declaration.end);
-  return { module, name, sourcePath: `archive/first-library/${module}.cubist`,
+  return { module, name, sourcePath: sourcePath(module),
     sourceSha256: createHash("sha256").update(source).digest("hex"),
     declarationSha256: createHash("sha256").update(text).digest("hex"),
     sourceTokens: tokenize(text).length - 1,

@@ -180,9 +180,9 @@ induction and introduce no axiom. `refl(x)` supplies the reflexive path `x = x`.
 
 Equality induction is available as
 `path_induction(A, motive, reflexive_case, x, y, equality)`, where the motive is a
-function of two endpoints and their equality proof. The bounded least-witness
-search in [primes.cubist](../../archive/first-library/primes.cubist) uses it to
-carry a predicate along an equality of numbers. The lower-level `induct`, `cases`, and `unpack` function forms remain
+function of two endpoints and their equality proof. The test module
+[translation_path_induction.cubist](../../cubist-tests/translation_path_induction.cubist)
+applies it to an equality of unary numbers. The lower-level `induct`, `cases`, and `unpack` function forms remain
 available for proof-producing source tools.
 
 ## Modules and validation

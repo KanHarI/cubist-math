@@ -1,4 +1,4 @@
-import primes;
+import unat;
 use unat;
 
 // Current expansion for a two-step calc or simp only [unat_add_zero].

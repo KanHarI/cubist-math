@@ -127,30 +127,6 @@
    "summary": "Surjective field embeddings are isomorphisms"
   },
   {
-   "path": "archive/first-library/binary_arithmetic_correct.cubist",
-   "summary": "Binary arithmetic · compatibility with Nat"
-  },
-  {
-   "path": "archive/first-library/binary_arithmetic.cubist",
-   "summary": "Binary arithmetic · 10! = 3628800"
-  },
-  {
-   "path": "archive/first-library/binary_equivalence.cubist",
-   "summary": "Binary and unary naturals · equivalence"
-  },
-  {
-   "path": "archive/first-library/binary_induction.cubist",
-   "summary": "Binary numbers · dependent induction"
-  },
-  {
-   "path": "archive/first-library/binary_naturals.cubist",
-   "summary": "Binary naturals · inductive digits and binary literals"
-  },
-  {
-   "path": "archive/first-library/binary_univalence_transfer.cubist",
-   "summary": "Binary and unary factorial · univalence transport"
-  },
-  {
    "path": "archive/first-library/binomial_counting.cubist",
    "summary": "Binomial types · finite cardinality"
   },
@@ -911,10 +887,6 @@
    "summary": "Algebraic elements · canonical minimal polynomials"
   },
   {
-   "path": "archive/first-library/natural_minimum.cubist",
-   "summary": "Natural numbers · least witnesses"
-  },
-  {
    "path": "archive/first-library/non_normal_subgroup.cubist",
    "summary": "Groups · a non-normal subgroup of S3"
   },
@@ -1147,10 +1119,6 @@
    "summary": "Subset chains · finite covers of directed unions"
   },
   {
-   "path": "archive/first-library/primes.cubist",
-   "summary": "Natural numbers · bounded least-witness search and factorial"
-  },
-  {
    "path": "archive/first-library/puncture_graph.cubist",
    "summary": "Punctures · graph and generating loops"
   },
@@ -1197,50 +1165,6 @@
   {
    "path": "archive/first-library/quotient_sets.cubist",
    "summary": "Quotients · setness and paths between functions"
-  },
-  {
-   "path": "archive/first-library/radix_arithmetic_correct.cubist",
-   "summary": "Radix arithmetic · compatibility with Nat"
-  },
-  {
-   "path": "archive/first-library/radix_arithmetic.cubist",
-   "summary": "Arbitrary radix · carries, addition and multiplication"
-  },
-  {
-   "path": "archive/first-library/radix_binary_equivalence.cubist",
-   "summary": "Binary and arbitrary radix · direct digit equivalence"
-  },
-  {
-   "path": "archive/first-library/radix_decode.cubist",
-   "summary": "Radix evaluation · successor and Nat round trip"
-  },
-  {
-   "path": "archive/first-library/radix_digit_laws.cubist",
-   "summary": "Radix digits · increment and overflow laws"
-  },
-  {
-   "path": "archive/first-library/radix_equivalence.cubist",
-   "summary": "Arbitrary radix and Nat · full equivalence"
-  },
-  {
-   "path": "archive/first-library/radix_factorial.cubist",
-   "summary": "One factorial algorithm · base 2 and base 10"
-  },
-  {
-   "path": "archive/first-library/radix_induction.cubist",
-   "summary": "Radix numbers · dependent induction"
-  },
-  {
-   "path": "archive/first-library/radix_naturals.cubist",
-   "summary": "Arbitrary radix · finite digits and inductive numerals"
-  },
-  {
-   "path": "archive/first-library/radix_uniqueness.cubist",
-   "summary": "Radix notation · uniqueness of bounded remainders"
-  },
-  {
-   "path": "archive/first-library/radix_univalence_transfer.cubist",
-   "summary": "Factorial across representations · univalence transport"
   },
   {
    "path": "archive/first-library/ring_laws.cubist",

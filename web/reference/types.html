@@ -99,7 +99,7 @@ def seven_again : UNat {
           <section id="tour-numbers">
             <h2>Natural numbers</h2>
             <p>The following structural examples use unary <code>UNat</code> for <code>0, 1, 2, …</code>. Its values are built from <code>0</code> and <code>succ</code>, the successor: <code>succ(n)</code> is <code>n + 1</code>. Public <code>Nat</code> instead stores binary bits.</p>
-            <p>In <code>unat</code> notation, <code>3</code> is shorthand for <code>succ(succ(succ(0)))</code>. The unary reader accepts numerals up to 256 to bound the size of these terms. The default <code>nat</code> notation reads decimal and <code>0b</code> literals directly into <code>BNat</code> without that unary limit. The archive's separate <code>binary.(0b110)</code> notation reads <code>BinaryNat</code>, described with the <a href="induction.html#binary">inductive types</a>.</p>
+            <p>In <code>unat</code> notation, <code>3</code> is shorthand for <code>succ(succ(succ(0)))</code>. The unary reader accepts numerals up to 256 to bound the size of these terms. The default <code>nat</code> notation reads decimal and <code>0b</code> literals directly into <code>BNat</code> without that unary limit. <code>BNat</code> is described with the <a href="induction.html#binary">inductive types</a>.</p>
             <p>Addition <code>+</code> and multiplication <code>*</code> are defined in the arithmetic library, which a file loads with <code>import unat;</code> at its start; <code>use unat;</code> then selects its notation, in which numerals and <code>+</code> mean the naturals'. <code>evaluate term expecting value;</code> checks what a term computes to:</p>
             <pre><code data-check="accept">import unat;
 use unat;

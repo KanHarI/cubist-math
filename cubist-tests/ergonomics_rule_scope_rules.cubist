@@ -1,7 +1,7 @@
 // From tests/proof-ergonomics.test.mjs: Generic definitions keep their
 // defining simplification sets when used: the rules, which
 // ergonomics_rule_scope uses where units means another set.
-import primes;
+import unat;
 use unat;
 
 simp_set units := [unat_add_zero];

@@ -1,7 +1,7 @@
 // From tests/proof-ergonomics.test.mjs: Conditional premise simplification is
 // bounded and keeps nested witnesses.
 
-import primes;
+import unat;
 use unat;
 
 def folded(n : UNat) := n + 0;

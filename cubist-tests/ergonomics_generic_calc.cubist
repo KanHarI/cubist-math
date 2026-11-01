@@ -2,7 +2,7 @@
 // from step witnesses.
 // The step's checked path belongs to its `by` keyword, not its left endpoint.
 
-import primes;
+import unat;
 use unat;
 
 def generic(U < UU0, n : UNat) : n + 0 = n {

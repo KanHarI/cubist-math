@@ -1,5 +1,5 @@
 // Explicit predecessors for checked type-goal simpa.
-import primes;
+import unat;
 use unat;
 
 def move_type(A, B : U0, p : A = B, a : A) : B {

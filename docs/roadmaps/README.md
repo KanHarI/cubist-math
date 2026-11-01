@@ -173,8 +173,9 @@ and `module::name` references as continuing contracts.
   the attribution of the rational full-normalization cluster; D1 and B8 done.
 - [Typed readback](runtime/typed-readback.md): EVAL5's readback of runtime
   values into kernel terms, decided on 2026-10-28 with every
-  recommendation accepted (D1–D6). W1, readback and its oracle tests, and
-  W2, the per-node fallback, are implemented; W3 waits on M3.
+  recommendation accepted (D1–D6). W1, readback and its oracle tests, is
+  implemented; W2, the per-node fallback, is held (2026-10-30): slower in
+  wall time, so the whole-walk restart stays.
 
 EVAL5's observation contract, the
 [evaluation demand marks](historical/evaluation-demand-marks.md) (DM0–DM6,

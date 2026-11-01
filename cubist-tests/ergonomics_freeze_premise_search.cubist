@@ -1,7 +1,7 @@
 // From tests/proof-ergonomics.test.mjs: Freeze is withheld when removing a
 // rule changes conditional premise search.
 
-import primes;
+import unat;
 use unat;
 
 def freeze_case(

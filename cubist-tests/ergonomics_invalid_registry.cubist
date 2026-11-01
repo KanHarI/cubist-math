@@ -1,7 +1,7 @@
 // From tests/proof-ergonomics.test.mjs: Invalid registrations do not enter
 // the default rule set.
 
-import primes;
+import unat;
 use unat;
 
 def ordinary(n : UNat) := n;

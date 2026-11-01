@@ -1,7 +1,7 @@
 // From tests/proof-ergonomics.test.mjs: simpa type-path freeze preserves a
 // proof later compared with another: the second simpa in dependent is
 // offered no frozen form, and the one in stable is.
-import primes;
+import unat;
 use unat;
 
 // Warning: W702: stable is never used after this let: remove it.

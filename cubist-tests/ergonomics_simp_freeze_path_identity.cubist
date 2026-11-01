@@ -1,6 +1,6 @@
 // From tests/proof-ergonomics.test.mjs: simp freeze preserves a proof later
 // compared with another path: the second simp is offered no frozen form.
-import primes;
+import unat;
 use unat;
 
 // Warning: W702: stable is never used after this let: remove it.

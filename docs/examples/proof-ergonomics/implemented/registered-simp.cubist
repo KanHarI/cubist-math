@@ -1,4 +1,4 @@
-import primes;
+import unat;
 use unat;
 
 // Registrations refer to already checked equality proofs.
