@@ -89,12 +89,13 @@ over public `Nat`, with their arithmetic, their equivalence with `Nat` and
 its univalence path, and one factorial algorithm (step NT4). With them the
 library holds all of the archive's number theory, whose modules NT5
 deleted on 2026-10-30.
-`finite_cardinality`, `finite_arithmetic`, `function_counting`,
-`permutations`, `binomial_types` and `finite_choice` rebuild the archive's
-counting results over `finite_sets`' `Fin` and `contractible_maps`'
-equivalences, with `type_equivalences` for sums, products, dependent pairs
-and functions; they replaced the archive's nine counting modules on
-2026-11-02 ([archive retirement](../docs/roadmaps/archive-retirement.md#counting-in-the-library)).
+`finite_cardinality`, `finite_arithmetic`, `finite_functions`,
+`finite_permutations`, `binomial_types` and `finite_choice` rebuilt the
+archive's counting results on 2026-11-02, over `finite_sets`' `Fin` and
+`contractible_maps`' equivalences, with `type_equivalences` for sums,
+products, dependent pairs and functions; the archive keeps unary copies
+only for its linear algebra and Galois theory
+([archive retirement](../docs/roadmaps/archive-retirement.md#counting-in-the-library)).
 
 | Module | Contents | Assumptions |
 | --- | --- | --- |
@@ -137,8 +138,8 @@ and functions; they replaced the archive's nine counting modules on
 | [`finite_sets`](finite_sets.cubist) | `Fin(n)`, the natural numbers strictly below `n`, with checked setness; elements with equal numbers are equal (`fin_path`), and equality is decidable (`fin_decide`). Uses public binary `Nat`. | None |
 | [`finite_cardinality`](finite_cardinality.cubist) | `Fin(0)` is empty and `Fin(n + 1)` is `Fin(n)` with its top element `n` as one more point (`fin_succ_equiv`); `Fin(1)` is `Unit`, and equal sizes give equivalent finite types, keeping each element's number (`fin_cast`). Uniqueness of finite cardinality: `Fin(n)` equivalent to `Fin(m)` gives `n = m` (`fin_unique`), by cancelling top elements. A type has cardinality `n` when it is merely equivalent to `Fin(n)` (`HasCardinality`), which passes along equivalences, and that `n` is unique (`cardinality_unique`). | None |
 | [`finite_arithmetic`](finite_arithmetic.cubist) | `Fin(a) or Fin(b)` is equivalent to `Fin(a + b)`, the second summand's `j` at `a + j` (`fin_sum`), and `Fin(a) and Fin(b)` to `Fin(a * b)`, the pair `(i, j)` at `i * b + j` (`fin_product`); so the sizes of finite types add under sums and multiply under products. | None |
-| [`function_counting`](function_counting.cubist) | There are m^n functions from `Fin(n)` to `Fin(m)`, an equivalence with `Fin(power(m, n))` whose numbers read a function's values as digits in base m, the value at 0 first (`fin_functions`); so from an n-element type to an m-element type (`function_cardinality`). | None |
-| [`permutations`](permutations.cubist) | Transpositions with the point in `A or Unit`, for `A` with decidable equality; a self-equivalence of `A or Unit` is the image of the point and a self-equivalence of `A` (`permutation_successor`); so `Fin(k)` has `factorial(k)` self-equivalences (`fin_permutations`), and so does every k-element type (`permutation_cardinality`). | None |
+| [`finite_functions`](finite_functions.cubist) | There are m^n functions from `Fin(n)` to `Fin(m)`, an equivalence with `Fin(power(m, n))` whose numbers read a function's values as digits in base m, the value at 0 first (`fin_functions`); so from an n-element type to an m-element type (`function_cardinality`). | None |
+| [`finite_permutations`](finite_permutations.cubist) | Transpositions with the point in `A or Unit`, for `A` with decidable equality; a self-equivalence of `A or Unit` is the image of the point and a self-equivalence of `A` (`permutation_successor`); so `Fin(k)` has `factorial(k)` self-equivalences (`fin_permutations`), and so does every k-element type (`permutation_cardinality`). | None |
 | [`finite_choice`](finite_choice.cubist) | Finite choice with no choice axiom: a family of merely inhabited types in `U0` over a type with a finite cardinality has a mere section (`FiniteChoice`, `fin_choice`, `finite_choice`). A type fibered over an n-element base with m-element fibers has n * m elements, with no set hypotheses (`fibered_cardinality`). | None |
 | [`binary`](binary.cubist) | `Binary := Fin(2)`, its values `False` and `True`, which are different and are its only values (`false_ne_true`, `binary_cases`), and computable Boolean operations `Not`, `And`, `Or`, `Xor` and `Nor`. | None |
 | [`powersets`](powersets.cubist) | Generic proposition-valued `PowerSet(U, A) : next(U)` and binary `DecidablePowerSet(U, A) : U`, using `Binary` for characteristic functions, with checked setness of both. No identification between full and decidable powersets is assumed. The singletons of a set, which determine their elements (`singleton`, `singleton_injective`, `IsSingleton`), and Cantor's diagonal argument: for every `f : A -> PowerSet(U, A)`, the subset of elements outside their own subset is no value of `f` (`diagonal_subset`, `cantor_diagonal`), since no type is equal to its own negation (`not_own_negation`). | None |

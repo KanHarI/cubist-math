@@ -82,7 +82,10 @@ def embedding_tower_count(
   let B := EmbeddingTowerFiber(K, R, L, T, i, h, j);
   let S := EmbeddingTower(K, R, L, T, i, h, j);
   let H := EmbeddingsOver(K, L, e, T, j);
-  let count := uniform_fiber_count(A, n, m, lower, B, upper);
+  let count := uniform_fiber_count(
+    A, embeddings_over_are_set(K, R, i, T, j), n, m, lower, B,
+    (fun (d : A) => embeddings_over_are_set(R, L, h, T, embedding_over(K, R, i, T, j, d))), upper
+  );
   let mapped := cardinality_path(
     S, H, embedding_tower_type_equality(K, R, L, T, i, h, e, triangle, j), mul(n, m), count
   );

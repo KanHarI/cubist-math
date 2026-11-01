@@ -1,6 +1,6 @@
 import unat;
 import coordinate_elimination;
-import counting_bridge;
+import finite_cancellation;
 use unat;
 
 // Searching for a nonzero coordinate uses LEM only for scalar equality.

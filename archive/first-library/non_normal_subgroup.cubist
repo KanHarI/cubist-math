@@ -1,6 +1,7 @@
 import unat;
 import permutation_groups;
-import counting_bridge;
+import finite_cancellation;
+import permutations;
 use unat;
 
 // S3 acts on the explicitly enumerated three-element set {0, 1, 2}.

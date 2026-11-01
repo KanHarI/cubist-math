@@ -296,7 +296,7 @@ unchanged counters do not. Other worker requests have a 30-second timeout.
 The mathematical layer covers Euclid, the circle fundamental group,
 [right inverses of surjections using choice](../tactical/surjections.md), and
 finite counting, including functions, permutations, Rijke's binomial types
-and finite choice (the library's `function_counting`, `permutations`,
+and finite choice (the library's `finite_functions`, `finite_permutations`,
 `binomial_types` and `finite_choice`). Ports of the
 older universe-polymorphic library are still in progress. Data types are
 `inductive` declarations with structurally recursive `match` definitions; binary

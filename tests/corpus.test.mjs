@@ -45,15 +45,12 @@ test("the complete canonical .cubist corpus checks with the sole native kernel",
   // numerals, natural_minimum and primes' last 3 (331), with the library's
   // lexemes (8) and lists (7), which only binary_naturals imported; and the
   // counting results' move to the library (2026-11-02) deleted the
-  // archive's nine counting modules (144), added counting_bridge (30),
-  // moved binomial_types' 30 decidable-subtype definitions into
-  // finite_decidable_subtypes, removed embedding_counts' count_multiply_comm,
-  // and added the library modules counting_bridge reaches (392):
-  // type_equivalences (57), finite_cardinality (24), permutations (21),
-  // contractible_maps (19), finite_arithmetic (10), finite_choice (9),
-  // finite_sets (4), nat (47), the bnat modules (186), lexemes (8) and
-  // lists (7).
+  // archive's binomial, binomial_types, binomial_pascal and binomial_counting
+  // (80), function_counting's function counts (6) and permutations' counts
+  // of the equivalence type (2), moved binomial_types' 30 decidable-subtype
+  // definitions into finite_decidable_subtypes, and removed embedding_counts'
+  // count_multiply_comm.
   assert.deepEqual(report.importErrors, []);
-  assert.equal(report.declarations.length, 3834, "The corpus must not silently lose modules.");
+  assert.equal(report.declarations.length, 3468, "The corpus must not silently lose modules.");
   t.diagnostic(JSON.stringify(report.counts));
 });

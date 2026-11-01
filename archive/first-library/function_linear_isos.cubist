@@ -1,6 +1,6 @@
 import unat;
 import linear_constructions;
-import counting_bridge;
+import function_counting;
 
 def function_linear_map(K : AlgebraicField, I : U0, V, W : VectorSpace(K), h : LinearMap(K, V, W)) :
   LinearMap(K, FunctionSpace(K, I, V), FunctionSpace(K, I, W)) {

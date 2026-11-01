@@ -32,7 +32,8 @@ export const archiveModules = [
   "embedding_tower_types",
   "embedding_transport",
   "f4_formal_polynomial",
-  "counting_bridge",
+  "finite_cardinalities",
+  "finite_dependent_counts",
   "finite_embedding_extensions",
   "finite_field_generators",
   "finitely_generated_algebraic",
@@ -192,7 +193,10 @@ export const archiveModules = [
   "equivalence_from_inverse",
   "finite_decisions",
   "finite",
+  "function_counting",
+  "finite_cancellation",
   "bijection_equality",
+  "permutations",
   "truncation",
   "paths_",
   "groups",
@@ -354,7 +358,7 @@ export const archiveModules = [
 // which a module imports to use them.
 export const libraryModules = ["nat", "unat", "bnat", "bnat_equality", "bnat_notation", "bnat_unary", "bnat_arithmetic", "bnat_order", "semirings", "unat_models", "bnat_semiring", "bnat_models", "bnat_transport", "bnat_peano", "bnat_recursion", "bnat_order_laws", "bnat_division", "divisibility", "prime_numbers", "euclid", "least_elements", "unat_least_elements", "radix_numerals", "radix_operations", "radix_conversion", "radix_factorials", "classical_axioms", "universe_automorphisms", "hlevels",
   "h1_truncation", "h1_classical", "contractible_maps", "type_equivalences", "univalence", "universe_smallness", "propositions",
-  "finite_sets", "finite_cardinality", "finite_arithmetic", "function_counting", "permutations", "finite_choice", "binary", "powersets", "binomial_types", "continuum_hypothesis", "continuum_classical", "continuum_axioms", "lists", "lexemes", "quotients", "algebra", "ring_numerals", "ordered_algebra", "differences", "binary_integers", "integers", "fractions", "binary_rationals", "rationals", "squares"];
+  "finite_sets", "finite_cardinality", "finite_arithmetic", "finite_functions", "finite_permutations", "finite_choice", "binary", "powersets", "binomial_types", "continuum_hypothesis", "continuum_classical", "continuum_axioms", "lists", "lexemes", "quotients", "algebra", "ring_numerals", "ordered_algebra", "differences", "binary_integers", "integers", "fractions", "binary_rationals", "rationals", "squares"];
 
 // The Cubist sources the test suite checks (cubist-tests/), each a module the
 // workspace opens as proof.html?proof=NAME. tests/module-resolution.test.mjs

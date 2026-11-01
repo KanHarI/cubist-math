@@ -1,6 +1,6 @@
 import unat;
 import equivalence_from_inverse;
-import counting_bridge;
+import finite_cardinalities;
 import classical;
 use unat;
 

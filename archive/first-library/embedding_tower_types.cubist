@@ -1,5 +1,5 @@
 import embedding_transport;
-import counting_bridge;
+import finite_dependent_counts;
 
 // Transport in a family of subtypes changes its evidence, retaining its value.
 def transported_subtype_value(

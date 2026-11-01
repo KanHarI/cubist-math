@@ -123,8 +123,10 @@ NT1–NT5). That covers:
 
 20 modules have left the archive: `euclid` (NT2) and, on 2026-10-30, the
 other 19 (NT5). The counting results of the same catalog area joined them
-by the user's decision of 2026-11-01 (NT6): rebuilt in the library, with
-their nine archive modules deleted on 2026-11-02.
+by the user's decision of 2026-11-01 (NT6): rebuilt in the library on
+2026-11-02; the archive keeps the unary copies its linear algebra and
+Galois theory use until R3 decides those areas, and four counting modules
+are deleted.
 
 **Governing requirement.** Computability is expressible and preserved.
 Every applicable release extends the canonicity fixture; results with no
@@ -1117,8 +1119,9 @@ Each step lands in focused PRs under the review rule above.
          **Done** on 2026-11-02: uniqueness of finite cardinality, counting
          functions and permutations, Rijke's binomial types with Pascal's
          rule, and finite choice with fibered counting rebuilt in the
-         library; the archive's other areas take them through
-         `counting_bridge`, and its nine counting modules are deleted.
+         library; the archive keeps, unchanged, the unary pieces its
+         linear algebra, Galois theory and S3 use, until R3 decides those
+         areas, and deletes the binomial modules and unused declarations.
 
       This depends only on NUM1 and can proceed alongside 3 and 4.
 3. **Alongside the runtime phase: K2.5's `axiom` definitions**, the

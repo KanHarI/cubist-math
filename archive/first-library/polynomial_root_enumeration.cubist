@@ -1,7 +1,7 @@
 import unat;
 import polynomial_splitting;
 import simple_extension_embeddings;
-import counting_bridge;
+import finite_cardinalities;
 use unat;
 
 // A zero product of linear factors locates a root in the finite list.

@@ -3,7 +3,7 @@ import galois_fixing_subgroups;
 import intermediate_towers;
 import field_embedding_spaces;
 import subgroup_carriers;
-import counting_bridge;
+import finite_cardinalities;
 
 // An extension automorphism is a field embedding of its ambient field.
 def galois_field_embedding(K : AlgebraicField, E : FieldExt(K), e : Galois(K, E)) :

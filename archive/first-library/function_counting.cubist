@@ -1,0 +1,31 @@
+// Finite products over this archive's unary Fin, kept for its permutations,
+// fibered counts and linear algebra until R3 decides those areas. The
+// library's finite_arithmetic and finite_functions rebuild products and
+// function counting; the archive's function counts were deleted on
+// 2026-11-02 (docs/roadmaps/archive-retirement.md#counting-in-the-library).
+import unat;
+import finite;
+use unat;
+
+// Multiplication is a recurrence on ordinary UNat.
+def multiply_count(n, m : UNat) := induction n as k return UNat {
+    zero => 0;
+    succ previous => add_count(m, previous);
+  };
+
+def fin_product(n, m : UNat) :=
+  induction n as k return Bijection(Fin(k) and Fin(m), Fin(multiply_count(k, m))) {
+    zero => impossible_bijection(Void and Fin(m), fst(Void, Fin(m)));
+    succ previous => compose_bijection(
+      (Unit or Fin(k)) and Fin(m), Fin(m) or (Fin(k) and Fin(m)),
+      Fin(add_count(m, multiply_count(k, m))), product_successor(Fin(k), Fin(m)),
+      compose_bijection(
+        Fin(m) or (Fin(k) and Fin(m)), Fin(m) or Fin(multiply_count(k, m)),
+        Fin(add_count(m, multiply_count(k, m))),
+        sum_bijection(
+          Fin(m), Fin(k) and Fin(m), Fin(m), Fin(multiply_count(k, m)), identity_bijection(Fin(m)),
+          previous
+        ), fin_sum(m, multiply_count(k, m))
+      )
+    );
+  };

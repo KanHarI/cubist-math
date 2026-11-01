@@ -14,11 +14,11 @@ const root = new URL("../../../", import.meta.url);
 const selection = [
   ["unat", "unat_add_assoc"],
   ["paths_", "right_unit"],
-  ["finite_choice", "fibered_cardinality"],
+  ["finite_dependent_counts", "finite_uniform_fiber_count"],
   ["group_operations", "group_conjugate_multiply"],
   ["field_vector_spaces", "field_scalar_laws"],
 ];
-// unat and finite_choice are the library's; the other modules are the archive's.
+// unat is the library's; the other modules are the archive's.
 const sourcePath = name => `${libraryModules.includes(name) ? "library" : "archive/first-library"}/${name}.cubist`;
 const report = await benchmark({ modules: selection.map(([module]) => module),
   limitMs: 1000, readSource: sourceReader() });

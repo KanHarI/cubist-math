@@ -7,8 +7,8 @@
 // Authority: docs/roadmaps/archive-retirement.md#counting-in-the-library
 import finite_choice;
 import binomial_types;
-import function_counting;
-import permutations;
+import finite_functions;
+import finite_permutations;
 import nat;
 use nat;
 

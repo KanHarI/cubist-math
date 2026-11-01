@@ -1,5 +1,5 @@
 import field_embedding_image;
-import counting_bridge;
+import finite_cardinalities;
 import field_arithmetic;
 
 // Surjectivity of an embedding has unique witnesses. Its inverse is therefore

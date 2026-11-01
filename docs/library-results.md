@@ -87,9 +87,10 @@ are not tagged.
   n-element set to an m-element set. There are k! self-equivalences of a
   k-element set. Both are stated as equivalences of types. [C] Rebuilt in
   the library on 2026-11-02
-  ([`function_counting`](../library/function_counting.cubist),
-  [`permutations`](../library/permutations.cubist), on the sums and products
-  of [`finite_arithmetic`](../library/finite_arithmetic.cubist)), with the
+  ([`finite_functions`](../library/finite_functions.cubist),
+  [`finite_permutations`](../library/finite_permutations.cubist), on the
+  sums and products of
+  [`finite_arithmetic`](../library/finite_arithmetic.cubist)), with the
   library's binary powers and factorial: equivalences of `Fin(n) -> Fin(m)`
   with `Fin(mⁿ)` and of the self-equivalences of `Fin(k)` with `Fin(k!)`,
   and so, merely, for every n-, m- and k-element type.
@@ -109,9 +110,10 @@ are not tagged.
   every type with a finite cardinality, and fibered counting with no set
   hypotheses.
 
-  The archive's nine counting modules were deleted; its linear algebra and
-  Galois theory take these results from the library through the archive's
-  `counting_bridge`
+  The archive keeps its unary copies of the uniqueness of cardinality, of
+  S3's six permutations and of finite choice with fibered counting, which
+  its linear algebra, Galois theory and S3 use, until R3 decides those
+  areas; its binomial modules and function counts were deleted
   ([plan](roadmaps/archive-retirement.md#counting-in-the-library)).
 
 ## Order and sets
@@ -268,7 +270,7 @@ For reference only. Names are module names in the archived library.
 | Area | Modules |
 | --- | --- |
 | Foundations | `sets`, `equivalence_from_inverse`, `structured_sets`, `set_quotients`, `quotient_descent`, `quotient_sets`, `surjections` |
-| Numbers and counting | `integers`, `counting_bridge` (the library's counting results, for the archive's finite types) |
+| Numbers and counting | `integers`; the unary copies of the counting results, kept for linear algebra and Galois theory: `finite_cancellation`, `finite_cardinalities`, `function_counting`, `permutations`, `finite_dependent_counts` |
 | Order and sets | `schroeder_bernstein`, `bourbaki_witt`, `zorn_chain_complete` |
 | Groups | `group_univalence`, `subgroup_*`, `normal_subgroups`, `group_cosets`, `quotient_group_universal`, `group_first_isomorphism`, `non_normal_subgroup` |
 | Homotopy types | `circle`, `circle_group_identity`, `circle_degree`, `bouquet_*`, `puncture_*` |

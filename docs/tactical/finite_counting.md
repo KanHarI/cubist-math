@@ -2,11 +2,14 @@
 
 **Rebuilt in the library on 2026-11-02** (step NT6 of the
 [archive retirement](../roadmaps/archive-retirement.md#counting-in-the-library)):
-`finite_cardinality`, `finite_arithmetic`, `function_counting`,
-`permutations`, `binomial_types` and `finite_choice` rebuild these results
-over binary `Nat`. This checkpoint describes the archive's counting
-modules, which were deleted the same day; its links and commands no longer
-run.
+`finite_cardinality`, `finite_arithmetic`, `finite_functions`,
+`finite_permutations`, `binomial_types` and `finite_choice` rebuild these
+results over binary `Nat`. This checkpoint describes the archive's counting
+modules. The binomial modules were deleted the same day, with the function
+counts; `finite_cancellation`, `finite_cardinalities`, `permutations`,
+`finite_dependent_counts` and a reduced `function_counting` stay for the
+archive's linear algebra and Galois theory until R3 decides those areas.
+Links and commands for the deleted modules no longer run.
 
 All constructions below are ordinary high-level `.cubist` source. The compiler
 emits checked instructions for the same C/WASM kernel used by the workbench;

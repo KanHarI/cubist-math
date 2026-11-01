@@ -323,10 +323,6 @@
    "summary": "Linear algebra · splitting finite coordinates"
   },
   {
-   "path": "archive/first-library/counting_bridge.cubist",
-   "summary": "Finite types · the library's counts for sums of Unit"
-  },
-  {
    "path": "archive/first-library/cubical_paths.cubist",
    "summary": "Cubical paths · computation, composition and pushouts"
   },
@@ -587,6 +583,14 @@
    "summary": "Linear algebra · finite basis extraction from a dimension bound"
   },
   {
+   "path": "archive/first-library/finite_cancellation.cubist",
+   "summary": "Finite types · cancellation and cardinality"
+  },
+  {
+   "path": "archive/first-library/finite_cardinalities.cubist",
+   "summary": "Finite cardinalities and transport"
+  },
+  {
    "path": "archive/first-library/finite_combinations.cubist",
    "summary": "Linear algebra · finite combination laws"
   },
@@ -597,6 +601,10 @@
   {
    "path": "archive/first-library/finite_decisions.cubist",
    "summary": "Finite types · constructive membership decisions"
+  },
+  {
+   "path": "archive/first-library/finite_dependent_counts.cubist",
+   "summary": "Finite choice and counting dependent families"
   },
   {
    "path": "archive/first-library/finite_dimension.cubist",
@@ -661,6 +669,10 @@
   {
    "path": "archive/first-library/formal_series.cubist",
    "summary": "Formal series · convolution and ring identities"
+  },
+  {
+   "path": "archive/first-library/function_counting.cubist",
+   "summary": "Finite types · products of unary counts"
   },
   {
    "path": "archive/first-library/function_linear_isos.cubist",
@@ -929,6 +941,10 @@
   {
    "path": "archive/first-library/permutation_groups.cubist",
    "summary": "Groups · permutations and point stabilizers"
+  },
+  {
+   "path": "archive/first-library/permutations.cubist",
+   "summary": "Permutations · factorials"
   },
   {
    "path": "archive/first-library/polynomial_adjoin_universal.cubist",
@@ -2447,16 +2463,20 @@
    "summary": "Finite choice with no choice axiom: a family of merely inhabited types in `U0` over a type with a finite cardinality has a mere section (`FiniteChoice`, `fin_choice`, `finite_choice`). A type fibered over an n-element base with m-element fibers has n * m elements, with no set hypotheses (`fibered_cardinality`)."
   },
   {
+   "path": "library/finite_functions.cubist",
+   "summary": "There are m^n functions from `Fin(n)` to `Fin(m)`, an equivalence with `Fin(power(m, n))` whose numbers read a function's values as digits in base m, the value at 0 first (`fin_functions`); so from an n-element type to an m-element type (`function_cardinality`)."
+  },
+  {
+   "path": "library/finite_permutations.cubist",
+   "summary": "Transpositions with the point in `A or Unit`, for `A` with decidable equality; a self-equivalence of `A or Unit` is the image of the point and a self-equivalence of `A` (`permutation_successor`); so `Fin(k)` has `factorial(k)` self-equivalences (`fin_permutations`), and so does every k-element type (`permutation_cardinality`)."
+  },
+  {
    "path": "library/finite_sets.cubist",
    "summary": "`Fin(n)`, the natural numbers strictly below `n`, with checked setness; elements with equal numbers are equal (`fin_path`), and equality is decidable (`fin_decide`). Uses public binary `Nat`."
   },
   {
    "path": "library/fractions.cubist",
    "summary": "The field of fractions of a commutative ring with decidable equality, no zero divisors and zero not one: fractions `x / d` carry evidence that `d` is nonzero, cross multiplication defines their quotient relation, and their operations descend to a field (`fraction_field`) with a separate equality decision (`q_decide`). The coefficient embedding `q_embed` is injective and preserves zero, one, addition, multiplication and negation. This construction does not import the integer instance."
-  },
-  {
-   "path": "library/function_counting.cubist",
-   "summary": "There are m^n functions from `Fin(n)` to `Fin(m)`, an equivalence with `Fin(power(m, n))` whose numbers read a function's values as digits in base m, the value at 0 first (`fin_functions`); so from an n-element type to an m-element type (`function_cardinality`)."
   },
   {
    "path": "library/h1_classical.cubist",
@@ -2493,10 +2513,6 @@
   {
    "path": "library/ordered_algebra.cubist",
    "summary": "`OrderedRing` extends `Ring` with a proposition-valued, cotransitive, tight strict order compatible with addition and positive multiplication, including constructive reflection of positive products to apartness of each factor from zero. `OrderedCommRing` extends both `OrderedRing` and `CommRing`; `OrderedField` extends `OrderedCommRing` with inverses of elements apart from zero. Non-strict order is the negation of reverse strict order. `ordered_inv` extracts the unique inverse from its truncated law. Apartness is a truncated positive-or-negative sign, stronger constructively than mere inequality with zero. No decidable order or completeness is assumed; ordered integer/rational models are not yet provided."
-  },
-  {
-   "path": "library/permutations.cubist",
-   "summary": "Transpositions with the point in `A or Unit`, for `A` with decidable equality; a self-equivalence of `A or Unit` is the image of the point and a self-equivalence of `A` (`permutation_successor`); so `Fin(k)` has `factorial(k)` self-equivalences (`fin_permutations`), and so does every k-element type (`permutation_cardinality`)."
   },
   {
    "path": "library/powersets.cubist",
