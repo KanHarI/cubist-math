@@ -127,22 +127,6 @@
    "summary": "Surjective field embeddings are isomorphisms"
   },
   {
-   "path": "archive/first-library/binomial_counting.cubist",
-   "summary": "Binomial types · finite cardinality"
-  },
-  {
-   "path": "archive/first-library/binomial_pascal.cubist",
-   "summary": "Binomial types · Pascal bijection"
-  },
-  {
-   "path": "archive/first-library/binomial_types.cubist",
-   "summary": "Binomial types · Rijke construction"
-  },
-  {
-   "path": "archive/first-library/binomial.cubist",
-   "summary": "Subsets · Pascal counting"
-  },
-  {
    "path": "archive/first-library/boolean_cuts.cubist",
    "summary": "Real numbers · classical Boolean cuts"
   },
@@ -337,6 +321,10 @@
   {
    "path": "archive/first-library/coordinate_splitting.cubist",
    "summary": "Linear algebra · splitting finite coordinates"
+  },
+  {
+   "path": "archive/first-library/counting_bridge.cubist",
+   "summary": "Finite types · the library's counts for sums of Unit"
   },
   {
    "path": "archive/first-library/cubical_paths.cubist",
@@ -599,14 +587,6 @@
    "summary": "Linear algebra · finite basis extraction from a dimension bound"
   },
   {
-   "path": "archive/first-library/finite_cancellation.cubist",
-   "summary": "Finite types · cancellation and cardinality"
-  },
-  {
-   "path": "archive/first-library/finite_cardinalities.cubist",
-   "summary": "Finite cardinalities and transport"
-  },
-  {
    "path": "archive/first-library/finite_combinations.cubist",
    "summary": "Linear algebra · finite combination laws"
   },
@@ -617,10 +597,6 @@
   {
    "path": "archive/first-library/finite_decisions.cubist",
    "summary": "Finite types · constructive membership decisions"
-  },
-  {
-   "path": "archive/first-library/finite_dependent_counts.cubist",
-   "summary": "Finite choice and counting dependent families"
   },
   {
    "path": "archive/first-library/finite_dimension.cubist",
@@ -685,10 +661,6 @@
   {
    "path": "archive/first-library/formal_series.cubist",
    "summary": "Formal series · convolution and ring identities"
-  },
-  {
-   "path": "archive/first-library/function_counting.cubist",
-   "summary": "Finite functions · powers"
   },
   {
    "path": "archive/first-library/function_linear_isos.cubist",
@@ -957,10 +929,6 @@
   {
    "path": "archive/first-library/permutation_groups.cubist",
    "summary": "Groups · permutations and point stabilizers"
-  },
-  {
-   "path": "archive/first-library/permutations.cubist",
-   "summary": "Permutations · factorials"
   },
   {
    "path": "archive/first-library/polynomial_adjoin_universal.cubist",
@@ -2376,7 +2344,11 @@
   },
   {
    "path": "library/binary.cubist",
-   "summary": "`Binary := Fin(2)`, its values `False` and `True`, and computable Boolean operations `Not`, `And`, `Or`, `Xor` and `Nor`."
+   "summary": "`Binary := Fin(2)`, its values `False` and `True`, which are different and are its only values (`false_ne_true`, `binary_cases`), and computable Boolean operations `Not`, `And`, `Or`, `Xor` and `Nor`."
+  },
+  {
+   "path": "library/binomial_types.cubist",
+   "summary": "Rijke's binomial types: `Binomial(A, B)`, the decidable subsets of `A` whose selected elements (`Selected`) are merely equivalent to `B`. Pascal's rule as an equivalence of types, for all `A` and `B` (`pascal`): `Binomial(A or Unit, B or Unit)` is `Binomial(A, B) or Binomial(A, B or Unit)`. Binomial types of equivalent types are equivalent (`binomial_equiv`), so `Binomial(Fin(n), Fin(k))` has `choose(n, k)` elements, the subsets that select the top element first (`fin_binomials`), and so does the binomial type of an n-element type and a k-element type (`binomial_cardinality`)."
   },
   {
    "path": "library/bnat_arithmetic.cubist",
@@ -2448,7 +2420,7 @@
   },
   {
    "path": "library/contractible_maps.cubist",
-   "summary": "Equivalences as contractible maps, the form the kernel checks a Glue type's equivalences in: the fiber of a function, a function whose fibers are contractible (`IsContrMap`), the type of such equivalences (`ContrEquiv`), the identity, and the equality of two equivalences with one forward map, since being contractible is a proposition. An equivalence has an inverse with both inverse laws (`equiv_inverse`), and every function with an inverse and both inverse laws is one (`inverse_equiv`, after Cubical Agda's `isoToIsEquiv`)."
+   "summary": "Equivalences as contractible maps, the form the kernel checks a Glue type's equivalences in: the fiber of a function, a function whose fibers are contractible (`IsContrMap`), the type of such equivalences (`ContrEquiv`), the identity, and the equality of two equivalences with one forward map, since being contractible is a proposition. An equivalence has an inverse with both inverse laws (`equiv_inverse`), and every function with an inverse and both inverse laws is one (`inverse_equiv`, after Cubical Agda's `isoToIsEquiv`). The inverse and the composite of equivalences are equivalences (`equiv_symm`, `equiv_compose`), equivalences with the same function are equal (`equiv_path`), and propositions that imply each other are equivalent (`prop_equiv`)."
   },
   {
    "path": "library/differences.cubist",
@@ -2463,12 +2435,28 @@
    "summary": "Euclid's theorem over binary `Nat`, `euclid : InfinitelyManyPrimes`: the least divisor of n! + 1 above one, with `nat`'s factorial, is a prime above n. Its witnesses for 0 through 5 are 2, 2, 3, 7, 5 and 11."
   },
   {
+   "path": "library/finite_arithmetic.cubist",
+   "summary": "`Fin(a) or Fin(b)` is equivalent to `Fin(a + b)`, the second summand's `j` at `a + j` (`fin_sum`), and `Fin(a) and Fin(b)` to `Fin(a * b)`, the pair `(i, j)` at `i * b + j` (`fin_product`); so the sizes of finite types add under sums and multiply under products."
+  },
+  {
+   "path": "library/finite_cardinality.cubist",
+   "summary": "`Fin(0)` is empty and `Fin(n + 1)` is `Fin(n)` with its top element `n` as one more point (`fin_succ_equiv`); `Fin(1)` is `Unit`, and equal sizes give equivalent finite types, keeping each element's number (`fin_cast`). Uniqueness of finite cardinality: `Fin(n)` equivalent to `Fin(m)` gives `n = m` (`fin_unique`), by cancelling top elements. A type has cardinality `n` when it is merely equivalent to `Fin(n)` (`HasCardinality`), which passes along equivalences, and that `n` is unique (`cardinality_unique`)."
+  },
+  {
+   "path": "library/finite_choice.cubist",
+   "summary": "Finite choice with no choice axiom: a family of merely inhabited types in `U0` over a type with a finite cardinality has a mere section (`FiniteChoice`, `fin_choice`, `finite_choice`). A type fibered over an n-element base with m-element fibers has n * m elements, with no set hypotheses (`fibered_cardinality`)."
+  },
+  {
    "path": "library/finite_sets.cubist",
-   "summary": "`Fin(n)`, the natural numbers strictly below `n`, with checked setness. Uses public binary `Nat`."
+   "summary": "`Fin(n)`, the natural numbers strictly below `n`, with checked setness; elements with equal numbers are equal (`fin_path`), and equality is decidable (`fin_decide`). Uses public binary `Nat`."
   },
   {
    "path": "library/fractions.cubist",
    "summary": "The field of fractions of a commutative ring with decidable equality, no zero divisors and zero not one: fractions `x / d` carry evidence that `d` is nonzero, cross multiplication defines their quotient relation, and their operations descend to a field (`fraction_field`) with a separate equality decision (`q_decide`). The coefficient embedding `q_embed` is injective and preserves zero, one, addition, multiplication and negation. This construction does not import the integer instance."
+  },
+  {
+   "path": "library/function_counting.cubist",
+   "summary": "There are m^n functions from `Fin(n)` to `Fin(m)`, an equivalence with `Fin(power(m, n))` whose numbers read a function's values as digits in base m, the value at 0 first (`fin_functions`); so from an n-element type to an m-element type (`function_cardinality`)."
   },
   {
    "path": "library/h1_classical.cubist",
@@ -2500,11 +2488,15 @@
   },
   {
    "path": "library/nat.cubist",
-   "summary": "Public binary `Nat`, an alias of `BNat`, with direct arithmetic and order, decimal/`0b` notation, semiring and cancellation laws, setness, dependent Peano and strong recursion, and factorial."
+   "summary": "Public binary `Nat`, an alias of `BNat`, with direct arithmetic and order, decimal/`0b` notation, semiring and cancellation laws, setness, dependent Peano and strong recursion, factorial, powers (`power`, by Peano recursion on the exponent) and binomial coefficients (`choose`, by Pascal's rule)."
   },
   {
    "path": "library/ordered_algebra.cubist",
    "summary": "`OrderedRing` extends `Ring` with a proposition-valued, cotransitive, tight strict order compatible with addition and positive multiplication, including constructive reflection of positive products to apartness of each factor from zero. `OrderedCommRing` extends both `OrderedRing` and `CommRing`; `OrderedField` extends `OrderedCommRing` with inverses of elements apart from zero. Non-strict order is the negation of reverse strict order. `ordered_inv` extracts the unique inverse from its truncated law. Apartness is a truncated positive-or-negative sign, stronger constructively than mere inequality with zero. No decidable order or completeness is assumed; ordered integer/rational models are not yet provided."
+  },
+  {
+   "path": "library/permutations.cubist",
+   "summary": "Transpositions with the point in `A or Unit`, for `A` with decidable equality; a self-equivalence of `A or Unit` is the image of the point and a self-equivalence of `A` (`permutation_successor`); so `Fin(k)` has `factorial(k)` self-equivalences (`fin_permutations`), and so does every k-element type (`permutation_cardinality`)."
   },
   {
    "path": "library/powersets.cubist",
@@ -2553,6 +2545,10 @@
   {
    "path": "library/squares.cubist",
    "summary": "Squares with named edges (L2.8): `Square(a0_, a1_, a_0, a_1)`, a path from its left edge to its right edge over its bottom and top edges, each edge named by its corners `a00`…`a11`. The reflexive square, the naturality square of a homotopy, transposition and both flips, double composition with its filler (`trans` is its case with a constant first edge), and horizontal and vertical composition, each by conversion. Two squares on the same three sides have equal tops (`top_unique`); so a square is an equation of composites (`square_to_path`), and back (`path_to_square`), and a homotopy's naturality (`naturality_path`) and a map's action on a composite (`cong_trans`) follow."
+  },
+  {
+   "path": "library/type_equivalences.cubist",
+   "summary": "Standard equivalences, each from an inverse pair: two empty types; sums, products and functions of equivalent types (`sum_equiv`, `product_equiv`, `function_equiv`, and pre- and postcomposition); sums are associative and commutative, an empty summand drops, and their sides are disjoint (`sum_disjoint`); `Unit` is a unit of products, which distribute over sums; there is one function out of an empty type, and a function out of `A or Unit` is one out of `A` and a value (`sum_unit_functions`); dependent pairs with equivalent fibers (`sigma_fiberwise`), over a sum or a product, with a second component in a sum, and a subtype reindexed along an equivalence (`subtype_reindex`); equivalences between equivalent types (`equiv_equiv`). Cancelling a point: an equivalence of `A or Unit` with `B or Unit` restricts to one of `A` with `B` (`sum_unit_cancel`), with no decidable equality, and an equivalence fixing the point is its restriction with the point added (`sum_unit_restrict_fixed`)."
   },
   {
    "path": "library/unat_least_elements.cubist",

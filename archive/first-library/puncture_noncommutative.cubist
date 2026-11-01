@@ -1,7 +1,7 @@
 import unat;
 import bouquet_actions;
 import puncture_winding;
-import finite_cancellation;
+import counting_bridge;
 use unat;
 
 // Two generators act as the transpositions (0 1) and (0 2) on three states.

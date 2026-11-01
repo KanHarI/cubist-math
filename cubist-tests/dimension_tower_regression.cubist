@@ -11,7 +11,7 @@ def arbitrary_tower(
   upper : FiniteExtension(L, embedding_as_extension(L, M, d)),
   whole : FiniteExtension(K, embedding_as_extension(K, M, c))
 ) :
-  extension_degree(K, embedding_as_extension(K, M, c), whole) = multiply_count(
+  extension_degree(K, embedding_as_extension(K, M, c), whole) = mul(
     extension_degree(L, embedding_as_extension(L, M, d), upper),
     extension_degree(K, embedding_as_extension(K, L, e), lower)
   ) {

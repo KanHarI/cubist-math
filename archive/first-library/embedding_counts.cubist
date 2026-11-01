@@ -68,12 +68,6 @@ def surjective_embedding_degree(
   exact extension_degree_of_basis(K, embedding_as_extension(K, L, e), finite, 1, basis);
 }
 
-// Cardinal multiplication is independent of whether the tower is read bottom
-// first or top first. It agrees with the multiplication in the degree theorem.
-def count_multiply_comm(n, m : UNat) : multiply_count(n, m) = multiply_count(m, n) {
-  exact unat_mul_comm(n, m);
-}
-
 def embedding_tower_count(
   K, R, L, T : AlgebraicField, i : FieldEmbedding(K, R), h : FieldEmbedding(R, L),
   e : FieldEmbedding(K, L), triangle : EmbeddingOverLaw(K, R, i, L, e, h), j : FieldEmbedding(K, T),
@@ -83,20 +77,16 @@ def embedding_tower_count(
     HasCardinality(EmbeddingTowerFiber(K, R, L, T, i, h, j, d), m)
   )
 ) :
-  HasCardinality(EmbeddingsOver(K, L, e, T, j), multiply_count(m, n)) {
+  HasCardinality(EmbeddingsOver(K, L, e, T, j), mul(m, n)) {
   let A := EmbeddingsOver(K, R, i, T, j);
   let B := EmbeddingTowerFiber(K, R, L, T, i, h, j);
   let S := EmbeddingTower(K, R, L, T, i, h, j);
   let H := EmbeddingsOver(K, L, e, T, j);
-  let count := uniform_fiber_count(
-    A, embeddings_over_are_set(K, R, i, T, j), n, m, lower, B,
-    (fun (d : A) => embeddings_over_are_set(R, L, h, T, embedding_over(K, R, i, T, j, d))), upper
-  );
+  let count := uniform_fiber_count(A, n, m, lower, B, upper);
   let mapped := cardinality_path(
-    S, H, embedding_tower_type_equality(K, R, L, T, i, h, e, triangle, j), multiply_count(n, m),
-    count
+    S, H, embedding_tower_type_equality(K, R, L, T, i, h, e, triangle, j), mul(n, m), count
   );
-  exact transport mapped along count_multiply_comm(n, m) in HasCardinality(H);
+  exact transport mapped along unat_mul_comm(n, m) in HasCardinality(H);
 }
 
 // Count a finite tower using extension degrees. Keep this transport generic:
