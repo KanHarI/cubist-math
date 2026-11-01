@@ -138,4 +138,58 @@ computable def nat_factorial_zero : factorial(0) = 1 := bnat_factorial_zero;
 computable def nat_factorial_succ(n : Nat) :
   factorial(succ(n)) = succ(n) * factorial(n) := bnat_factorial_succ(n);
 
+// Powers, by Peano recursion on the exponent: m^0 = 1 and
+// m^(n + 1) = m^n * m.
+computable def power(m, n : Nat) :
+  Nat := nat_peano(U0, fun (k : Nat) => Nat, 1, fun (k : Nat, previous : Nat) => previous * m, n);
+
+computable def nat_power_zero(m : Nat) : power(m, 0) = 1 := refl(1);
+
+computable def nat_power_succ(m, n : Nat) : power(m, succ(n)) = power(m, n) * m := nat_peano_succ(
+  U0, fun (k : Nat) => Nat, 1, fun (k : Nat, previous : Nat) => previous * m, n
+);
+
+// Binomial coefficients, by Pascal's rule: the first row is 1, 0, 0, ...,
+// and each later row starts with 1 and adds two neighbours of the row above.
+computable def choose_first_row(k : Nat) :
+  Nat := nat_peano(U0, fun (j : Nat) => Nat, 1, fun (j : Nat, previous : Nat) => 0, k);
+
+computable def choose_row(above : Nat -> Nat, k : Nat) : Nat := nat_peano(
+  U0, fun (j : Nat) => Nat, 1, fun (j : Nat, previous : Nat) => above(j) + above(succ(j)), k
+);
+
+computable def choose(n, k : Nat) : Nat := nat_peano(
+  U0, fun (m : Nat) => Nat -> Nat, choose_first_row,
+  fun (m : Nat, above : Nat -> Nat) => fun (j : Nat) => choose_row(above, j), n, k
+);
+
+computable def nat_choose_zero_zero : choose(0, 0) = 1 := refl(1);
+
+computable def nat_choose_zero_succ(k : Nat) : choose(0, succ(k)) = 0 := nat_peano_succ(
+  U0, fun (j : Nat) => Nat, 1, fun (j : Nat, previous : Nat) => 0, k
+);
+
+computable def nat_choose_succ_zero(n : Nat) : choose(succ(n), 0) = 1 := cong(
+  fun (row : Nat -> Nat) => row(0),
+  nat_peano_succ(
+    U0, fun (m : Nat) => Nat -> Nat, choose_first_row,
+    fun (m : Nat, above : Nat -> Nat) => fun (j : Nat) => choose_row(above, j), n
+  )
+);
+
+computable def nat_choose_succ_succ(n, k : Nat) :
+  choose(succ(n), succ(k)) = choose(n, k) + choose(n, succ(k)) := trans(
+    cong(
+      fun (row : Nat -> Nat) => row(succ(k)),
+      nat_peano_succ(
+        U0, fun (m : Nat) => Nat -> Nat, choose_first_row,
+        fun (m : Nat, above : Nat -> Nat) => fun (j : Nat) => choose_row(above, j), n
+      )
+    ),
+    nat_peano_succ(
+      U0, fun (j : Nat) => Nat, 1,
+      fun (j : Nat, previous : Nat) => choose(n, j) + choose(n, succ(j)), k
+    )
+  );
+
 hlevel_rule nat_is_set;

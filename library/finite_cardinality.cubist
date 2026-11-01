@@ -1,0 +1,185 @@
+// The structure of the finite types Fin(n), and the uniqueness of finite
+// cardinality. Fin(0) is empty, and Fin(n + 1) is Fin(n) with one more
+// point, its top element n. Equivalent finite types have the same size:
+// cancelling the top elements (type_equivalences' sum_unit_cancel) reduces
+// n + 1 and m + 1 to n and m. A type has cardinality n when it is merely
+// equivalent to Fin(n), and that n is unique.
+import h1_truncation;
+import type_equivalences;
+import bnat_order_laws;
+import finite_sets;
+import nat;
+use nat;
+
+computable def fin_zero_empty(x : Fin(0)) : Void := bnat_lt_zero(x.1, x.2);
+
+// Fin(n) inside Fin(n + 1), and the top element n.
+computable def fin_include(n : Nat, x : Fin(n)) :
+  Fin(succ(n)) := (x.1, bnat_lt_succ_right(x.1, n, x.2));
+
+computable def fin_top(n : Nat) : Fin(succ(n)) := (n, bnat_lt_succ(n));
+
+computable def fin_join(n : Nat, y : Fin(n) or Unit) : Fin(succ(n)) := match y return Fin(succ(n)) {
+    left x => fin_include(n, x);
+    right u => fin_top(n);
+  };
+
+// An element of Fin(n + 1) is below n, or is n. The decision is an
+// argument, so that the laws below can take its two cases.
+computable def fin_split_by(n : Nat, x : Fin(succ(n)), d : Decidable(U0, x.1 < n)) :
+  Fin(n) or Unit := match d return (Fin(n) or Unit) {
+    left below => left((x.1, below));
+    right not_below => right(tt);
+  };
+
+computable def fin_split(n : Nat, x : Fin(succ(n))) :
+  Fin(n) or Unit := fin_split_by(n, x, bnat_lt_decide(x.1, n));
+
+computable def fin_join_split(n : Nat, x : Fin(succ(n)), d : Decidable(U0, x.1 < n)) :
+  fin_join(n, fin_split_by(n, x, d)) = x := match d as c return (
+    fin_join(n, fin_split_by(n, x, c)) = x
+  ) {
+    left below => fin_path(succ(n), fin_include(n, (x.1, below)), x, refl(x.1));
+    right not_below => fin_path(
+      succ(n), fin_top(n), x, match bnat_lt_succ_cases(x.1, n, x.2) return (n = x.1) {
+        left below => absurd(not_below(below));
+        right same => sym(same);
+      }
+    );
+  };
+
+computable def fin_split_include(n : Nat, x : Fin(n), d : Decidable(U0, x.1 < n)) :
+  fin_split_by(n, fin_include(n, x), d) = left(x) := match d as c return (
+    fin_split_by(n, fin_include(n, x), c) = typed(Fin(n) or Unit, left(x))
+  ) {
+    left below => cong(
+      fun (z : Fin(n)) => typed(Fin(n) or Unit, left(z)), fin_path(n, (x.1, below), x, refl(x.1))
+    );
+    right not_below => absurd(not_below(x.2));
+  };
+
+computable def fin_split_top(n : Nat, u : Unit, d : Decidable(U0, n < n)) :
+  fin_split_by(n, fin_top(n), d) = right(u) := match d as c return (
+    fin_split_by(n, fin_top(n), c) = typed(Fin(n) or Unit, right(u))
+  ) {
+    left below => absurd(bnat_lt_irrefl(n, below));
+    right not_below => cong(fun (t : Unit) => typed(Fin(n) or Unit, right(t)), unit_is_prop(tt, u));
+  };
+
+computable def fin_split_join(n : Nat, y : Fin(n) or Unit) :
+  fin_split(n, fin_join(n, y)) = y := match y as z return (fin_split(n, fin_join(n, z)) = z) {
+    left x => fin_split_include(n, x, bnat_lt_decide(x.1, n));
+    right u => fin_split_top(n, u, bnat_lt_decide(n, n));
+  };
+
+// Fin(n + 1) is Fin(n) with its top element n as one more point.
+computable def fin_succ_equiv(n : Nat) :
+  ContrEquiv(U0, Fin(n) or Unit, Fin(succ(n))) := inverse_equiv(
+    U0, Fin(n) or Unit, Fin(succ(n)), fun (y : Fin(n) or Unit) => fin_join(n, y),
+    fun (x : Fin(succ(n))) => fin_split(n, x),
+    fun (x : Fin(succ(n))) => fin_join_split(n, x, bnat_lt_decide(x.1, n)),
+    fun (y : Fin(n) or Unit) => fin_split_join(n, y)
+  );
+
+// Fin(1) has the one element 0.
+computable def fin_one_zero(x : Fin(1)) :
+  0 = x.1 := match bnat_lt_succ_cases(x.1, 0, x.2) return (0 = x.1) {
+    left below => absurd(bnat_lt_zero(x.1, below));
+    right same => sym(same);
+  };
+
+computable def fin_one : ContrEquiv(U0, Unit, Fin(1)) := inverse_equiv(
+  U0, Unit, Fin(1), fun (u : Unit) => (0, tt), fun (x : Fin(1)) => tt,
+  fun (x : Fin(1)) => fin_path(1, (0, tt), x, fin_one_zero(x)),
+  fun (u : Unit) => unit_is_prop(tt, u)
+);
+
+// Equal sizes give equivalent finite types, keeping each element's number.
+computable def fin_cast(n, m : Nat, p : n = m) : ContrEquiv(U0, Fin(n), Fin(m)) := inverse_equiv(
+  U0, Fin(n), Fin(m), fun (x : Fin(n)) => (x.1, comp(fun (i : Interval) => x.1 < (p @ i), x.2)),
+  fun (y : Fin(m)) => (y.1, comp(fun (i : Interval) => y.1 < (p @ ~i), y.2)),
+  fun (y : Fin(m)) => fin_path(
+    m,
+    (
+      y.1,
+      comp(fun (i : Interval) => y.1 < (p @ i), comp(fun (i : Interval) => y.1 < (p @ ~i), y.2))
+    ), y, refl(y.1)
+  ),
+  fun (x : Fin(n)) => fin_path(
+    n,
+    (
+      x.1,
+      comp(fun (i : Interval) => x.1 < (p @ ~i), comp(fun (i : Interval) => x.1 < (p @ i), x.2))
+    ), x, refl(x.1)
+  )
+);
+
+// Uniqueness of finite cardinality: equivalent finite types have the same
+// size, by induction on n and cases on m.
+computable def FinUnique(n : Nat) : U0 := forall m : Nat. ContrEquiv(U0, Fin(n), Fin(m)) -> n = m;
+
+computable def fin_unique_zero : FinUnique(0) := fun (m : Nat) => nat_peano(
+  U0, fun (k : Nat) => ContrEquiv(U0, Fin(0), Fin(k)) -> 0 = k,
+  fun (e : ContrEquiv(U0, Fin(0), Fin(0))) => refl(0),
+  fun (k : Nat, previous : ContrEquiv(U0, Fin(0), Fin(k)) -> 0 = k) => fun (
+    e : ContrEquiv(U0, Fin(0), Fin(succ(k)))
+  ) => absurd(fin_zero_empty(equiv_inverse(U0, Fin(0), Fin(succ(k)), e, fin_top(k)))), m
+);
+
+// Two finite types with top elements: cancel them.
+computable def fin_cancel_top(n, m : Nat, e : ContrEquiv(U0, Fin(succ(n)), Fin(succ(m)))) :
+  ContrEquiv(U0, Fin(n), Fin(m)) := sum_unit_cancel(
+    U0, Fin(n), Fin(m),
+    equiv_compose(
+      U0, Fin(n) or Unit, Fin(succ(n)), Fin(m) or Unit, fin_succ_equiv(n),
+      equiv_compose(
+        U0, Fin(succ(n)), Fin(succ(m)), Fin(m) or Unit, e,
+        equiv_symm(U0, Fin(m) or Unit, Fin(succ(m)), fin_succ_equiv(m))
+      )
+    )
+  );
+
+computable def fin_unique_succ(n : Nat, previous : FinUnique(n)) :
+  FinUnique(succ(n)) := fun (m : Nat) => nat_peano(
+    U0, fun (k : Nat) => ContrEquiv(U0, Fin(succ(n)), Fin(k)) -> succ(n) = k,
+    fun (e : ContrEquiv(U0, Fin(succ(n)), Fin(0))) => absurd(fin_zero_empty(e.1(fin_top(n)))),
+    fun (k : Nat, unused : ContrEquiv(U0, Fin(succ(n)), Fin(k)) -> succ(n) = k) => fun (
+      e : ContrEquiv(U0, Fin(succ(n)), Fin(succ(k)))
+    ) => cong(succ, previous(k, fin_cancel_top(n, k, e))), m
+  );
+
+computable def fin_unique(n, m : Nat, e : ContrEquiv(U0, Fin(n), Fin(m))) :
+  n = m := nat_peano(U0, FinUnique, fin_unique_zero, fin_unique_succ, n, m, e);
+
+// A type has cardinality n when it is merely equivalent to Fin(n).
+computable def HasCardinality(A : U0, n : Nat) : U0 := Trunc(U0, ContrEquiv(U0, Fin(n), A));
+
+computable def has_cardinality_is_prop(A : U0, n : Nat) :
+  IsProp(U0, HasCardinality(A, n)) := mere_is_prop(U0, ContrEquiv(U0, Fin(n), A));
+
+computable def fin_cardinality(n : Nat) : HasCardinality(Fin(n), n) := merely(
+  U0, ContrEquiv(U0, Fin(n), Fin(n)), id_contr_equiv(U0, Fin(n))
+);
+
+// Cardinality passes along equivalences.
+computable def cardinality_equiv(
+  A, B : U0, n : Nat, e : ContrEquiv(U0, A, B), count : HasCardinality(A, n)
+) :
+  HasCardinality(B, n) := mere_map(
+    U0, U0, ContrEquiv(U0, Fin(n), A), ContrEquiv(U0, Fin(n), B),
+    fun (d : ContrEquiv(U0, Fin(n), A)) => equiv_compose(U0, Fin(n), A, B, d, e), count
+  );
+
+// The cardinality of a type is unique.
+computable def cardinality_unique(
+  A : U0, n, m : Nat, count_n : HasCardinality(A, n), count_m : HasCardinality(A, m)
+) :
+  n = m := mere_eliminate(
+    U0, U0, ContrEquiv(U0, Fin(n), A), n = m, nat_is_set(n, m),
+    fun (e : ContrEquiv(U0, Fin(n), A)) => mere_eliminate(
+      U0, U0, ContrEquiv(U0, Fin(m), A), n = m, nat_is_set(n, m),
+      fun (d : ContrEquiv(U0, Fin(m), A)) => fin_unique(
+        n, m, equiv_compose(U0, Fin(n), A, Fin(m), e, equiv_symm(U0, Fin(m), A, d))
+      ), count_m
+    ), count_n
+  );

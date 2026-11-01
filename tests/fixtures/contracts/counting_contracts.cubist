@@ -1,0 +1,150 @@
+// The counting results rebuilt in the library on 2026-11-01: uniqueness of
+// finite cardinality, counting functions and permutations, Rijke's binomial
+// types with Pascal's rule, and finite choice with fibered counting. None
+// uses an assumption; the truncated ones use the library's Trunc. Small
+// instances of the counts compute: an element's number, and the element
+// with a given number.
+// Authority: docs/roadmaps/archive-retirement.md#counting-in-the-library
+import finite_choice;
+import binomial_types;
+import function_counting;
+import permutations;
+import nat;
+use nat;
+
+# test(counting.fin_unique)
+# expect_axioms([])
+computable def counting_fin_unique(n, m : Nat, e : ContrEquiv(U0, Fin(n), Fin(m))) :
+  n = m := fin_unique(n, m, e);
+
+# test(counting.cardinality_unique)
+# expect_axioms([])
+computable def counting_cardinality_unique(
+  A : U0, n, m : Nat, count_n : HasCardinality(A, n), count_m : HasCardinality(A, m)
+) :
+  n = m := cardinality_unique(A, n, m, count_n, count_m);
+
+# test(counting.functions)
+# expect_axioms([])
+computable def counting_functions(n, m : Nat) :
+  ContrEquiv(U0, Fin(n) -> Fin(m), Fin(power(m, n))) := fin_functions(n, m);
+
+# test(counting.function_cardinality)
+# expect_axioms([])
+computable def counting_function_cardinality(
+  A, B : U0, n, m : Nat, count_a : HasCardinality(A, n), count_b : HasCardinality(B, m)
+) :
+  HasCardinality(A -> B, power(m, n)) := function_cardinality(A, B, n, m, count_a, count_b);
+
+# test(counting.permutations)
+# expect_axioms([])
+computable def counting_permutations(k : Nat) :
+  ContrEquiv(U0, ContrEquiv(U0, Fin(k), Fin(k)), Fin(factorial(k))) := fin_permutations(k);
+
+# test(counting.permutation_cardinality)
+# expect_axioms([])
+computable def counting_permutation_cardinality(A : U0, k : Nat, count : HasCardinality(A, k)) :
+  HasCardinality(ContrEquiv(U0, A, A), factorial(k)) := permutation_cardinality(A, k, count);
+
+# test(counting.pascal)
+# expect_axioms([])
+computable def counting_pascal(A, B : U0) :
+  ContrEquiv(U0, Binomial(A or Unit, B or Unit), Binomial(A, B) or Binomial(A, B or Unit)) := pascal(
+    A, B
+  );
+
+# test(counting.binomials)
+# expect_axioms([])
+computable def counting_binomials(n, k : Nat) :
+  ContrEquiv(U0, Binomial(Fin(n), Fin(k)), Fin(choose(n, k))) := fin_binomials(n, k);
+
+# test(counting.binomial_cardinality)
+# expect_axioms([])
+computable def counting_binomial_cardinality(
+  A, B : U0, n, k : Nat, count_a : HasCardinality(A, n), count_b : HasCardinality(B, k)
+) :
+  HasCardinality(Binomial(A, B), choose(n, k)) := binomial_cardinality(A, B, n, k, count_a, count_b);
+
+# test(counting.finite_choice)
+# expect_axioms([])
+computable def counting_finite_choice(A : U0, n : Nat, count : HasCardinality(A, n)) :
+  FiniteChoice(A) := finite_choice(A, n, count);
+
+# test(counting.fibered_cardinality)
+# expect_axioms([])
+computable def counting_fibered_cardinality(
+  A : U0, n : Nat, count_a : HasCardinality(A, n), B : A -> U0, m : Nat, count_b : forall a : A.
+  HasCardinality(B(a), m)
+) :
+  HasCardinality(exists a : A. B(a), n * m) := fibered_cardinality(A, n, count_a, B, m, count_b);
+
+// Cancelling the top elements: the 3-cycle 0 -> 1 -> 2 -> 0 of Fin(3)
+// sends the top element 2 to 0, so its restriction to Fin(2) sends 0 to 1
+// and 1 to the top element's image, 0.
+computable def cycle : ContrEquiv(U0, Fin(3), Fin(3)) := equiv_inverse(
+  U0, ContrEquiv(U0, Fin(3), Fin(3)), Fin(6), fin_permutations(3), (0, tt)
+);
+
+# test(counting.cycle)
+evaluate cycle.1((2, tt)).1 expecting 0;
+# test(counting.cancel_first)
+evaluate fin_cancel_top(2, 2, cycle).1((0, tt)).1 expecting 1;
+# test(counting.cancel_second)
+evaluate fin_cancel_top(2, 2, cycle).1((1, tt)).1 expecting 0;
+
+// Sums put the second summand above the first; products count in rows.
+# test(counting.sum)
+evaluate fin_sum(3, 4).1(right((2, tt))).1 expecting 5;
+# test(counting.product)
+evaluate fin_product(3, 4).1(((2, tt), 1, tt)).1 expecting 9;
+# test(counting.product_row)
+evaluate equiv_inverse(U0, Fin(3) and Fin(4), Fin(12), fin_product(3, 4), (7, tt)).1.1 expecting 1;
+# test(counting.product_column)
+evaluate equiv_inverse(U0, Fin(3) and Fin(4), Fin(12), fin_product(3, 4), (7, tt)).2.1 expecting 3;
+
+// 2^3 functions from Fin(3) to Fin(2): a function's number reads its
+// values as binary digits, the value at 0 first.
+# test(counting.power)
+evaluate power(2, 3) expecting 8;
+# test(counting.constant_function)
+evaluate fin_functions(3, 2).1(fun (x : Fin(3)) => typed(Fin(2), (1, tt))).1 expecting 7;
+# test(counting.function_five)
+evaluate equiv_inverse(U0, Fin(3) -> Fin(2), Fin(8), fin_functions(3, 2), (5, tt))((0, tt)).1 expecting 1;
+# test(counting.function_five_middle)
+evaluate equiv_inverse(U0, Fin(3) -> Fin(2), Fin(8), fin_functions(3, 2), (5, tt))((1, tt)).1 expecting 0;
+# test(counting.function_five_last)
+evaluate equiv_inverse(U0, Fin(3) -> Fin(2), Fin(8), fin_functions(3, 2), (5, tt))((2, tt)).1 expecting 1;
+
+// 3! permutations of Fin(3): a permutation's number is the top element's
+// image times 2!, plus the number of the rest, so the identity is the last.
+# test(counting.factorial)
+evaluate factorial(3) expecting 6;
+# test(counting.identity_permutation)
+evaluate fin_permutations(3).1(id_contr_equiv(U0, Fin(3))).1 expecting 5;
+# test(counting.cycle_number)
+evaluate fin_permutations(3).1(cycle).1 expecting 0;
+
+// 4 choose 2 two-element subsets of Fin(4): those that select the top
+// element come first, so the first is {2, 3} and the last {0, 1}.
+computable def pair(i : Nat, bound : i < 6) :
+  DecidablePowerSet(U0, Fin(4)) := equiv_inverse(
+    U0, Binomial(Fin(4), Fin(2)), Fin(6), fin_binomials(4, 2), (i, bound)
+  ).1;
+
+// A subset of Fin(4) read as binary digits, element 0 first: {2, 3} is
+// 0011, 3, and {0, 1} is 1100, 12.
+computable def pair_digits(i : Nat, bound : i < 6) :
+  Nat := pair(i, bound, (0, tt)).1 * 8 + pair(i, bound, (1, tt)).1 * 4 + pair(i, bound, (2, tt)).1 * 2 + pair(
+    i, bound, (3, tt)
+  ).1;
+
+# test(counting.choose)
+evaluate choose(4, 2) expecting 6;
+# test(counting.first_pair)
+evaluate pair_digits(0, tt) expecting 3;
+# test(counting.last_pair)
+evaluate pair_digits(5, tt) expecting 12;
+# test(counting.pair_number)
+evaluate fin_binomials(4, 2).1(
+  equiv_inverse(U0, Binomial(Fin(4), Fin(2)), Fin(6), fin_binomials(4, 2), (3, tt))
+).1 expecting 3;

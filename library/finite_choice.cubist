@@ -1,0 +1,97 @@
+// Finite choice and fibered counting, with no choice axiom. A finite
+// product of merely inhabited types is merely inhabited: by Peano recursion
+// on the size, a family over Fin(n + 1) is one over Fin(n) and one more
+// type, and a mere element of each combines into a mere function. So a type
+// fibered over an n-element base with m-element fibers has n * m elements:
+// finite choice merely enumerates every fiber at once.
+import finite_arithmetic;
+import nat;
+use nat;
+
+// Finite choice holds for X: a family of merely inhabited types over X has
+// a mere section.
+computable def FiniteChoice(X : U0) :
+  U1 := forall P : X -> U0. (forall x : X. Trunc(U0, P(x))) -> Trunc(U0, forall x : X. P(x));
+
+computable def finite_choice_is_prop(X : U0) : IsProp(U1, FiniteChoice(X)) := pi_is_prop(
+  U1, X -> U0, fun (P : X -> U0) => (forall x : X. Trunc(U0, P(x)))
+  -> Trunc(U0, forall x : X. P(x)),
+  fun (P : X -> U0) => pi_is_prop(
+    U1, forall x : X. Trunc(U0, P(x)),
+    fun (inhabited : forall x : X. Trunc(U0, P(x))) => Trunc(U0, forall x : X. P(x)),
+    fun (inhabited : forall x : X. Trunc(U0, P(x))) => mere_is_prop(U0, forall x : X. P(x))
+  )
+);
+
+// An empty type has the empty section.
+computable def finite_choice_empty(X : U0, empty_x : X -> Void) :
+  FiniteChoice(X) := fun (P : X -> U0, inhabited : forall x : X. Trunc(U0, P(x))) => merely(
+    U0, forall x : X. P(x), fun (x : X) => absurd(empty_x(x))
+  );
+
+// A section over X or Unit is one over X and an element over the point.
+computable def finite_choice_point(X : U0, below : FiniteChoice(X)) :
+  FiniteChoice(X or Unit) := fun (
+    P : (X or Unit) -> U0, inhabited : forall x : X or Unit. Trunc(U0, P(x))
+  ) => mere_eliminate(
+    U0, U0, P(right(tt)), Trunc(U0, forall x : X or Unit. P(x)),
+    mere_is_prop(U0, forall x : X or Unit. P(x)),
+    fun (top : P(right(tt))) => mere_map(
+      U0, U0, forall x : X. P(left(x)), forall x : X or Unit. P(x),
+      fun (rest : forall x : X. P(left(x))) => fun (x : X or Unit) => match x as z return P(z) {
+        left a => rest(a);
+        right u => comp(fun (i : Interval) => P(right(unit_is_prop(tt, u) @ i)), top);
+      }, below(fun (x : X) => P(left(x)), fun (x : X) => inhabited(left(x)))
+    ), inhabited(right(tt))
+  );
+
+// Finite choice passes along equivalences.
+computable def finite_choice_equiv(X, Y : U0, e : ContrEquiv(U0, X, Y), choice_x : FiniteChoice(X)) :
+  FiniteChoice(Y) := fun (P : Y -> U0, inhabited : forall y : Y. Trunc(U0, P(y))) => mere_map(
+    U0, U0, forall x : X. P(e.1(x)), forall y : Y. P(y),
+    fun (s : forall x : X. P(e.1(x))) => fun (y : Y) => comp(
+      fun (i : Interval) => P(equiv_inverse_section(U0, X, Y, e, y) @ i),
+      s(equiv_inverse(U0, X, Y, e, y))
+    ), choice_x(fun (x : X) => P(e.1(x)), fun (x : X) => inhabited(e.1(x)))
+  );
+
+computable def fin_choice_succ(n : Nat, below : FiniteChoice(Fin(n))) :
+  FiniteChoice(Fin(succ(n))) := finite_choice_equiv(
+    Fin(n) or Unit, Fin(succ(n)), fin_succ_equiv(n), finite_choice_point(Fin(n), below)
+  );
+
+// Finite choice for Fin(n), and so for every type with a finite cardinality.
+computable def fin_choice(n : Nat) : FiniteChoice(Fin(n)) := nat_peano(
+  U1, fun (k : Nat) => FiniteChoice(Fin(k)), finite_choice_empty(Fin(0), fin_zero_empty),
+  fin_choice_succ, n
+);
+
+computable def finite_choice(A : U0, n : Nat, count : HasCardinality(A, n)) :
+  FiniteChoice(A) := mere_eliminate(
+    U0, U1, ContrEquiv(U0, Fin(n), A), FiniteChoice(A), finite_choice_is_prop(A),
+    fun (e : ContrEquiv(U0, Fin(n), A)) => finite_choice_equiv(Fin(n), A, e, fin_choice(n)), count
+  );
+
+// A type fibered over an n-element base with m-element fibers has n * m
+// elements.
+computable def fibered_cardinality(
+  A : U0, n : Nat, count_a : HasCardinality(A, n), B : A -> U0, m : Nat, count_b : forall a : A.
+  HasCardinality(B(a), m)
+) :
+  HasCardinality(exists a : A. B(a), n * m) := mere_eliminate(
+    U0, U0, ContrEquiv(U0, Fin(n), A), HasCardinality(exists a : A. B(a), n * m),
+    has_cardinality_is_prop(exists a : A. B(a), n * m),
+    fun (e : ContrEquiv(U0, Fin(n), A)) => mere_map(
+      U0, U0, forall a : A. ContrEquiv(U0, Fin(m), B(a)),
+      ContrEquiv(U0, Fin(n * m), exists a : A. B(a)),
+      fun (fibers : forall a : A. ContrEquiv(U0, Fin(m), B(a))) => equiv_compose(
+        U0, Fin(n * m), Fin(n) and Fin(m), exists a : A. B(a),
+        equiv_symm(U0, Fin(n) and Fin(m), Fin(n * m), fin_product(n, m)),
+        equiv_compose(
+          U0, Fin(n) and Fin(m), A and Fin(m), exists a : A. B(a),
+          product_equiv(U0, Fin(n), Fin(m), A, Fin(m), e, id_contr_equiv(U0, Fin(m))),
+          sigma_fiberwise(U0, A, fun (a : A) => Fin(m), B, fibers)
+        )
+      ), finite_choice(A, n, count_a, fun (a : A) => ContrEquiv(U0, Fin(m), B(a)), count_b)
+    ), count_a
+  );

@@ -1,0 +1,703 @@
+// Standard equivalences of sums, products, dependent pairs and function
+// types, each built from an inverse pair (contractible_maps' inverse_equiv),
+// and the cancellation of a point: A or Unit equivalent to B or Unit makes
+// A equivalent to B, with no decidable equality.
+import contractible_maps;
+
+// Two empty types are equivalent.
+computable def empty_equiv(U < UU0, A, B : U, empty_a : A -> Void, empty_b : B -> Void) :
+  ContrEquiv(U, A, B) := inverse_equiv(
+    U, A, B, fun (a : A) => absurd(empty_a(a)), fun (b : B) => absurd(empty_b(b)),
+    fun (b : B) => absurd(empty_b(b)), fun (a : A) => absurd(empty_a(a))
+  );
+
+// Sums.
+
+computable def sum_map(U < UU0, A, B, C, D : U, f : A -> C, g : B -> D, x : A or B) :
+  C or D := match x return (C or D) {
+    left a => left(f(a));
+    right b => right(g(b));
+  };
+
+computable def sum_map_inverse(
+  U < UU0, A, B, C, D : U, f : A -> C, g : B -> D, h : C -> A, k : D -> B, hf : forall a : A.
+  h(f(a)) = a, kg : forall b : B. k(g(b)) = b, x : A or B
+) :
+  sum_map(U, C, D, A, B, h, k, sum_map(U, A, B, C, D, f, g, x)) = x := match x as z return (
+    sum_map(U, C, D, A, B, h, k, sum_map(U, A, B, C, D, f, g, z)) = z
+  ) {
+    left a => cong(fun (y : A) => typed(A or B, left(y)), hf(a));
+    right b => cong(fun (y : B) => typed(A or B, right(y)), kg(b));
+  };
+
+// Sums of equivalent types are equivalent.
+computable def sum_equiv(U < UU0, A, B, C, D : U, e : ContrEquiv(U, A, C), d : ContrEquiv(U, B, D)) :
+  ContrEquiv(U, A or B, C or D) := inverse_equiv(
+    U, A or B, C or D, fun (x : A or B) => sum_map(U, A, B, C, D, e.1, d.1, x),
+    fun (y : C or D) => sum_map(
+      U, C, D, A, B, fun (c : C) => equiv_inverse(U, A, C, e, c),
+      fun (z : D) => equiv_inverse(U, B, D, d, z), y
+    ),
+    fun (y : C or D) => sum_map_inverse(
+      U, C, D, A, B, fun (c : C) => equiv_inverse(U, A, C, e, c),
+      fun (z : D) => equiv_inverse(U, B, D, d, z), e.1, d.1,
+      fun (c : C) => equiv_inverse_section(U, A, C, e, c),
+      fun (z : D) => equiv_inverse_section(U, B, D, d, z), y
+    ),
+    fun (x : A or B) => sum_map_inverse(
+      U, A, B, C, D, e.1, d.1, fun (c : C) => equiv_inverse(U, A, C, e, c),
+      fun (z : D) => equiv_inverse(U, B, D, d, z),
+      fun (a : A) => equiv_inverse_retraction(U, A, C, e, a),
+      fun (b : B) => equiv_inverse_retraction(U, B, D, d, b), x
+    )
+  );
+
+computable def sum_associate(U < UU0, A, B, C : U, x : (A or B) or C) :
+  A or (B or C) := match x return (A or (B or C)) {
+    left y => match y return (A or (B or C)) {
+      left a => left(a);
+      right b => right(typed(B or C, left(b)));
+    };
+    right c => right(typed(B or C, right(c)));
+  };
+
+computable def sum_unassociate(U < UU0, A, B, C : U, x : A or (B or C)) :
+  (A or B) or C := match x return ((A or B) or C) {
+    left a => left(typed(A or B, left(a)));
+    right y => match y return ((A or B) or C) {
+      left b => left(typed(A or B, right(b)));
+      right c => right(c);
+    };
+  };
+
+computable def sum_unassociate_associate(U < UU0, A, B, C : U, x : (A or B) or C) :
+  sum_unassociate(U, A, B, C, sum_associate(U, A, B, C, x)) = x := match x as z return (
+    sum_unassociate(U, A, B, C, sum_associate(U, A, B, C, z)) = z
+  ) {
+    left y => match y as w return (
+      sum_unassociate(U, A, B, C, sum_associate(U, A, B, C, typed((A or B) or C, left(w)))) = typed(
+        (A or B) or C, left(w)
+      )
+    ) {
+      left a => refl(typed((A or B) or C, left(typed(A or B, left(a)))));
+      right b => refl(typed((A or B) or C, left(typed(A or B, right(b)))));
+    };
+    right c => refl(typed((A or B) or C, right(c)));
+  };
+
+computable def sum_associate_unassociate(U < UU0, A, B, C : U, x : A or (B or C)) :
+  sum_associate(U, A, B, C, sum_unassociate(U, A, B, C, x)) = x := match x as z return (
+    sum_associate(U, A, B, C, sum_unassociate(U, A, B, C, z)) = z
+  ) {
+    left a => refl(typed(A or (B or C), left(a)));
+    right y => match y as w return (
+      sum_associate(U, A, B, C, sum_unassociate(U, A, B, C, typed(A or (B or C), right(w)))) = typed(
+        A or (B or C), right(w)
+      )
+    ) {
+      left b => refl(typed(A or (B or C), right(typed(B or C, left(b)))));
+      right c => refl(typed(A or (B or C), right(typed(B or C, right(c)))));
+    };
+  };
+
+// Sums are associative.
+computable def sum_associativity(U < UU0, A, B, C : U) :
+  ContrEquiv(U, (A or B) or C, A or (B or C)) := inverse_equiv(
+    U, (A or B) or C, A or (B or C), fun (x : (A or B) or C) => sum_associate(U, A, B, C, x),
+    fun (x : A or (B or C)) => sum_unassociate(U, A, B, C, x),
+    fun (x : A or (B or C)) => sum_associate_unassociate(U, A, B, C, x),
+    fun (x : (A or B) or C) => sum_unassociate_associate(U, A, B, C, x)
+  );
+
+computable def sum_swap(U < UU0, A, B : U, x : A or B) : B or A := match x return (B or A) {
+    left a => right(a);
+    right b => left(b);
+  };
+
+computable def sum_swap_twice(U < UU0, A, B : U, x : A or B) :
+  sum_swap(U, B, A, sum_swap(U, A, B, x)) = x := match x as z return (
+    sum_swap(U, B, A, sum_swap(U, A, B, z)) = z
+  ) {
+    left a => refl(typed(A or B, left(a)));
+    right b => refl(typed(A or B, right(b)));
+  };
+
+// Sums are commutative.
+computable def sum_commute(U < UU0, A, B : U) : ContrEquiv(U, A or B, B or A) := inverse_equiv(
+  U, A or B, B or A, fun (x : A or B) => sum_swap(U, A, B, x),
+  fun (y : B or A) => sum_swap(U, B, A, y), fun (y : B or A) => sum_swap_twice(U, B, A, y),
+  fun (x : A or B) => sum_swap_twice(U, A, B, x)
+);
+
+computable def sum_drop_empty(U < UU0, A, B : U, empty_b : B -> Void, x : A or B) :
+  A := match x return A {
+    left a => a;
+    right b => absurd(empty_b(b));
+  };
+
+computable def sum_drop_empty_inverse(U < UU0, A, B : U, empty_b : B -> Void, x : A or B) :
+  typed(A or B, left(sum_drop_empty(U, A, B, empty_b, x))) = x := match x as z return (
+    typed(A or B, left(sum_drop_empty(U, A, B, empty_b, z))) = z
+  ) {
+    left a => refl(typed(A or B, left(a)));
+    right b => absurd(empty_b(b));
+  };
+
+// An empty summand can be dropped.
+computable def sum_empty_right(U < UU0, A, B : U, empty_b : B -> Void) :
+  ContrEquiv(U, A or B, A) := inverse_equiv(
+    U, A or B, A, fun (x : A or B) => sum_drop_empty(U, A, B, empty_b, x),
+    fun (a : A) => typed(A or B, left(a)), fun (a : A) => refl(a),
+    fun (x : A or B) => sum_drop_empty_inverse(U, A, B, empty_b, x)
+  );
+
+// The two sides of a sum are disjoint.
+computable def sum_is_left(U < UU0, A, B : U, x : A or B) : U0 := match x return U0 {
+    left a => Unit;
+    right b => Void;
+  };
+
+computable def sum_disjoint(U < UU0, A, B : U, a : A, b : B, p : typed(A or B, left(a)) = right(b)) :
+  Void := comp(fun (i : Interval) => sum_is_left(U, A, B, p @ i), tt);
+
+// Products.
+
+// Products of equivalent types are equivalent.
+computable def product_equiv(
+  U < UU0, A, B, C, D : U, e : ContrEquiv(U, A, C), d : ContrEquiv(U, B, D)
+) :
+  ContrEquiv(U, A and B, C and D) := inverse_equiv(
+    U, A and B, C and D, fun (p : A and B) => (e.1(p.1), d.1(p.2)),
+    fun (q : C and D) => (equiv_inverse(U, A, C, e, q.1), equiv_inverse(U, B, D, d, q.2)),
+    fun (q : C and D) => path i => (
+      equiv_inverse_section(U, A, C, e, q.1) @ i, equiv_inverse_section(U, B, D, d, q.2) @ i
+    ),
+    fun (p : A and B) => path i => (
+      equiv_inverse_retraction(U, A, C, e, p.1) @ i, equiv_inverse_retraction(U, B, D, d, p.2) @ i
+    )
+  );
+
+// Unit is a unit of products.
+computable def unit_product(U < UU0, B : U) : ContrEquiv(U, Unit and B, B) := inverse_equiv(
+  U, Unit and B, B, fun (p : Unit and B) => p.2, fun (b : B) => (tt, b), fun (b : B) => refl(b),
+  fun (p : Unit and B) => path i => (unit_is_prop(tt, p.1) @ i, p.2)
+);
+
+computable def product_distribute_at(U < UU0, A, B, C : U, x : A or B, c : C) :
+  (A and C) or (B and C) := match x return ((A and C) or (B and C)) {
+    left a => left((a, c));
+    right b => right((b, c));
+  };
+
+computable def product_collect(U < UU0, A, B, C : U, y : (A and C) or (B and C)) :
+  (A or B) and C := match y return ((A or B) and C) {
+    left p => (left(p.1), p.2);
+    right q => (right(q.1), q.2);
+  };
+
+computable def product_collect_distribute(U < UU0, A, B, C : U, x : A or B, c : C) :
+  product_collect(U, A, B, C, product_distribute_at(U, A, B, C, x, c)) = (x, c) := match x as z return (
+    product_collect(U, A, B, C, product_distribute_at(U, A, B, C, z, c)) = (z, c)
+  ) {
+    left a => refl(typed((A or B) and C, (left(a), c)));
+    right b => refl(typed((A or B) and C, (right(b), c)));
+  };
+
+computable def product_distribute_collect(U < UU0, A, B, C : U, y : (A and C) or (B and C)) :
+  product_distribute_at(
+    U, A, B, C, product_collect(U, A, B, C, y).1, product_collect(U, A, B, C, y).2
+  ) = y := match y as z return (
+    product_distribute_at(
+      U, A, B, C, product_collect(U, A, B, C, z).1, product_collect(U, A, B, C, z).2
+    ) = z
+  ) {
+    left p => refl(typed((A and C) or (B and C), left(p)));
+    right q => refl(typed((A and C) or (B and C), right(q)));
+  };
+
+// Products distribute over sums.
+computable def product_sum_distribute(U < UU0, A, B, C : U) :
+  ContrEquiv(U, (A or B) and C, (A and C) or (B and C)) := inverse_equiv(
+    U, (A or B) and C, (A and C) or (B and C),
+    fun (p : (A or B) and C) => product_distribute_at(U, A, B, C, p.1, p.2),
+    fun (y : (A and C) or (B and C)) => product_collect(U, A, B, C, y),
+    fun (y : (A and C) or (B and C)) => product_distribute_collect(U, A, B, C, y),
+    fun (p : (A or B) and C) => product_collect_distribute(U, A, B, C, p.1, p.2)
+  );
+
+// Functions.
+
+// Functions out of equivalent types are equivalent, by precomposition.
+computable def function_domain_equiv(U < UU0, A, B, C : U, e : ContrEquiv(U, A, B)) :
+  ContrEquiv(U, B -> C, A -> C) := inverse_equiv(
+    U, B -> C, A -> C, fun (f : B -> C) => fun (a : A) => f(e.1(a)),
+    fun (g : A -> C) => fun (b : B) => g(equiv_inverse(U, A, B, e, b)),
+    fun (g : A -> C) => path i => fun (a : A) => cong(g, equiv_inverse_retraction(U, A, B, e, a)) @ i,
+    fun (f : B -> C) => path i => fun (b : B) => cong(f, equiv_inverse_section(U, A, B, e, b)) @ i
+  );
+
+// Functions into equivalent types are equivalent, by postcomposition.
+computable def function_codomain_equiv(U < UU0, A, B, C : U, e : ContrEquiv(U, B, C)) :
+  ContrEquiv(U, A -> B, A -> C) := inverse_equiv(
+    U, A -> B, A -> C, fun (f : A -> B) => fun (a : A) => e.1(f(a)),
+    fun (g : A -> C) => fun (a : A) => equiv_inverse(U, B, C, e, g(a)),
+    fun (g : A -> C) => path i => fun (a : A) => equiv_inverse_section(U, B, C, e, g(a)) @ i,
+    fun (f : A -> B) => path i => fun (a : A) => equiv_inverse_retraction(U, B, C, e, f(a)) @ i
+  );
+
+// Functions between equivalent types are equivalent.
+computable def function_equiv(
+  U < UU0, A, C, B, D : U, e : ContrEquiv(U, A, C), d : ContrEquiv(U, B, D)
+) :
+  ContrEquiv(U, A -> B, C -> D) := equiv_compose(
+    U, A -> B, C -> B, C -> D, function_domain_equiv(U, C, A, B, equiv_symm(U, A, C, e)),
+    function_codomain_equiv(U, C, B, D, d)
+  );
+
+// There is exactly one function out of an empty type.
+computable def empty_functions(U < UU0, A, C : U, empty_a : A -> Void) :
+  ContrEquiv(U, A -> C, Unit) := inverse_equiv(
+    U, A -> C, Unit, fun (f : A -> C) => tt, fun (u : Unit) => fun (a : A) => absurd(empty_a(a)),
+    fun (u : Unit) => unit_is_prop(tt, u),
+    fun (f : A -> C) => path i => fun (a : A) => typed(
+      (typed(C, absurd(empty_a(a))) = f(a)), absurd(empty_a(a))
+    ) @ i
+  );
+
+// A function out of A or Unit is a function out of A and a value at the
+// point.
+computable def sum_unit_function(U < UU0, A, C : U, f : A -> C, c : C, x : A or Unit) :
+  C := match x return C {
+    left a => f(a);
+    right u => c;
+  };
+
+computable def sum_unit_function_eta(U < UU0, A, C : U, g : (A or Unit) -> C, x : A or Unit) :
+  sum_unit_function(U, A, C, fun (a : A) => g(left(a)), g(right(tt)), x) = g(x) := match x as z return (
+    sum_unit_function(U, A, C, fun (a : A) => g(left(a)), g(right(tt)), z) = g(z)
+  ) {
+    left a => refl(g(left(a)));
+    right u => cong(fun (v : Unit) => g(right(v)), unit_is_prop(tt, u));
+  };
+
+computable def sum_unit_functions(U < UU0, A, C : U) :
+  ContrEquiv(U, (A -> C) and C, (A or Unit) -> C) := inverse_equiv(
+    U, (A -> C) and C, (A or Unit) -> C,
+    fun (p : (A -> C) and C) => fun (x : A or Unit) => sum_unit_function(U, A, C, p.1, p.2, x),
+    fun (g : (A or Unit) -> C) => (fun (a : A) => g(left(a)), g(right(tt))),
+    fun (g : (A or Unit) -> C) => path i => fun (x : A or Unit) => sum_unit_function_eta(
+      U, A, C, g, x
+    ) @ i, fun (p : (A -> C) and C) => refl(p)
+  );
+
+// Dependent pairs.
+
+// Pairs over one base with equivalent fibers are equivalent.
+computable def sigma_fiberwise(
+  U < UU0, A : U, P, Q : A -> U, f : forall a : A. ContrEquiv(U, P(a), Q(a))
+) :
+  ContrEquiv(U, exists a : A. P(a), exists a : A. Q(a)) := inverse_equiv(
+    U, exists a : A. P(a), exists a : A. Q(a), fun (u : exists a : A. P(a)) => (u.1, f(u.1).1(u.2)),
+    fun (v : exists a : A. Q(a)) => (v.1, equiv_inverse(U, P(v.1), Q(v.1), f(v.1), v.2)),
+    fun (v : exists a : A. Q(a)) => path i => (
+      v.1, equiv_inverse_section(U, P(v.1), Q(v.1), f(v.1), v.2) @ i
+    ),
+    fun (u : exists a : A. P(a)) => path i => (
+      u.1, equiv_inverse_retraction(U, P(u.1), Q(u.1), f(u.1), u.2) @ i
+    )
+  );
+
+// Pairs over a sum are pairs over either side.
+computable def sigma_sum_out(U < UU0, A, B : U, R : (A or B) -> U, x : A or B) :
+  R(x)
+  -> ((exists a : A. R(left(a))) or (exists b : B. R(right(b)))) := match x as z return (
+    R(z) -> ((exists a : A. R(left(a))) or (exists b : B. R(right(b))))
+  ) {
+    left a => fun (r : R(left(a))) => left((a, r));
+    right b => fun (r : R(right(b))) => right((b, r));
+  };
+
+computable def sigma_sum_in(
+  U < UU0, A, B : U, R : (A or B) -> U, y : (exists a : A. R(left(a)))
+  or (exists b : B. R(right(b)))
+) :
+  exists x : A or B. R(x) := match y return (exists x : A or B. R(x)) {
+    left p => (left(p.1), p.2);
+    right q => (right(q.1), q.2);
+  };
+
+computable def sigma_sum_in_out(U < UU0, A, B : U, R : (A or B) -> U, x : A or B) :
+  forall r : R(x).
+  sigma_sum_in(U, A, B, R, sigma_sum_out(U, A, B, R, x, r)) = (x, r) := match x as z return (
+    forall r : R(z). sigma_sum_in(U, A, B, R, sigma_sum_out(U, A, B, R, z, r)) = (z, r)
+  ) {
+    left a => fun (r : R(left(a))) => refl(typed(exists x : A or B. R(x), (left(a), r)));
+    right b => fun (r : R(right(b))) => refl(typed(exists x : A or B. R(x), (right(b), r)));
+  };
+
+computable def sigma_sum_out_in(
+  U < UU0, A, B : U, R : (A or B) -> U, y : (exists a : A. R(left(a)))
+  or (exists b : B. R(right(b)))
+) :
+  sigma_sum_out(U, A, B, R, sigma_sum_in(U, A, B, R, y).1, sigma_sum_in(U, A, B, R, y).2) = y := match y as z return (
+    sigma_sum_out(U, A, B, R, sigma_sum_in(U, A, B, R, z).1, sigma_sum_in(U, A, B, R, z).2) = z
+  ) {
+    left p => refl(typed((exists a : A. R(left(a))) or (exists b : B. R(right(b))), left(p)));
+    right q => refl(typed((exists a : A. R(left(a))) or (exists b : B. R(right(b))), right(q)));
+  };
+
+computable def sigma_sum(U < UU0, A, B : U, R : (A or B) -> U) :
+  ContrEquiv(U, exists x : A or B. R(x), (exists a : A. R(left(a))) or (exists b : B. R(right(b)))) := inverse_equiv(
+    U, exists x : A or B. R(x), (exists a : A. R(left(a))) or (exists b : B. R(right(b))),
+    fun (u : exists x : A or B. R(x)) => sigma_sum_out(U, A, B, R, u.1, u.2),
+    fun (y : (exists a : A. R(left(a))) or (exists b : B. R(right(b)))) => sigma_sum_in(
+      U, A, B, R, y
+    ),
+    fun (y : (exists a : A. R(left(a))) or (exists b : B. R(right(b)))) => sigma_sum_out_in(
+      U, A, B, R, y
+    ), fun (u : exists x : A or B. R(x)) => sigma_sum_in_out(U, A, B, R, u.1, u.2)
+  );
+
+// Pairs whose second component lies in a sum are pairs of either kind.
+computable def sigma_distribute_at(U < UU0, A : U, P, Q : A -> U, a : A, x : P(a) or Q(a)) :
+  (exists b : A. P(b))
+  or (exists b : A. Q(b)) := match x return ((exists b : A. P(b)) or (exists b : A. Q(b))) {
+    left p => left((a, p));
+    right q => right((a, q));
+  };
+
+computable def sigma_collect(
+  U < UU0, A : U, P, Q : A -> U, y : (exists b : A. P(b)) or (exists b : A. Q(b))
+) :
+  exists a : A. P(a) or Q(a) := match y return (exists a : A. P(a) or Q(a)) {
+    left u => (u.1, left(u.2));
+    right v => (v.1, right(v.2));
+  };
+
+computable def sigma_collect_distribute(U < UU0, A : U, P, Q : A -> U, a : A, x : P(a) or Q(a)) :
+  sigma_collect(U, A, P, Q, sigma_distribute_at(U, A, P, Q, a, x)) = (a, x) := match x as z return (
+    sigma_collect(U, A, P, Q, sigma_distribute_at(U, A, P, Q, a, z)) = (a, z)
+  ) {
+    left p => refl(typed(exists b : A. P(b) or Q(b), (a, left(p))));
+    right q => refl(typed(exists b : A. P(b) or Q(b), (a, right(q))));
+  };
+
+computable def sigma_distribute_collect(
+  U < UU0, A : U, P, Q : A -> U, y : (exists b : A. P(b)) or (exists b : A. Q(b))
+) :
+  sigma_distribute_at(U, A, P, Q, sigma_collect(U, A, P, Q, y).1, sigma_collect(U, A, P, Q, y).2) = y := match y as z return (
+    sigma_distribute_at(U, A, P, Q, sigma_collect(U, A, P, Q, z).1, sigma_collect(U, A, P, Q, z).2) = z
+  ) {
+    left u => refl(typed((exists b : A. P(b)) or (exists b : A. Q(b)), left(u)));
+    right v => refl(typed((exists b : A. P(b)) or (exists b : A. Q(b)), right(v)));
+  };
+
+computable def sigma_sum_distribute(U < UU0, A : U, P, Q : A -> U) :
+  ContrEquiv(U, exists a : A. P(a) or Q(a), (exists a : A. P(a)) or (exists a : A. Q(a))) := inverse_equiv(
+    U, exists a : A. P(a) or Q(a), (exists a : A. P(a)) or (exists a : A. Q(a)),
+    fun (u : exists a : A. P(a) or Q(a)) => sigma_distribute_at(U, A, P, Q, u.1, u.2),
+    fun (y : (exists a : A. P(a)) or (exists a : A. Q(a))) => sigma_collect(U, A, P, Q, y),
+    fun (y : (exists a : A. P(a)) or (exists a : A. Q(a))) => sigma_distribute_collect(
+      U, A, P, Q, y
+    ), fun (u : exists a : A. P(a) or Q(a)) => sigma_collect_distribute(U, A, P, Q, u.1, u.2)
+  );
+
+// Pairs over a product are pairs of pairs.
+computable def sigma_product(U < UU0, A, B : U, R : (A and B) -> U) :
+  ContrEquiv(U, exists x : A and B. R(x), exists a : A. exists b : B. R((a, b))) := inverse_equiv(
+    U, exists x : A and B. R(x), exists a : A. exists b : B. R((a, b)),
+    fun (u : exists x : A and B. R(x)) => (u.1.1, u.1.2, u.2),
+    fun (v : exists a : A. exists b : B. R((a, b))) => ((v.1, v.2.1), v.2.2),
+    fun (v : exists a : A. exists b : B. R((a, b))) => refl(v),
+    fun (u : exists x : A and B. R(x)) => refl(u)
+  );
+
+// A subtype over Y, reindexed along an equivalence X to Y.
+computable def subtype_reindex(
+  U < UU0, X, Y : U, e : ContrEquiv(U, X, Y), Q : Y -> U, prop_q : forall y : Y. IsProp(U, Q(y))
+) :
+  ContrEquiv(U, exists x : X. Q(e.1(x)), exists y : Y. Q(y)) := inverse_equiv(
+    U, exists x : X. Q(e.1(x)), exists y : Y. Q(y),
+    fun (u : exists x : X. Q(e.1(x))) => (e.1(u.1), u.2),
+    fun (v : exists y : Y. Q(y)) => (
+      equiv_inverse(U, X, Y, e, v.1),
+      comp(fun (i : Interval) => Q(equiv_inverse_section(U, X, Y, e, v.1) @ ~i), v.2)
+    ),
+    fun (v : exists y : Y. Q(y)) => subtype_injective(
+      U, Y, Q, prop_q,
+      (
+        e.1(equiv_inverse(U, X, Y, e, v.1)),
+        comp(fun (i : Interval) => Q(equiv_inverse_section(U, X, Y, e, v.1) @ ~i), v.2)
+      ), v, equiv_inverse_section(U, X, Y, e, v.1)
+    ),
+    fun (u : exists x : X. Q(e.1(x))) => subtype_injective(
+      U, X, fun (x : X) => Q(e.1(x)), fun (x : X) => prop_q(e.1(x)),
+      (
+        equiv_inverse(U, X, Y, e, e.1(u.1)),
+        comp(fun (i : Interval) => Q(equiv_inverse_section(U, X, Y, e, e.1(u.1)) @ ~i), u.2)
+      ), u, equiv_inverse_retraction(U, X, Y, e, u.1)
+    )
+  );
+
+// Equivalences between equivalent types are equivalent: an equivalence of A
+// with B is carried to one of C with D through e and d.
+computable def equiv_equiv(
+  U < UU0, A, C, B, D : U, e : ContrEquiv(U, A, C), d : ContrEquiv(U, B, D)
+) :
+  ContrEquiv(U, ContrEquiv(U, A, B), ContrEquiv(U, C, D)) := inverse_equiv(
+    U, ContrEquiv(U, A, B), ContrEquiv(U, C, D),
+    fun (f : ContrEquiv(U, A, B)) => equiv_compose(
+      U, C, A, D, equiv_symm(U, A, C, e), equiv_compose(U, A, B, D, f, d)
+    ),
+    fun (g : ContrEquiv(U, C, D)) => equiv_compose(
+      U, A, C, B, e, equiv_compose(U, C, D, B, g, equiv_symm(U, B, D, d))
+    ),
+    fun (g : ContrEquiv(U, C, D)) => equiv_path(
+      U, C, D,
+      equiv_compose(
+        U, C, A, D, equiv_symm(U, A, C, e),
+        equiv_compose(
+          U, A, B, D,
+          equiv_compose(U, A, C, B, e, equiv_compose(U, C, D, B, g, equiv_symm(U, B, D, d))), d
+        )
+      ), g,
+      fun (c : C) => trans(
+        equiv_inverse_section(U, B, D, d, g.1(e.1(equiv_inverse(U, A, C, e, c)))),
+        cong(g.1, equiv_inverse_section(U, A, C, e, c))
+      )
+    ),
+    fun (f : ContrEquiv(U, A, B)) => equiv_path(
+      U, A, B,
+      equiv_compose(
+        U, A, C, B, e,
+        equiv_compose(
+          U, C, D, B,
+          equiv_compose(U, C, A, D, equiv_symm(U, A, C, e), equiv_compose(U, A, B, D, f, d)),
+          equiv_symm(U, B, D, d)
+        )
+      ), f,
+      fun (a : A) => trans(
+        equiv_inverse_retraction(U, B, D, d, f.1(equiv_inverse(U, A, C, e, e.1(a)))),
+        cong(f.1, equiv_inverse_retraction(U, A, C, e, a))
+      )
+    )
+  );
+
+// Cancelling a point. Of two different elements of B or Unit, at least one
+// lies in B: the first if it does, and otherwise the second.
+computable def sum_unit_pick_second(U < UU0, B : U, u : Unit, z : B or Unit) :
+  ((typed(B or Unit, right(u)) = z) -> Void)
+  -> B := match z as w return (((typed(B or Unit, right(u)) = w) -> Void) -> B) {
+    left b => fun (apart : (typed(B or Unit, right(u)) = typed(B or Unit, left(b))) -> Void) => b;
+    right v => fun (apart : (typed(B or Unit, right(u)) = typed(B or Unit, right(v))) -> Void) => absurd(
+      apart(cong(fun (t : Unit) => typed(B or Unit, right(t)), unit_is_prop(u, v)))
+    );
+  };
+
+computable def sum_unit_pick(U < UU0, B : U, y, z : B or Unit) :
+  ((y = z) -> Void) -> B := match y as w return (((w = z) -> Void) -> B) {
+    left b => fun (apart : (typed(B or Unit, left(b)) = z) -> Void) => b;
+    right u => sum_unit_pick_second(U, B, u, z);
+  };
+
+// The pick depends only on the two elements: its evidence is a proposition.
+computable def sum_unit_pick_path(
+  U < UU0, B : U, y0, y1, z0, z1 : B or Unit, p : y0 = y1, q : z0 = z1, apart0 : (y0 = z0) -> Void,
+  apart1 : (y1 = z1) -> Void
+) :
+  sum_unit_pick(U, B, y0, z0, apart0) = sum_unit_pick(U, B, y1, z1, apart1) := path i => sum_unit_pick(
+    U, B, p @ i, q @ i,
+    prop_over(
+      U, (B or Unit) and (B or Unit), fun (w : (B or Unit) and (B or Unit)) => (w.1 = w.2) -> Void,
+      fun (w : (B or Unit) and (B or Unit)) => not_is_prop(U, w.1 = w.2), (y0, z0), (y1, z1),
+      path j => (p @ j, q @ j), apart0, apart1
+    ) @ i
+  );
+
+// The restriction of f to A, for f with a left inverse g: f(left(a)) when
+// it lies in B, and otherwise f at the point, which then does.
+computable def sum_unit_restrict(
+  U < UU0, A, B : U, f : (A or Unit) -> (B or Unit), g : (B or Unit) -> (A or Unit),
+  gf : forall x : A or Unit. g(f(x)) = x, a : A
+) :
+  B := sum_unit_pick(
+    U, B, f(left(a)), f(right(tt)),
+    fun (p : f(left(a)) = f(right(tt))) => sum_disjoint(
+      U, A, Unit, a, tt, trans(sym(gf(left(a))), trans(cong(g, p), gf(right(tt))))
+    )
+  );
+
+// Where f(left(a)) is left(b), the restriction is b.
+computable def sum_unit_restrict_left(
+  U < UU0, A, B : U, f : (A or Unit) -> (B or Unit), g : (B or Unit) -> (A or Unit),
+  gf : forall x : A or Unit. g(f(x)) = x, a : A, b : B, p : f(left(a)) = left(b)
+) :
+  sum_unit_restrict(U, A, B, f, g, gf, a) = b := sum_unit_pick_path(
+    U, B, f(left(a)), left(b), f(right(tt)), f(right(tt)), p, refl(f(right(tt))),
+    fun (q : f(left(a)) = f(right(tt))) => sum_disjoint(
+      U, A, Unit, a, tt, trans(sym(gf(left(a))), trans(cong(g, q), gf(right(tt))))
+    ),
+    fun (q : typed(B or Unit, left(b)) = f(right(tt))) => sum_disjoint(
+      U, A, Unit, a, tt, trans(sym(gf(left(a))), trans(cong(g, trans(p, q)), gf(right(tt))))
+    )
+  );
+
+// Where f(left(a)) is the point and f at the point is left(b), the
+// restriction is b.
+computable def sum_unit_restrict_point(
+  U < UU0, A, B : U, f : (A or Unit) -> (B or Unit), g : (B or Unit) -> (A or Unit),
+  gf : forall x : A or Unit. g(f(x)) = x, a : A, u : Unit, b : B, p : f(left(a)) = right(u),
+  q : f(right(tt)) = left(b)
+) :
+  sum_unit_restrict(U, A, B, f, g, gf, a) = b := sum_unit_pick_path(
+    U, B, f(left(a)), right(u), f(right(tt)), left(b), p, q,
+    fun (r : f(left(a)) = f(right(tt))) => sum_disjoint(
+      U, A, Unit, a, tt, trans(sym(gf(left(a))), trans(cong(g, r), gf(right(tt))))
+    ),
+    fun (r : typed(B or Unit, right(u)) = typed(B or Unit, left(b))) => sum_disjoint(
+      U, B, Unit, b, u, sym(r)
+    )
+  );
+
+// The restriction of g undoes that of f: by cases on f(left(a)), and where
+// it is the point, on f at the point.
+computable def sum_unit_restrict_inverse_point(
+  U < UU0, A, B : U, f : (A or Unit) -> (B or Unit), g : (B or Unit) -> (A or Unit),
+  gf : forall x : A or Unit. g(f(x)) = x, fg : forall y : B or Unit. f(g(y)) = y, a : A, u : Unit,
+  p : f(left(a)) = right(u), z : B or Unit
+) :
+  (f(right(tt)) = z)
+  -> sum_unit_restrict(U, B, A, g, f, fg, sum_unit_restrict(U, A, B, f, g, gf, a)) = a := match z as w return (
+    (f(right(tt)) = w)
+    -> sum_unit_restrict(U, B, A, g, f, fg, sum_unit_restrict(U, A, B, f, g, gf, a)) = a
+  ) {
+    left b => fun (q : f(right(tt)) = left(b)) => trans(
+      cong(
+        fun (c : B) => sum_unit_restrict(U, B, A, g, f, fg, c),
+        sum_unit_restrict_point(U, A, B, f, g, gf, a, u, b, p, q)
+      ),
+      sum_unit_restrict_point(
+        U, B, A, g, f, fg, b, tt, a, trans(cong(g, sym(q)), gf(right(tt))),
+        trans(
+          cong(fun (t : Unit) => g(right(t)), unit_is_prop(tt, u)),
+          trans(cong(g, sym(p)), gf(left(a)))
+        )
+      )
+    );
+    right v => fun (q : f(right(tt)) = right(v)) => absurd(
+      sum_disjoint(
+        U, A, Unit, a, tt,
+        trans(
+          sym(gf(left(a))),
+          trans(
+            cong(
+              g,
+              trans(
+                p,
+                trans(
+                  cong(fun (t : Unit) => typed(B or Unit, right(t)), unit_is_prop(u, v)), sym(q)
+                )
+              )
+            ), gf(right(tt))
+          )
+        )
+      )
+    );
+  };
+
+computable def sum_unit_restrict_inverse_at(
+  U < UU0, A, B : U, f : (A or Unit) -> (B or Unit), g : (B or Unit) -> (A or Unit),
+  gf : forall x : A or Unit. g(f(x)) = x, fg : forall y : B or Unit. f(g(y)) = y, a : A, y : B
+  or Unit
+) :
+  (f(left(a)) = y)
+  -> sum_unit_restrict(U, B, A, g, f, fg, sum_unit_restrict(U, A, B, f, g, gf, a)) = a := match y as w return (
+    (f(left(a)) = w)
+    -> sum_unit_restrict(U, B, A, g, f, fg, sum_unit_restrict(U, A, B, f, g, gf, a)) = a
+  ) {
+    left b => fun (p : f(left(a)) = left(b)) => trans(
+      cong(
+        fun (c : B) => sum_unit_restrict(U, B, A, g, f, fg, c),
+        sum_unit_restrict_left(U, A, B, f, g, gf, a, b, p)
+      ), sum_unit_restrict_left(U, B, A, g, f, fg, b, a, trans(cong(g, sym(p)), gf(left(a))))
+    );
+    right u => fun (p : f(left(a)) = right(u)) => sum_unit_restrict_inverse_point(
+      U, A, B, f, g, gf, fg, a, u, p, f(right(tt)), refl(f(right(tt)))
+    );
+  };
+
+computable def sum_unit_restrict_inverse(
+  U < UU0, A, B : U, f : (A or Unit) -> (B or Unit), g : (B or Unit) -> (A or Unit),
+  gf : forall x : A or Unit. g(f(x)) = x, fg : forall y : B or Unit. f(g(y)) = y, a : A
+) :
+  sum_unit_restrict(U, B, A, g, f, fg, sum_unit_restrict(U, A, B, f, g, gf, a)) = a := sum_unit_restrict_inverse_at(
+    U, A, B, f, g, gf, fg, a, f(left(a)), refl(f(left(a)))
+  );
+
+// An equivalence of A or Unit with B or Unit restricts to one of A with B.
+computable def sum_unit_cancel(U < UU0, A, B : U, e : ContrEquiv(U, A or Unit, B or Unit)) :
+  ContrEquiv(U, A, B) := inverse_equiv(
+    U, A, B,
+    fun (a : A) => sum_unit_restrict(
+      U, A, B, e.1, fun (y : B or Unit) => equiv_inverse(U, A or Unit, B or Unit, e, y),
+      fun (x : A or Unit) => equiv_inverse_retraction(U, A or Unit, B or Unit, e, x), a
+    ),
+    fun (b : B) => sum_unit_restrict(
+      U, B, A, fun (y : B or Unit) => equiv_inverse(U, A or Unit, B or Unit, e, y), e.1,
+      fun (y : B or Unit) => equiv_inverse_section(U, A or Unit, B or Unit, e, y), b
+    ),
+    fun (b : B) => sum_unit_restrict_inverse(
+      U, B, A, fun (y : B or Unit) => equiv_inverse(U, A or Unit, B or Unit, e, y), e.1,
+      fun (y : B or Unit) => equiv_inverse_section(U, A or Unit, B or Unit, e, y),
+      fun (x : A or Unit) => equiv_inverse_retraction(U, A or Unit, B or Unit, e, x), b
+    ),
+    fun (a : A) => sum_unit_restrict_inverse(
+      U, A, B, e.1, fun (y : B or Unit) => equiv_inverse(U, A or Unit, B or Unit, e, y),
+      fun (x : A or Unit) => equiv_inverse_retraction(U, A or Unit, B or Unit, e, x),
+      fun (y : B or Unit) => equiv_inverse_section(U, A or Unit, B or Unit, e, y), a
+    )
+  );
+
+// An equivalence fixing the point is its restriction, with the point added.
+computable def sum_unit_restrict_fixed_at(
+  U < UU0, A, B : U, f : (A or Unit) -> (B or Unit), g : (B or Unit) -> (A or Unit),
+  gf : forall x : A or Unit. g(f(x)) = x, fixed : f(right(tt)) = right(tt), a : A, y : B or Unit
+) :
+  (f(left(a)) = y)
+  -> typed(B or Unit, left(sum_unit_restrict(U, A, B, f, g, gf, a))) = f(left(a)) := match y as w return (
+    (f(left(a)) = w) -> typed(B or Unit, left(sum_unit_restrict(U, A, B, f, g, gf, a))) = f(left(a))
+  ) {
+    left b => fun (p : f(left(a)) = left(b)) => trans(
+      cong(
+        fun (c : B) => typed(B or Unit, left(c)), sum_unit_restrict_left(U, A, B, f, g, gf, a, b, p)
+      ), sym(p)
+    );
+    right u => fun (p : f(left(a)) = right(u)) => absurd(
+      sum_disjoint(
+        U, A, Unit, a, tt,
+        trans(
+          sym(gf(left(a))),
+          trans(
+            cong(
+              g,
+              trans(
+                p,
+                trans(
+                  cong(fun (t : Unit) => typed(B or Unit, right(t)), unit_is_prop(u, tt)),
+                  sym(fixed)
+                )
+              )
+            ), gf(right(tt))
+          )
+        )
+      )
+    );
+  };
+
+computable def sum_unit_restrict_fixed(
+  U < UU0, A, B : U, f : (A or Unit) -> (B or Unit), g : (B or Unit) -> (A or Unit),
+  gf : forall x : A or Unit. g(f(x)) = x, fixed : f(right(tt)) = right(tt), a : A
+) :
+  typed(B or Unit, left(sum_unit_restrict(U, A, B, f, g, gf, a))) = f(left(a)) := sum_unit_restrict_fixed_at(
+    U, A, B, f, g, gf, fixed, a, f(left(a)), refl(f(left(a)))
+  );

@@ -1,0 +1,63 @@
+// Counting functions: there are m^n functions from an n-element type to an
+// m-element type, as an equivalence of Fin(n) -> Fin(m) with Fin(m^n). By
+// Peano recursion on n, a function on Fin(n + 1) is one on Fin(n) and a
+// value at the top element n, so a function's number reads its values as
+// the digits of a numeral in base m, the value at n last.
+import finite_arithmetic;
+import nat;
+use nat;
+
+computable def FinFunctions(m, n : Nat) : U0 := ContrEquiv(U0, Fin(n) -> Fin(m), Fin(power(m, n)));
+
+computable def fin_functions_zero(m : Nat) : FinFunctions(m, 0) := equiv_compose(
+  U0, Fin(0) -> Fin(m), Unit, Fin(1), empty_functions(U0, Fin(0), Fin(m), fin_zero_empty), fin_one
+);
+
+computable def fin_functions_succ(m, n : Nat, previous : FinFunctions(m, n)) :
+  FinFunctions(m, succ(n)) {
+  let split := equiv_compose(
+    U0, Fin(succ(n)) -> Fin(m), (Fin(n) or Unit) -> Fin(m), (Fin(n) -> Fin(m)) and Fin(m),
+    function_domain_equiv(U0, Fin(n) or Unit, Fin(succ(n)), Fin(m), fin_succ_equiv(n)),
+    equiv_symm(
+      U0, (Fin(n) -> Fin(m)) and Fin(m), (Fin(n) or Unit) -> Fin(m),
+      sum_unit_functions(U0, Fin(n), Fin(m))
+    )
+  );
+  exact equiv_compose(
+    U0, Fin(succ(n)) -> Fin(m), (Fin(n) -> Fin(m)) and Fin(m), Fin(power(m, succ(n))), split,
+    equiv_compose(
+      U0, (Fin(n) -> Fin(m)) and Fin(m), Fin(power(m, n)) and Fin(m), Fin(power(m, succ(n))),
+      product_equiv(
+        U0, Fin(n) -> Fin(m), Fin(m), Fin(power(m, n)), Fin(m), previous, id_contr_equiv(U0, Fin(m))
+      ),
+      equiv_compose(
+        U0, Fin(power(m, n)) and Fin(m), Fin(power(m, n) * m), Fin(power(m, succ(n))),
+        fin_product(power(m, n), m),
+        fin_cast(power(m, n) * m, power(m, succ(n)), sym(nat_power_succ(m, n)))
+      )
+    )
+  );
+}
+
+// There are m^n functions from Fin(n) to Fin(m).
+computable def fin_functions(n, m : Nat) :
+  ContrEquiv(U0, Fin(n) -> Fin(m), Fin(power(m, n))) := nat_peano(
+    U0, FinFunctions(m), fin_functions_zero(m), fin_functions_succ(m), n
+  );
+
+// So there are m^n functions from an n-element type to an m-element type.
+computable def function_cardinality(
+  A, B : U0, n, m : Nat, count_a : HasCardinality(A, n), count_b : HasCardinality(B, m)
+) :
+  HasCardinality(A -> B, power(m, n)) := mere_eliminate(
+    U0, U0, ContrEquiv(U0, Fin(n), A), HasCardinality(A -> B, power(m, n)),
+    has_cardinality_is_prop(A -> B, power(m, n)),
+    fun (e : ContrEquiv(U0, Fin(n), A)) => mere_map(
+      U0, U0, ContrEquiv(U0, Fin(m), B), ContrEquiv(U0, Fin(power(m, n)), A -> B),
+      fun (d : ContrEquiv(U0, Fin(m), B)) => equiv_compose(
+        U0, Fin(power(m, n)), Fin(n) -> Fin(m), A -> B,
+        equiv_symm(U0, Fin(n) -> Fin(m), Fin(power(m, n)), fin_functions(n, m)),
+        function_equiv(U0, Fin(n), A, Fin(m), B, e, d)
+      ), count_b
+    ), count_a
+  );

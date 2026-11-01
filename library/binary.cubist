@@ -31,3 +31,17 @@ computable def Xor(x, y : Binary) : Binary := match x.1 {
   };
 
 computable def Nor(x, y : Binary) : Binary := Not(Or(x, y));
+
+// False and True are different, and every Binary is one of them.
+computable def false_ne_true(p : False = True) :
+  Void := nat_zero_ne_succ(0, cong(fun (x : Binary) => x.1, p));
+
+computable def binary_cases(x : Binary) :
+  (x = True)
+  or (x = False) := match bnat_lt_succ_cases(x.1, 1, x.2) return ((x = True) or (x = False)) {
+    left below => match bnat_lt_succ_cases(x.1, 0, below) return ((x = True) or (x = False)) {
+      left none => absurd(bnat_lt_zero(x.1, none));
+      right zero_ => right(fin_path(2, x, False, zero_));
+    };
+    right one => left(fin_path(2, x, True, one));
+  };
