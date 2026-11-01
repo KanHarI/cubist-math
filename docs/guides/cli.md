@@ -152,7 +152,9 @@ weak-head queries; only a part it cannot write, as a higher-order induction
 hypothesis, has the whole value form computed again by those queries.
 Neither certifies the value: the kernel checks the term's type and that it
 uses no assumption. The runtime stops at 100M
-steps, 20M allocated cells and 30 seconds a part (E487 to E489).
+steps, 20M allocated cells and 30 seconds a part (E487 to E489); the cells
+bind first, after about 40M steps, about half a second on a recent laptop
+([calibration](../reports/runtime-repl-evaluation.md#the-budgets-calibrated)).
 `evaluate !TERM;` prints its weak head, its arguments as they are, and
 `evaluate !!TERM;` its normal form, a definition whose value is no data kept
 by name, and `evaluate !!!TERM;` its full normal form, every definition
