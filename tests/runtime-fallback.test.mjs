@@ -59,14 +59,18 @@ def id_after(n : UNat) : Unit -> Unit := match n {
 };
 `;
 
-// A fallback forces nothing: the node is read back with its parts as the
-// walk left them, and the kernel computes only what its rule inspects. A
-// composition at a function type is a λ at once, so slow(2 * 255) is never
-// computed. The cells the walk forced, in the node's environment or as
-// definitions it references outside its term binders, are read back as
-// values: expensive, which the kernel stops with K344, is the first
-// field's definition cell, tt, in the composition's base.
-test("a fallback forces nothing, and reads back what the walk forced as values", async t => {
+// A fallback forces exactly what the kernel's rule for the node reads, as
+// the kernel's head query of the composition's family tells, and nothing
+// else. At a function type the rule is a λ at once and reads no base, so
+// slow(2 * 255) is never computed: two heads are asked, the family's and
+// the composition's. At Unit, as at a data sort or a sum, the rule reads
+// the base's weak head, so the runtime computes the base first: a
+// countdown the kernel's queries stop in with K344 is the runtime's, and
+// the kernel is handed tt. The cells the walk forced, in the node's
+// environment or as definitions it references outside its term binders,
+// are read back as values: expensive, the first field's definition cell,
+// is tt in the composition's base.
+test("a fallback forces only what the kernel's rule reads, and reads back what the walk forced as values", async t => {
   const { runtime, kernel } = await printed(t, `${unary}
 def slow(n : UNat) : Unit -> Unit := match n {
   zero => fun (u : Unit) => u;
@@ -74,42 +78,72 @@ def slow(n : UNat) : Unit -> Unit := match n {
 };
 def expensive : Unit := unit_of(count_into(2 * 255, 0));
 print(evaluate(comp(fun (i : Interval) => Unit -> Unit, slow(2 * 255))));
+print(evaluate(comp(fun (i : Interval) => Unit, unit_of(count_into(2 * 255, 0)))));
 print(evaluate(typed(Unit and Unit, (expensive, comp(fun (i : Interval) => Unit, expensive)))));
 `);
-  assert.deepEqual(texts(runtime), ["<fun>", "(tt, tt)"]);
-  assert.deepEqual(texts(kernel), ["<fun>", "K344: Native prototype syntax depth exceeds 512."]);
-  const [slow, pair] = runtime;
-  // slow is never demanded, nor even copied; one node is asked of the
-  // kernel, whose composition rule builds the λ in a few steps.
-  assert.deepEqual([slow.by.by, slow.by.fallbacks, slow.by.iota, slow.by.snapshotDefinitions], ["runtime", 1, 0, 0]);
+  assert.deepEqual(texts(runtime), ["<fun>", "tt", "(tt, tt)"]);
+  assert.deepEqual(texts(kernel), ["<fun>", ...Array(2).fill("K344: Native prototype syntax depth exceeds 512.")]);
+  const [slow, base, pair] = runtime;
+  // slow is never demanded, nor even copied.
+  assert.deepEqual([slow.by.by, slow.by.fallbacks, slow.by.bases, slow.by.iota, slow.by.snapshotDefinitions], ["runtime", 2, 0, 0, 0]);
   assert.ok(slow.ticks < 100, `the composition took ${slow.ticks} ticks`);
-  // The composition's base is tt, read from the definition cell: the
-  // kernel's ticks for it do not include expensive's computation.
-  assert.deepEqual([pair.by.by, pair.by.fallbacks], ["runtime", 1]);
+  // The base is the runtime's: the kernel's ticks do not include it.
+  assert.deepEqual([base.by.by, base.by.fallbacks, base.by.bases], ["runtime", 2, 1]);
+  assert.ok(base.by.iota > 1000 && base.ticks < 100, `the composition took ${base.ticks} ticks`);
+  assert.deepEqual([pair.by.by, pair.by.fallbacks, pair.by.bases], ["runtime", 2, 1]);
   assert.ok(pair.ticks < 100, `the composition took ${pair.ticks} ticks`);
 });
 
-// A readback across forcing: the first field's composition reads back the
-// suspended x as its closure; the second forces x, the identity after a
-// countdown of count_into(2 * 255, 0); and the third's composition reads x
-// back from its value, not from the first readback's memo of its closure,
-// whose computation the kernel stops with K344. The same holds for x a
-// definition, read back first before it has a cell, then demanded and
-// forced: the third field takes the forced cell, not the definition's
-// handle.
-test("a readback after a cell is forced reads its value, not an earlier readback's closure", async t => {
+// The family's head query is the kernel's first step in its own rule, so
+// asking it first costs the kernel no more: the node is handed with the
+// family as asked, whose head the kernel keeps in its weak-head cache.
+// Where it is expensive,
+// T(2 * 255) computed down to Unit, the runtime waits for it, and the
+// kernel computes it once; where it fails, at a countdown the kernel stops
+// in with K344, the fallback reports the kernel's stop, which the kernel's
+// queries alone meet in the same rule.
+test("a family whose head query is expensive is asked once, and one whose head query fails is the kernel's stop", async t => {
   const { runtime, kernel } = await printed(t, `${unary}
+def T(n : UNat) : U0 := match n {
+  zero => Unit;
+  succ(k) => T(k);
+};
+print(evaluate(comp(fun (i : Interval) => T(2 * 255), tt)));
+print(evaluate(comp(fun (i : Interval) => T(count_into(2 * 255, 0)), tt)));
+`);
+  assert.deepEqual(texts(runtime), ["tt", "K344: Native prototype syntax depth exceeds 512."]);
+  assert.deepEqual(texts(kernel), texts(runtime));
+  const [expensive] = runtime;
+  assert.deepEqual([expensive.by.by, expensive.by.fallbacks, expensive.by.bases], ["runtime", 2, 1]);
+  // The family's head computed once: the kernel's walk's ticks, and the
+  // separate query's own one.
+  assert.ok(expensive.ticks <= kernel[0].ticks + 1, `the family took ${expensive.ticks} ticks, the kernel's walk ${kernel[0].ticks}`);
+});
+
+// A readback across forcing: the first field's composition, at a function
+// type, reads back the suspended x as its closure; the second forces x,
+// the identity after a countdown of count_into(2 * 255, 0); and the
+// third's unglue, whose rule reads its value's weak head, the glue value's
+// base x(tt), reads x back from its value, not from the first readback's
+// memo of its closure, whose computation the kernel stops with K344. The
+// same holds for x a definition, read back first before it has a cell,
+// then demanded and forced: the third field takes the forced cell, not the
+// definition's handle.
+test("a readback after a cell is forced reads its value, not an earlier readback's closure", async t => {
+  const { runtime, kernel } = await printed(t, `import contractible_maps;
+${unary}
 def x_ : Unit -> Unit := id_after(count_into(2 * 255, 0));
 print(evaluate((fun (x : Unit -> Unit) => typed((Unit -> Unit) and Unit and Unit,
-  (comp(fun (i : Interval) => Unit -> Unit, x), x(tt), comp(fun (i : Interval) => Unit, x(tt)))))(id_after(count_into(2 * 255, 0)))));
-print(evaluate(typed((Unit -> Unit) and Unit and Unit, (comp(fun (i : Interval) => Unit -> Unit, x_), x_(tt), comp(fun (i : Interval) => Unit, x_(tt))))));
+  (comp(fun (i : Interval) => Unit -> Unit, x), x(tt), unglue(typed(Glue(Unit), glue(x(tt)))))))(id_after(count_into(2 * 255, 0)))));
+print(evaluate(typed((Unit -> Unit) and Unit and Unit, (comp(fun (i : Interval) => Unit -> Unit, x_), x_(tt), unglue(typed(Glue(Unit), glue(x_(tt))))))));
 `);
   assert.deepEqual(texts(runtime), ["(<fun>, tt, tt)", "(<fun>, tt, tt)"]);
   assert.deepEqual(texts(kernel), Array(2).fill("K344: Native prototype syntax depth exceeds 512."));
-  // Neither composition computes the countdown, which the kernel's walk
-  // stops in after thousands of ticks.
+  // Neither the composition nor the unglue computes the countdown, which
+  // the kernel's walk stops in after thousands of ticks.
   for (const [i, print] of runtime.entries()) {
-    assert.deepEqual([print.by.by, print.by.fallbacks], ["runtime", 2]);
+    // The family's head and the composition's, and the unglue's.
+    assert.deepEqual([print.by.by, print.by.fallbacks], ["runtime", 3]);
     assert.ok(print.ticks < 1000 && print.ticks < kernel[i].ticks, `the compositions took ${print.ticks} ticks`);
   }
 });

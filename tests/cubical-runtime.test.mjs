@@ -858,8 +858,9 @@ def deep := parity(100 * 100);
 
 // The library's Euclid computes by NUM1's strong recursion, which
 // transports along offset paths: the runtime sends each composition it
-// meets through the fallback per node (W2), reading it back into kernel
-// syntax and going on with the kernel's head, and computes the prime.
+// meets through the fallback per node (W2), computing first the base the
+// kernel's rule reads, then reading the composition back into kernel syntax
+// and going on with the kernel's head, and computes the prime.
 test("the library Euclid's prime computes in the runtime, its compositions falling back per node", async t => {
   const { query, kernel } = await setup(t, `
 import euclid; use nat;
@@ -878,11 +879,13 @@ def five := euclid(5);
     const number = await runtime.observe(pair.first);
     assert.equal(number.index, 1, name);
     assert.equal(await positive(runtime, number.args[0]), prime, name);
-    assert.ok(runtime.stats.fallbacks > 0 && runtime.readbackStats.readbacks > 0, name);
+    assert.ok(runtime.stats.fallbacks > 0 && runtime.stats.bases > 0 && runtime.readbackStats.readbacks > 0, name);
     assert.ok(kernel.arena().nodes > before, "the fallback's readbacks build kernel syntax");
+    // It copies the kernel's heads it goes on with, as well as the
+    // program: about 3,500 nodes for four's prime and 6,100 for five's.
     const retained = runtime.retainedObjects();
     assert.ok(retained.runtimeObjects > 0);
-    assert.ok(retained.snapshotNodes < 5000);
+    assert.ok(retained.snapshotNodes < 10000);
     runtime.dispose();
   }
 });

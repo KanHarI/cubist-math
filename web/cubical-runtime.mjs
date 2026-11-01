@@ -104,10 +104,11 @@ class Budget {
     this.milliseconds = options.milliseconds ?? 30000;
     for (const n of [this.maxSteps, this.maxCells, this.slice, this.milliseconds])
       if (!Number.isSafeInteger(n) || n < 1) throw new TypeError("Runtime limits must be positive safe integers.");
-    // fallbacks counts the nodes sent to the kernel's head query, and
-    // shortcuts those the syntax-only conditions settled (W2).
+    // fallbacks counts the nodes sent to the kernel's head query,
+    // shortcuts those the syntax-only conditions settled, and bases the
+    // compositions whose base the machine computed first (W2).
     this.stats = { steps: 0, allocatedCells: 0, forces: 0, hits: 0, beta: 0, iota: 0, maxFrames: 0, snapshotNodes: 0,
-      snapshotDefinitions: 0, shared: 0, fallbacks: 0, shortcuts: 0 };
+      snapshotDefinitions: 0, shared: 0, fallbacks: 0, shortcuts: 0, bases: 0 };
   }
   start({ milliseconds = this.milliseconds, signal } = {}) {
     if (!Number.isSafeInteger(milliseconds) || milliseconds < 1)
@@ -158,14 +159,18 @@ function judged(kernel, judgement, budget) {
 }
 
 // A declared type's constructor descriptors, compiled from its admitted
-// record when one of its constructors is first demanded.
+// record when one of its constructors is first demanded, and whether the
+// type is a higher sort, truncated or with a constructor with dimensions,
+// as the record says (ck_signature_higher, kernel/src/signatures.c): a
+// composition there takes another rule than at a data sort.
 function descriptors(kernel, index, budget) {
   const read = id => { budget.tick(); return kernel.node(id); };
   budget.tick();
   const s = kernel.signature(index);
   if (!s.admitted) fail("input", "Runtime execution requires an admitted signature.");
   budget.allocate(1 + s.constructors.length);
-  return s.constructors.map(c => {
+  const higher = s.modifier !== 0 || s.constructors.some(c => c.dimensions);
+  return Object.assign(s.constructors.map(c => {
     const count = c.data + c.positions;
     if (c.dimensions || c.generated) return { data: c.data, count, arities: null, refused: true };
     const arities = [];
@@ -182,7 +187,7 @@ function descriptors(kernel, index, budget) {
       type = pi.children[1];
     }
     return { data: c.data, count, arities: refused ? null : arities, refused };
-  });
+  }), { higher });
 }
 
 // Public handles are opaque and belong to exactly one query. Applications
@@ -400,11 +405,14 @@ export class RuntimeQuery {
   // A constructor's descriptor; one the machine does not execute is
   // refused, and only constructors that are not make values.
   #descriptor(signature, index) {
-    const signatures = this.#image.signatures;
-    if (!signatures.has(signature)) signatures.set(signature, descriptors(this.#kernel(), signature, this.#budget));
-    const c = signatures.get(signature)[index];
+    const c = this.#descriptors(signature)[index];
     if (!c) fail("input", "A constructor requires an admitted signature.");
     return c;
+  }
+  #descriptors(signature) {
+    const signatures = this.#image.signatures;
+    if (!signatures.has(signature)) signatures.set(signature, descriptors(this.#kernel(), signature, this.#budget));
+    return signatures.get(signature);
   }
   // The machine for one demanded cell. It pauses after each slice of work:
   // observe resumes it after yielding to the event loop, observeNow at once.
@@ -573,6 +581,10 @@ export class RuntimeQuery {
             } else fail("unsupported", `Runtime application of ${value.tag} is not implemented.`);
             break;
           }
+          // A composition or transport whose base the machine computed
+          // first, its rule reading it: read back with that base, and asked.
+          case "composition":
+            force(this.#ask(this.#fallbackRead({ kind: "frame", frame: this.#rebuild(frame.node, frame.env, this.#mode, null, frame.given) }))); break;
           case "eliminate": {
             const e = frame.eliminator;
             if (value.tag === "Opaque") {
@@ -678,8 +690,20 @@ export class RuntimeQuery {
   // has the total face applies that face's equivalence's first projection
   // to the value. Where one holds, the machine goes on with the part it
   // selects, and nothing the rule discards is read back. Otherwise the node
-  // is read back as its closure and its weak head asked of the kernel. It
-  // gives the cell the machine forces next, after any frames it pushes.
+  // is read back and its weak head asked of the kernel. It gives the cell
+  // the machine forces next, after any frames it pushes.
+  //
+  // A fallback forces exactly the parts the kernel's rule for the node
+  // reads, as the kernel's own head query tells. The rule for a
+  // composition or a transport reads its family's weak head first, which
+  // is asked of the kernel; at a data sort, Unit or a sum, a composition's
+  // rule reads its base's weak head too (data_sort_composition,
+  // ck_inductive_composition, the Unit case of ck_reduce_composition), and
+  // a transport's, at a higher sort, always does (ck_hit_reduce). There the
+  // machine computes the base first, and the node is read back with the
+  // base as computed and the family as asked; the tubes, which mention the
+  // composition's dimension, stay the kernel's. A homogeneous composition's
+  // rule reads no base.
   #fallback(n, code, env, push) {
     const c = n.children, delay = id => this.#delay(id, env), stats = this.#budget.stats;
     switch (n.kind) {
@@ -708,6 +732,17 @@ export class RuntimeQuery {
         push({ operation: "apply", argument: delay(c[1]) }); push({ operation: "project", second: false });
         return delay(piece.children[1]);
       }
+    }
+    if (n.kind === "Comp" || n.kind === "Trans") {
+      const family = this.#fallbackRead({ kind: "closure", code: c[0], env, mode: this.#mode }), head = this.#node(this.#headOf(family));
+      const given = { 0: this.#given(family) };
+      if (n.kind === "Trans" || head.kind === "Unit" || head.kind === "Sum" || head.kind === "Sort" && !this.#descriptors(head.payload).higher) {
+        stats.bases++;
+        const base = delay(c[2]);
+        push({ operation: "composition", node: n, env, given: { ...given, 2: { kind: "cell", cell: base, mode: this.#mode } } });
+        return base;
+      }
+      return this.#ask(this.#fallbackRead({ kind: "frame", frame: this.#rebuild(n, env, this.#mode, null, given) }));
     }
     return this.#ask(this.#fallbackRead({ kind: "closure", code, env, mode: this.#mode }));
   }
@@ -770,7 +805,7 @@ export class RuntimeQuery {
   // head as its target.
   #consume(parts, build) { return this.#ask(this.#fallbackRead({ kind: "frame", frame: { parts, results: [], stable: true, build } })); }
   #consumed(frame, slot, head) {
-    return this.#ask(this.#fallbackRead({ kind: "frame", frame: this.#rebuild(this.#node(frame.node), frame.env, this.#mode, null, { [slot]: head }) }));
+    return this.#ask(this.#fallbackRead({ kind: "frame", frame: this.#rebuild(this.#node(frame.node), frame.env, this.#mode, null, { [slot]: this.#given(head) }) }));
   }
   #given(handle) { return { kind: "given", handle }; }
   // An observation is the weak head the kernel computes for the represented
@@ -1107,8 +1142,9 @@ export class RuntimeQuery {
   // back under the same environment, a term as its closure, a level as a
   // level, and a list, a tube or system chain or a read annotation rebuilt
   // one level in turn. Only nodes that are no term binder are rebuilt.
-  // A child given, by its slot, takes that handle's place as it is: an
-  // opaque head the fallback rebuilds a node around (W2).
+  // A child given, by its slot, is read as the part given instead: an
+  // opaque head a fallback rebuilds a node around, or a composition's
+  // family as asked and its base as the machine computed it (W2).
   #rebuild(n, env, mode, items, given = {}) {
     this.#readStats.rebuilt++;
     const at = [], parts = [];
@@ -1116,7 +1152,7 @@ export class RuntimeQuery {
       if (!child) return;
       at.push(i);
       const rebuilt = n.kind === "List" ? (i === 1 ? items : undefined) : rebuiltSlots[n.kind]?.[i];
-      parts.push(i in given ? this.#given(given[i]) : rebuilt !== undefined ? { kind: "part", code: child, env, mode, items: rebuilt }
+      parts.push(i in given ? given[i] : rebuilt !== undefined ? { kind: "part", code: child, env, mode, items: rebuilt }
         : (n.kind === "List" ? items === "level" : levelSlots[n.kind]?.includes(i)) ? { kind: "level", code: child, env }
         : { kind: "closure", code: child, env, mode });
     });
