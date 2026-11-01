@@ -41,8 +41,20 @@ export const workloads = {
   "euclid-5-prime": ["import euclid; use nat;", "evaluate euclid(5).1;"],
   "euclid-6-prime": ["import euclid; use nat;", "evaluate euclid(6).1;"],
   "euclid-10-prime": ["import euclid; use nat;", "evaluate euclid(10).1;"],
-  // 7! + 1 = 71 * 71: the search's 70 candidates pass the kernel's depth guard.
+  // 7! + 1 = 71 * 71: the search's 70 candidates. The kernel's queries met
+  // their syntax depth guard (K344) here until the strong recursion and the
+  // search stopped growing their terms at each candidate
+  // (docs/reports/transport-free-recursion.md).
   "euclid-7-prime": ["import euclid; use nat;", "evaluate euclid(7).1;"],
+  // The search's limits on the kernel's path: 210 candidates compute, and at
+  // 250 its minimality certificate is past the guard.
+  "least-divisor-211-squared": ["import euclid; use nat;", "evaluate least_divisor(44521, tt).1;"],
+  "least-divisor-251-squared": ["import euclid; use nat;", "evaluate least_divisor(63001, tt).1;"],
+  // Least elements and Peano recursion, on the same transport-free recursion.
+  "least-element-240": ["import least_elements; use nat;",
+    "evaluate least_element(fun (n : Nat) => 240 <= n, fun (n : Nat) => bnat_le_decide(240, n), 1000000, tt).1;"],
+  "peano-count-300": ["import nat; use nat; def count(n : Nat) : Nat := nat_peano(U0, fun (m : Nat) => Nat, 0, fun (m, c : Nat) => succ(c), n);",
+    "evaluate count(300);"],
   // An exact expected value is compared by the kernel's queries on either path.
   "euclid-3-expecting": ["import euclid; use nat;", "evaluate euclid(3).1 expecting 7;"],
   "euclid-5-expecting": ["import euclid; use nat;", "evaluate euclid(5).1 expecting 11;"],

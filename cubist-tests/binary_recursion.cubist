@@ -15,6 +15,12 @@ def count_seven : peano_count(0b111) = 0b111 {
   rfl;
 }
 
+// Three hundred steps: the Peano view computes no transport, so the kernel
+// builds no composition per step (docs/reports/transport-free-recursion.md).
+def count_three_hundred : peano_count(0b100101100) = 0b100101100 {
+  rfl;
+}
+
 def factorial_zero : bnat_factorial(0b0) = 0b1 {
   rfl;
 }

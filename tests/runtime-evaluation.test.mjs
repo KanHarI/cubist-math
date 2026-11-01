@@ -247,20 +247,25 @@ print(evaluate(count_into(2 * 255, 0)));
   assert.deepEqual(outcomes(kernel), ["508", "K344: Native prototype syntax depth exceeds 512."]);
 });
 
-// The library's Euclid (library/euclid.cubist) computes by NUM1's strong
-// recursion, which transports along offset paths: the runtime refuses its
-// compositions, and the kernel's queries compute each value form, the
-// certificate's function shown as such. 7! + 1 = 71 * 71 takes the search
-// past the kernel's syntax depth guard.
-test("the library Euclid's value forms fall back from the runtime at NUM1's compositions", async t => {
+// The library's Euclid (library/euclid.cubist), its least divisor search,
+// factorial and the least element search compute by nat's strong recursion,
+// which steps the course of values by the bits and retypes nothing
+// (library/bnat_recursion.cubist): every value form computes in the
+// runtime, with no fallback, and the kernel's queries show the same.
+// 7! + 1 = 71 * 71 takes the search through 70 candidates, both ways.
+test("the library Euclid's, factorial's and the searches' value forms compute in the runtime with no fallback", async t => {
   const pairs = await alternately(t, `import euclid;
+import least_elements;
 use nat;
-${twice(["euclid(3)", "euclid(4).1", "euclid(4)", "euclid(5).1", "euclid(6).1", "factorial(5)"])}
+${twice(["euclid(3)", "euclid(4).1", "euclid(4)", "euclid(5).1", "euclid(6).1", "factorial(5)", "factorial(40)",
+    "least_divisor(121, tt)", "least_element(fun (n : Nat) => 5 <= n, fun (n : Nat) => bnat_le_decide(5, n), 100, tt)"])}
 `);
-  assert.deepEqual(pairs.map(pair => pair.text), ["(7, (tt, <fun>), tt)", "5", "(5, (tt, <fun>), tt)", "11", "7", "120"]);
-  assert.deepEqual(computedBy(pairs), Array(6).fill(composition));
+  assert.deepEqual(pairs.map(pair => pair.text), ["(7, (tt, <fun>), tt)", "5", "(5, (tt, <fun>), tt)", "11", "7", "120",
+    "815915283247897734345611269596115894272000000000", "(11, tt, (11, <path>), <fun>)", "(5, tt, <fun>)"]);
+  assert.deepEqual(computedBy(pairs), Array(9).fill("runtime"));
   const { runtime, kernel } = await bothWays(t, "import euclid;\nuse nat;\nprint(evaluate(euclid(7).1));");
-  assert.deepEqual(outcomes(runtime), ["K344: Native prototype syntax depth exceeds 512."]);
+  assert.deepEqual(outcomes(runtime), ["71"]);
+  assert.deepEqual(by(runtime), ["runtime"]);
   assert.deepEqual(outcomes(runtime), outcomes(kernel));
 });
 

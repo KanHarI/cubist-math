@@ -195,11 +195,11 @@ entry's start.
 
 | Workload | Kernel's queries | Runtime | Runtime steps | Cells allocated | Retained objects / heap | Median entry ms (runtime / kernel) | Max RSS MiB (runtime / kernel) |
 | --- | --- | --- | ---: | ---: | --- | --- | --- |
-| `euclid(3)` | value, 150,918 ticks, 38,736 nodes | same value | 247,542 | 145,770 | 18,962 / 1.8 MiB | 53 / 29 | 144 / 146 |
-| `euclid(4).1` | K344 after 655,030 ticks | `5` | 469,175 | 267,045 | 52,493 / 4.0 MiB | 66 / 108 | 147 / 161 |
-| `euclid(4)` | K344 after 652,129 ticks | `(5, (3, <path>, <fun>), tt)` | 1,385,819 | 771,843 | 104,930 / 7.6 MiB | 162 / 187 | 170 / 157 |
-| `euclid(5).1` | K344 after 887,726 ticks | `11` | 28,187,952 | 15,566,553 | 3,382,822 / 229.2 MiB | 3,281 / 154 | 606 / 165 |
-| `euclid(6).1` | K336 after 465,336 ticks | E488 at 20M cells | — | 20,000,000 | — / 268.0 MiB | 1,837 / 84 | 510 / 158 |
+| `euclid(3)`, the archive's unary Euclid | value, 150,918 ticks, 38,736 nodes | same value | 247,542 | 145,770 | 18,962 / 1.8 MiB | 53 / 29 | 144 / 146 |
+| `euclid(4).1`, the archive's unary Euclid | K344 after 655,030 ticks | `5` | 469,175 | 267,045 | 52,493 / 4.0 MiB | 66 / 108 | 147 / 161 |
+| `euclid(4)`, the archive's unary Euclid | K344 after 652,129 ticks | `(5, (3, <path>, <fun>), tt)` | 1,385,819 | 771,843 | 104,930 / 7.6 MiB | 162 / 187 | 170 / 157 |
+| `euclid(5).1`, the archive's unary Euclid | K344 after 887,726 ticks | `11` | 28,187,952 | 15,566,553 | 3,382,822 / 229.2 MiB | 3,281 / 154 | 606 / 165 |
+| `euclid(6).1`, the archive's unary Euclid | K336 after 465,336 ticks | E488 at 20M cells | — | 20,000,000 | — / 268.0 MiB | 1,837 / 84 | 510 / 158 |
 | `count_into(2 * 255, 0)` | K344 after 44,646 ticks | `510` | 67,835 | 38,927 | 10,247 / 1.3 MiB | 67 / 23 | 127 / 121 |
 | `(2 * 255, 2 * 255)` | value, 16,645 ticks | same value | 63,698 | 37,172 | 9,250 / 1.6 MiB | 118 / 67 | 133 / 135 |
 | `doubling(8)` | value, 8,918 ticks | same value | 15,143 | 8,572 | 1,869 / 0.1 MiB | 50 / 18 | 119 / 121 |
@@ -368,11 +368,11 @@ the runtime's path pays the kernel's walk too.
 
 | Workload | Kernel's queries | Runtime | Runtime steps | Cells allocated | Copied nodes / definitions | Retained objects / heap | Median entry ms (runtime / kernel) | Max RSS MiB (runtime / kernel) |
 | --- | --- | --- | ---: | ---: | --- | --- | --- | --- |
-| `euclid(3)` | value, 150,918 ticks | same value | 237,172 | 132,529 | 289 / 10 | 18,962 / 1.1 MiB | 16 / 13 | 143 / 147 |
-| `euclid(4).1` | K344 after 655,030 ticks | `5` | 458,724 | 253,593 | 245 / 9 | 52,493 / 3.3 MiB | 17 / 64 | 146 / 161 |
-| `euclid(4)` | K344 after 652,129 ticks | `(5, (3, <path>, <fun>), tt)` | 1,375,459 | 758,632 | 296 / 10 | 104,930 / 6.9 MiB | 74 / 53 | 174 / 161 |
-| `euclid(5).1` | K344 after 887,726 ticks | `11` | 28,177,499 | 15,553,101 | 246 / 9 | 3,382,822 / 228.5 MiB | 617 / 87 | 608 / 166 |
-| `euclid(6).1` | K336 after 465,336 ticks | E488 at 20M cells | — | 20,000,000 | 206 | — / 269.2 MiB | 839 / 52 | 566 / 161 |
+| `euclid(3)`, the archive's unary Euclid | value, 150,918 ticks | same value | 237,172 | 132,529 | 289 / 10 | 18,962 / 1.1 MiB | 16 / 13 | 143 / 147 |
+| `euclid(4).1`, the archive's unary Euclid | K344 after 655,030 ticks | `5` | 458,724 | 253,593 | 245 / 9 | 52,493 / 3.3 MiB | 17 / 64 | 146 / 161 |
+| `euclid(4)`, the archive's unary Euclid | K344 after 652,129 ticks | `(5, (3, <path>, <fun>), tt)` | 1,375,459 | 758,632 | 296 / 10 | 104,930 / 6.9 MiB | 74 / 53 | 174 / 161 |
+| `euclid(5).1`, the archive's unary Euclid | K344 after 887,726 ticks | `11` | 28,177,499 | 15,553,101 | 246 / 9 | 3,382,822 / 228.5 MiB | 617 / 87 | 608 / 166 |
+| `euclid(6).1`, the archive's unary Euclid | K336 after 465,336 ticks | E488 at 20M cells | — | 20,000,000 | 206 | — / 269.2 MiB | 839 / 52 | 566 / 161 |
 | `count_into(2 * 255, 0)` | K344 after 44,646 ticks | `510` | 67,172 | 38,837 | 317 / 3 | 10,247 / 1.5 MiB | 27 / 8 | 127 / 120 |
 | `(2 * 255, 2 * 255)` | value, 16,645 ticks | same value | 63,080 | 37,107 | 297 / 2 | 9,250 / 1.6 MiB | 37 / 33 | 134 / 135 |
 | `doubling(8)` | value, 8,918 ticks | same value | 15,038 | 8,517 | 43 / 2 | 1,869 / 0.1 MiB | 12 / 10 | 118 / 119 |

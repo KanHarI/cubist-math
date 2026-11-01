@@ -2408,15 +2408,15 @@
   },
   {
    "path": "library/bnat_peano.cubist",
-   "summary": "Dependent advance over binary offsets and the Peano eliminator; its zero equation holds by computation and its successor equation is a checked path for arbitrary dependent families. Homogeneous total-state iteration is used only in the successor proof."
+   "summary": "The dependent Peano eliminator, as `bnat_recursion`'s strong recursion with the step from the predecessor, read at the number through `bpositive_succ_pred_cast`; it computes no transport. Its zero equation holds by computation and its successor equation is a checked path for arbitrary dependent families."
   },
   {
    "path": "library/bnat_recursion.cubist",
-   "summary": "Binary strict-order decisions and successor decomposition; callbacks for every smaller value, coherent dependent strong recursion and its equation; binary factorial with zero/successor laws. Successful decrease checks keep binary witnesses."
+   "summary": "Homogeneous iteration by the bits (`bnat_iterate`); binary strict-order decisions, successor decomposition, and decrease evidence proved on the bits; callbacks for every smaller value, and coherent dependent strong recursion with its equation, computed by iterating a course of values (a bound with the values below it) by the bits, so that no value is retyped and no transport is computed; binary factorial with zero/successor laws. Order evidence is decided on the bits when demanded; unary order and the course's bound equation only refute."
   },
   {
    "path": "library/bnat_semiring.cubist",
-   "summary": "Binary semiring laws, addition and nonzero-factor multiplication cancellation, nontriviality, no zero divisors, and conversion preservation. The arithmetic computes directly on bits; this module does not load the general algebra hierarchy."
+   "summary": "Binary semiring laws, addition and nonzero-factor multiplication cancellation, nontriviality, no zero divisors, conversion preservation, the successor across a sum, and the binary offsets `a + p + p = a + 2p`. The arithmetic computes directly on bits; this module does not load the general algebra hierarchy."
   },
   {
    "path": "library/bnat_transport.cubist",
@@ -2428,7 +2428,7 @@
   },
   {
    "path": "library/bnat.cubist",
-   "summary": "Canonical binary naturals `BNat` and nonzero bit strings `BPositive`, with direct binary successor, truncated predecessor, addition, multiplication and comparison; computed equality and order predicates; successor/predecessor laws; and `bnat_numerals`, whose numeral rule reads a plain numeral as its bits, so binary values print compactly and read back where only this module is imported. The binary core has no imports."
+   "summary": "Canonical binary naturals `BNat` and nonzero bit strings `BPositive`, with direct binary successor, truncated predecessor, addition, multiplication and comparison; computed equality and order predicates; successor/predecessor laws, and the successor of a predecessor as a cast in any family (`bpositive_succ_pred_cast`), by recursion on the bits; and `bnat_numerals`, whose numeral rule reads a plain numeral as its bits, so binary values print compactly and read back where only this module is imported. The binary core has no imports."
   },
   {
    "path": "library/classical_axioms.cubist",
@@ -2488,7 +2488,7 @@
   },
   {
    "path": "library/least_elements.cubist",
-   "summary": "Least elements of predicates on public `Nat`: `IsLeast(P, n)`, `Least(P)`, and the least element of a decidable predicate from a witness (`least_element`). The search decides 0, 1, 2, … in turn by `nat`'s Peano recursion on the candidates to go, so it stops at the least element, however large the witness. A least element is unique (`least_unique`), so for a predicate valued in propositions having one is a proposition (`least_is_prop`), and its mere existence gives it (`least_element_from_mere`)."
+   "summary": "Least elements of predicates on public `Nat`: `IsLeast(P, n)`, `Least(P)`, and the least element of a decidable predicate from a witness (`least_element`). The search decides 0, 1, 2, … in turn by `nat`'s strong recursion on the candidate's distance to the witness, so it stops at the least element, however large the witness; the evidence found is the decision's own. A least element is unique (`least_unique`), so for a predicate valued in propositions having one is a proposition (`least_is_prop`), and its mere existence gives it (`least_element_from_mere`)."
   },
   {
    "path": "library/lexemes.cubist",
@@ -2512,7 +2512,7 @@
   },
   {
    "path": "library/prime_numbers.cubist",
-   "summary": "`Prime(p)`, and the least divisor above one of a number above one, by trial division (`least_divisor`): candidates rise from 2 by `nat`'s strong recursion on their distance to the number, the first divisor ends the search, and past the square root the number is its own least divisor, with that bound's proof (`no_divisor_past_square`). A least divisor is prime (`least_divisor_prime`), so every number above one has a prime divisor (`prime_divisor`)."
+   "summary": "`Prime(p)`, and the least divisor above one of a number above one, by trial division (`least_divisor`): candidates rise from 2 by `nat`'s strong recursion on their distance to the number, each next distance decided on the bits, the first divisor ends the search, and past the square root the number is its own least divisor, with that bound's proof (`no_divisor_past_square`). A least divisor is prime (`least_divisor_prime`), so every number above one has a prime divisor (`prime_divisor`)."
   },
   {
    "path": "library/propositions.cubist",
