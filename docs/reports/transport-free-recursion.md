@@ -272,21 +272,22 @@ value forms, for the new depth failure and for the Fibonacci.
 
 ## Checks
 
-- `npm test` at `7e261629`: 2,144 of 2,145 tests passed; the one failure
-  counted `bnat`'s declarations, which the two casts raise from 27 to 29,
-  and passes with the count corrected (`4f2e931e`); at `5415473e` all
-  2,145 passed. The source contracts,
-  the Cubist tests, the library and corpus checks, the evaluation baseline
-  and the driver trace (unchanged) are among them.
+- `npm test` at `7c473173`: all 2,149 tests pass, among them the source
+  contracts, the Cubist tests, the library and corpus checks, the
+  evaluation baseline and the driver trace (unchanged).
 - `node tools/audit-cubical.mjs --all`: 353 modules, 3,527 declarations,
   no failure.
 - `npm run format:cubist` and `npm run lint:cubist`: no change, no
   warning. The Files index (`web/cubist-files.json`) is regenerated for the
   README rows.
 - New checks: the runtime test asserts that the value forms of Euclid,
-  factorial, the least divisor and least element searches compute in the
-  runtime with no fallback, and `euclid(7).1` both ways; the runtime query
-  test reads Euclid's prime from the runtime bit by bit; the contracts
-  `euclid.witness_7`, `euclid.witness_8` and `least_elements.far_least`,
-  and the Cubist test's Peano count of 300, compute only where the
-  recursion builds no growing term.
+  factorial, the least divisor and least element searches and the
+  Fibonacci compute in the runtime with no fallback, and `euclid(7).1`
+  both ways; a branching test bounds `fib(25)` on the kernel's queries to
+  a million ticks and `fib(22)` in the runtime to a million steps, which
+  main passes and the course of values failed; the runtime query test reads
+  Euclid's prime from the runtime bit by bit; the contracts
+  `euclid.witness_7`, `euclid.witness_8`, `least_elements.far_least`,
+  `strong_recursion.fibonacci_25` and `strong_recursion.fibonacci_40`, and
+  the Cubist test's Peano count of 300, compute only where the recursion
+  builds no growing term and shares its smaller values.
