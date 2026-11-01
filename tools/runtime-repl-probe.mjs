@@ -15,9 +15,9 @@
 // counters, the arena's growth, and the DAG and tree sizes of the term, its
 // time likewise taken out. The heap is also sampled during the entry, at
 // every eighth call of performance.now, which the runtime makes at its
-// deadline checks, every 1,024 steps: its peak above the entry's start,
-// live cells and garbage not yet collected, is the entry's
-// `peakHeapMiB` (docs/reports/runtime-repl-evaluation.md#the-budgets-calibrated).
+// deadline checks, every 1,024 steps, but for that measurement: its peak
+// above the entry's start, live cells and garbage not yet collected, is the
+// entry's `peakHeapMiB` (docs/reports/runtime-repl-evaluation.md#the-budgets-calibrated).
 //   node tools/runtime-repl-probe.mjs                 every workload, both paths
 //   node tools/runtime-repl-probe.mjs NAME[,NAME] [runtime|kernel|readback]
 import { execFileSync } from "node:child_process";
@@ -129,8 +129,15 @@ if (!child) {
       globalThis.gc?.();
       const before = { work: program.kernel.work(), arena: program.kernel.arena().nodes, heap: process.memoryUsage().heapUsed };
       let captured = null, retained = null, readback = null, measuring = 0;
+      // The heap's peak during the entry, sampled while `sampling`: the
+      // measurement below, the collection, the retained-object walk and a
+      // readback, is not sampled, its allocations being the probe's.
+      let peakHeap = before.heap, samples = 0, sampling = false;
       const dispose = RuntimeQuery.prototype.dispose;
       RuntimeQuery.prototype.dispose = function () {
+        if (sampling) peakHeap = Math.max(peakHeap, process.memoryUsage().heapUsed);
+        const resumed = sampling;
+        sampling = false;
         const measured = performance.now();
         globalThis.gc?.();
         retained = { heapMiB: +((process.memoryUsage().heapUsed - before.heap) / 1048576).toFixed(1) };
@@ -144,6 +151,7 @@ if (!child) {
           } catch (error) { readback = { failed: `${error.kind}: ${error.message}`, steps: this.stats.steps - steps, ...this.readbackStats }; }
         }
         measuring += performance.now() - measured;
+        sampling = resumed;
         return dispose.call(this);
       };
       if (path === "readback") {
@@ -159,12 +167,13 @@ if (!child) {
       const check = program.checkEntry.bind(program);
       program.checkEntry = async (...args) => (captured = await check(...args));
       const now = performance.now.bind(performance);
-      let peakHeap = before.heap, samples = 0;
       performance.now = () => {
-        if ((++samples & 7) === 0) peakHeap = Math.max(peakHeap, process.memoryUsage().heapUsed);
+        if (sampling && (++samples & 7) === 0) peakHeap = Math.max(peakHeap, process.memoryUsage().heapUsed);
         return now();
       };
+      sampling = true;
       const started = now(), [answer] = await session.run(entry), elapsed = now() - started - measuring;
+      sampling = false;
       performance.now = now;
       const after = program.kernel.work();
       globalThis.gc?.();

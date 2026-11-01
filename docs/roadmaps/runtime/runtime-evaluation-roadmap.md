@@ -1263,7 +1263,7 @@ EVAL4's items:
   Every walk measured allocates about one cell for every two steps, so the
   allocation budget, 20M cells, binds first, at 34M to 40M steps, about
   half a second; its heap peaked at 9 MiB where the cells die young and at
-  593 MiB on the worst workload measured, list parity, whose definition
+  545 MiB on the worst workload measured, list parity, whose definition
   keeps its list. The work budget binds first only for a walk allocating
   under one cell for every five steps, and the 30-second time limit is a
   backstop. The budgets stay as they are; the REPL probe records the

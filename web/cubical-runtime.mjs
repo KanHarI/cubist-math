@@ -79,7 +79,7 @@ const yieldTask = typeof setImmediate === "function" ? () => new Promise(setImme
 // (docs/reports/runtime-repl-evaluation.md, the budgets calibrated): a walk
 // allocates about one cell for every two steps, so 20M cells, the budget
 // that binds, is about 40M steps and half a second of evaluation; its heap
-// stays under 10 MiB where the cells die young, and peaked near 600 MiB
+// stays under 10 MiB where the cells die young, and peaked near 550 MiB
 // where a definition keeps a list of 200,000. 100M steps binds first only
 // for a walk allocating under one cell for every five steps, and the time
 // limit, 30 seconds a part unless the declaration's own is nearer, is a

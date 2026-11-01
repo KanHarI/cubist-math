@@ -1044,7 +1044,7 @@ Each step lands in focused PRs under the review rule above.
       - **EVAL4's memory calibration, done on 2026-10-30**
         ([report](../reports/runtime-repl-evaluation.md#the-budgets-calibrated)):
         20M cells, the budget that binds, is about 40M steps and half a
-        second, and peaked under 600 MiB of heap on the worst workload
+        second, and peaked under 550 MiB of heap on the worst workload
         measured; the budgets stay as they are.
       - **EVAL4's responsive snapshot copy: not needed now** (recorded on
         2026-10-30): no path observes a query asynchronously, the value
