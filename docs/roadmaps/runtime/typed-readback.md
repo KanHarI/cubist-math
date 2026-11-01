@@ -30,10 +30,12 @@ and only values that are data throughout, as wide integers, faster.
 Printed `!!` stays on the kernel's folded normal form. W4's record for
 what is on main, W1's readback fragment and the whole-walk restart, was
 written on 2026-11-01 at `398e89ba`
-([record](../../reports/typed-readback-eval8.md)): no defect found, and
-the two gaps it found in the tests closed by tests of section 6's
-isolation, of a readback stopped partway, of malformed handles and of a
-readback that forces nothing; W2's boundary is reviewed when W2 lands.
+([record](../../reports/typed-readback-eval8.md)): one defect, a head
+read back for a cell no observation returned one for, found in its review
+and fixed, and the two gaps it found in the tests closed by tests of
+section 6's isolation, of a readback stopped partway, of malformed handles
+and of a readback that forces nothing; W2's boundary is reviewed when W2
+lands.
 
 ## Summary
 

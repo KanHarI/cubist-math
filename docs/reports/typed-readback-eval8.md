@@ -39,14 +39,17 @@ rule ([below](#review-rounds)).
 | The fallback boundary | The restart on main computes every value form as the kernel's queries do; W2's is reviewed when W2 lands | Source, tests, CLI and browser ([5](#5-the-fallback-boundary)) |
 | The generation | Checked at entry, before each write and before a handle is returned | Source, W1's tests, the bridge's test ([6](#6-the-generation)) |
 | Budgets and cancellation in the middle of a readback | Stop as specified, and the query reads back correctly after | Tests (F2, covered) ([7](#7-budgets-and-cancellation-in-the-middle-of-a-readback)) |
-| A malformed handle | Refused | A test ([8](#8-a-malformed-handle)) |
+| A malformed handle | Refused, and since F4's fix a head only where an observation returned one | A test ([8](#8-a-malformed-handle)) |
 | Query-before-instruction isolation | Holds | A test in the manner of `kernel/tests/test_isolation.c` (F1, covered) ([9](#9-query-before-instruction-isolation)) |
 | Syntax equality and conversion stay apart | Holds | Source of the tests and the oracle ([10](#10-syntax-equality-and-conversion)) |
 
-No defect was found in W1's readback or in the restart. The findings are
-two gaps in the repository's tests (F1, F2), which this branch closes with
-tests made from the record's probes, and one broken browser test on main,
-unrelated to readback, whose harness this branch fixes (F3).
+The record's own checks found no defect in W1's readback or in the
+restart; the review's first round found one in W1's head readback, which
+read back a head for a cell no observation had returned one for (F4), and
+this branch fixes it. The other findings are two gaps in the repository's
+tests (F1, F2), which this branch closes with tests made from the record's
+probes, and one broken browser test on main, unrelated to readback, whose
+harness this branch fixes (F3).
 
 ## Revision, environment and suites
 
@@ -61,7 +64,7 @@ clang 17.0.0, on AC power under `caffeinate -dimsu`.
 | C kernel | `make -C kernel test` | passed: 16 test programs, `instruction isolation: ok`, `bridge handle generations: ok` |
 | C sanitizer | `make sanitize SANITIZERS=undefined` (ASan runs in CI) | passed: the same 16, no UBSan report |
 | C lint | `make lint` | passed: 44 of 44 files |
-| JavaScript | `npm test`, through the full-suite lock | passed: 2,138 tests, 2,138 pass, in 478 s; W1's 13 readback tests and the oracle's three surfaces among them. Again at `ab9df858`, with the tests that close F1 and F2: 2,142 tests, 2,142 pass, in 508 s; and at `1a1d9dc5`, main's M3 (#343) merged: 2,142 pass, in 492 s |
+| JavaScript | `npm test`, through the full-suite lock | passed: 2,138 tests, 2,138 pass, in 478 s; W1's 13 readback tests and the oracle's three surfaces among them. Again at `ab9df858`, with the tests that close F1 and F2: 2,142 tests, 2,142 pass, in 508 s; and at `1a1d9dc5`, main's M3 (#343) merged: 2,142 pass, in 492 s; and at `adfb6b93`, F4 fixed: 2,142 pass, in 474 s |
 | Canonicity fixtures | `tests/hott-automation.test.mjs` (in `npm test`); `node cli/repl.mjs check docs/examples/hott-automation/canonicity.cubist` | passed; 17 declarations in 69,207 kernel steps, its evaluations `6`, `left(2)` and `tt` |
 | CLI evaluation | `tests/cli.test.mjs` (in `npm test`); the entries of [5](#5-the-fallback-boundary) | passed; each entry as expected |
 | Browser evaluation | `npm run test:browser`, `test:browser:contextual`, `test:browser:cubical`, `test:browser:statement`, `test:browser:proof-navigation`, `test:browser:landing`; `node tools/build-site.mjs && npm run test:site`; the value-form pages, by the per-page recipe | passed, `test:browser:cubical` after its harness fix (F3); the site test's 28 PASS lines, "REPL page: the runtime's value forms and its limits" among them; 234 examples on 9 reference pages, 33 with printed or evaluated values, each the Node checker's |
@@ -179,9 +182,12 @@ instance, an eliminator's motive, is read back as its closure.
 The test "a readback forces nothing" reads back, by value and by origin,
 `(fun (n : UNat) => typed(Tag(count_into(n, 0)) and Unit, (tag, slow(n))))(2 * 200)`
 and a λ whose domain is `Tag(count_into(n, 0))` at the same `n`. Across
-each readback the query's forces, β and ι counts and its definitions are
-unchanged, the kernel answers no query, and the readback's full normal form
-is the kernel's.
+each readback the query's forces, cache hits, β and ι counts, its deepest
+frame, its shared calls and its definitions are unchanged, the kernel
+answers no query, and the readback's full normal form is the kernel's. The
+machine counts a force of a cell already forced as a hit, not a force, so
+the hits count is what catches a readback that runs the machine on a
+forced cell (the review's first round).
 
 ## 5. The fallback boundary
 
@@ -291,7 +297,12 @@ The test "a readback refuses a handle that is not its query's own"
 refuses, as `input`: another query's handle, a forged object, a kernel
 handle, `null`, the head of a handle never observed, a readback by origin
 of a query made without origins, and a value form's query; and, as
-`disposed`, a disposed query's handle. A scratch probe also showed the
+`disposed`, a disposed query's handle. Since F4's fix it also refuses the
+head of a cell forced but never observed: with EVAL4's sharing, observing
+the second field of `(maker(tt), maker(tt)(zero))`, for
+`maker(u : Unit) : UNat -> UNat := fun (n : UNat) => succ(n)`, forces the
+first to the λ, whose head readback is refused until the first field is
+observed, and then reads back η's head, `succ`. A scratch probe also showed the
 normalize guard refusing raw syntax that no instruction derived, and the
 kernel refusing a child handle that names no node (`ck_make`).
 
@@ -340,7 +351,10 @@ conversion; the instruction driver appears only to type terms.
    query's own", "a readback forces nothing", and two more checks in W1's
    K344 test ([4](#4-lazy-annotations),
    [7](#7-budgets-and-cancellation-in-the-middle-of-a-readback),
-   [8](#8-a-malformed-handle)).
+   [8](#8-a-malformed-handle)). The review's first round found two of
+   them overstated: the handle test did not try a cell forced but never
+   observed, whose head W1 read back (F4), and the forcing test did not
+   count cache hits. Both are fixed in `adfb6b93`.
 
    Each new check fails when the property it states breaks. Under each of
    these temporary mutations, applied alone, the test named fails, and the
@@ -359,6 +373,9 @@ conversion; the instruction driver appears only to type terms.
    | a value form's query read back | refuses a handle |
    | an unforced cell forced while it is read back | forces nothing |
    | a kernel head query after each readback | forces nothing |
+   | a forced cell run through the machine again while it is read back, a cached force | forces nothing (since `adfb6b93`) |
+   | a head read from a cell forced but never observed, W1's behaviour before F4's fix | refuses a handle (since `adfb6b93`) |
+   | a head kept only where η computed one, with no fallback to the cell's value | W1's η test, "the head an observation computed by η reads back to its cell's full normal form" |
    | a refused term's kernel error left uncleared (`CubicalKernel.term`) | K344 |
 3. **F3: `tests/cubical.browser.mjs` fails on main** (`398e89ba`), outside
    CI. Since `179c883b` (2026-10-20) the workbench has two `details`
@@ -368,9 +385,28 @@ conversion; the instruction driver appears only to type terms.
    branch fixes the harness minimally (`98ad1e49`): the locator names "Edit
    native syntax", and the test waits for the diagnostic; the test then
    passes.
+4. **F4: W1 read back a head no observation returned,** found by the
+   review's first round; it reproduces on main. A query made for readback
+   kept a head only where η computed one, and otherwise
+   `readback(handle, { head: true })` took the cell's value, so a cell that
+   another's computation forced, but that was never observed, read back the
+   λ it holds where an observation gives η's head. The record's claim that
+   a head is read back only where an observation computed one was then
+   false. No verdict or display reads a head back (D1): the oracle asks only
+   for heads its walk observed. **Fixed** in `adfb6b93`: the query keeps each
+   observation's head by the cell asked, a head readback of a cell with
+   none is refused, and the `maker` case of [8](#8-a-malformed-handle) is
+   its regression, which fails on the code before the fix.
 
 ## Review rounds
 
 By the roadmap's rule this record's pull request is reviewed at `xhigh`
 effort until a round returns no findings. Each round's findings and their
 resolution are added here.
+
+- **Round 1** (#345 at `292753e5`): two P2 findings, both reproduced.
+  Unobserved but forced heads: a defect in W1's head readback, F4, fixed
+  with a regression. Cached forcing: the forcing test held forces, β and ι
+  unchanged but not cache hits, so a readback running the machine on a
+  forced cell passed it; it now holds hits, frames and shared calls too,
+  and that mutation fails it. Both in `adfb6b93`.
