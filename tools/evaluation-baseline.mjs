@@ -75,10 +75,14 @@ export const fixture = new URL("tests/fixtures/evaluation-baseline.json", root);
 // execute, as NUM1's compositions, is read back and its weak head asked of
 // the kernel inside the runtime phase, which now builds kernel syntax and
 // spends kernel queries, and the walk goes on in the runtime instead of
-// starting again on the kernel's head queries (the demand phase). Outcomes
-// are unchanged; the runtime's own counters grow, as it computes what the
-// restart left to the kernel, and the kernel's work falls where the walk
-// had forced what a transport's base or a fallback node needs.
+// starting again on the kernel's head queries (the demand phase); a
+// composition's base its rule reads, at a data sort, is computed by the
+// runtime first, as the kernel's head of the family tells. Outcomes are
+// unchanged, and so is every workload that does not fall back; the
+// runtime's own counters grow, as it computes what the restart left to the
+// kernel, and the kernel's work falls, but in euclid-4, where it grows by
+// 42%. W2 itself is held (docs/roadmaps/runtime/typed-readback.md): main
+// records version 10.
 export const version = 11;
 
 const euclid = "import euclid; use nat;", unary = "import unat; use unat;", circle = "import circle; use unat;";
