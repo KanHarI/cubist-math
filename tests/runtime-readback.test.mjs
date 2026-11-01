@@ -15,7 +15,9 @@ import { watchReadbacks, disagreements } from "./runtime-readback-oracle.mjs";
 
 // Readback, W1 of docs/roadmaps/runtime/typed-readback.md: a runtime value
 // as the closed kernel term it stands for (RuntimeQuery.readback). These
-// tests read back the cases of the note's W1 list; the differential over
+// tests read back the cases of the note's W1 list, and those of its
+// section 6 that W4's record found untested
+// (docs/reports/typed-readback-eval8.md); the differential over
 // every value form the runtime computes runs where those value forms are
 // checked (tests/runtime-readback-oracle.mjs). Terms are compared by syntax
 // only, never by conversion.
@@ -348,7 +350,9 @@ def flag : Flag := (fun (x : Flag) => x)(enabled);`);
 
 // A higher-order recursive hypothesis is refused (3.7); a value deeper than
 // the kernel's syntax is refused by the kernel's own guard (K344), whatever
-// its depth, since readback keeps its own stack.
+// its depth, since readback keeps its own stack. The stop leaves the query
+// and the kernel usable: a part of the value reads back, and the kernel
+// accepts the next instruction.
 test("a lifted hypothesis is refused, and a value past the kernel's syntax depth fails with K344", async t => {
   const s = await setup(t, `
 import unat; use unat;
@@ -376,6 +380,8 @@ def far : UNat := 100 * 100;
   assert.deepEqual([unary(edge, 600), unary(past, 600), unary(far, 20000)], [510, 511, 10000]);
   assert.ok(s.same(s.normal(edge.readback()), s.normal(s.term("edge"))));
   assert.throws(() => past.readback(), deep);
+  s.graph.unit();
+  assert.ok(s.same(s.normal(past.readback(past.observeNow().args[0])), s.normal(s.term("edge"))));
   assert.throws(() => far.readback(), deep);
 });
 
@@ -394,6 +400,123 @@ test("a readback spends the query's work and cells, and stops at its limits", as
     s.walk(runtime);
     assert.throws(() => runtime.readback(), error => fails(kind)(error) && error.limit === walked[counter] + 2, option);
   }
+});
+
+// A readback stopped partway (section 6 of the note: budgets and
+// cancellation in the middle of a readback). The two numerals' readback
+// takes thousands of steps: a step or a cell budget halfway stops it after
+// it has written, as an observation stops, and the query's limits are
+// cumulative, so it reads back no more. A deadline stops it at its next
+// check, every 1,024 steps, and a signal aborted before the call at its
+// start; neither leaves a partial memo entry, so the same query then reads
+// back the term a fresh query reads back.
+test("a readback stopped partway leaves no partial memo entry", async t => {
+  const s = await setup(t, "import unat; use unat;\ndef doubled := typed(UNat and UNat, (2 * 200, 3 * 100));");
+  const walked = options => { const runtime = s.query("doubled", options); s.walk(runtime); return runtime; };
+  const calibration = walked(), walk = calibration.stats, reference = calibration.readback(), read = calibration.stats;
+  assert.ok(read.steps - walk.steps > 3 * 1024, `the readback takes ${read.steps - walk.steps} steps`);
+  for (const [option, counter, kind] of [["maxSteps", "steps", "budget"], ["maxCells", "allocatedCells", "resource"]]) {
+    const limit = Math.floor((walk[counter] + read[counter]) / 2), runtime = walked({ [option]: limit });
+    assert.throws(() => runtime.readback(), error => fails(kind)(error) && error.limit === limit, option);
+    assert.ok(runtime.readbackStats.writes > 0, `${option}: stopped partway`);
+  }
+  // The clock stands still for the readback's start, its check there and
+  // its first check after, which can come at once, then passes the
+  // deadline: the next check is 1,024 steps on.
+  const timed = walked();
+  let readings = 0;
+  const clock = t.mock.method(performance, "now", () => readings++ < 3 ? 0 : 1000);
+  try { assert.throws(() => timed.readback(timed.root, { milliseconds: 1 }), fails("deadline")); }
+  finally { clock.mock.restore(); }
+  assert.ok(timed.readbackStats.writes > 0, "the deadline stopped the readback partway");
+  assert.ok(s.same(timed.readback(), reference));
+  const aborted = new AbortController(), cancelled = walked(), { steps } = cancelled.stats;
+  aborted.abort();
+  assert.throws(() => cancelled.readback(cancelled.root, { signal: aborted.signal }), fails("cancelled"));
+  assert.deepEqual([cancelled.stats.steps, cancelled.readbackStats.writes], [steps, 0], "stopped before its first step");
+  assert.ok(s.same(cancelled.readback(), reference));
+});
+
+// A malformed handle is refused (section 6): readback takes only the
+// query's own handles, of a query made for readback and not disposed of,
+// and a head only where an observation computed one.
+test("a readback refuses a handle that is not its query's own", async t => {
+  const s = await setup(t, "inductive Lamp { dark; lit; }\ndef pair : Lamp and Lamp := ((fun (x : Lamp) => x)(lit), dark);");
+  const [one, other, plain, gone] = [{}, {}, { readback: false }, {}].map(options => {
+    const runtime = s.query("pair", options); s.walk(runtime); return runtime;
+  });
+  const observed = one.observeNow(), handle = gone.root;
+  gone.dispose();
+  for (const [label, read] of [["another query's handle", () => other.readback(observed.first)], ["a forged handle", () => one.readback({})],
+    ["a kernel handle", () => one.readback(s.graph.judgement(s.judgement("pair")).term)], ["null", () => one.readback(null)],
+    ["the head of a handle never observed", () => one.readback(observed.type, { head: true })],
+    ["by origin, a query made without origins", () => one.readback(one.root, { origins: true })], ["a value form's query", () => plain.readback()]])
+    assert.throws(read, fails("input"), label);
+  assert.throws(() => gone.readback(handle), fails("disposed"));
+  assert.ok(s.same(s.normal(one.readback(observed.first)), s.normal(other.readback(other.observeNow().first))));
+});
+
+// Lazy annotations (section 6): a readback runs no step of the machine and
+// demands no definition, and asks the kernel nothing where it reads no
+// level. The annotations here, a pair's type and a λ's domain over a
+// computation of n, are read back as their closures, unforced.
+test("a readback forces nothing", async t => {
+  const s = await setup(t, `import unat; use unat;
+inductive Tag(n : UNat) { tag; }
+def count_into(n, total : UNat) : UNat := match n { zero => total; succ(k) => count_into(k, succ(total)); };
+def slow(n : UNat) : Unit := match n { zero => tt; succ(k) => slow(k); };
+def heavy := (fun (n : UNat) => typed(Tag(count_into(n, 0)) and Unit, (tag, slow(n))))(2 * 200);
+def guarded := (fun (n : UNat) => fun (u : Tag(count_into(n, 0))) => tt)(2 * 200);`);
+  for (const name of ["heavy", "guarded"]) for (const origins of [false, true]) {
+    const runtime = s.query(name, { origins });
+    s.walk(runtime);
+    const [before, queries] = [runtime.stats, s.kernel.work().queries], read = runtime.readback(runtime.root, { origins });
+    for (const counter of ["forces", "beta", "iota", "snapshotDefinitions"])
+      assert.equal(runtime.stats[counter], before[counter], `${name}, origins ${origins}: ${counter}`);
+    assert.equal(s.kernel.work().queries, queries, `${name}, origins ${origins}: a kernel query`);
+    assert.ok(s.same(s.normal(read), s.normal(s.term(name))), `${name}, origins ${origins}`);
+  }
+});
+
+// Query-before-instruction isolation (section 6), in the manner of
+// kernel/tests/test_isolation.c: x : (λ (A : U0). A -> A)(Unit), the node
+// endo's readback writes, is no argument of λ (y : Unit -> Unit). y by
+// syntax, so Apply refuses it, and after a Beta step converts its type,
+// Apply accepts. In three sessions, one with no readback, one reading endo
+// back, by value and by origin, and normalizing, folding and taking the
+// head of its readback before the instructions, and one doing so between
+// two rounds of them, every verdict is the same.
+test("an instruction's verdict is the same with and without a readback before it", async t => {
+  const source = "def endo := (fun (B : U0) => (fun (A : U0) => A -> A)(B))(Unit);";
+  const identity = lam("y", { tag: "Pi", name: "_", domain: unit, body: unit }, v("y"));
+  const session = async readback => {
+    const s = await setup(t, source), { kernel, graph } = s, driver = new InstructionDriver(kernel), verdicts = [];
+    const body = kernel.node(kernel.definition(graph.judgement(s.judgement("endo")).term).value);
+    const inner = kernel.node(kernel.node(body.children[0]).children[1]).children[0], redex = () => kernel.term("App", 0, inner, body.children[1]);
+    const round = () => {
+      const typeOf = driver.infer(redex()), fn = driver.infer(s.checker.syntax.encode(identity)), x = graph.variable(graph.extend(typeOf, "x"));
+      let refused = null;
+      try { graph.apply(fn, x); } catch (error) { refused = error.message; }
+      const { term, type } = graph.judgement(graph.apply(fn, graph.convert(x, graph.step(graph.refl(typeOf), "other", [], "beta"))));
+      verdicts.push(JSON.stringify([refused, s.decoded(term), s.decoded(type)]));
+    };
+    if (readback === "between") round();
+    if (readback) {
+      const arena = kernel.arena().nodes, runtime = s.query("endo");
+      s.walk(runtime);
+      const read = runtime.readback();
+      if (readback === "before") assert.deepEqual([read, kernel.arena().nodes - arena], [redex(), 1], "the readback writes the redex");
+      kernel.normalize(read); kernel.normalizeFolded(read); kernel.head(read);
+      const origins = s.query("endo", { origins: true });
+      s.walk(origins);
+      kernel.normalizeFolded(origins.readback(origins.root, { origins: true }));
+    }
+    round();
+    return verdicts;
+  };
+  const verdicts = [...await session(null), ...await session("before"), ...await session("between")];
+  assert.equal(JSON.parse(verdicts[0])[0], "The argument has the wrong type.");
+  assert.deepEqual(verdicts, Array(4).fill(verdicts[0]));
 });
 
 // n closures over the same n variables: each closure's telescope binds all
