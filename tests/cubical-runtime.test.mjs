@@ -2,6 +2,7 @@ import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { readFile } from "node:fs/promises";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalKernel } from "../web/cubical-kernel.mjs";
 import { InstructionGraph } from "../web/cubical-instructions.mjs";
@@ -286,8 +287,9 @@ test("definition sharing does not depend on syntax interning", async t => {
 // computed once, as the kernel's weak-head cache computes it once by its
 // syntax. The frame's memo hands the cell on and drops it at its last delay,
 // so a body that writes a call twice keeps no more than one that binds it
-// once; and a force cancelled midway resets as before, and computes the
-// same value when observed again, still sharing.
+// once (the next test checks the deletion itself); and a force cancelled
+// midway resets as before, and computes the same value when observed again,
+// still sharing.
 test("a call written twice in a scope is one cell in each of its instances, kept no longer than its delays", async t => {
   const { query } = await setup(t, `
 import unat; use unat;
@@ -319,6 +321,63 @@ def bound_once : UNat and UNat := (fun (n : UNat) => (fun (m : UNat) => typed(UN
   await assert.rejects(pending, fails("cancelled"));
   assert.deepEqual(await cancelled.observe(), { kind: "Point" });
   assert.ok(cancelled.stats.steps < 10000, `g24(tt) took ${cancelled.stats.steps} steps, cancelled once`);
+});
+
+// The memo keeps a shared call's cell only while a delay of it is still to
+// come, however the delays come. Each case shares n * n, at n = 20, where
+// two consumers exhaust it and keep nothing of it, and keeps the instance
+// alive past its last delay, so that a memo that kept the cell would keep
+// all 400 successors: in a λ the pair returns (discarded), in the λ whose
+// η-contracted body evaluates the call once more, as an observation of a
+// function's head does (eta_value), and through a force cancelled midway
+// and observed again, which delays the call again (cancel_value). Without
+// the memo's deletion at the last delay, the first case keeps them.
+test("a shared call's cell leaves its memo at its last delay, through η and a cancelled force", async t => {
+  const { kernel, graph, query } = await setup(t, `
+import unat; use unat;
+def both(a, b : Unit) : Unit := unit_induction(fun (x : Unit) => Unit, b, a);
+def eat(n : UNat) : Unit := match n { zero => tt; succ(m) => eat(m); };
+def eat2(n : UNat) : Unit := match n { zero => tt; succ(m) => eat2(m); };
+def consume(n : UNat) : Unit -> Unit := match n { zero => fun (u : Unit) => u; succ(m) => consume(m); };
+def discard(n : UNat) : Unit and (Unit -> UNat) := typed(Unit and (Unit -> UNat), (both(eat(n * n), eat2(n * n)), fun (u : Unit) => n));
+def discarded := discard(20);
+def eta_case(n : UNat) : Unit and (Unit -> Unit) :=
+  typed(Unit and (Unit -> Unit), (both(consume(n * n)(tt), eat(n * n)), fun (x : Unit) => consume(n * n)(x)));
+def eta_value := eta_case(20);
+def two_ways(n : UNat) : Unit and Unit := typed(Unit and Unit, (both(eat(n * n), eat2(n * n)), tt));
+def cancel_value := two_ways(20);
+`);
+  const walked = async runtime => {
+    const pair = await runtime.observe();
+    await runtime.observe(pair.first); await runtime.observe(pair.second);
+    return runtime;
+  };
+  const kept = runtime => runtime.retainedObjects().runtimeObjects;
+  const discarded = await walked(query("discarded"));
+  assert.equal(discarded.stats.shared, 1);
+  assert.ok(kept(discarded) < 400, `the discarded product keeps ${kept(discarded)} objects`);
+  // The same walk by a runtime that never deletes an entry at its last delay.
+  const text = (await readFile(new URL("../web/cubical-runtime.mjs", import.meta.url), "utf8"))
+    .replace(/from "\.\/([^"]+)"/g, (_, path) => `from "${new URL(path, new URL("../web/", import.meta.url)).href}"`);
+  const site = "memo.delete(code);\n      if (!memo.size) this.#shared.set(env, spent);";
+  assert.equal(text.split(site).length, 2, "the deletion's site occurs once");
+  const { RuntimeQuery: Undeleting } = await import(`data:text/javascript,${encodeURIComponent(text.replace(site, ""))}`);
+  const undeleted = new Undeleting(kernel, graph.lookup(kernel.definitions.get("main__discarded")));
+  t.after(() => undeleted.dispose());
+  await walked(undeleted);
+  assert.ok(kept(undeleted) > 1200, `without the deletion, ${kept(undeleted)} objects`);
+  const eta = await walked(query("eta_value"));
+  assert.ok(kept(eta) < 400, `after η, the product keeps ${kept(eta)} objects`);
+  const settled = await walked(query("cancel_value"));
+  const cancelled = query("cancel_value", { slice: 20 }), pair = await cancelled.observe(), controller = new AbortController();
+  const pending = cancelled.observe(pair.first, { signal: controller.signal });
+  setImmediate(() => controller.abort());
+  await assert.rejects(pending, fails("cancelled"));
+  await walked(cancelled);
+  assert.ok(kept(cancelled) < 400, `after the cancelled force, the product keeps ${kept(cancelled)} objects`);
+  assert.equal(kept(cancelled), kept(settled));
+  // The cancelled force's delays are given back, so the retry still shares.
+  assert.ok(cancelled.stats.shared >= 1);
 });
 
 // A constructor's instance, an annotation the value form's walk never

@@ -445,7 +445,11 @@ to it is forced.
 
 **The memo.** In an instance, a marked node delays a shared call through
 the instance's memo: the first delay makes the cell, each later one is
-handed it, and the last drops it from the memo. Annotations, a λ's domain,
+handed it, and the last drops it from the memo. A frame's memo starts, at
+its first shared delay, with every shared call's count, so a call whose
+delays are done has left it, and the memo is spent once all have: no delay
+past a call's count makes its entry again. The top level's counts are its
+roots', entered once each. Annotations, a λ's domain,
 a level argument, a pair's or an injection's type, a constructor's instance
 and an eliminator's motive, are delayed alone: no value form's walk forces
 them. Sharing changes no value, since a cell stands for its code under its
@@ -462,10 +466,28 @@ done. When every node that delays a shared call is forced, as when a call
 is written twice in one application, it holds nothing after the last. A
 delay that never comes, an occurrence in a part never forced, keeps its cell
 as long as the instance: the frame, or the query at the top level. A count
-past 2^30 is not counted down. A stop or a cancellation resets the cells
-being forced, as before; forced again, they delay their parts again, which
-the memo may have let go: the value is the same, and the call can be
-computed again. Measured below, against main on the same walks, the
+past 2^30 is not counted down. Two ways a delay could come that the
+reading did not count were found in the first review of #344, each keeping
+the product of `n * n`, at `n = 20`, alive after its last delay: 1,719 and
+1,718 runtime objects where main keeps 113 and 112 (the tests below):
+
+- **η.** The weak head of a λ whose body is `f(x)`, `x` not free in `f`, is
+  `f`'s: the runtime evaluated `f` in the λ's environment, so its delays
+  counted against the shared calls of the scope that made the λ, and one
+  past a call's count made its entry again. `f` is now evaluated in an
+  instance of the λ body's scope of its own, a frame that binds nothing
+  (`#head`), and its delays count against the body's calls.
+- **A force tried again.** A stop or a cancellation resets the cells being
+  forced, as before, and forced again they delay their parts again. A
+  marked node's update frame now records the delays it counted, and a
+  failed force gives them back (`#refund`), an entry its delay ended
+  restored with its cell; so the retry counts them again, and still
+  shares. A cell made again in place of one the failure abandoned, a
+  completed part of a reset force, delays its parts anew without a refund:
+  its delays can end an entry early, so that the call is computed again,
+  but never make an entry again.
+
+Measured below, against main on the same walks, the
 retained objects never grow by more than one on the constructs' walks and
 the probe's workloads, and by at most 0.53% on the archive's Euclid
 (`euclid(4).1`, 52,662 to 52,941): cells of calls whose other occurrence
@@ -486,8 +508,15 @@ allocation cap and the declaration's time limit, now on `relayed-calls-24`.
 `tests/cubical-runtime.test.mjs`: `g24(tt)` with 24 shared calls; a body
 that writes `n * n` twice retains no more objects than one that binds it
 once, with the same eliminations; and a query cancelled at its first yield
-computes `g24(tt)` again, under 10,000 steps in all. The laziness tests read
-a definition's components' syntax, and a λ's body when the λ is first
+computes `g24(tt)` again, under 10,000 steps in all. A second test shares
+`n * n` at `n = 20` between two consumers that exhaust it and keep the
+instance alive past its last delay: in a λ the pair returns, through the η
+of a λ whose body calls it once more, and through a force cancelled midway
+and observed again, each keeping under 400 runtime objects (1,719 and 1,718
+before the review's fixes, for the second and third); a runtime made from
+the source without the deletion at the last delay keeps over 1,200 in the
+first, so the test fails without it. The laziness tests read a
+definition's components' syntax, and a λ's body when the λ is first
 forced; their expiry cases now read a λ's body after the expiry.
 
 ### Measurements of sharing
@@ -499,8 +528,8 @@ ticks the query's budget. Values are identical on every walk.
 
 - **The demand marks' constructs**, all 193 walks of the 197 that are not
   refused for an assumption (156 runtime value forms and 37 fallbacks):
-  steps 251,211 to 266,453 (+6.1%), cells 176,107 to 183,417 (+4.2%), copied
-  nodes 8,727 to 10,530 (+20.7%), retained objects 31,927 to 31,188 (−2.3%).
+  steps 251,211 to 266,453 (+6.1%), cells 176,107 to 183,486 (+4.2%), copied
+  nodes 8,727 to 10,530 (+20.7%), retained objects 31,927 to 31,190 (−2.3%).
   36 walks share a call. Three retain one object more, each a top-level
   call's cell kept for an occurrence not delayed: C05's is never forced,
   and A28 and C18 fall back before it is. The largest fall is B10's tuple,
@@ -510,20 +539,20 @@ ticks the query's budget. Values are identical on every walk.
 
 | Workload | Main: steps / cells / retained | This: steps / cells / retained | Shared | Copied nodes |
 | --- | --- | --- | ---: | --- |
-| `duplicated-calls-24` | E488 at 20M cells | `tt`: 3,524 / 2,598 / 82 | 24 | 234 / 234 |
+| `duplicated-calls-24` | E488 at 20M cells | `tt`: 3,524 / 2,622 / 82 | 24 | 234 / 234 |
 | `relayed-calls-24` | E488 at 20M cells | E488 at 20M cells | 0 | 378 / 390 |
 | `(2 * 255, 2 * 255)` | 63,088 / 37,115 / 9,251 | 33,425 / 19,304 / 4,619 | 2 | 298 / 298 |
 | `count_into(2 * 255, 0)` | 67,180 / 38,845 / 10,248 | 67,735 / 38,827 / 10,236 | 1 | 318 / 318 |
 | `doubling(8)` | 15,046 / 8,525 / 1,870 | 15,109 / 8,525 / 1,870 | 0 | 44 / 44 |
 | list parity, 200,000 | E488 at 20M cells, 2,496,182 retained | E488, 2,495,885 retained | 2 | 189 / 193 |
-| BNat product of two 20-digit numerals | 652,273 / 366,534 / 108,198 | 649,672 / 364,414 / 107,205 | 167 | 396 / 420 |
-| `2/3 + 1/6` | 28,290 / 20,742 / 1,886 | 29,888 / 22,206 / 1,841 | 70 | 1,264 / 1,742 |
-| the wide inverse | 1,202,756 / 677,295 / 172,598 | 1,201,691 / 676,375 / 171,157 | 554 | 1,396 / 1,900 |
-| `bq_decide(1/2, 2/3)` | 24,008 / 18,140 / 1,512 | 25,567 / 19,142 / 1,468 | 59 | 1,190 / 1,517 |
-| `bq_decide(1/2 + 1/3, 5/6)`, to its fallback | 44,550 / 30,887 / 2,737 | 45,491 / 32,050 / 2,650 | 106 | 1,547 / 2,094 |
-| `(2^128 - 1) * (2^128 - 1)`, binary integers | 4,329,357 / 2,425,792 / 737,578 | 3,841,853 / 2,152,577 / 656,504 | 165 | 768 / 974 |
-| `bint_decide(2^128 - 1, -1)` | 49,986 / 31,421 / 4,253 | 48,900 / 30,749 / 3,323 | 168 | 721 / 1,013 |
-| library `euclid(4).1`, to its fallback | 3,966 / 3,836 / 62 | 4,935 / 4,383 / 62 | 7 | 388 / 494 |
+| BNat product of two 20-digit numerals | 652,273 / 366,534 / 108,198 | 649,672 / 364,456 / 107,205 | 167 | 396 / 420 |
+| `2/3 + 1/6` | 28,290 / 20,742 / 1,886 | 29,886 / 22,246 / 1,843 | 70 | 1,264 / 1,742 |
+| the wide inverse | 1,202,756 / 677,295 / 172,598 | 1,201,690 / 676,595 / 171,196 | 554 | 1,396 / 1,900 |
+| `bq_decide(1/2, 2/3)` | 24,008 / 18,140 / 1,512 | 25,565 / 19,172 / 1,470 | 59 | 1,190 / 1,517 |
+| `bq_decide(1/2 + 1/3, 5/6)`, to its fallback | 44,550 / 30,887 / 2,737 | 45,488 / 32,112 / 2,653 | 106 | 1,547 / 2,094 |
+| `(2^128 - 1) * (2^128 - 1)`, binary integers | 4,329,357 / 2,425,792 / 737,578 | 3,841,853 / 2,152,623 / 656,504 | 165 | 768 / 974 |
+| `bint_decide(2^128 - 1, -1)` | 49,986 / 31,421 / 4,253 | 48,900 / 30,792 / 3,323 | 168 | 721 / 1,013 |
+| library `euclid(4).1`, to its fallback | 3,966 / 3,836 / 62 | 4,935 / 4,393 / 62 | 7 | 388 / 494 |
 
   The pair of two `2 * 255` and the wide product write one operand twice at
   the top level, and the product's steps fall by a ninth. The steps rise
@@ -543,14 +572,15 @@ ticks the query's budget. Values are identical on every walk.
   On `euclid(5).1` the retained objects grow by 0.04%, where the withdrawn
   memo's grew 2.5 times; whole value forms that compute the prime twice
   share it, and fall to a third of the steps.
-- **Time.** On a REPL entry, median of three cold processes each (the
-  REPL probe's runtime path, main's tree against this one, a loaded
-  machine), no row moved by more than its noise: `2/3 + 1/6` 50 against 45
-  ms, the wide product 133 against 136, the wide inverse 86 against 82; and
-  `duplicated-calls-24` 3 ms where main stopped at the cap after 441. The
-  walk alone, warm, in a process of its own: `2/3 + 1/6` 0.54 against 0.71
-  ms (+31%, the reading), the BNat product 12.4 against 12.5 ms, the wide
-  product 81.1 against 70.9 ms.
+- **Time**, of this and the pruning below together, after the review's
+  fixes. On a REPL entry (the REPL probe's runtime path, main's tree
+  against this one, cold processes, medians): `2/3 + 1/6` 41 against 45 ms
+  and `bq_decide(1/2, 2/3)` 39 against 42, of seven each, the reading's
+  cost; the wide product 137 against 130, the wide inverse 88 against 83
+  and the BNat product 38 against 39, of three; and `duplicated-calls-24` 3
+  ms where main stopped at the cap after 436. The walk alone, warm, in a
+  process of its own: `2/3 + 1/6` 0.51 against 0.71 ms (+39%), the BNat
+  product 11.0 against 8.5 ms, the wide product 69.2 against 53.0 ms.
 - **The evaluation baseline** (`tests/fixtures/evaluation-baseline.json`,
   version 10 still) is recorded again after this and the pruning below, at
   `3a548750`: every outcome and every phase's calls and failures are as
@@ -559,7 +589,10 @@ ticks the query's budget. Values are identical on every walk.
   steps (`euclid-3` 3,711 to 4,687, against the test's bound of 4,703), and
   the unary products by under 2%. The kernel's counters that move had moved
   on main already since the fixture's recording at `1f7db8e4`: main's tree
-  and this one give the same, as `euclid-3`'s 26,944 query steps.
+  and this one give the same, as `euclid-3`'s 26,944 query steps. Since the
+  first review's fixes, 13 of the runtime workloads allocate 2 to 10 cells
+  more, the counts a frame's memo starts with, and take the same steps:
+  within the test's bounds, so the fixture is not recorded again.
 
 ## Closed-environment pruning
 
@@ -604,9 +637,10 @@ in the same harness as above:
 
 The closed instance alone was kept.
 
-**Measurements**, against the sharing commit on the same walks:
+**Measurements**, against the sharing commit on the same walks, both with
+the first review's fixes:
 
-- the 193 constructs' walks: no value moves; retained objects 31,188 to
+- the 193 constructs' walks: no value moves; retained objects 31,190 to
   6,123 (−80%), none growing; steps +0.4%, cells +0.6%, copied nodes +1.9%;
 - the probe's workloads, retained objects after the walk:
 
@@ -618,14 +652,14 @@ The closed instance alone was kept.
 | list parity, 200,000, at the cap | 2,496,182 | 2,495,885 | 1,958,046 | the cap |
 | `parity(append(rep(10 * 100), rep(10 * 100)))` | 99,830 | 68,887 | 24 | 811,381 to 811,400 |
 | BNat product of two 20-digit numerals | 108,198 | 107,205 | 559 | 649,672 to 649,688 |
-| `2/3 + 1/6` | 1,886 | 1,841 | 1,328 | 29,888 to 30,199 |
-| the wide inverse | 172,598 | 171,157 | 12,133 | 1,201,691 to 1,202,007 |
+| `2/3 + 1/6` | 1,886 | 1,843 | 1,330 | 29,886 to 30,197 |
+| the wide inverse | 172,598 | 171,196 | 12,172 | 1,201,690 to 1,202,006 |
 | `(2^128 - 1) * (2^128 - 1)`, binary integers | 737,578 | 656,504 | 1,861 | 3,841,853 to 3,841,992 |
 | `bint_decide(2^128 - 1, -1)` | 4,253 | 3,323 | 3,202 | 48,900 to 49,037 |
 
 - the REPL probe's heap after a collection with the query alive, main
   against both commits: the wide product 54.9 to 1.1 MiB, the wide inverse
-  13.9 to 2.4 MiB, the BNat product 8.1 to 0.3 MiB, list parity at the cap
+  13.9 to 2.5 MiB, the BNat product 8.1 to 0.3 MiB, list parity at the cap
   488.1 to 452.4 MiB (its list is a definition, which the query keeps).
   The process's peak barely moves (530 to 520 MiB for the wide product),
   being mostly the checked library's: the walk's garbage is collected as it

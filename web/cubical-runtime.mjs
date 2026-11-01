@@ -60,6 +60,10 @@ const calls = new Set(["App", "LApp", "Fst", "Snd", "UnitRec", "SumRec"]);
 // A count past this is not counted down: its call stays shared for as long
 // as its scope's instance lives.
 const countCap = 2 ** 30;
+// A frame's memo once every shared call's delays there are done: nothing is
+// shared in the frame again, so no delay past a call's count, as a retried
+// force's, makes its entry again.
+const spent = Object.freeze({});
 // The closures memo's key for the empty environment.
 const topLevel = Object.freeze({});
 const memos = () => Object.fromEntries(["value", "outer", "origin", "level"].map(mode => [mode, { cells: new WeakMap(), closures: new WeakMap() }]));
@@ -347,8 +351,13 @@ export class RuntimeQuery {
   // that the memo keeps it no longer than some delay of it there is still to
   // come. Any other code is delayed as usual. Sharing a call of one code in
   // one environment changes no value: the cell represents the same term at
-  // every delay.
-  #share(code, env) {
+  // every delay. A frame's memo starts, at its first shared delay, with
+  // every shared call's count: a call whose delays are done has left it,
+  // and the memo is spent once all have, so no delay past a call's count
+  // makes its entry again. The top level's counts are its roots', entered
+  // once each. `took` records each delay counted, for a failed force's
+  // refund (#refund).
+  #share(code, env, took) {
     if (!env) {
       const counts = this.#topCounts, cells = this.#topCells, remaining = counts.get(code);
       if (!remaining) return this.#delay(code, null);
@@ -358,22 +367,50 @@ export class RuntimeQuery {
         cell = this.#delay(code, null);
         if (remaining > 1) { this.#budget.allocate(); cells.set(code, cell); }
       }
+      took?.push(null, code, cell);
       if (remaining === 1) { counts.delete(code); cells.delete(code); }
       else if (remaining < countCap) counts.set(code, remaining - 1);
       return cell;
     }
-    const count = this.#node(env.binder).sharing?.get(code);
-    if (!count) return this.#delay(code, env);
     let memo = this.#shared.get(env);
-    if (!memo) { this.#budget.allocate(); this.#shared.set(env, memo = new Map()); }
+    if (memo === spent) return this.#delay(code, env);
+    if (!memo) {
+      const table = this.#node(env.binder).sharing;
+      if (!table?.has(code)) return this.#delay(code, env);
+      this.#budget.allocate(1 + table.size);
+      this.#shared.set(env, memo = new Map(table));
+    }
     let entry = memo.get(code);
-    if (entry) this.#budget.stats.shared++;
-    else { this.#budget.allocate(); memo.set(code, entry = { cell: this.#delay(code, env), remaining: count }); }
+    if (entry === undefined) return this.#delay(code, env);
+    if (typeof entry === "number") { this.#budget.allocate(); memo.set(code, entry = { cell: this.#delay(code, env), remaining: entry }); }
+    else this.#budget.stats.shared++;
+    took?.push(env, code, entry);
     if (entry.remaining < countCap && --entry.remaining === 0) {
       memo.delete(code);
-      if (!memo.size) this.#shared.delete(env);
+      if (!memo.size) this.#shared.set(env, spent);
     }
     return entry.cell;
+  }
+  // A force that failed, to be tried again, gives back the delays it
+  // counted, as its retry or the cell made in its place will count them
+  // again: an entry its delay ended is restored, with its cell. A delay
+  // that never comes again leaves its entry as long as its instance, as
+  // any delay that never comes does. Nothing here is allocated against the
+  // budget, which a failure may have spent.
+  #refund(took) {
+    for (let i = 0; i < took.length; i += 3) {
+      const env = took[i], code = took[i + 1], counted = took[i + 2];
+      if (!env) {
+        const counts = this.#topCounts;
+        counts.set(code, Math.min(countCap, (counts.get(code) ?? 0) + 1));
+        if (!this.#topCells.has(code)) this.#topCells.set(code, counted);
+        continue;
+      }
+      let memo = this.#shared.get(env);
+      if (!memo || memo === spent) this.#shared.set(env, memo = new Map());
+      if (memo.get(code) === counted) { if (counted.remaining < countCap) counted.remaining++; }
+      else { counted.remaining = 1; memo.set(code, counted); }
+    }
   }
   #descriptor(signature, index) {
     const signatures = this.#image.signatures;
@@ -415,7 +452,8 @@ export class RuntimeQuery {
           const cell = task.cell;
           if (cell.state === 2) { budget.stats.hits++; returned(cell.value); continue; }
           if (cell.state === 1) fail("input", "Cyclic runtime demand.");
-          push({ operation: "update", cell }); cell.state = 1; budget.stats.forces++;
+          const update = { operation: "update", cell };
+          push(update); cell.state = 1; budget.stats.forces++;
           if (cell.operation === "apply") {
             push({ operation: "apply", argument: cell.argument }); force(cell.fn); continue;
           }
@@ -423,7 +461,11 @@ export class RuntimeQuery {
           // A computation is delayed through #share where the node delays a
           // call its scope shares; an annotation, which no value form's walk
           // forces, is delayed alone.
-          const annotation = id => this.#delay(id, env), delay = n.shares ? id => this.#share(id, env) : annotation;
+          // The delays a marked node counts are kept on its update frame,
+          // which a failure refunds.
+          const annotation = id => this.#delay(id, env);
+          let delay = annotation;
+          if (n.shares) { const took = update.took = []; delay = id => this.#share(id, env, took); }
           switch (n.kind) {
             case "Var": task = { operation: "lookup", env, symbol: n.payload }; break;
             // A definition's value is read at its first demand: one thunk per
@@ -560,7 +602,10 @@ export class RuntimeQuery {
     } catch (error) {
       // No partially forced cell becomes a value. Completed siblings survive;
       // the cumulative work/allocation limits still apply to later operations.
-      for (const frame of stack) if (frame.operation === "update") frame.cell.state = 0;
+      for (const frame of stack) if (frame.operation === "update") {
+        frame.cell.state = 0;
+        if (frame.took) this.#refund(frame.took);
+      }
       throw error;
     }
   }
@@ -576,7 +621,12 @@ export class RuntimeQuery {
     }
     let value = yield* this.#run(cell);
     for (let f; (f = this.#eta(value));) {
-      value = yield* this.#run(this.#delay(f, value.env));
+      // f is the λ's body but its variable: it is evaluated in an instance
+      // of the body's scope of its own, a frame that binds nothing, so that
+      // its delays count against the body's shared calls, not those of the
+      // scope that made the λ.
+      const instance = this.#cell({ parent: value.env, symbol: undefined, cell: null, binder: value.node });
+      value = yield* this.#run(this.#delay(f, instance));
       // η leaves the cell holding the λ: the head is kept for its readback.
       if (this.#forReadback) this.#heads.set(cell, value);
     }
@@ -686,7 +736,8 @@ export class RuntimeQuery {
         seen.add(value);
         for (const child of value instanceof Map ? value.values() : Object.values(value)) if (child && typeof child === "object") stack.push(child);
         if (this.#heads.has(value)) stack.push(this.#heads.get(value));
-        if (this.#shared.has(value)) stack.push(this.#shared.get(value));
+        const memo = this.#shared.get(value);
+        if (memo && memo !== spent) stack.push(memo);
       }
       return { runtimeObjects: seen.size, snapshotNodes: this.#image.nodes.size };
     } finally { this.#budget.finish(); }
