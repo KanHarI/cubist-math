@@ -33,9 +33,9 @@ import { RuntimeQuery, RuntimeError } from "../web/cubical-runtime.mjs";
 import { KernelError } from "../web/cubical-kernel.mjs";
 import { cubistTestModules } from "../web/cubist/modules.mjs";
 import { parse } from "../web/cubist/parser.mjs";
-import { checkedModule } from "./inline-errors.mjs";
+import { checkedModule, reported, stated } from "./inline-errors.mjs";
 import { sourceReader } from "./module-sources.mjs";
-import { referenceExamples } from "../tests/reference-pages.mjs";
+import { referenceExamples, statedOutputs } from "../tests/reference-pages.mjs";
 import { assertFreshBuild } from "./build-stamp.mjs";
 
 const euclid = "import euclid; use nat;", rationals = "import binary_rationals; use binary_rationals;";
@@ -141,33 +141,57 @@ async function sample(name, path) {
       return watched.records;
     } finally { program.dispose(); }
   }
+  // A corpus print is measured in its corpus as written: a check whose
+  // results differ from what the corpus states, its comments or its
+  // transcript, measured something else, and fails the sample.
+  const diverged = (what, actual, expected) => {
+    throw new Error(`${name}: ${what} differs from what the corpus states:\n${JSON.stringify(actual)}\n${JSON.stringify(expected)}`);
+  };
   const [, place, line, at] = name.match(/^(.*?)(?::(\d+))?#(\d+)$/), index = Number(at);
   if (place.startsWith("cubist-tests/")) {
-    const watched = measuring(path, index, readFileSync(`${root}${place}.cubist`, "utf8"));
-    try { await checkedModule(place.slice("cubist-tests/".length), module); } finally { watched.restore(); }
+    const main = place.slice("cubist-tests/".length), watched = measuring(path, index, readFileSync(`${root}${place}.cubist`, "utf8"));
+    let checked;
+    try { checked = await checkedModule(main, module); } finally { watched.restore(); }
+    // Its errors, warnings and outputs, as tests/cubist-tests-inlined.mjs compares them.
+    const items = reported(checked.source, checked.result, main);
+    if (JSON.stringify(items) !== JSON.stringify(stated(checked.source))) diverged("the module's check", items, stated(checked.source));
     return watched.records;
   }
   // A reference example, as tests/reference-examples.test.mjs checks it: an
-  // accepted one as a module, a REPL transcript on the accepted example
-  // before it, and a command-line session's entries in a fresh REPL.
+  // accepted one as a module, whose prints are its `// Output:` comments; a
+  // REPL transcript on the accepted example before it; and a command-line
+  // session's entries in a fresh REPL. A transcript's entries are read
+  // whole, a bracket continuing one over lines, and each gives the lines
+  // written after it, `…` matching any text.
   const examples = referenceExamples(place, readFileSync(`${root}web/${place}`, "utf8"));
   const position = examples.findIndex(example => example.label === `${place}:${line}`), example = examples[position];
   const kind = example.attrs["data-check"], program = new CubicalProgram(module, sourceReader(), { collectReferences: false });
   try {
     if (kind === "accept") {
       const watched = measuring(path, index, example.text);
-      try { await program.check(example.text, "reference_example"); } finally { watched.restore(); }
+      let result;
+      try { result = await program.check(example.text, "reference_example"); } finally { watched.restore(); }
+      const failures = [...result.outputs.filter(output => !output.verified), ...program.gaps].map(failure => failure.reason);
+      if (failures.length) diverged("the example's check", failures, []);
+      const prints = result.prints.filter(print => print.module === "reference_example").map(print => print.text.replace(/\s+/g, " "));
+      if (JSON.stringify(prints) !== JSON.stringify(statedOutputs(example.text))) diverged("the example's prints", prints, statedOutputs(example.text));
       return watched.records;
     }
+    if (kind !== "repl" && kind !== "cli" || kind === "cli" && example.attrs["data-files"]) throw new Error(`${name}: no replay for this example.`);
     let session = new ReplSession(program);
     if (kind === "repl" && example.attrs["data-base"] !== "none") {
-      await program.check(examples.slice(0, position).filter(e => e.attrs["data-check"] === "accept").at(-1).text, "example");
+      const base = await program.check(examples.slice(0, position).filter(e => e.attrs["data-check"] === "accept").at(-1).text, "example");
+      if (!base.complete) diverged("the accepted example before it", base.gaps.map(gap => gap.reason), []);
       session = new ReplSession(program, { base: "example" });
     }
-    const inputs = kind === "repl" ? replTranscript(example.text).map(({ input }) => input)
-      : example.text.split("\n").filter(text => text.startsWith("> ")).map(text => text.slice(2));
+    const pattern = text => new RegExp(`^${text.split("…").map(part => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join(".*")}$`);
     const watched = measuring(path, index);
-    try { for (const input of inputs) await session.run(input); } finally { watched.restore(); }
+    try {
+      for (const { input, results } of replTranscript(example.text)) {
+        const actual = (await session.run(input)).flatMap(result => result.text.split("\n"));
+        if (actual.length !== results.length || !results.every((text, i) => pattern(text).test(actual[i]))) diverged(`\`${input}\``, actual, results);
+      }
+    } finally { watched.restore(); }
     return watched.records;
   } finally { program.dispose(); }
 }
