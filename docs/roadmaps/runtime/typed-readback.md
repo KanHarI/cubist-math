@@ -25,7 +25,9 @@ base to the kernel; the whole-walk restart stays until a design faster end
 to end is ready. W4's record for what is on main, W1's readback fragment
 and the whole-walk restart, was written on 2026-11-01 at `398e89ba`
 ([record](../../reports/typed-readback-eval8.md)): no defect found, and
-two gaps in the tests recorded; W2's boundary is reviewed when W2 lands.
+the two gaps it found in the tests closed by tests of section 6's
+isolation, of a readback stopped partway, of malformed handles and of a
+readback that forces nothing; W2's boundary is reviewed when W2 lands.
 
 ## Summary
 

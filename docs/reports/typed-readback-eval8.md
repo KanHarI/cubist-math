@@ -34,17 +34,18 @@ rule ([below](#review-rounds)).
 | No kernel reducer replaced, no instruction added or changed | Holds | W1 changed no file under `kernel/`, `wasm/` or the kernel's JavaScript bridge; no commit since touches `kernel/` or `wasm/` ([1](#1-the-kernel-is-unchanged)) |
 | The named rules, compared | Each runtime and readback step agrees with the kernel rule it imitates ([2](#2-the-rules-the-correspondence-imitates)) | Source, the oracle |
 | Claims 1–6 of 3.6 | Hold on everything measured; claim 4, a target, is met wherever decided | The oracle over 293 value forms, W1's tests, a closedness census of 7,994 readbacks, probes ([3](#3-claims-1-to-6)) |
-| Lazy annotations | `R` forces nothing and demands no definition | Source; probe ([4](#4-lazy-annotations)) |
+| Lazy annotations | `R` forces nothing and demands no definition | Source; a test ([4](#4-lazy-annotations)) |
 | The fallback boundary | The restart on main computes every value form as the kernel's queries do; W2's is reviewed when W2 lands | Source, tests, CLI and browser ([5](#5-the-fallback-boundary)) |
 | The generation | Checked at entry, before each write and before a handle is returned | Source, W1's tests, the bridge's test ([6](#6-the-generation)) |
-| Budgets and cancellation in the middle of a readback | Stop as specified, and the query reads back correctly after | Probe (F2: no repository test stops a readback partway) ([7](#7-budgets-and-cancellation-in-the-middle-of-a-readback)) |
-| A malformed handle | Refused | Probe, W1's tests ([8](#8-a-malformed-handle)) |
-| Query-before-instruction isolation | Holds | Probe in the manner of `kernel/tests/test_isolation.c` (F1: the test section 6 asks for is not in the repository) ([9](#9-query-before-instruction-isolation)) |
+| Budgets and cancellation in the middle of a readback | Stop as specified, and the query reads back correctly after | Tests (F2, covered) ([7](#7-budgets-and-cancellation-in-the-middle-of-a-readback)) |
+| A malformed handle | Refused | A test ([8](#8-a-malformed-handle)) |
+| Query-before-instruction isolation | Holds | A test in the manner of `kernel/tests/test_isolation.c` (F1, covered) ([9](#9-query-before-instruction-isolation)) |
 | Syntax equality and conversion stay apart | Holds | Source of the tests and the oracle ([10](#10-syntax-equality-and-conversion)) |
 
 No defect was found in W1's readback or in the restart. The findings are
-two gaps in the repository's tests (F1, F2) and one broken browser test on
-main, unrelated to readback, whose harness this branch fixes (F3).
+two gaps in the repository's tests (F1, F2), which this branch closes with
+tests made from the record's probes, and one broken browser test on main,
+unrelated to readback, whose harness this branch fixes (F3).
 
 ## Revision, environment and suites
 
@@ -59,19 +60,24 @@ clang 17.0.0, on AC power under `caffeinate -dimsu`.
 | C kernel | `make -C kernel test` | passed: 16 test programs, `instruction isolation: ok`, `bridge handle generations: ok` |
 | C sanitizer | `make sanitize SANITIZERS=undefined` (ASan runs in CI) | passed: the same 16, no UBSan report |
 | C lint | `make lint` | passed: 44 of 44 files |
-| JavaScript | `npm test`, through the full-suite lock | passed: 2,138 tests, 2,138 pass, in 478 s; W1's 13 readback tests and the oracle's three surfaces among them |
+| JavaScript | `npm test`, through the full-suite lock | passed: 2,138 tests, 2,138 pass, in 478 s; W1's 13 readback tests and the oracle's three surfaces among them. Again at `ab9df858`, with the tests that close F1 and F2: 2,142 tests, 2,142 pass, in 508 s |
 | Canonicity fixtures | `tests/hott-automation.test.mjs` (in `npm test`); `node cli/repl.mjs check docs/examples/hott-automation/canonicity.cubist` | passed; 17 declarations in 69,207 kernel steps, its evaluations `6`, `left(2)` and `tt` |
 | CLI evaluation | `tests/cli.test.mjs` (in `npm test`); the entries of [5](#5-the-fallback-boundary) | passed; each entry as expected |
 | Browser evaluation | `npm run test:browser`, `test:browser:contextual`, `test:browser:cubical`, `test:browser:statement`, `test:browser:proof-navigation`, `test:browser:landing`; `node tools/build-site.mjs && npm run test:site`; the value-form pages, by the per-page recipe | passed, `test:browser:cubical` after its harness fix (F3); the site test's 28 PASS lines, "REPL page: the runtime's value forms and its limits" among them; 234 examples on 9 reference pages, 33 with printed or evaluated values, each the Node checker's |
 | Archive checking | `node tools/audit-cubical.mjs --all` | passed: 3,527 declarations checked in 353 modules, none failed, in 33 s |
 | Definition re-derivation | `npm run test:coverage` | passed: the archive checked with the driver's guide, 3,527 of 3,527 declarations in 348 modules, 0 gaps; 3,632 of 3,632 definitions derive in instruction mode (100.0%) |
-| Isolation | `kernel/tests/test_isolation.c` (in the kernel and sanitizer runs); the probe of [9](#9-query-before-instruction-isolation) | passed |
+| Isolation | `kernel/tests/test_isolation.c` (in the kernel and sanitizer runs); the test of [9](#9-query-before-instruction-isolation) | passed |
 
-The probes are a scratch test file, not in the repository, run as
-`W4_ROOT=<checkout> node --test eval8-probes.test.mjs`: 7 tests, all
-passing. The closedness census preloads a module that checks every term
-`readback` returns, by `NODE_OPTIONS=--import=…`, into the test files that
-read back. Their cases are given where they are used below.
+The record's checks began as probes, a scratch test file, 7 tests, all
+passing. Their isolation, partway, handle and forcing cases became four
+tests in `tests/runtime-readback.test.mjs`, and their K344 case two
+checks in W1's K344 test there (`ab9df858`, [below](#findings)); `npm
+test` passed again with them.
+The rest stay scratch, and their cases are given where they are used: the
+large readbacks' closedness and the tower of claim 5, the closedness
+census, which preloads a module that checks every term `readback` returns,
+by `NODE_OPTIONS=--import=…`, into the test files that read back, and the
+per-page browser recipe.
 
 ## 1. The kernel is unchanged
 
@@ -169,12 +175,12 @@ for the syntactic comparison of a pair's two projected terms. An unforced
 annotation, a λ's domain, a pair's or an injection's type, a constructor's
 instance, an eliminator's motive, is read back as its closure.
 
-The probe reads back, by value and by origin,
+The test "a readback forces nothing" reads back, by value and by origin,
 `(fun (n : UNat) => typed(Tag(count_into(n, 0)) and Unit, (tag, slow(n))))(2 * 200)`
 and a λ whose domain is `Tag(count_into(n, 0))` at the same `n`. Across
-each readback the query's forces, hits, β and ι counts, its definitions
-and its frames are unchanged, the kernel answers no query, and the
-readback's full normal form is the kernel's.
+each readback the query's forces, β and ι counts and its definitions are
+unchanged, the kernel answers no query, and the readback's full normal form
+is the kernel's.
 
 ## 5. The fallback boundary
 
@@ -241,7 +247,7 @@ with its transaction. A spent generation is 0, in which no handle is held.
 W1's tests expire a readback that writes, a closed code's own handle and a
 memoized handle after a rollback and after a commit, and the mutation "a
 memo reused across generations" is killed; the bridge's own test passes in
-the kernel run. The probe confirms that a readback's term, admitted to
+the kernel run. A scratch probe confirms that a readback's term, admitted to
 `normalize`, is refused after its transaction rolls back, and that the
 query then expires. No user path holds a query across a session
 operation.
@@ -251,23 +257,26 @@ operation.
 Readback is synchronous; its steps and cells are the query's, checked by
 `Budget.tick` and `allocate`, with the deadline and the signal checked at
 its start and every 1,024 steps. W1's test stops a readback within its
-first two steps. The probe stops one partway, on `2/3 + 1/6`, whose
-readback takes 14,198 steps and 9,822 cells:
+first two steps. The test "a readback stopped partway leaves no partial
+memo entry" stops one on the pair of the unary numerals `2 * 200` and
+`3 * 100`, whose readback takes more than 3,072 steps:
 
 - at a step budget halfway through it, as `budget` with that limit, after
-  writes; the exhausted query then takes no more work, as after an
-  observation's stop;
-- at a cell budget halfway, as `resource`; a cached observation still
-  succeeds;
-- at a deadline, the clock made to pass it after the readback's start, as
-  `deadline`, after 589 writes; the next readback of the same query is the
-  term a fresh query reads back;
-- by a signal aborted before the call, as `cancelled`, with nothing written;
-  the next readback is the fresh query's term;
-- by origin, at a step budget halfway through its 2,883 steps, as `budget`;
-- by the kernel's own guard: past the syntax depth, as K344, after which a
-  part of the same value reads back and the kernel accepts the next
-  instruction.
+  writes; the query's limits are cumulative, so it reads back no more, as
+  after an observation's stop;
+- at a cell budget halfway, as `resource`, after writes;
+- at a deadline, the clock standing still for the readback's start and its
+  first check, as `deadline`, after writes; the next readback of the same
+  query is the term a fresh query reads back;
+- by a signal aborted before the call, as `cancelled`, before its first
+  step; the next readback is the fresh query's term.
+
+W1's test "a lifted hypothesis is refused, and a value past the kernel's
+syntax depth fails with K344" now also has the kernel accept the next
+instruction after the K344, and the same query read back a part of the
+value. The scratch probe did the same on `2/3 + 1/6`, whose readback takes
+14,198 steps and 9,822 cells, by value and, at a step budget halfway
+through its 2,883 steps, by origin.
 
 A memo entry is made only when its term is complete, and an unstable one
 serves only the readback that made it, so a stop leaves no partial entry
@@ -277,68 +286,35 @@ arrive during a readback, as during `observeNow`.
 ## 8. A malformed handle
 
 `readback` takes only the query's own opaque handles (`#begin`, `#unwrap`).
-The probe refuses, as `input`: another query's handle, a forged object,
-a kernel handle, `null`, the head of a handle never observed, a readback
-by origin of a query made without origins, and a value form's query; and,
-as `disposed`, a disposed query's handle. W1's tests refuse the last two
-`input` cases, and a head read of a value form's query. The normalize
-guard refuses raw syntax that no instruction derived, and the kernel
-refuses a child handle that names no node (`ck_make`).
+The test "a readback refuses a handle that is not its query's own"
+refuses, as `input`: another query's handle, a forged object, a kernel
+handle, `null`, the head of a handle never observed, a readback by origin
+of a query made without origins, and a value form's query; and, as
+`disposed`, a disposed query's handle. A scratch probe also showed the
+normalize guard refusing raw syntax that no instruction derived, and the
+kernel refusing a child handle that names no node (`ck_make`).
 
 ## 9. Query-before-instruction isolation
 
 Section 6 asks for a test that shows an instruction's verdict unchanged
 with and without a readback before it, in the manner of
-`kernel/tests/test_isolation.c`. No such test is in the repository (F1).
-The probe does it with
+`kernel/tests/test_isolation.c`. W1 added none (F1); the test "an
+instruction's verdict is the same with and without a readback before it",
+in `tests/runtime-readback.test.mjs` since the kernel's C tests cannot run
+the runtime, does it with
 `def endo := (fun (B : U0) => (fun (A : U0) => A -> A)(B))(Unit);`, whose
 readback by value is `(λ (A : U0). A -> A)(Unit)`, one node the readback
-writes. In each of three fresh sessions, `x : (λ (A : U0). A -> A)(Unit)`,
-on that node (the readback's own handle where the readback comes first,
-the same syntax built by hand elsewhere), is refused as an argument of
-`λ (y : Unit -> Unit). y` ("The argument has the wrong type."), and after a
-`Beta` step converts its type, `Apply` accepts. One session makes no
-readback; one reads back by value and by origin, and asks `normalize`,
-`normalizeFolded` and `head` of the readback, before the instructions; one
-does so between two rounds of them. The refusals and the accepted
-judgements' statements are identical across all three. The kernel's own
-isolation test passes in the kernel and sanitizer runs. The case, with the
-`setup` of `tests/runtime-readback.test.mjs`:
-
-```js
-const source = "def endo := (fun (B : U0) => (fun (A : U0) => A -> A)(B))(Unit);";
-const unitToUnit = { tag: "Pi", name: "_", domain: { tag: "Unit" }, body: { tag: "Unit" } };
-const identity = { tag: "Lam", name: "y", domain: unitToUnit, body: { tag: "Var", name: "y" } };
-// readback: null (none), "before" or "between" the rounds of instructions.
-async function session(t, readback) {
-  const s = await setup(t, source), k = s.kernel, g = s.graph, driver = new InstructionDriver(k), verdicts = [];
-  const body = k.node(k.definition(g.judgement(s.judgement("endo")).term).value);
-  const inner = k.node(k.node(body.children[0]).children[1]).children[0];
-  const round = () => {
-    // (λ (A : U0). A -> A)(Unit) : U0, the node the readback writes.
-    const typeOf = driver.infer(k.term("App", 0, inner, body.children[1]));
-    const fn = driver.infer(s.checker.syntax.encode(identity)), x = g.variable(g.extend(typeOf, "x"));
-    let refused = null;
-    try { g.apply(fn, x); } catch (error) { refused = error.message; }
-    const { term, type } = g.judgement(g.apply(fn, g.convert(x, g.step(g.refl(typeOf), "other", [], "beta"))));
-    verdicts.push(JSON.stringify([refused, s.decoded(term), s.decoded(type)]));
-  };
-  if (readback === "between") round();
-  if (readback) {
-    const runtime = s.query("endo");
-    s.walk(runtime);
-    const read = runtime.readback();
-    k.normalize(read); k.normalizeFolded(read); k.head(read);
-    const origins = s.query("endo", { origins: true });
-    s.walk(origins);
-    k.normalizeFolded(origins.readback(origins.root, { origins: true }));
-  }
-  round();
-  return verdicts;
-}
-// Every verdict, in all three sessions: the refusal "The argument has the
-// wrong type.", then (λ (y : Unit -> Unit). y)(x) : Unit -> Unit.
-```
+writes, as the test asserts. In each of three fresh sessions,
+`x : (λ (A : U0). A -> A)(Unit)`, on that node (the readback's own handle
+where the readback comes first, the same syntax built by hand elsewhere),
+is refused as an argument of `λ (y : Unit -> Unit). y` ("The argument has
+the wrong type."), and after a `Beta` step converts its type, `Apply`
+accepts. One session makes no readback; one reads back by value and by
+origin, and asks `normalize`, `normalizeFolded` and `head` of the
+readback, before the instructions; one does so between two rounds of them.
+The refusals and the accepted judgements' statements are identical across
+all three. The kernel's own isolation test passes in the kernel and
+sanitizer runs.
 
 ## 10. Syntax equality and conversion
 
@@ -349,16 +325,40 @@ conversion; the instruction driver appears only to type terms.
 
 ## Findings
 
-1. **F1: section 6's isolation test is not in the repository.** W1's
-   acceptance did not list it, and it was not added. The probe of
-   [9](#9-query-before-instruction-isolation) shows the property on main.
-   Not a defect; the probe's case would serve as the test, in
-   `tests/runtime-readback.test.mjs`.
-2. **F2: the repository's readback tests do not stop a readback partway,**
+1. **F1: section 6's isolation test was not in the repository;** W1's
+   acceptance did not list it. Not a defect: the probe showed the property
+   on main. **Covered** by "an instruction's verdict is the same with and
+   without a readback before it" (`ab9df858`,
+   [9](#9-query-before-instruction-isolation)).
+2. **F2: the repository's readback tests did not stop a readback partway,**
    by a budget, a deadline or a signal, nor read back a foreign, forged or
-   disposed handle, nor show that a readback forces nothing. The probes of
-   [4](#4-lazy-annotations), [7](#7-budgets-and-cancellation-in-the-middle-of-a-readback)
-   and [8](#8-a-malformed-handle) show each on main. Not a defect; coverage.
+   disposed handle, nor show that a readback forces nothing, nor use the
+   query and the kernel after a K344. Not a defect: the probes showed each
+   on main. **Covered** (`ab9df858`) by "a readback stopped partway leaves
+   no partial memo entry", "a readback refuses a handle that is not its
+   query's own", "a readback forces nothing", and two more checks in W1's
+   K344 test ([4](#4-lazy-annotations),
+   [7](#7-budgets-and-cancellation-in-the-middle-of-a-readback),
+   [8](#8-a-malformed-handle)).
+
+   Each new check fails when the property it states breaks. Under each of
+   these temporary mutations, applied alone, the test named fails, and the
+   unchanged code passes it:
+
+   | Mutation | Test that fails |
+   | --- | --- |
+   | `Apply` compares the argument's type through the weak-head cache (`cc_instr_apply`, kernel rebuilt): the session without a readback refuses, the others accept | isolation |
+   | a memo entry made when its frame is pushed, before its term is complete | stopped partway |
+   | `readback` never clears its running flag | stopped partway; K344 |
+   | no check of the signal at a readback's start | stopped partway |
+   | an unknown handle read as the root | refuses a handle |
+   | a disposal that leaves the query open | refuses a handle |
+   | a head read where no observation computed one | refuses a handle |
+   | a readback by origin of a query made without origins | refuses a handle |
+   | a value form's query read back | refuses a handle |
+   | an unforced cell forced while it is read back | forces nothing |
+   | a kernel head query after each readback | forces nothing |
+   | a refused term's kernel error left uncleared (`CubicalKernel.term`) | K344 |
 3. **F3: `tests/cubical.browser.mjs` fails on main** (`398e89ba`), outside
    CI. Since `179c883b` (2026-10-20) the workbench has two `details`
    elements, and its `details summary` locator is ambiguous; with that made

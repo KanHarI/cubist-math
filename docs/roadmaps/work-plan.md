@@ -1073,10 +1073,10 @@ Each step lands in focused PRs under the review rule above.
       record, was written on 2026-11-01 for what is on main, W1's
       readback fragment and the whole-walk restart
       ([record](../reports/typed-readback-eval8.md)): the applicable
-      suites pass at `398e89ba`, no defect was found, and the record
-      notes two gaps in the readback tests and an extended browser test
-      broken on main since 2026-10-20, whose harness the same change
-      fixes. W2's boundary is reviewed when W2 lands.
+      suites pass at `398e89ba`, no defect was found, the two gaps it
+      found in the readback tests are closed by tests, and an extended
+      browser test broken on main since 2026-10-20 has its harness
+      fixed. W2's boundary is reviewed when W2 lands.
    5. **The archive's number theory in the library**
       ([NT1–NT5](archive-retirement.md#number-theory-in-the-library)):
       1. NT1: the unary order lemmas move to `unat`. **Done** on 2026-10-28.
