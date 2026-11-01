@@ -560,15 +560,23 @@ setup, whose last declaration's commit cleared the kernel's weak-head,
 normal-form and folded caches (`cc_kernel_commit_checkpoint`). The corpora's
 are every printed `!!` of the Cubist test modules (14) and of the language
 reference's examples (12), each where it stands, after the directives
-before it. The contracts print no `!!`. Ticks are the kernel's query steps;
-steps are the runtime's, its walk's and then its readback's; a time is the
-`!!`'s own, from after the term's check to its decoded normal form, the
-display excluded, from one cold sample. The run was at `0657ab6c` (main
-`6aeeba86` and the probe) with a clean tree and a fresh `make wasm`, Node
-24.13.0, macOS arm64 (Apple M3 Pro, 36 GiB), one process at a time with no
-other heavy job. An earlier run of the same procedure, from a scratch copy
-of the probe, gave the same ticks, steps and texts for every sample, and
-times in the same direction.
+before it, and each replay is checked against what its corpus states: a
+transcript's lines after each entry, read whole as `replTranscript` reads
+them, an accepted example's `// Output:` comments and a test module's
+inlined comments. A replay that differs fails its sample. The contracts
+print no `!!`. Ticks are the kernel's query steps; steps are the runtime's,
+its walk's and then its readback's; a time is the `!!`'s own, from after
+the term's check to its decoded normal form, the display excluded, from one
+cold sample. The run was at `0657ab6c` (main `6aeeba86` and the probe) with
+a clean tree and a fresh `make wasm`, Node 24.13.0, macOS arm64 (Apple M3
+Pro, 36 GiB), one process at a time with no other heavy job. An earlier run
+of the same procedure, from a scratch copy of the probe, gave the same
+ticks, steps and texts for every sample, and times in the same direction.
+The corpora's samples were taken again at `e8a38bce`, after #343's first
+review found that the probe replayed a command-line example line by line,
+so that its two declarations written over several lines failed to parse,
+silently; replayed whole and checked, every corpus sample gave the same
+ticks, steps and text as before. Their figures below are that run's.
 
 | Workload | Kernel's `!!` | By the runtime: walk + readback steps, then kernel ticks | Time, kernel → runtime | Text |
 | --- | ---: | --- | --- | --- |
@@ -596,16 +604,16 @@ times in the same direction.
 | `least_divisor(121, tt).2.2.1`, a contract's | 275,924 ticks | falls back after 20,290 steps | 24.1 → 24.6 ms | same |
 
 The corpora: every text is the kernel's. The Cubist test modules' 14 printed
-`!!` take 16,949 ticks by the kernel, 4.0 ms in all; by the runtime the same
-16,949 ticks, 5,161 steps and 17.1 ms, two of them falling back (at a
+`!!` take 16,949 ticks by the kernel, 3.3 ms in all; by the runtime the same
+16,949 ticks, 5,161 steps and 15.3 ms, two of them falling back (at a
 composition in `!!euclid(3)` and in `!!one_three_related`). The reference's
-12, all computed by the runtime, take 44,813 ticks and 8.5 ms by the kernel,
-and 43,741 ticks, 9,813 steps and 27.0 ms by the runtime. Most of these are
+12, all computed by the runtime, take 44,813 ticks and 6.8 ms by the kernel,
+and 43,741 ticks, 9,813 steps and 22.8 ms by the runtime. Most of these are
 functions, such as `!!and_swap`: a non-data root is read back by its origin,
 the term asked for, so the kernel's work is the same, and the runtime's
 query, walk and readback come on top. The reference's largest,
-`rat(int(2, 0), 2)`, is in the table. Each process's peak, 131 to 680 MiB, is its setup's: the two
-paths' peaks differ by at most 66 MiB, either way.
+`rat(int(2, 0), 2)`, is in the table. Each process's peak, 131 to 688 MiB,
+is its setup's: the two paths' peaks differ by at most 66 MiB, either way.
 
 **Why there is no gain.** A folded normal form keeps certificates named, and
 reading them back so is what origins are for (the note's 3.4): inside a
