@@ -76,10 +76,16 @@ export const fixture = new URL("tests/fixtures/evaluation-baseline.json", root);
 // workloads' value forms run in the runtime with no fallback, euclid(7)'s
 // prime computes on both paths, and the depth failure is the least divisor
 // of 251 * 251, whose 250 candidates' minimality certificate passes the
-// kernel's syntax depth guard. Version 10's record is at main d875dd08.
+// kernel's syntax depth guard. The Fibonacci of the strong recursion
+// contracts records that a branching recursion shares its smaller values.
+// Version 10's record is at main d875dd08.
 export const version = 11;
 
 const euclid = "import euclid; use nat;", unary = "import unat; use unat;", circle = "import circle; use unat;";
+// The strong recursion contracts' Fibonacci, which branches: its two calls
+// share the values below them.
+const fibonacci = [euclid, ...readFileSync(new URL("tests/fixtures/contracts/strong_recursion_contracts.cubist", root), "utf8")
+  .split("\n").filter(line => !/^(#|import |use |evaluate )/.test(line))].join("\n");
 // The library's Euclid construction and its prerequisites stay fixed for
 // evaluator comparisons (library/euclid.cubist, prime_numbers.cubist,
 // divisibility.cubist): a change to their algorithm starts a new version.
@@ -107,6 +113,8 @@ const fixed = [
   // form; the kernel's normal form meets the syntax depth guard in the
   // minimality certificate the search builds.
   { id: "least-divisor-251-squared", setup: euclid, entry: "evaluate least_divisor(63001, tt).1;" },
+  // A branching strong recursion, at the predecessor and its predecessor.
+  { id: "fibonacci-25", setup: fibonacci, entry: "evaluate fib(25);" },
   // Factorial, the construction's growth factor.
   { id: "factorial-4", setup: euclid, entry: "evaluate factorial(4);" },
   { id: "factorial-5-print", setup: euclid, entry: "print(evaluate(factorial(5)));" },
