@@ -9,7 +9,8 @@ kernel's queries recomputed the rest of the computation at each
 composition and stopped at their syntax depth guard (K344) after about
 sixty levels. This change makes both recursions compute without a
 transport, for arbitrary dependent families, with the public statements
-unchanged.
+unchanged, and keeps the old recursion's sharing of overlapping calls
+([below](#sharing)).
 
 ## Before
 
@@ -48,49 +49,50 @@ definition a fallback was in was read from the runtime's demand trace.
 
 ### Strong recursion
 
-[`bnat_recursion`](../../library/bnat_recursion.cubist) iterates a
-course of values by the bits of the bound. A course
-(`BNatCourse(U, P)`) is a bound with the values below it, a pair in
-`exists b : BNat. BNatBelow(U, P, b)`, and one step
-(`bnat_below_step`) gives the values below `succ(b)`: at each `m` the step
-at `m`, reading what is below `m` from the values below `b`. `bnat_iterate`
-takes that step `n` times by `n`'s bits, from the empty course at zero.
-Since every course carries its own bound, no step is retyped: no value is
-transported, whatever the dependent family.
+[`bnat_recursion`](../../library/bnat_recursion.cubist) keeps main's
+shape: the values below `succ(n)` extend those below `n` with the step's
+value at `n` (`bnat_below_step`), and `bnat_peano`'s advance over binary
+offsets builds the extensions up to the bound. Two transports were on
+that path, and both are gone.
 
-A callback's evidence that `k` is below the bound is decided on the bits
-when it is demanded (`bnat_lt_below_succ`, `bnat_lt_bound`): the positive
-decision returns the comparison's own `tt`, and only the negative branch
-uses unary order or the course's bound equation (`bnat_course_bound`,
-proved by the bits from the offset laws) to refute. The recursion itself
-never demands that evidence, so neither the runtime nor the kernel computes
-a bound. The decrease laws, `n < succ(n)` and `pred(p) < p`, are proved on
-the bits, with the odd/even and doubling lemmas moved here from
-`bnat_division`.
+- **The value at `n`, read at `m`.** A read at `m < succ(n)`
+  (`bnat_below_read`) compares `m` with `n` once, on the bits: below `n`
+  it delegates to the values below `n`, and at `n` it returns the step's
+  value, which was retyped from `P(n)` to `P(m)` by
+  `comp(fun i => P(same @ ~i), …)` (`bnat_below_case`) and is now read
+  through `bnat_equal_cast`
+  ([`bnat_equality`](../../library/bnat_equality.cubist)): a cast along
+  equal bits that recurses on the bits of both numbers until they are one
+  numeral and then returns the value as it is. The step's value is the
+  extension's argument (`bnat_below_extend`), computed once and returned by
+  every later read at `n`.
+- **The offsets.** The advance moved the values below each bound along its
+  offset's path with a composition. It now takes a reindexing
+  (`BNatReindex`), and the strong recursion reindexes its callbacks by
+  their evidence (`bnat_below_reindex`): a point's evidence is moved to the
+  old bound by `bnat_lt_bound`, decided on the bits when it is demanded,
+  with the offset's path refuting only the other branch.
 
-Coherence, `bnat_below(…, n)(m, h) = bnat_strong_recursion(…, m)`, is
-re-proved for arbitrary dependent families, with no proof irrelevance
-assumed: a course is coherent when each value it holds is the recursion's,
-one step keeps it coherent given the equation below its bound, and the
-invariant at every `n` is proved by the strong recursion itself as
+The decrease laws, `n < succ(n)` and `pred(p) < p`, are proved on the
+bits, with the odd/even and doubling lemmas moved here from
+`bnat_division`. Coherence, `bnat_below(…, n)(m, h) =
+bnat_strong_recursion(…, m)`, is re-proved for arbitrary dependent
+families, with no proof irrelevance assumed: a step keeps the values below
+coherent given the equation at its bound, a reindexing keeps them coherent,
+the advance keeps them coherent given the equation below its final bound
+(its offsets' order decided on the bits, `bnat_lt_add_right`), and the
+coherence at every `n` is proved by the strong recursion itself as
 induction. `bnat_strong_recursion_equation` follows as before.
 
 ### Peano recursion
 
-[`bnat_peano`](../../library/bnat_peano.cubist) is now the strong
-recursion whose step at a positive `p` is the Peano step from
-`pred(p)`. That step's value lies in `P(succ(pred(p)))`, which is
-`P(b_positive(p))` only up to a path for a variable `p`; it is read at `p`
-through `bpositive_succ_pred_cast`
-([`bnat`](../../library/bnat.cubist)), which recurses on the bits of `p`
-until both sides compute to one numeral and then returns the value as it
-is. It transports nothing, and the runtime runs it as ordinary
-eliminations. `bnat_peano_zero` holds by computation and `bnat_peano_succ`
-is a checked path, through the cast's agreement with the path as a path of
-total values and setness of the index. The binary advance over offsets,
-its total-state proof and `bnat_peano_total` are gone; binary iteration
-moves into `bnat_recursion`, and the successor and offset laws into
-[`bnat_semiring`](../../library/bnat_semiring.cubist).
+[`bnat_peano`](../../library/bnat_peano.cubist) is main's advance over
+binary offsets with the reindexing `bnat_equal_reindex`: each offset's
+two numerals have equal bits, so the value is read at the offset through
+`bnat_equal_cast`, which transports nothing, for any dependent family.
+The successor equation is proved once for any reindexing that agrees with
+its paths (`BNatReindexTotal`, `bnat_peano_reindexed_succ`); the cast's
+agreement is `bnat_equal_cast_total`.
 
 ### The searches
 
@@ -113,51 +115,81 @@ refuting at distance zero.
 
 Every public statement is unchanged: `BNatBelow`, `bnat_strong_recursion`
 and its equation, `nat_strong_recursion` and its equation, `bnat_peano`,
-`nat_peano` and their zero and successor equations, `bnat_factorial` with
-its zero and successor laws, `least_divisor`, `euclid`,
-`least_element` and `least_element_from_mere`. The search helpers
-`DivisorSearch` and `LeastSearch`, internal to their modules, keep their
-roles; `LeastSearch` now takes the witness and states the distance.
-`bnat_below_case`, `bnat_below_succ`, `bnat_below_case_coherent`,
-`bpositive_advance`, `bpositive_advance_total`, `bnat_total_reindex`,
-`bnat_peano_total`, `least_search_zero` and `least_search_succ` are
-removed; nothing outside their modules used them.
+`nat_peano` and their zero and successor equations, `bnat_peano_total`,
+`bnat_factorial` with its zero and successor laws, `least_divisor`,
+`euclid`, `least_element` and `least_element_from_mere`. `bpositive_advance`
+takes a reindexing, and `bnat_peano_reindexed` is the advance from zero
+with one. The search helpers `DivisorSearch` and `LeastSearch`, internal to
+their modules, keep their roles; `LeastSearch` now takes the witness and
+states the distance. `bnat_below_case`, `bnat_below_case_coherent`,
+`bnat_below_succ`, `bnat_total_reindex`, `least_search_zero` and
+`least_search_succ` are removed; nothing outside their modules used them.
+
+## Sharing
+
+The first version of this change iterated a course of values, a bound with
+the values below it, by `bnat_iterate`, each step giving the values below
+`succ(b)` as the step at every `m`. Nothing was retyped, but nothing was
+stored either: a read at `m` rebuilt `step(m, …)` from the values below,
+so a branching recursion recomputed its overlapping calls. Codex's first
+review of #346 found it with a Fibonacci on the strong recursion, whose
+step asks for the values at the predecessor and at its predecessor
+([`strong_recursion_contracts`](../../tests/fixtures/contracts/strong_recursion_contracts.cubist)):
+
+| `fib(n)` | Main: runtime | Main: kernel's queries | The course of values | Now: runtime | Now: kernel's queries |
+| --- | --- | --- | --- | --- | --- |
+| 22 | fallback after 5,964 steps | 171,135 ticks | E488 in the runtime; 14,810,142 ticks | 203,420 steps, 16 ms | 184,472 ticks |
+| 25 | fallback after 6,084 steps | 197,821 ticks | E488; 64,203,550 ticks | 238,987 steps, 21 ms | 211,118 ticks |
+| 40, expected `102334155` | the kernel's | 485,034 ticks | K347, the arena exhausted, after 211,237,733 ticks | the kernel's | 428,441 ticks |
+
+Now each smaller value is computed once and shared, in the runtime, where
+it is the extension's argument cell, and in the kernel's queries, where it
+is one term that every read returns. The course of values cost the linear
+recursions less, since it compared nothing: `euclid(5).1` took 105,313
+ticks on the kernel's queries against 198,313 now, `factorial(40)`
+6,138,059 against 7,589,076. A read now compares the point with its bound
+and casts the value on the bits, a few operations a level whose cost grows
+with the bound's bits.
 
 ## After
 
 `node tools/runtime-repl-probe.mjs`, each sample in a process of its own,
-on this branch at `ff517435` (the code measured is committed; the tree held
-only this report, untracked) and on `d875dd08`'s library modules in the
-same tree, Node 24.13.0, macOS arm64 (Apple M3 Pro), runtime SHA-256 prefix
-`0ca9a938c16da1a5`, one run each. The machine was shared with other heavy
-jobs, so the times are single loaded samples, not speed claims.
+on this branch at `e34cf46a` with a clean tree and on `d875dd08`'s library
+modules in the same tree, Node 24.13.0, macOS arm64 (Apple M3 Pro),
+runtime SHA-256 prefix `0ca9a938c16da1a5`, one run each. The machine was
+shared with other heavy jobs, so the times are single loaded samples, not
+speed claims.
 
 | Workload | Main: runtime | Main: kernel's queries | Now: runtime | Now: kernel's queries |
 | --- | --- | --- | --- | --- |
-| `euclid(3)` | fallback after 4,687 steps, 9 ms | 26,944 ticks, 9 ms | 27,921 steps, 9 ms | 19,584 ticks, 7 ms |
-| `euclid(4).1` | fallback after 4,943 steps, 12 ms | 57,053 ticks, 11 ms | 52,198 steps, 12 ms | 39,791 ticks, 8 ms |
-| `euclid(4)` | fallback after 4,938 steps, 12 ms | 61,786 ticks, 9 ms | 55,108 steps, 11 ms | 41,892 ticks, 7 ms |
-| `euclid(5).1` | fallback after 5,184 steps, 19 ms | 160,432 ticks, 15 ms | 158,325 steps, 14 ms | 105,313 ticks, 11 ms |
-| `euclid(6).1` | fallback after 5,425 steps, 16 ms | 133,848 ticks, 13 ms | 118,244 steps, 13 ms | 77,729 ticks, 9 ms |
-| `euclid(10).1` | fallback after 4,939 steps, 33 ms | 423,409 ticks, 27 ms | 352,650 steps, 17 ms | 189,643 ticks, 15 ms |
-| `euclid(7).1` | K344 | K344 after 634,130 ticks | 2,078,543 steps, 44 ms | 1,010,667 ticks, 60 ms |
-| `euclid(3).1 expecting 7` | the kernel's | 25,278 ticks, 10 ms | the kernel's | 19,343 ticks, 8 ms |
-| `euclid(5).1 expecting 11` | the kernel's | 162,533 ticks, 16 ms | the kernel's | 107,439 ticks, 13 ms |
-| `!!euclid(5)` | the kernel's | 319,743 ticks, 26 ms | the kernel's | 204,881 ticks, 21 ms |
-| `factorial(40)` | fallback after 4,459 steps, 1,200 ms | 38,346,979 ticks, 1,193 ms | 807,571 steps, 29 ms | 6,138,059 ticks, 243 ms |
-| `least_divisor(44521, tt).1`, 210 candidates | K344 | K344 after 690,421 ticks | 8,882,549 steps, 174 ms | 3,907,735 ticks, 303 ms |
-| `least_divisor(63001, tt).1`, 250 candidates | K344 | K344 after 679,609 ticks | 10,692,936 steps, 229 ms | K344 after 4,409,263 ticks |
-| `least_element(…, 1000000, tt).1`, least 240 | K344 | K344 after 214,535 ticks | 2,998,863 steps, 87 ms | 732,386 ticks, 63 ms |
-| a Peano count of 300 | K336 | K336 after 27,343 ticks | 460,440 steps, 33 ms | 228,626 ticks, 22 ms |
+| `euclid(3)` | fallback after 4,687 steps, 9 ms | 26,944 ticks, 9 ms | 41,614 steps, 11 ms | 31,726 ticks, 7 ms |
+| `euclid(4).1` | fallback after 4,943 steps, 12 ms | 57,053 ticks, 11 ms | 73,913 steps, 12 ms | 71,540 ticks, 9 ms |
+| `euclid(4)` | fallback after 4,938 steps, 12 ms | 61,786 ticks, 9 ms | 76,823 steps, 14 ms | 73,434 ticks, 19 ms |
+| `euclid(5).1` | fallback after 5,184 steps, 19 ms | 160,432 ticks, 15 ms | 216,057 steps, 20 ms | 198,313 ticks, 19 ms |
+| `euclid(6).1` | fallback after 5,425 steps, 16 ms | 133,848 ticks, 13 ms | 173,329 steps, 18 ms | 167,332 ticks, 15 ms |
+| `euclid(10).1` | fallback after 4,939 steps, 33 ms | 423,409 ticks, 27 ms | 531,058 steps, 32 ms | 519,923 ticks, 36 ms |
+| `euclid(7).1` | K344 | K344 after 634,130 ticks | 2,617,533 steps, 74 ms | 1,935,443 ticks, 120 ms |
+| `euclid(3).1 expecting 7` | the kernel's | 25,278 ticks, 10 ms | the kernel's | 31,594 ticks, 9 ms |
+| `euclid(5).1 expecting 11` | the kernel's | 162,533 ticks, 16 ms | the kernel's | 200,559 ticks, 19 ms |
+| `!!euclid(5)` | the kernel's | 319,743 ticks, 26 ms | the kernel's | 298,779 ticks, 26 ms |
+| `factorial(40)` | fallback after 4,459 steps, 1,200 ms | 38,346,979 ticks, 1,193 ms | 951,525 steps, 41 ms | 7,589,076 ticks, 277 ms |
+| `least_divisor(44521, tt).1`, 210 candidates | K344 | K344 after 690,421 ticks | 10,695,566 steps, 188 ms | 6,867,452 ticks, 437 ms |
+| `least_divisor(63001, tt).1`, 250 candidates | K344 | K344 after 679,609 ticks | 12,825,717 steps, 223 ms | K344 after 7,588,973 ticks |
+| `least_element(…, 1000000, tt).1`, least 240 | K344 | K344 after 214,535 ticks | 5,458,094 steps, 109 ms | 5,267,427 ticks, 274 ms |
+| a Peano count of 300 | K336 | K336 after 27,343 ticks | 1,653,757 steps, 42 ms | 1,928,519 ticks, 172 ms |
+| `fib(25)` | fallback after 6,084 steps, 21 ms | 197,821 ticks, 20 ms | 238,987 steps, 21 ms | 211,118 ticks, 17 ms |
 
 No value form of `factorial`, `least_divisor`, `euclid`, `least_element`,
-`nat_peano` or a dependent strong recursion falls back: every one measured
-computes in the runtime, and the evaluation baseline, the runtime and
-demand-mark tests and the probe's workloads agree. Of the source contracts'
-value forms, the only fallbacks left are the univalence path's compositions
-in `radix_contracts`, which are transports by design, and
-`divides_decide(0, 0)`, at a path abstraction's η, which the recursion does
-not reach.
+`nat_peano`, the Fibonacci or a dependent strong recursion falls back:
+every one measured computes in the runtime, and the evaluation baseline,
+the runtime and demand-mark tests and the probe's workloads agree. Of the
+source contracts' value forms, the only fallbacks left are the univalence
+path's compositions in `radix_contracts`, which are transports by design,
+and `divides_decide(0, 0)`, at a path abstraction's η, which the recursion
+does not reach. Where main's kernel queries compute, they now take a fifth
+to a third more ticks on the small Euclid and factorial entries (the
+baseline's `factorial(4)` normal form, 18,068 against 13,793), and fewer
+on `!!euclid(5)`; `factorial(40)` takes a fifth of main's.
 
 **The kernel's queries alone**, which value forms would return to without
 the runtime, now compute:
@@ -168,13 +200,13 @@ the runtime, now compute:
 | `least_divisor` | 28 candidates (`least_divisor(841, tt)`); K344 at 30 (`least_divisor(961, tt)`) | 210 candidates (`least_divisor(44521, tt)`); K344 at 250 |
 | `least_element` | 63; K344 at 64 | 240; K344 at 300 |
 | Peano recursion, a count | 100; K336 at 200 | 300; K336 at 1,000 |
-| `factorial(n)` | 40; K344 at 60 | 100, in 3.3 billion ticks (below) |
-| `!!least_divisor(25, tt)` | K344 | 178,590 ticks |
+| `factorial(n)` | 40; K344 at 60 | 60, in 138,487,845 ticks |
+| `!!least_divisor(25, tt)` | K344 | 202,120 ticks |
 
 Syntax depth, measured over the nodes each kernel normalization allocated,
 grows by about two levels a candidate in the divisor search (165 at 60
 candidates, 347 at 150, 464 at 210) and in the least element search (149 at
-60, 426 at 200), and by one level a step in the Peano count (138 at 100, 338
+60, 426 at 200), and by one level a step in the Peano count (102 at 100, 302
 at 300); the diagnosis measured about sixteen a candidate in the divisor
 search before. K336 now appears only in the Peano count past 300, whose
 step accumulates `succ(count)`, each successor's weak head asking the one
@@ -192,8 +224,7 @@ distance proof alone stopped `euclid(7).1`, as a chain of path
 abstractions, compositions and tubes over the previous distance at every
 candidate; deciding it removed that. What still grows is data the search
 must keep: its minimality certificate, one `no_divisor_below_succ` over
-the last at every candidate, about two syntax levels a candidate, and the
-recursion's evidence, one level a level, which nothing demands. A
+the last at every candidate, about two syntax levels a candidate. A
 diagnosis made in parallel, read-only, found the same causes.
 
 ## Outcomes
@@ -208,29 +239,31 @@ certificate's normal form no longer holds the compositions the recursion's
 retyping wrapped around the search's arguments
 (`compose k in BNat from compose k in BNat from …`), so its digest moved.
 The baseline is recorded as version 11 for this, for the runtime's new
-value forms and for the new depth failure.
+value forms, for the new depth failure and for the Fibonacci.
 
 ## Workarounds and open points
 
 - Deciding each next distance in the two searches is a choice made for
   the kernel's queries, which substitute proofs unevaluated: it keeps a
   proof from growing at the price of one comparison a candidate, 10 to 13%
-  of the search's work (`euclid(5)`'s value form by the kernel's queries,
-  93,379 ticks with the threaded proof and 103,848 decided; `euclid(7).1`
-  in the runtime, 1,832,264 and 2,078,543 steps). A kernel that shared or
-  evaluated such arguments would not need it.
-- `factorial(n)` on the kernel's path costs what the product
+  of the search's work when measured on the course of values
+  (`euclid(5)`'s value form by the kernel's queries, 93,379 ticks with the
+  threaded proof and 103,848 decided; `euclid(7).1` in the runtime,
+  1,832,264 and 2,078,543 steps). A kernel that shared or evaluated such
+  arguments would not need it.
+- Sharing costs the linear recursions a comparison and a cast on the bits
+  at every level (above, [Sharing](#sharing)): on the kernel's queries,
+  `euclid(5).1` takes 198,313 ticks where main took 160,432, and a
+  descent through 100 levels 552,117 where main took 266,884.
+- `factorial(n)` on the kernel's path costs about what the product
   `n * ((n - 1) * (…))` of literals costs, 6.5M ticks at 40 and 130M at
   60, against 0.6M and 1.7M for the same product nested the other way:
   the kernel's lazy multiplication of a large lazily computed right
-  operand. The recursion adds nothing to it; `bnat_factorial`'s step
-  multiplies `n` by the recursive value, as its successor law states.
-- `least_element` and a Peano count of 100 cost more ticks than before on
-  the kernel's path where both compute (`least_element(at_least(60), …,
-  1000000, tt).1 expecting 60`, 132,786 ticks before and 192,424 now; the
-  count, 49,503 and 84,035): the distance decision, and the strong
-  recursion's steps and cast where the binary advance took fewer, larger
-  steps.
+  operand. `bnat_factorial`'s step multiplies `n` by the recursive value,
+  as its successor law states.
+- A Peano count of 100 costs 456,100 ticks on the kernel's path where main
+  took 49,503: each offset casts its value on the bits, where main's
+  compositions forced nothing until they met K336 at 200.
 - In the runtime, `least_divisor(1000003, tt)` and `euclid(11)`, which
   take a thousand candidates and more, stop at its allocation budget
   (E488); the kernel's queries stop with K344.
