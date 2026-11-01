@@ -376,8 +376,52 @@ def cancel_value := two_ways(20);
   await walked(cancelled);
   assert.ok(kept(cancelled) < 400, `after the cancelled force, the product keeps ${kept(cancelled)} objects`);
   assert.equal(kept(cancelled), kept(settled));
-  // The cancelled force's delays are given back, so the retry still shares.
+  // The retry is handed the cell the first attempt made; its delay past the
+  // count ends the entry early, and the other consumer computes the call
+  // again rather than keep it.
   assert.ok(cancelled.stats.shared >= 1);
+  assert.ok(cancelled.stats.steps > settled.stats.steps);
+});
+
+// Each top-level root with shared calls is an instance of its own: a call
+// two roots both write is shared within each, never across them, so that a
+// root reusing another's cell cannot leave the other's counts waiting for
+// delays that never come. Here `outer` evaluates `middle`, each sharing
+// eat(20 * 20) and 20 * 20; both consumers keep nothing of the product.
+// And a query disposed during a pending shared force does nothing more to
+// its sharing state: a copy of the runtime that records each call of its
+// sharing's methods records none after disposal, and some before.
+test("top-level roots share apart, and disposal ends the sharing state", async t => {
+  const { kernel, graph, query } = await setup(t, `
+import unat; use unat;
+def both(a, b : Unit) : Unit := unit_induction(fun (x : Unit) => Unit, b, a);
+def eat(n : UNat) : Unit := match n { zero => tt; succ(m) => eat(m); };
+def eat2(n : UNat) : Unit := match n { zero => tt; succ(m) => eat2(m); };
+def middle : Unit := both(eat(20 * 20), both(eat(20 * 20), eat2(20 * 20)));
+def outer : Unit := both(eat(20 * 20), both(middle, both(eat(20 * 20), eat2(20 * 20))));
+def held : Unit := both(eat(40 * 40), eat2(40 * 40));
+`);
+  const outer = query("outer");
+  assert.deepEqual(await outer.observe(), { kind: "Point" });
+  assert.ok(outer.stats.shared > 0);
+  const { runtimeObjects } = outer.retainedObjects();
+  assert.ok(runtimeObjects < 100, `the overlapping roots keep ${runtimeObjects} objects`);
+  const runtimeURL = new URL("../web/cubical-runtime.mjs", import.meta.url);
+  const text = (await readFile(runtimeURL, "utf8"))
+    .replace(/from "\.\/([^"]+)"/g, (_, path) => `from "${new URL(path, runtimeURL).href}"`)
+    .replace(/\n  #(share|refund|enter)\(([^)]*)\) \{\n/g, (_, name, parameters) => `\n  #${name}(${parameters}) {\n    this.#called("${name}");\n`)
+    .replace("  dispose() {", "  #called(name) { (globalThis.sharingCalls ??= []).push([name, this.#disposed]); }\n  dispose() {");
+  const { RuntimeQuery: Recording } = await import(`data:text/javascript,${encodeURIComponent(text)}`);
+  globalThis.sharingCalls = [];
+  const recorded = new Recording(kernel, graph.lookup(kernel.definitions.get("main__held")), { slice: 50000 });
+  const pending = recorded.observe();
+  recorded.dispose();
+  // The copy's own RuntimeError, so by its kind.
+  await assert.rejects(pending, error => error.kind === "disposed");
+  const calls = globalThis.sharingCalls;
+  delete globalThis.sharingCalls;
+  assert.ok(calls.some(([name, disposed]) => name === "share" && !disposed), "the copy records the sharing's calls");
+  assert.deepEqual(calls.filter(([, disposed]) => disposed), [], "nothing of the sharing runs after disposal");
 });
 
 // A constructor's instance, an annotation the value form's walk never

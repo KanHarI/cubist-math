@@ -1240,11 +1240,12 @@ EVAL4's items:
   and drops it at the last, so it keeps a cell only while a delay of it
   there is still to come: the per-environment memo of delayed syntax,
   tried and withdrawn, kept every cell for as long as its environment
-  lived. `duplicated-calls-24` computes `tt` in 3,524 steps; against main,
-  on the same walks, no value moves, the retained objects grow by at most
-  one on the constructs' walks and the probe's workloads, and the archive's
-  `euclid(5).1`, where the withdrawn memo raised them 2.5 times, retains
-  0.04% more. A call that two applications
+  lived. Each top-level root with shared calls is an instance of its own.
+  `duplicated-calls-24` computes `tt` in 3,524 steps; against main, on the
+  same walks, no value moves, the retained objects grow by at most four on
+  the constructs' walks and one on the probe's workloads, and the
+  archive's `euclid(5).1`, where the withdrawn memo raised them 2.5 times,
+  retains 0.04% more. A call that two applications
   each make, which the kernel's cache shares once substituted, is not
   shared (`relayed-calls-24`).
 - **Closed-environment pruning: done** on 2026-10-30
@@ -1262,9 +1263,9 @@ EVAL4's items:
   ([report](../../reports/runtime-repl-evaluation.md#the-budgets-calibrated)).
   Every walk measured allocates about one cell for every two steps, so the
   allocation budget, 20M cells, binds first, at 34M to 40M steps, about
-  half a second; its heap peaked at 9 MiB where the cells die young and at
-  545 MiB on the worst workload measured, list parity, whose definition
-  keeps its list. The work budget binds first only for a walk allocating
+  half a second; its heap peaked at 9 MiB where the cells die young and
+  near 550 MiB on the worst workload measured, list parity, whose
+  definition keeps its list. The work budget binds first only for a walk allocating
   under one cell for every five steps, and the 30-second time limit is a
   backstop. The budgets stay as they are; the REPL probe records the
   entry's peak heap.

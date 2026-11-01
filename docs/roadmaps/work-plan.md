@@ -1032,9 +1032,10 @@ Each step lands in focused PRs under the review rule above.
         one cell in each instance of it, kept in the instance's memo only
         until its last delay there. `duplicated-calls-24` computes `tt`,
         where the runtime stopped at its cap; no value form changes, and the
-        retained objects grow by at most one against main on the
-        constructs' walks and the probe's workloads. A call two
-        applications each make is not shared (`relayed-calls-24`).
+        retained objects grow by at most four against main on the
+        constructs' walks and one on the probe's workloads. A call two
+        applications, or two top-level roots, each make is not shared
+        (`relayed-calls-24`).
       - **EVAL4's closed-environment pruning, done on 2026-10-30**
         ([report](../reports/runtime-repl-evaluation.md#closed-environment-pruning)):
         a closed constructor instance keeps no environment, so a computed
@@ -1044,7 +1045,7 @@ Each step lands in focused PRs under the review rule above.
       - **EVAL4's memory calibration, done on 2026-10-30**
         ([report](../reports/runtime-repl-evaluation.md#the-budgets-calibrated)):
         20M cells, the budget that binds, is about 40M steps and half a
-        second, and peaked under 550 MiB of heap on the worst workload
+        second, and peaked near 550 MiB of heap on the worst workload
         measured; the budgets stay as they are.
       - **EVAL4's responsive snapshot copy: not needed now** (recorded on
         2026-10-30): no path observes a query asynchronously, the value
