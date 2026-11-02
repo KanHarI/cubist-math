@@ -173,12 +173,12 @@ await browserTest(async ({ browser, base }) => {
   for (const text of ["import unat;", "use unat;", "let x := 7;", "typeof x;", "evaluate x;", "def wrong : x = 8 {\n  exact refl(7);\n}"]) await enter(text);
   assert.deepEqual(await lastResults(4), ["x : UNat", "UNat", "7", "E606: Type mismatch: found 7 = 7, expected x = 8."]);
   console.log("PASS REPL page: let, typeof, evaluate, rejected entries");
-  // The worker's runtime shows a value form where the kernel's head queries
-  // stop (K344), and a stop at its limits leaves the session usable.
+  // A value form whose weak heads the kernel builds too deep stops at its
+  // syntax depth guard (K344), as the reference shows, and the session goes on.
   for (const text of ["def count_into(n, total : UNat) : UNat := match n {\n  zero => total;\n  succ(k) => count_into(k, succ(total));\n};",
-    "evaluate count_into(2 * 255, 0);", "evaluate count_into(100 * 100 * 100, 0);", "evaluate x + 1;"]) await enter(text);
-  assert.deepEqual(await lastResults(3), ["510", "E488: The runtime's evaluation of the value form exhausted its allocation budget of 20,000,000 cells.", "8"]);
-  console.log("PASS REPL page: the runtime's value forms and its limits");
+    "evaluate count_into(2 * 254, 0);", "evaluate count_into(2 * 255, 0);", "evaluate x + 1;"]) await enter(text);
+  assert.deepEqual(await lastResults(3), ["508", "K344: Native prototype syntax depth exceeds 512.", "8"]);
+  console.log("PASS REPL page: value forms at the kernel's syntax depth guard");
   // Nested eliminators: past the kernel's recursion guard (ck_enter, 448
   // steps) a path judgement fails with K336, as often as asked, before the
   // worker's own engine stack runs out at 622 levels; the worker goes on.
@@ -199,21 +199,15 @@ await browserTest(async ({ browser, base }) => {
   // Where the failures are injected, checked before any page loads one: a
   // point that is gone fails here, named, rather than in a page waiting on
   // the module.
-  const runtimeHook = "function judged(kernel, judgement, budget) {", glueEnd = /export default Module;\s*$/;
+  const valueHook = "export function valueForm(", glueEnd = /export default Module;\s*$/;
   const served = async path => (await fetch(new URL(path, base))).text();
-  assert.ok((await served("cubical-runtime.mjs")).includes(runtimeHook),
-    `The fault harness arms the kernel where the runtime reads it, at ${runtimeHook}, which cubical-runtime.mjs no longer has.`);
+  assert.ok((await served("translator/evaluation.mjs")).includes(valueHook),
+    `The fault harness fails the kernel where a value form's walk calls it, in ${valueHook}, which translator/evaluation.mjs no longer has.`);
   assert.match(await served("dist/cubical.mjs"), glueEnd,
     "The fault harness wraps the kernel's exports where dist/cubical.mjs ends, at export default Module;, which it no longer has.");
-  // The runtime arms its worker's kernel to fail, if its plan says, when a
-  // query starts reading the kernel (judged; its reads are lazy since #324).
-  await injected.route("**/cubical-runtime.mjs*", async route => {
-    const response = await route.fetch(), body = await response.text();
-    await route.fulfill({ response, body: body.replace(runtimeHook, "$& globalThis.armKernelFault?.();") });
-  });
   // Each worker loads the kernel anew, and fails as the next plan says, with
-  // the engine's RangeError out of an export: at the first export a runtime
-  // value form's query calls ("runtime"), at the first folded normal
+  // the engine's RangeError out of an export: at the first export a value
+  // form's walk calls ("value"), at the first folded normal
   // form ("normal"), in the first inspection ("inspection"), or only on
   // demand: a message the worker does not know arms the next kernel call,
   // the next `_cb_free` (with a trap), or the next call made while a check's
@@ -229,8 +223,7 @@ await browserTest(async ({ browser, base }) => {
     if (plan === "unavailable") return route.abort();
     const response = await route.fetch(), body = await response.text();
     await route.fulfill({ response, body: body.replace(glueEnd, `const plan = ${JSON.stringify(plan)};
-let armed = false, freeing = false, inSteps = false, queries = 0, normals = 0, inspections = 0;
-globalThis.armKernelFault = () => { if (plan === "runtime" && !queries++) armed = true; };
+let armed = false, freeing = false, inSteps = false, values = 0, normals = 0, inspections = 0;
 self.addEventListener("message", ({ data }) => {
   if (data?.command === "fail-next-kernel-call" || data?.command === "repl" && data.args?.input === "/fail-next-kernel-call"
     || plan === "inspection" && data?.command === "inspect" && !inspections++) armed = true;
@@ -238,10 +231,10 @@ self.addEventListener("message", ({ data }) => {
   if (data?.command === "fail-in-steps") inSteps = true;
 });
 const overflow = () => { throw new RangeError("Maximum call stack size exceeded"); };
-const readingSteps = () => {
+const inStack = frame => {
   const limit = Error.stackTraceLimit;
   Error.stackTraceLimit = 200;
-  try { return new Error().stack.includes("get steps"); } finally { Error.stackTraceLimit = limit; }
+  try { return new Error().stack.includes(frame); } finally { Error.stackTraceLimit = limit; }
 };
 export default async options => {
   const module = await Module(options);
@@ -250,7 +243,8 @@ export default async options => {
     module[name] = (...args) => {
       if (armed) { armed = false; overflow(); }
       if (freeing && name === "_cb_free") { freeing = false; throw new WebAssembly.RuntimeError("unreachable"); }
-      if (inSteps && readingSteps()) { inSteps = false; overflow(); }
+      if (inSteps && inStack("get steps")) { inSteps = false; overflow(); }
+      if (plan === "value" && !values && inStack("at valueForm ")) { values++; overflow(); }
       if (plan === "normal" && name === "_cb_normalize_folded" && !normals++) overflow();
       return call(...args);
     };
@@ -295,19 +289,19 @@ export default async options => {
     }
     return target.locator(".repl-log").last().locator(".repl-result").allTextContents();
   };
-  // The REPL page: its first worker fails in a value form's runtime query, its
+  // The REPL page: its first worker fails in a value form's kernel query, its
   // second in a folded normal form. Each time the session is restored on a
   // new worker, each statement that extended it as the entry it was: the
   // query typeof tt was entry repl_3, so repl_5, which names repl_4, still
   // finds it.
-  plans.push("runtime", "normal");
+  plans.push("value", "normal");
   const faulty = await injected.newPage();
   await faulty.goto(new URL("repl.html", base).href);
   assert.deepEqual((await entries(faulty, ["import unat;", "use unat;", "typeof tt;", "let x := 7;", "let saved := repl_4::x;",
     "evaluate x + 1;", "evaluate !!x;", "evaluate x + 1;", "typeof x;", "typeof saved;"])).slice(-7),
     [...restarted, ...restarted, "8", "UNat", "UNat"]);
   // A new worker that cannot load answers too, and the console is free.
-  plans.push("runtime", "unavailable");
+  plans.push("value", "unavailable");
   const stranded = await injected.newPage();
   await stranded.goto(new URL("repl.html", base).href);
   assert.deepEqual((await entries(stranded, ["import unat;", "use unat;", "evaluate 1 + 1;"])).slice(-3), [fault,

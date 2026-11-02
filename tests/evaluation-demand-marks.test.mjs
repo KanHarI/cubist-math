@@ -12,8 +12,6 @@ import { checkProgram } from "./check-program.mjs";
 import { normalDigest, sharedNormalDigest } from "../tools/evaluation-baseline.mjs";
 import { reported } from "../tools/inline-errors.mjs";
 import { printedNodes, valueForm } from "../web/translator/evaluation.mjs";
-import { Translator } from "../web/translator/translate.mjs";
-import { watchReadbacks, disagreements } from "./runtime-readback-oracle.mjs";
 
 // Evaluation demand marks (docs/roadmaps/historical/evaluation-demand-marks.md):
 // `!` asks for a part's weak head, `!!` for its normal form, stuck
@@ -380,7 +378,7 @@ def grow(n : UNat) : Tree := match n {
 };
 def far : (Tree and Tree) and Nat := ((grow(10), grow(9)), euclid(nat.(7)).1);
 print(evaluate(node(grow(12), euclid(nat.(7)).1, leaf)));
-print(evaluate(far));`, { module, options: { runtimeEvaluation: false } });
+print(evaluate(far));`, { module });
   // euclid(7)'s prime has a weak head too deep for the kernel to build
   // (K344), and neither print reaches it.
   assert.deepEqual(result.gaps.map(gap => gap.reason), []);
@@ -432,46 +430,33 @@ print(evaluate(!!g));`, { module });
   assert.deepEqual(result.prints.map(print => print.text), ["glue(2)", "glue(1 + 1)", "glue(2)"]);
 });
 
-// Each head a value form computes, an observation of the runtime or a head
-// query of the kernel's, spends a query of its print's fuel.
+// Each head query a value form asks spends a query of its print's fuel.
 const printFuel = result => result.directiveFuel.find(directive => directive.kind === "print").searchFuel.queries;
 test("the value form computes no more heads than the printer shows", async t => {
-  const spent = [];
-  for (const runtimeEvaluation of [true, false]) {
-    const { result } = await checkProgram(t, `import lists;
+  const { result } = await checkProgram(t, `import lists;
 use unat;
 def hundreds(n : UNat) : List(U0, UNat) := match n {
   zero => nil;
   succ(k) => cons(100, hundreds(k));
 };
-print(evaluate(hundreds(250)));`, { module, options: { runtimeEvaluation } });
-    assert.deepEqual(result.gaps.map(gap => gap.reason), []);
-    assert.equal(result.prints[0].valueForm.by, runtimeEvaluation ? "runtime" : "kernel");
-    // 250 elements of 102 heads each are past the budget of 4,000 heads.
-    spent.push(printFuel(result));
-    assert.ok(spent.at(-1) <= 4100, `the walk asked ${spent.at(-1)} queries`);
-    assert.match(result.prints[0].text, /^cons\(100, cons\(100, /);
-  }
-  assert.equal(spent[0], spent[1]);
+print(evaluate(hundreds(250)));`, { module });
+  assert.deepEqual(result.gaps.map(gap => gap.reason), []);
+  // 250 elements of 102 heads each are past the budget of 4,000 heads.
+  assert.ok(printFuel(result) <= 4100, `the walk asked ${printFuel(result)} queries`);
+  assert.match(result.prints[0].text, /^cons\(100, cons\(100, /);
 });
 
 test("the value form shows no part deeper than the kernel's terms, however deep the value", async t => {
-  const texts = [];
-  for (const runtimeEvaluation of [true, false]) {
-    const { result } = await checkProgram(t, `import unat;
+  const { result } = await checkProgram(t, `import unat;
 use unat;
 def d := 2 * 256;
 def deep := d + d + d + d + d + d + d + d;
-print(evaluate(deep));`, { module, options: { runtimeEvaluation } });
-    assert.deepEqual(result.gaps.map(gap => gap.reason), []);
-    assert.equal(result.prints[0].valueForm.by, runtimeEvaluation ? "runtime" : "kernel");
-    // 4096 levels of succ: the walk keeps its own stack, and computes heads
-    // only to 512 levels, where the kernel's own terms end.
-    texts.push(result.prints[0].text);
-    assert.match(texts.at(-1), /^succ\(succ\(succ\(/);
-    assert.ok(printFuel(result) <= 600, `the walk asked ${printFuel(result)} queries`);
-  }
-  assert.equal(texts[0], texts[1]);
+print(evaluate(deep));`, { module });
+  assert.deepEqual(result.gaps.map(gap => gap.reason), []);
+  // 4096 levels of succ: the walk keeps its own stack, and computes heads
+  // only to 512 levels, where the kernel's own terms end.
+  assert.match(result.prints[0].text, /^succ\(succ\(succ\(/);
+  assert.ok(printFuel(result) <= 600, `the walk asked ${printFuel(result)} queries`);
 });
 
 test("the REPL reads the marks after evaluate and before a term alone", async () => {
@@ -626,10 +611,7 @@ test("demand marks format tightly and lint what asks for nothing more", () => {
 // literals B62 and B63 about 11.6M ticks and 5 to 10 seconds each. The DM5
 // report (docs/roadmaps/historical/evaluation-demand-marks/report.md)
 // records that they complete. Their folded normal forms, under !!_, are
-// quick. Each is printed twice: its value form observed by the runtime
-// (web/cubical-runtime.mjs), which reports the demand it does not support
-// and leaves it to the kernel's head queries, and by those queries alone,
-// which must show the same value.
+// quick.
 const corpus = JSON.parse(readFileSync(new URL("../docs/roadmaps/historical/evaluation-demand-marks/constructs.json", import.meta.url), "utf8"));
 const slowNormalForms = new Set(["A46b-theory-labelled-parent", "B62-rational-literal", "B63-decimal-literal"]);
 const typeKinds = new Set(["U", "Pi", "Sigma", "Path", "Sum", "Unit", "Void", "Glue", "Sort", "LPi"]);
@@ -666,29 +648,13 @@ for (const setup of Object.keys(corpus.setups)) {
       }
       at.set(lines.join("\n").split("\n").length + 1, [item, "print"]);
       lines.push(`print(evaluate(probe_${index}));`);
-      at.set(lines.join("\n").split("\n").length + 1, [item, "kernel print"]);
-      lines.push(`print(evaluate(probe_${index}));`);
     });
-    // Each value form the runtime computes is read back (W1, below).
-    const watched = watchReadbacks({ typing: 400 });
-    const { program, evaluations } = recordedProgram(t), valueFormOf = Translator.prototype.valueFormOf;
-    // Of each pair of value forms, the first may ask the runtime and the
-    // second is the kernel's queries' alone.
-    let turn = 0;
-    Translator.prototype.valueFormOf = function (...args) {
-      this.checker.runtimeEvaluation = turn++ % 2 === 0;
-      try { return valueFormOf.apply(this, args); } finally { this.checker.runtimeEvaluation = true; }
-    };
-    let result;
-    try { result = await program.check(lines.join("\n"), "main"); }
-    finally { Translator.prototype.valueFormOf = valueFormOf; watched.restore(); }
-    for (const outcome of watched.outcomes) readbacks.push({ id: items[Number(outcome.source.slice("probe_".length))].id, ...outcome });
+    const { program, evaluations } = recordedProgram(t), result = await program.check(lines.join("\n"), "main");
     const outcome = new Map([...result.evaluations.map(evaluation => [evaluation.start, evaluation.value]),
       ...result.prints.map(print => [print.start, print.text]),
       ...result.gaps.filter(gap => gap.directive).map(gap => [gap.declarationStart, { refused: gap.code }])]);
     const source = lines.join("\n"), lineOf = offset => source.slice(0, offset).split("\n").length;
     const outcomes = new Map([...outcome].map(([start, value]) => [lineOf(start), value]));
-    const computed = new Map(result.prints.map(print => [lineOf(print.start), print.valueForm]));
     // Each directive checks its probe once for evaluation, in order: whether
     // it normalized the whole term is the directive's demand.
     const checked = new Map(items.map((_, index) => [index, evaluations.filter(evaluation => evaluation.name === `main__probe_${index}`)]));
@@ -699,18 +665,6 @@ for (const setup of Object.keys(corpus.setups)) {
       if (item.refused) {
         assert.deepEqual(value, { refused: item.refused }, `${item.id} ${mark}`);
         assert.notEqual(wholeNormalized, true, `${item.id} ${mark}: refused before computing`);
-        continue;
-      }
-      if (mark === "kernel print") {
-        // The runtime's value form, or its fallback, is the kernel's.
-        const runtime = [...at].find(([, [other, kind]]) => other === item && kind === "print")[0];
-        assert.equal(outcomes.get(runtime), value, `${item.id}: the runtime's value form is the kernel's`);
-        assert.equal(computed.get(line).by, "kernel", item.id);
-        const by = computed.get(runtime);
-        if (by.by === "runtime") valueForms.runtime++;
-        else valueForms.unsupported[by.unsupported] = (valueForms.unsupported[by.unsupported] ?? 0) + 1;
-        // No type decides a fallback: the runtime met the demand itself.
-        if (by.by === "kernel") assert.ok(by.runtime, `${item.id}: the fallback follows a runtime query`);
         continue;
       }
       assert.equal(typeof value, "string", `${item.id} ${mark}: ${JSON.stringify(value)}`);
@@ -754,45 +708,6 @@ for (const setup of Object.keys(corpus.setups)) {
     }
   });
 }
-// What computed the value forms above, the runtime or, for the demand it
-// reports unsupported, the kernel's head queries. The four assumptions are
-// refused before anything is computed. The runtime executes the point
-// constructors of higher and truncated sorts too, and their eliminators'
-// point clauses: of the 34 constructs it refused at such a sort before, it
-// computes 21, such as a circle's base, a quotient's class and a match on
-// them, and meets a path constructor in 8, a path applied in 2 and a
-// transport's composition in 3.
-const valueForms = { runtime: 0, unsupported: {} };
-test("the runtime computes the value forms of the constructs on data, ordinary and higher", () => {
-  assert.equal(valueForms.runtime, 156);
-  assert.deepEqual(valueForms.unsupported, {
-    "Runtime execution of PApp is not implemented.": 4,
-    "Runtime η of a path abstraction is not implemented.": 3,
-    "Runtime execution of Comp is not implemented.": 20,
-    "Execution of a path constructor is not implemented.": 8,
-    "Runtime execution of Glue is not implemented.": 1,
-    "Runtime execution of Unglue is not implemented.": 1,
-  });
-});
-
-// Each value form the runtime computed above is read back into a kernel
-// term (W1 of docs/roadmaps/runtime/typed-readback.md,
-// tests/runtime-readback-oracle.mjs): by value, its full normal form is the
-// kernel's of the construct, as is the full normal form of each head the
-// walk observed; by origin, its folded normal form is the kernel's folded
-// one; and where it has at most 400 nodes as a tree, the instruction driver
-// types it at the construct's type. Within the oracle's budget of 2M steps
-// a normal form, only the three constructs whose full normal forms are slow
-// go undecided, by value.
-const readbacks = [];
-test("each value form the runtime computes reads back to the kernel's normal forms, and the small ones type", () => {
-  assert.equal(readbacks.length, valueForms.runtime);
-  assert.deepEqual(disagreements(readbacks), []);
-  assert.deepEqual(readbacks.filter(readback => readback.value === "budget").map(readback => readback.id).sort(), [...slowNormalForms].sort());
-  assert.deepEqual(readbacks.filter(readback => readback.folded !== true), []);
-  assert.equal(readbacks.filter(readback => readback.typed === true).length, 144);
-});
-
 // The acceptance report (docs/roadmaps/historical/evaluation-demand-marks/
 // report.md) compares normal forms by sharedNormalDigest, which reads each
 // shared object of a decoding once for each way its free names are bound, as

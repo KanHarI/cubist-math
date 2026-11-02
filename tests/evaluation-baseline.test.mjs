@@ -53,11 +53,6 @@ test("each workload's outcome, normalizations and comparisons are the recorded o
       const figures = live.phases[phase], expected = record.phases[phase];
       assert.deepEqual(figures && [figures.calls, figures.failures], expected && [expected.calls, expected.failures ?? 0], `${label}: ${phase}`);
     }
-    // The runtime's work and allocation, where it observed the value form,
-    // grow by at most a quarter too.
-    assert.equal(Boolean(live.runtime), Boolean(record.runtime), `${label}: observed by the runtime`);
-    for (const counter of ["steps", "allocatedCells"]) if (record.runtime)
-      assert.ok(live.runtime[counter] <= bound(record.runtime[counter]), `${label}: the runtime's ${counter} is ${live.runtime[counter]}, recorded ${record.runtime[counter]}`);
     // The report leaves out counters that are zero.
     for (const [part, figures, expected] of [["the entry", live.entry, record.total],
       ...Object.entries(record.phases).map(([phase, expected]) => [phase, live.phases[phase] ?? {}, expected])])
@@ -66,10 +61,9 @@ test("each workload's outcome, normalizations and comparisons are the recorded o
   }
 });
 
-// The library's Euclid computes by NUM1's strong recursion, whose
-// compositions the runtime does not execute: it reports the demand
-// unsupported, and the kernel's head queries compute the value form again.
-// Its argument is a binary literal, which elaboration normalizes once.
+// The value form is computed by the kernel's head queries, the weak heads it
+// demands. The library Euclid's argument is a binary literal, which
+// elaboration normalizes once.
 test("REPL evaluation and print show the value form, normalizing only the literal", async () => {
   const repl = await cold("euclid-3"), print = await cold("euclid-3-print"), normal = await cold("euclid-3-normal");
   assert.equal(repl.outcome.sha256, print.outcome.sha256);
@@ -78,18 +72,13 @@ test("REPL evaluation and print show the value form, normalizing only the litera
   for (const run of [repl, print]) {
     assert.equal(run.phases.normalize.calls, 1);
     assert.equal(run.phases.compare, undefined);
-    // The runtime is asked first; its one failure is the fallback.
-    assert.ok(run.phases.runtime.failures === 1 && run.runtime.steps > 0);
-    assert.equal(run.phases.runtime.nodes, 0, "the runtime builds no kernel syntax");
     assert.ok(run.phases.demand.calls > 0);
     assert.ok(run.entry.querySteps < normal.entry.querySteps, "the value form costs less than the normal form");
   }
-  // A divisibility decision is ordinary data: the runtime computes it,
-  // asking the kernel for no weak head.
+  // A divisibility decision is shown as far as its data goes.
   const decided = await cold("divides-3-6");
   assert.equal(decided.outcome.text, "left((2, <path>))");
-  assert.ok(decided.phases.runtime.calls > 0 && !decided.phases.runtime.failures);
-  assert.equal(decided.phases.demand, undefined);
+  assert.ok(decided.phases.demand.calls > 0 && !decided.phases.demand.failures);
 });
 
 test("REPL evaluation of !!!e normalizes once without self-comparison and agrees with print", async () => {
@@ -116,7 +105,7 @@ test("REPL evaluation of !!!e normalizes once without self-comparison and agrees
 test("the depth failures are reproduced, with the work done before them", async () => {
   // 7! + 1 = 71 * 71: the least divisor search's 70 candidates pass the
   // kernel's syntax depth guard, in the normal form and in the weak heads
-  // the value form asks after the runtime's fallback.
+  // the value form asks.
   const normal = await cold("euclid-7-prime-normal"), shown = await cold("euclid-7-prime");
   for (const [run, phase] of [[normal, "normalize"], [shown, "demand"]]) {
     assert.equal(run.outcome.code, "K344", phase);
@@ -124,7 +113,6 @@ test("the depth failures are reproduced, with the work done before them", async 
     assert.ok(run.phases[phase].querySteps > 0 && run.phases[phase].nodes > 10000, `${phase} counts the failed query's work`);
     assert.equal(run.phases.compare, undefined, `${phase} fails before any comparison`);
   }
-  assert.equal(shown.phases.runtime.failures, 1);
   // Below that depth the kernel's queries compute the library's values that
   // the archive's unary Euclid could not: its K344 began at euclid(4).
   for (const [id, value] of [["euclid-4", "(5, (tt, <fun>), tt)"], ["euclid-4-prime", "5"], ["euclid-4-prime-print", "5"],

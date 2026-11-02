@@ -14,7 +14,6 @@ import { CubicalKernel, KernelFault, moduleFault } from "../web/cubical-kernel.m
 import { InstructionGraph } from "../web/cubical-instructions.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { ReplSession, restartNote } from "../web/repl-session.mjs";
-import { RuntimeQuery } from "../web/cubical-runtime.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 
 // Unit eliminations nested through definitions: a head query recurses once
@@ -64,25 +63,24 @@ test("an engine error out of an export ends the instance: no later call enters i
   fresh.dispose();
 });
 
-// A REPL value form computes in the runtime (web/cubical-runtime.mjs), which
-// reads the checked term from the kernel as its walk demands it. An engine error out of
-// one of those reads ends the entry at that statement, as anywhere else, and
+// A REPL value form asks the kernel for the weak heads its walk shows
+// (valueForm in web/translator/evaluation.mjs). An engine error out of one
+// of those queries ends the entry at that statement, as anywhere else, and
 // a session rebased on a new instance replays the entries that extended it.
 // The error is injected beneath the guard, as the engine's RangeError, at
-// the first export the runtime calls to read the kernel lazily (#324):
-// RuntimeQuery.#node, or judged when the query is made.
+// the first export the walk calls.
 const stackOf = () => {
   const limit = Error.stackTraceLimit;
   Error.stackTraceLimit = 100;
   try { return new Error().stack; } finally { Error.stackTraceLimit = limit; }
 };
-test("a failure in a runtime value form's kernel reads ends the entry, and a rebased session goes on", async () => {
+test("a failure in a value form's kernel queries ends the entry, and a rebased session goes on", async () => {
   const module = await createCubical();
   let armed = false, injectedIn = null;
   for (const name of Object.keys(module).filter(name => name.startsWith("_cb_"))) {
     const call = module[name];
     module[name] = (...args) => {
-      if (armed && /RuntimeQuery\.#node\b|\bat judged\b/.test(stackOf())) {
+      if (armed && /\bat valueForm\b/.test(stackOf())) {
         armed = false; injectedIn = name;
         throw new RangeError("Maximum call stack size exceeded");
       }
@@ -210,27 +208,6 @@ test("an unconvertible argument is refused before entry; a trap ends the instanc
   trapping = true;
   assert.throws(() => kernel.arena(), error => error instanceof KernelFault && error.cause instanceof WebAssembly.RuntimeError);
   assert.throws(() => graph.judgement(point), KernelFault);
-});
-
-// A runtime query retained across operations publishes nothing once its
-// instance has failed: neither an observation pending when it failed nor a
-// later one, though its snapshot was copied before.
-test("a runtime query publishes nothing after its kernel instance fails", async () => {
-  const module = await createCubical(), arena = module._cb_arena;
-  let failing = false;
-  module._cb_arena = (...args) => {
-    if (failing) throw new RangeError("Maximum call stack size exceeded");
-    return arena(...args);
-  };
-  const kernel = new CubicalKernel(module), graph = new InstructionGraph(kernel);
-  const query = new RuntimeQuery(kernel, graph.point(), { slice: 1 });
-  assert.equal(query.observeNow().kind, "Point");
-  const pending = query.observe();
-  failing = true;
-  assert.throws(() => kernel.arena(), KernelFault);
-  await assert.rejects(pending, KernelFault);
-  assert.throws(() => query.observeNow(), KernelFault);
-  query.dispose();
 });
 
 // A rebase onto a program whose instance fails is no refusal of what it

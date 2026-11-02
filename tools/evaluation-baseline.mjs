@@ -28,7 +28,6 @@ import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { ReplSession } from "../web/repl-session.mjs";
 import { Translator } from "../web/translator/translate.mjs";
-import { RuntimeQuery } from "../web/cubical-runtime.mjs";
 import { sourceReader } from "./module-sources.mjs";
 import { assertFreshBuild } from "./build-stamp.mjs";
 
@@ -70,7 +69,12 @@ export const fixture = new URL("tests/fixtures/evaluation-baseline.json", root);
 // version 9 (tests/fixtures/evaluation-baseline.json at main 27c0cc38). The
 // unary arithmetic workloads import unat alone; their entries are
 // unchanged.
-export const version = 10;
+// Version 11 computes REPL and print value forms by the kernel's head
+// queries again: the JavaScript runtime evaluator of versions 8 to 10 was
+// removed on 2026-11-01 (docs/reports/runtime-repl-evaluation.md#removal),
+// and with it the runtime phase and its counters. The value forms the
+// runtime showed past the kernel's syntax depth stop with K344 again.
+export const version = 11;
 
 const euclid = "import euclid; use nat;", unary = "import unat; use unat;", circle = "import circle; use unat;";
 // The library's Euclid construction and its prerequisites stay fixed for
@@ -145,10 +149,9 @@ export const contractOf = workload => /^print\s*\(/.test(workload.entry) ? (/^pr
 export const phases = {
   elaborate: "Translator.term: elaborating source terms, with the kernel queries elaboration asks",
   check: "checker.checkSyntax, inside verify: checking the elaborated term",
-  normalize: "kernel.normalize, wherever it is asked: the kernel's normalization, whose result is syntax (no separate readback)",
+  normalize: "kernel.normalize, wherever it is asked: the kernel's normalization, whose result is syntax, decoded apart",
   decode: "checker.syntax.decode of a normal form, inside checker.normalForm: kernel syntax into terms",
   demand: "checker.derivedHead, outside other phases: the weak heads a pattern's parts demand",
-  runtime: "checker.runtimeQuery and RuntimeQuery.observeNow, outside other phases: the runtime's snapshot and observations of a value form",
   inventory: "checker.evaluated's own work: the closedness, assumption and kernel-extension inventory",
   compare: "checker.equal, outside other phases: comparing types, normal forms and patterns' parts",
   render: "checker.displayText, outside other phases: printing a value or message",
@@ -367,7 +370,7 @@ export function sharedNormalDigest(term) {
 // evaluation at the entry's top level, when the entry computed it.
 async function profiled(program, run, { depth = false } = {}) {
   const kernel = program.kernel, checker = program.checker, totals = {}, stack = [], restore = [], depths = {};
-  let peakNodes = 0, peakBytes = 0, normal = null, evaluated = null, term = null, runtimeQuery = null;
+  let peakNodes = 0, peakBytes = 0, normal = null, evaluated = null, term = null;
   const read = () => { const r = reading(kernel); peakNodes = Math.max(peakNodes, r.nodes); peakBytes = Math.max(peakBytes, r.bytes); return r; };
   const open = name => { const frame = { name, start: read(), inner: zero }; stack.push(frame); return frame; };
   const close = (frame, failed) => {
@@ -404,22 +407,19 @@ async function profiled(program, run, { depth = false } = {}) {
   wrap(checker, "evaluated", "inventory", () => true, result => { if (term === null && top() === "other") term = result.expression; });
   wrap(checker, "checkSyntax", "check", () => top() === "inventory");
   wrap(checker, "derivedHead", "demand", () => top() === "other");
-  // The runtime's own counters are its last query's, read when it is done.
-  wrap(checker, "runtimeQuery", "runtime", () => top() === "other", query => { if (query) runtimeQuery = query; });
-  wrap(RuntimeQuery.prototype, "observeNow", "runtime", () => top() === "other");
   wrap(kernel, "normalize", "normalize", () => top() !== "normalize", result => { normal = result; });
   // The folded normal form (folded-normal-forms.md) is a normalization too.
   wrap(kernel, "normalizeFolded", "normalize", () => top() !== "normalize", result => { normal = result; });
-  // Only the readback of a normal form, inside normalForm, is decode's: the
+  // Only the decoding of a normal form, inside normalForm, is decode's: the
   // same handle decoded elsewhere, by a check or a comparison, is not.
-  let readback = false;
-  wrap(checker.syntax, "decode", "decode", id => readback && top() !== "decode" && id === normal);
+  let decoding = false;
+  wrap(checker.syntax, "decode", "decode", id => decoding && top() !== "decode" && id === normal);
   // normalForm is normalize and decode, observed by those phases.
   const normalForm = checker.normalForm;
   checker.normalForm = function (handle, ...rest) {
-    readback = true;
+    decoding = true;
     let result;
-    try { result = normalForm.call(this, handle, ...rest); } finally { readback = false; }
+    try { result = normalForm.call(this, handle, ...rest); } finally { decoding = false; }
     if (!evaluated && handle === term) evaluated = result;
     return result;
   };
@@ -434,7 +434,7 @@ async function profiled(program, run, { depth = false } = {}) {
     for (const undo of restore.reverse()) undo();
     restore.length = 0;
     const entry = Object.values(totals).reduce((sum, total) => plus(sum, total), zero);
-    return { totals, entry, peakNodes, peakBytes, evaluated, ...(runtimeQuery ? { runtime: runtimeQuery.stats } : {}), ...(depth ? { depths } : {}) };
+    return { totals, entry, peakNodes, peakBytes, evaluated, ...(depth ? { depths } : {}) };
   }
 }
 
@@ -460,7 +460,7 @@ async function runEntry(program, session, workload, { depth = false } = {}) {
   if (measured.error) throw measured.error;
   return { outcome: outcomeOf(measured.result, measured.evaluated), phases: Object.fromEntries(Object.entries(measured.totals).map(([name, total]) => [name, rounded(total)])),
     entry: rounded(measured.entry), peakNodes: measured.peakNodes, peakBytes: measured.peakBytes,
-    ...(measured.runtime ? { runtime: measured.runtime } : {}), ...(depth ? { depths: measured.depths } : {}) };
+    ...(depth ? { depths: measured.depths } : {}) };
 }
 
 // A workload in this process: a new program over `module`, its setup, then
@@ -490,7 +490,7 @@ export async function measureWorkload(module, workload, { warm = 0, depth = fals
 const strip = figures => Object.fromEntries(Object.entries(figures).filter(([key]) => key !== "ms"));
 // A run's deterministic part: everything but times and the depth analysis.
 export function deterministic(run) {
-  return { outcome: run.outcome, entry: strip(run.entry), peakNodes: run.peakNodes, runtime: run.runtime ?? null,
+  return { outcome: run.outcome, entry: strip(run.entry), peakNodes: run.peakNodes,
     phases: Object.fromEntries(Object.entries(run.phases).map(([name, figures]) => [name, strip(figures)])) };
 }
 
@@ -525,7 +525,6 @@ export function summarize(workload, samples, { depthSample = null, unobserved = 
     outcome: first.outcome, deterministic: variants.size === 1,
     import: { ...sparse(samples[0].import), ms: statistics(samples.map(sample => sample.import.ms)) },
     total: { ...sparse(first.entry), peakNodes: first.peakNodes, peakBytes: first.peakBytes },
-    ...(first.runtime ? { runtime: first.runtime } : {}),
     ms: { cold: statistics(cold.map(run => run.entry.ms)), unobserved: unobserved?.cold.ms ?? null,
       warm: statistics(warm.map(run => run.entry.ms)) },
     phases: Object.fromEntries(Object.keys(first.phases).map(name => [name, { ...sparse(first.phases[name]),
@@ -583,8 +582,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
         + "Phases are observed by wrapping the methods named in `phases`; a phase's figures exclude the "
         + "phases nested in it. Counters are the kernel's cumulative work and the arena's net growth, compared across the cold "
         + "samples; times are medians over samples on this machine, and include the observation's wrappers. Failed entries count "
-        + "the work and time spent before they failed. A value form the runtime observed records the runtime's own counters, "
-        + "its query's steps and cells, as `runtime`, beside the kernel's. The depth sample repeats the cold entry, measuring the syntax depth "
+        + "the work and time spent before they failed. The depth sample repeats the cold entry, measuring the syntax depth "
         + "of the nodes each normalization, comparison and check allocated, its times discarded.",
       contracts, phases, workloads: [],
     };

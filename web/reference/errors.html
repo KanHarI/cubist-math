@@ -708,10 +708,10 @@ def mixed(a, b : UNat, h : a = b) : a &lt;= b {
                 <tr id="E484"><td><code>E484</code></td><td>A demand mark, !, !! or !!!, starts a part of an expected value: the whole value, a pair's component, an injection's value or a constructor's argument; … is none of these.</td></tr>
                 <tr><td><a href="#E485"><code>E485</code></a></td><td>evaluate e expecting _; would compute nothing: write !_ to compute the value's weak head, !!_ for its normal form, or !!!_ for its full normal form.</td></tr>
                 <tr><td><a href="#E486"><code>E486</code></a></td><td>A !!! inside a !! part asks for a full normal form, which the !! part's normal form does not hold: write !!! on the outer part.</td></tr>
-                <tr id="E487"><td><code>E487</code></td><td>The runtime's evaluation of the value form exhausted its work budget of … steps.</td></tr>
-                <tr id="E488"><td><code>E488</code></td><td>The runtime's evaluation of the value form exhausted its allocation budget of … cells.</td></tr>
-                <tr id="E489"><td><code>E489</code></td><td>The runtime's evaluation of the value form exceeded its time limit.</td></tr>
-                <tr id="E490"><td><code>E490</code></td><td>The runtime failed to evaluate the value form: …</td></tr>
+                <tr id="E487"><td><code>E487</code></td><td>The runtime's evaluation of the value form exhausted its work budget of … steps. (retired)</td></tr>
+                <tr id="E488"><td><code>E488</code></td><td>The runtime's evaluation of the value form exhausted its allocation budget of … cells. (retired)</td></tr>
+                <tr id="E489"><td><code>E489</code></td><td>The runtime's evaluation of the value form exceeded its time limit. (retired)</td></tr>
+                <tr id="E490"><td><code>E490</code></td><td>The runtime failed to evaluate the value form: … (retired)</td></tr>
                 <tr id="E491"><td><code>E491</code></td><td>… is the archive's legacy builtin, accepted only in archive modules: elsewhere use the library's Trunc, from h1_truncation, and its axioms LEM and Choice, from classical_axioms. (retired)</td></tr>
               </tbody>
             </table></div>
@@ -866,7 +866,7 @@ def mixed(a, b : UNat, h : a = b) : a &lt;= b {
                 <tr id="E664"><td><code>E664</code></td><td>A transport's face is a face formula; found an interval point.</td></tr>
                 <tr id="E665"><td><code>E665</code></td><td>A partial element's face is a face formula; found an interval point.</td></tr>
                 <tr id="E666"><td><code>E666</code></td><td>An axiom states a type, or a family of types: axiom T; or axiom F; where F(x) is a type.</td></tr>
-                <tr id="E667"><td><code>E667</code></td><td>This cubical kernel module has no handle generations. Rebuild it with `make wasm`.</td></tr>
+                <tr id="E667"><td><code>E667</code></td><td>This cubical kernel module has no handle generations. Rebuild it with `make wasm`. (retired)</td></tr>
                 <tr id="E668"><td><code>E668</code></td><td>The kernel's WebAssembly instance failed (…), and is not used again: nothing computed after the failure is kept.</td></tr>
               </tbody>
             </table></div>
