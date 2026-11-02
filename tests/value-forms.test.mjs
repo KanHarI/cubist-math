@@ -33,6 +33,8 @@ async function printed(t, source, { reader = sourceReader(), options = {} } = {}
   return result.prints.map(print => print.text);
 }
 const each = terms => terms.map(term => `print(evaluate(${term}));`).join("\n");
+// 2^128 - 1.
+const wide = "340282366920938463463374607431768211455";
 
 // The same call written twice in a function's body, through 24 definitions:
 // the kernel's weak-head cache shares each g_i(tt) by its syntax, so each
@@ -123,7 +125,7 @@ ${each([
 // pairs, sums and lists. A decision that finds two values equal holds the
 // quotient's path constructor, shown with its fields.
 test("binary integer and rational value forms", async t => {
-  const wide = "340282366920938463463374607431768211455", q = (n, d) => `class((bnat.(${n}), bnat.(${d})))`;
+  const q = (n, d) => `class((bnat.(${n}), bnat.(${d})))`;
   const fraction = (n, d) => `class((${n}, ${d}, <fun>))`;
   const texts = await printed(t, `import binary_rationals;
 use binary_rationals;
@@ -150,16 +152,28 @@ ${each([
 });
 
 // The binary integer and rational contracts (tests/fixtures/contracts/), each
-// evaluated term printed in place of its directive, whose expected value is
-// checked as written: every value form computes.
-for (const [file, count] of [["binary_integer_contracts", 5], ["binary_integer_domain_contracts", 6], ["binary_rational_contracts", 30]])
-  test(`the value forms of ${file} compute`, async t => {
+// evaluated term printed in place of its directive, in order: their value
+// forms, which the runtime showed too until its removal (2026-11-01). Most
+// terms are a contract's decision or measure, shown as its number.
+const contractValues = {
+  binary_integer_contracts: ["bnat.(1)", "bnat.(0)", "bnat.(1)", "bnat.(1)", "bnat.(1)"],
+  binary_integer_domain_contracts: ["unat.(0)", "unat.(1)",
+    `left(relate((bnat.(${wide}), bnat.(${wide})), (bnat.(0), bnat.(0)), <path>))`, "bnat.(3)", "bnat.(0)", "bnat.(3)"],
+  binary_rational_contracts: [...["1", "1", "0", ...Array(9).fill("1")].map(n => `bnat.(${n})`),
+    `class((class((bnat.(18446744073709551615), bnat.(0))), class((bnat.(${wide}), bnat.(0))), <fun>))`,
+    "class((class((bnat.(18446744073709551615125), bnat.(0))), class((bnat.(1000), bnat.(0))), <fun>))",
+    "bnat.(0)",
+    `class((class((bnat.(18446744073709551615), bnat.(0))), class((bnat.(0), bnat.(${wide}))), <fun>))`,
+    "bnat.(0)",
+    ...[4, 4, 3, 4, 6, 6, 3, 5, 2, 2, 1, 2, 0].map(n => `unat.(${n})`)],
+};
+for (const [file, values] of Object.entries(contractValues))
+  test(`the value forms of ${file}`, async t => {
     const path = fileURLToPath(new URL(`./fixtures/contracts/${file}.cubist`, import.meta.url)), source = await readFile(path, "utf8");
     let shown = source;
     for (const directive of parse(source).directives.filter(directive => directive.kind === "evaluate" && !directive.assertion).reverse())
       shown = shown.slice(0, directive.start) + each([source.slice(directive.value.start, directive.value.end)]) + shown.slice(directive.end);
-    const texts = await printed(t, shown, { reader: sourceReader({ path }), options: { testMode: true } });
-    assert.equal(texts.length, count);
+    assert.deepEqual(await printed(t, shown, { reader: sourceReader({ path }), options: { testMode: true } }), values);
   });
 
 // The kernel's weak-head query substitutes the total into each call, so the
