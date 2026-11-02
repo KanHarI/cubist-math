@@ -199,12 +199,18 @@ await browserTest(async ({ browser, base }) => {
   // Where the failures are injected, checked before any page loads one: a
   // point that is gone fails here, named, rather than in a page waiting on
   // the module.
-  const valueHook = "export function valueForm(", glueEnd = /export default Module;\s*$/;
+  const valueHook = "export function valueForm(handle, at, node, budget = printedNodes, depth = 512) {", glueEnd = /export default Module;\s*$/;
   const served = async path => (await fetch(new URL(path, base))).text();
   assert.ok((await served("translator/evaluation.mjs")).includes(valueHook),
-    `The fault harness fails the kernel where a value form's walk calls it, in ${valueHook}, which translator/evaluation.mjs no longer has.`);
+    `The fault harness arms the kernel where a value form's walk starts, at ${valueHook}, which translator/evaluation.mjs no longer has.`);
   assert.match(await served("dist/cubical.mjs"), glueEnd,
     "The fault harness wraps the kernel's exports where dist/cubical.mjs ends, at export default Module;, which it no longer has.");
+  // A value form's walk arms its worker's kernel to fail, if its plan says,
+  // at its next call: the walk's first head query.
+  await injected.route("**/translator/evaluation.mjs*", async route => {
+    const response = await route.fetch(), body = await response.text();
+    await route.fulfill({ response, body: body.replace(valueHook, "$& globalThis.armKernelFault?.();") });
+  });
   // Each worker loads the kernel anew, and fails as the next plan says, with
   // the engine's RangeError out of an export: at the first export a value
   // form's walk calls ("value"), at the first folded normal
@@ -224,6 +230,7 @@ await browserTest(async ({ browser, base }) => {
     const response = await route.fetch(), body = await response.text();
     await route.fulfill({ response, body: body.replace(glueEnd, `const plan = ${JSON.stringify(plan)};
 let armed = false, freeing = false, inSteps = false, values = 0, normals = 0, inspections = 0;
+globalThis.armKernelFault = () => { if (plan === "value" && !values++) armed = true; };
 self.addEventListener("message", ({ data }) => {
   if (data?.command === "fail-next-kernel-call" || data?.command === "repl" && data.args?.input === "/fail-next-kernel-call"
     || plan === "inspection" && data?.command === "inspect" && !inspections++) armed = true;
@@ -231,10 +238,10 @@ self.addEventListener("message", ({ data }) => {
   if (data?.command === "fail-in-steps") inSteps = true;
 });
 const overflow = () => { throw new RangeError("Maximum call stack size exceeded"); };
-const inStack = frame => {
+const readingSteps = () => {
   const limit = Error.stackTraceLimit;
   Error.stackTraceLimit = 200;
-  try { return new Error().stack.includes(frame); } finally { Error.stackTraceLimit = limit; }
+  try { return new Error().stack.includes("get steps"); } finally { Error.stackTraceLimit = limit; }
 };
 export default async options => {
   const module = await Module(options);
@@ -243,8 +250,7 @@ export default async options => {
     module[name] = (...args) => {
       if (armed) { armed = false; overflow(); }
       if (freeing && name === "_cb_free") { freeing = false; throw new WebAssembly.RuntimeError("unreachable"); }
-      if (inSteps && inStack("get steps")) { inSteps = false; overflow(); }
-      if (plan === "value" && !values && inStack("at valueForm ")) { values++; overflow(); }
+      if (inSteps && readingSteps()) { inSteps = false; overflow(); }
       if (plan === "normal" && name === "_cb_normalize_folded" && !normals++) overflow();
       return call(...args);
     };
