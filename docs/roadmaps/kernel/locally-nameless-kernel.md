@@ -1233,7 +1233,13 @@ equalities do not meet."). So the reuse keeps the exact handle as its fast
 path and, before making a new entry, compares the types of the entries
 already made for that name with `cc_kernel_alpha_equal`, reusing the first
 that agrees, as `cc_instr_extend` does now. This is compatibility, not only
-sharing. An entry is reused only when it is not already in the scope being
+sharing. Only types alike are compared: the same root kind and the same free
+variables in the parts alpha-equality compares as syntax, which two
+alpha-equal types always share. PR 1 found why: scope first binds the
+unifier's fresh names, and a binder of a type under each is one name at as
+many types (522 entries for one name in the `ordered_algebra` closure, 2.1
+million comparisons, 54 once only alike types are compared). An entry is
+reused only when it is not already in the scope being
 extended (section 3.6). The `x'1`, `x'2` variants that `entry` makes when a name is taken at
 another type become display matter only. The map lives as long as the
 entries it names, not as long as a driver (the table below). A driver
