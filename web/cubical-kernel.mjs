@@ -1,6 +1,7 @@
 // Integer-handle interface to the C kernel, usable in a browser worker or
 // Node. Building syntax never certifies it: only an instruction derives a
 // judgement (web/cubical-instructions.mjs).
+import { EntryNames } from "./cubical-variables.mjs";
 // A term kind's name at its number. null marks a retired kind whose number
 // stays reserved, Nat's, W's and pushouts' (kernel/include/cubical_kernel.h).
 export const cubicalKinds = [
@@ -136,10 +137,19 @@ export class CubicalKernel {
     // The most steps one query may grow to (withGrowingBudget).
     this.maxQuerySteps = MAX_QUERY_STEPS;
     this.definitions = new Map();
+    // Each definition's name by its index in the kernel's table, the payload
+    // of every CC_DEFREF that refers to it, which a commit keeps and a
+    // rollback frees (nameDefinition). The kernel's own names are not read.
+    this.definitionNames = new Map();
     // Admitted signatures of declared types (H1), by name: each record's
     // kernel index, constructor names and normal form in source terms
-    // (web/cubical-signatures.mjs). A rollback removes those it admitted.
+    // (web/cubical-signatures.mjs), and the records by index. A rollback
+    // removes those it admitted.
     this.signatures = new Map();
+    this.signatureRecords = new Map();
+    // The names of the context entries the session's drivers make, which
+    // outlive any one driver (web/cubical-variables.mjs).
+    this.entryNames = new EntryNames(this);
     // Declared types (H1) are on by default since their release, in the
     // kernel and here; setExtensions can switch them off.
     this.extensions = { h1: true };
@@ -160,20 +170,20 @@ export class CubicalKernel {
     this.extensions = { h1 };
     this.module._cb_extensions(this.handle, h1 ? 1 : 0);
   }
-  // An admitted or open signature: its classification, constructors and
-  // parameter symbols, as the kernel records them (cc_kernel_signature).
+  // An admitted or open signature: its classification and constructors, as
+  // the kernel records them (cc_kernel_signature). Its names are the
+  // driver's, in its record (signatureRecords).
   signature(index) {
     this.assertOpen();
     const m = this.module, h = this.handle, field = f => m._cb_signature(h, index, f) >>> 0;
     const levels = field(4), parameters = field(5), count = field(6);
     const constructor = c => {
       const at = f => m._cb_signature_constructor(h, index, c, f) >>> 0;
-      return { symbol: at(0), data: at(1), positions: at(2), dimensions: at(3), type: at(4), generated: at(5) === 1 };
+      return { data: at(1), positions: at(2), dimensions: at(3), type: at(4), generated: at(5) === 1 };
     };
     return {
-      admitted: field(0) === 1, experimental: field(1) === 1, modifier: field(2), sort: field(3),
-      recorded: field(7), former: field(8), level: field(9),
-      symbols: Array.from({ length: levels + parameters }, (_, i) => field(10 + i)), levels, parameters,
+      admitted: field(0) === 1, experimental: field(1) === 1, modifier: field(2),
+      recorded: field(7), former: field(8), level: field(9), levels, parameters,
       constructors: Array.from({ length: count }, (_, c) => constructor(c)),
     };
   }
@@ -269,6 +279,15 @@ export class CubicalKernel {
     }
     return this.names.get(name);
   }
+  // A symbol no name spells, for a binder renamed apart from every name in
+  // use (web/cubical-variables.mjs, freshBinder).
+  freshSymbol() {
+    this.assertOpen();
+    const id = uint32(this.module._cb_fresh_symbol(this.handle) >>> 0, "Symbol");
+    if (!id) throw this.failure("Could not allocate a symbol.");
+    this.nextSymbol = Math.max(this.nextSymbol, id + 1);
+    return id;
+  }
   symbolName(id) {
     uint32(id, "Symbol");
     if (!this.symbolNames.has(id)) {
@@ -343,12 +362,25 @@ export class CubicalKernel {
     while (node.kind === "App") { args.push(node.children[1]); node = this.node(node.children[0]); }
     return { root: node, args: args.reverse() };
   }
+  // A checked definition: its name, as the driver registered it, its value
+  // and its type.
   definition(reference) {
     this.assertOpen();
     uint32(reference, "Definition handle");
     const values = [0, 1, 2].map(field => this.module._cb_definition(this.handle, reference, field) >>> 0);
     if (!values[0]) throw new Error("Unknown checked cubical definition.");
-    return { name: this.symbolName(values[0]), value: values[1], type: values[2] };
+    return { name: this.definitionNames.get(this.node(reference).payload), value: values[1], type: values[2] };
+  }
+  // A definition registered under a name: for encoding, by the name, and for
+  // decoding, by its index, which every reference to it carries.
+  nameDefinition(name, reference) {
+    this.definitions.set(name, reference);
+    this.definitionNames.set(this.node(reference).payload, name);
+  }
+  definitionName(reference) {
+    const name = this.definitionNames.get(this.node(reference).payload);
+    if (name === undefined) throw new Error("A checked definition has no registered name.");
+    return name;
   }
   node(id) {
     this.assertOpen();

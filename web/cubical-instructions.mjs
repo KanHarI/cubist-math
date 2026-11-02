@@ -3,6 +3,7 @@
 // readers expose the judgement graph and its context entries. Instructions
 // check their side conditions in C; nothing here certifies anything.
 import { KernelError } from "./cubical-kernel.mjs";
+import { LEVEL as LEVEL_ENTRY } from "./cubical-variables.mjs";
 
 // cc_instruction, in order.
 // An instruction's name at its opcode. null marks a retired instruction whose
@@ -101,11 +102,22 @@ export class InstructionGraph {
   sum(left, right) { return this.issue("sum", left, right); }
   inject(type, value, right) { return this.issue("inject", type, value, right ? 1 : 0); }
   sumElim(motive, left, right, value) { return this.issue("sumElim", motive, left, right, value); }
-  extend(type, name) { return this.issue(EXTEND, type, this.kernel.symbol(name)); }
+  // A term entry for `name` at a type judgement. The session's record names
+  // it (web/cubical-variables.mjs, EntryNames); on ABI 3 the kernel takes the
+  // symbol `spelling` names, the name itself unless the driver chose a
+  // variant.
+  extend(type, name, spelling = name) {
+    const entry = this.issue(EXTEND, type, this.kernel.symbol(spelling));
+    this.kernel.entryNames.record(entry, name, spelling, this.module._cb_judgement(this.kernel.handle, type, 1) >>> 0);
+    return entry;
+  }
   dimension(index) { return this.issue(DIMENSION, index); }
   // A universe variable x < ω (G0): a level entry, used only inside levels.
-  level(name) { return this.levelEntry(this.kernel.symbol(name)); }
-  levelEntry(symbol) { return this.issue(LEVEL, symbol); }
+  level(name, spelling = name) {
+    const entry = this.issue(LEVEL, this.kernel.symbol(spelling));
+    this.kernel.entryNames.record(entry, name, spelling, LEVEL_ENTRY);
+    return entry;
+  }
   // The kernel's weak head normal form of a term, within `steps` of its
   // budget, or 0 when they run out: trusted reduction used as a query by the
   // search, never evidence. Running out of time is passed on.
@@ -193,7 +205,14 @@ export class InstructionGraph {
   glueTermPiece(system, value, image) { return this.issue("glueTermPiece", system, value, image); }
   glueTerm(system) { return this.issue("glueTerm", system); }
   unglue(value) { return this.issue("unglue", value); }
-  define(name, closed) { return this.issue("define", this.kernel.symbol(name), closed); }
+  // A definition of a closed judgement, named by the session by its index
+  // (CubicalKernel.nameDefinition); on ABI 3 the kernel takes the name's symbol.
+  define(name, closed) {
+    const judgement = this.issue("define", this.kernel.symbol(name), closed);
+    const reference = this.module._cb_judgement(this.kernel.handle, judgement, 1) >>> 0;
+    this.kernel.definitionNames.set(this.kernel.node(reference).payload, name);
+    return judgement;
+  }
   lookup(reference) { return this.issue("lookup", reference); }
   refl(typing) { return this.issue("refl", typing); }
   // Contract the redex at `path` in a side of a judgement, by `rule`.
@@ -261,9 +280,11 @@ export class InstructionGraph {
       const clause = [mask(5), mask(7)];
       return { id, dimension: false, face: true, symbol: 0, clause, name: faceName(clause), type: 0, source: 0 };
     }
-    const dimension = !!field(2), symbol = field(0);
-    if (!dimension && !symbol) throw new Error(`Unknown context entry ${id}.`);
-    return { id, dimension, face: false, symbol, name: dimension ? `d${symbol}` : this.kernel.symbolName(symbol),
-      type: field(1), source: field(3) };
+    // A dimension entry's symbol is its index; a term or level entry is
+    // named by the session (web/cubical-variables.mjs, EntryNames).
+    const dimension = !!field(2), names = this.kernel.entryNames;
+    if (dimension) return { id, dimension, face: false, symbol: field(0), name: `d${field(0)}`, type: field(1), source: field(3) };
+    if (!field(0)) throw new Error(`Unknown context entry ${id}.`);
+    return { id, dimension, face: false, symbol: names.symbol(id), name: names.spelled(id), type: field(1), source: field(3) };
   }
 }

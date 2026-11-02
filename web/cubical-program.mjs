@@ -516,24 +516,22 @@ export class CubicalProgram {
   signature(binding) {
     const record = this.kernel.signatures.get(binding);
     if (!record) return null;
-    const info = this.kernel.signature(record.index), syntax = this.checker.syntax;
-    const symbols = info.symbols.map(symbol => this.kernel.symbolName(symbol));
+    const info = this.kernel.signature(record.index), syntax = this.checker.syntax, { admission } = record;
     // The sort and the earlier constructors appear in constructor types as
-    // the admission's variables. They are shown as the sort and constructors
-    // they stand for, which print by their declared names: a variable named
-    // S1 would print as its stem S.
+    // the admission's variables, by the names its record keeps. They are
+    // shown as the sort and constructors they stand for, which print by their
+    // declared names: a variable named S1 would print as its stem S.
     // Within the check that declares it, before its symbols are recorded, a
     // type is named without its module.
     const name = this.symbols[binding]?.name ?? localName(binding);
     const sort = T.sort(binding);
-    const shown = [[info.sort, sort], ...info.constructors.map((c, index) =>
-      [c.symbol, T.constructor(index, sort, record.constructors[index])])]
-      .map(([symbol, term]) => [this.kernel.symbolName(symbol), term]);
+    const shown = [[admission.sort, sort], ...admission.constructors.map((variable, index) =>
+      [variable, T.constructor(index, sort, record.constructors[index])])];
     const display = term => shown.reduce((t, [from, to]) => substituteTerm(t, from, to), syntax.decode(term));
     // Universe parameters by their names in the declaration, where the
-    // elaborator declared the type; the kernel's own symbols otherwise.
+    // elaborator declared the type; their entries' names otherwise.
     const slots = this.checker.inductives?.get(binding)?.slots.filter(slot => slot.level !== undefined);
-    const levelNames = slots?.length === info.levels ? slots.map(slot => slot.source) : symbols.slice(0, info.levels);
+    const levelNames = slots?.length === info.levels ? slots.map(slot => slot.source) : admission.levels;
     return { name, binding, former: syntax.decode(info.former),
       modifier: info.modifier === 0 ? "type" : info.modifier === 1 ? "prop" : info.modifier === 2 ? "set" : `trunc(${info.modifier - 2})`,
       recorded: levelNames.filter((_, j) => info.recorded >> j & 1),

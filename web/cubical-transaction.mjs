@@ -6,8 +6,11 @@ export class CubicalDeclarationTransaction {
     this.checker = checker;
     this.sizes = new Map([
       [kernel.definitions,kernel.definitions.size],
-      // Signature indices survive a commit and are freed by a rollback.
+      // Definition and signature indices survive a commit and are freed by a
+      // rollback, and so are the names the driver keeps by them.
+      [kernel.definitionNames,kernel.definitionNames.size],
       [kernel.signatures,kernel.signatures.size],
+      [kernel.signatureRecords,kernel.signatureRecords.size],
       [checker.definitionViews,checker.definitionViews.size],
       [checker.genericDefinitions,checker.genericDefinitions.size],
       [checker.definitionExtensions,checker.definitionExtensions.size],
@@ -24,6 +27,9 @@ export class CubicalDeclarationTransaction {
     this.metadata = new Map([checker.theories,checker.theoryProjections,checker.notationPrinting]
       .filter(Boolean).map(collection => [collection,new Map(collection)]));
     kernel.module._cb_checkpoint(kernel.handle);
+    // Both the commit and the rollback truncate the context entries to their
+    // count at the checkpoint; the driver's names for them go too.
+    this.entries = kernel.module._cb_entry_count(kernel.handle) >>> 0;
     this.active = true;
   }
   added(collection) {
@@ -48,6 +54,7 @@ export class CubicalDeclarationTransaction {
       for (const collection of this.sizes.keys())
         for (const key of this.added(collection)) collection.delete(key);
     }
+    kernel.entryNames.truncate(this.entries);
     checker.syntax.reset();
     kernel.forgetNodes();
     // Its judgements were truncated with the checkpoint, and handles moved.

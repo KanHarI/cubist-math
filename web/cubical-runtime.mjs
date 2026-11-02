@@ -150,8 +150,11 @@ function judged(kernel, judgement, budget) {
 function descriptors(kernel, index, budget) {
   const read = id => { budget.tick(); return kernel.node(id); };
   budget.tick();
-  const s = kernel.signature(index);
-  if (!s.admitted) fail("input", "Runtime execution requires an admitted signature.");
+  const s = kernel.signature(index), record = kernel.signatureRecords.get(index);
+  if (!s.admitted || !record) fail("input", "Runtime execution requires an admitted signature.");
+  // The sort's variable in the constructor types, by the name its admission
+  // record keeps (web/cubical-signatures.mjs).
+  const sort = kernel.symbol(record.admission.sort);
   budget.allocate(1 + s.constructors.length);
   return s.constructors.map(c => {
     const count = c.data + c.positions;
@@ -164,7 +167,7 @@ function descriptors(kernel, index, budget) {
       if (i >= c.data) {
         let position = read(pi.children[0]), arity = 0;
         while (position.kind === "Pi") { arity++; position = read(position.children[1]); }
-        if (position.kind !== "Var" || position.payload !== s.sort) refused = cubicalPositionsRefused;
+        if (position.kind !== "Var" || position.payload !== sort) refused = cubicalPositionsRefused;
         arities.push(arity);
       }
       type = pi.children[1];

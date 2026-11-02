@@ -7,6 +7,7 @@ import { kernelOccurrence, kernelReductionActions, kernelStep } from "./cubical-
 import { judgementGraph } from "./cubical-graph-view.mjs";
 import { checkReduction, reduceView } from "./cubical-reduction.mjs";
 import { levelText } from "./cubical-levels.mjs";
+import { variableName } from "./cubical-variables.mjs";
 import { safeTrace, traceSources, traceSnapshot, traceCounters, traceCost } from "./cubical-workbench-trace.mjs";
 
 // A transfer's sources are text, which no reader placed: `fromLibrary` says
@@ -82,7 +83,7 @@ export class WorkbenchSession {
         return view.symbols[name]?.name ?? name;
       }
       if (n.kind === "Var") {
-        const name = kernel.symbolName(n.payload);
+        const name = variableName(kernel, n);
         return view.symbols[name]?.name ?? name;
       }
       return opcodeName(n.kind);

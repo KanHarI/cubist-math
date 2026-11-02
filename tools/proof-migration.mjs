@@ -173,13 +173,16 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
     while (universe.tag === "LPi" || universe.tag === "Pi") { parameters.push(universe); universe = universe.body; }
     const hash = hashChecked ?? canonicalHasher({definitionName:name => standsIn(name) ? originalName(name) : name, signatureName});
     const earlier = [];
-    const constructors = info.constructors.map(constructor => {
+    // The admission's variables by the names its record keeps; the generated
+    // squash, last, is no earlier constructor of any other.
+    const {admission} = record;
+    const constructors = info.constructors.map((constructor, index) => {
       const type = syntax.decode(constructor.type);
       let closed = type;
       for (const before of [...earlier].reverse()) closed = {tag:"Pi",name:before.name,domain:before.type,body:closed};
-      closed = {tag:"Pi",name:program.kernel.symbolName(info.sort),domain:universe,body:closed};
+      closed = {tag:"Pi",name:admission.sort,domain:universe,body:closed};
       for (const parameter of [...parameters].reverse()) closed = {...parameter,body:closed};
-      earlier.push({name:program.kernel.symbolName(constructor.symbol),type});
+      earlier.push({name:admission.constructors[index] ?? "squash",type});
       return {type:hash(closed),data:constructor.data,positions:constructor.positions,
         dimensions:constructor.dimensions,generated:constructor.generated};
     });
