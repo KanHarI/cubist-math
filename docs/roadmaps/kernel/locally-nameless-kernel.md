@@ -1111,6 +1111,17 @@ changes:
     as stuck, the outcome the unifier already has for an undecided
     comparison, and no type is invented for it.
 
+- A diagnostic comparison: `levelWithin` in `web/cubical-elaborator.mjs`
+  encodes two frontend levels with `encodeLevel` and no scope, to compare
+  their normal forms, and `web/translator/inductive.mjs` calls it when a
+  signature's admission fails, to name the argument that lowers a declared
+  type's universe. With `inductive Bad(U < UU0, A : U) : U0 { pack(x : A); }`
+  it is handed the free level variable `U` and today reports E514, as the
+  cases of `cubist-tests/h1_acceptance_levels.cubist` assert; the scoped
+  encoder would refuse `U` instead and change the diagnostic. The
+  comparison only chooses a message, so it compares the frontend levels
+  without encoding them: a level normal form over the frontend's level
+  syntax, keyed by name, beside `levelText` in `web/cubical-levels.mjs`.
 - Binders a caller peels or walks into without binding them:
   - `resolveInductive` in `web/translator/inductive.mjs` strips an
     expected type's Π binders (`scope.nf(type.body)`) to find the instance a
@@ -1130,9 +1141,9 @@ changes:
     context, is keyed by that scope as well.
 
   Appendix A classifies every head-query site of `web/` and
-  `web/translator/` by where each free variable of the term it asks about
-  comes from and which scope provides it, so the list above is complete by
-  construction rather than by search. PR 1 also makes the rule an
+  `web/translator/`, and every call of `encode` and `encodeLevel`, by where
+  each free variable of the syntax comes from and which scope provides it,
+  so the list above is complete by construction rather than by search. PR 1 also makes the rule an
   assertion: on ABI 3, encoding against a scope throws on a free variable
   that is neither bound by an enclosing binder nor in the scope, and the
   full suite run reports any site the classification got wrong.
@@ -1170,18 +1181,18 @@ binder's body with the entry it has just made or reused for that binder,
 one binder at a time (section 3.6 gives its condition).
 
 **Names live in the driver** (decided 2026-11-02). Entries carry no names, so
-the driver matches its names to kernel handles. `entry` in
-`web/cubical-instruction-driver.mjs` keeps a map from a name and a type
-handle to the entry made for them, so the same name at the same type reuses
-the entry, as `cc_instr_extend`'s symbol did, and judgements derived under
-the same binder are still shared by the derivation memo. After the switch
-the key is exact up to term and level binder names, which no longer
-distinguish types' handles. An entry is reused only when it is not already
-in the scope being extended (section 3.6). The `x'1`, `x'2` variants that
-`entry` makes when a name is taken at another type become the driver's
-display matter only. The map is dropped at commit and rollback with the
-driver's other per-declaration caches, since the entries it holds are
-truncated then. A driver that fails to reuse an entry gets two distinct
+the driver matches its names to kernel handles. A map from a name and a
+type handle to the entry made for them, which `entry` in
+`web/cubical-instruction-driver.mjs` consults, makes the same name at the
+same type reuse the entry, as `cc_instr_extend`'s symbol did, so that
+judgements derived under the same binder are still shared by the
+derivation memo. After the switch the key is exact up to term and level
+binder names, which no longer distinguish types' handles. An entry is
+reused only when it is not already in the scope being extended (section
+3.6). The `x'1`, `x'2` variants that `entry` makes when a name is taken at
+another type become display matter only. The map lives as long as the
+entries it names, not as long as a driver (the table below). A driver
+that fails to reuse an entry gets two distinct
 variables, and terms that mention one fail to match terms that mention the
 other: that is incompleteness, a check that fails, never unsoundness, since
 every judgement is still checked by the kernel.
@@ -1211,29 +1222,55 @@ refers to it, and follows the kernel's lifecycle for that identity:
 - **Signatures.** `kernel.signatures` maps a declaration's name to its
   record (index, constructor names); it is already in the transaction's
   `sizes`, and signature indices survive a commit and are freed by a
-  rollback, as its comment there says. Decoding a `CC_SORT`, `CC_CON` or
-  `CC_ELIM` reads the name today through the kernel's sort symbol
-  (`signatureRecord` in `web/cubical-syntax.mjs`); it reads an inverse keyed
-  by the signature index, the node's payload, kept in `sizes` like the
-  forward map.
-- **Entries.** The map from a name and a type handle to an entry, and the
-  entry-to-name map the decoder reads, belong to the instruction driver,
-  which `finish` drops at every commit and rollback (`kernel.instructionDriver
-  = null`), the same moments the kernel truncates the entries; the
-  decoder's caches are reset then too (`checker.syntax.reset()`). Within one
-  driver no handle moves, so keying by the type's handle is sound; with
-  `CC_SHARE_SYNTAX` off, alpha-equal types may be two handles, which only
-  misses a reuse (incompleteness, above).
-- **Variant names.** `variantNames` and `freshNames`, the `x'1` counters
-  of `entry`, live on the kernel object across declarations, and
-  `variantNames` is keyed by the type's handle, which a commit relocates
-  and a rollback frees. Once entries carry no names they are display only;
-  they move into the driver with the entry map, or are keyed by the type's
-  decoded syntax.
+  rollback, as its comment there says. Today `signatureRecord` in
+  `web/cubical-syntax.mjs` names an index through the kernel's sort symbol;
+  it reads an inverse keyed by the signature index instead, kept in `sizes`
+  like the forward map. The index is the payload of `CC_SORT` and `CC_ELIM`
+  only. A `CC_CON`'s payload is the constructor's number within its
+  signature, which ordinals of different signatures share (with
+  `inductive A { a; } inductive B { b; }`, `b`'s payload is 0 and its
+  instance's `CC_SORT` payload is the index of `B`). So a constructor's
+  signature is read from its instance child, the `CC_SORT` there, and its
+  name is that signature's constructor at the `CC_CON` payload, as `decode`
+  does today (`signatureRecord(sort.payload).constructors[payload]`) and as
+  `shownConstructorOf` in the elaborator does; the generated squash is named
+  by its `generated` flag.
+- **Entries.** The map from a name and a type handle to an entry, the map
+  from an entry to its name (and its `x'1` variant) that the decoder reads,
+  and today's `variantNames` and `freshNames`, move off the instruction
+  driver onto the kernel wrapper, beside `kernel.definitions`. The driver is
+  dropped more often than entries die: `inspect` in `web/cubical-program.mjs`
+  drops it at every inspection, and `define` and `admitSignature` in
+  `web/cubical-elaborator.mjs` drop it in their `finally`, none of them
+  truncating entries, and a review reproduced a retained open workbench
+  judgement surviving an inspection's reset and a pre-checkpoint entry
+  surviving `finish(false)`. The kernel truncates entries only at a
+  rollback or a commit, to the count at the checkpoint (`truncate_store`),
+  so the transaction records the entry count when it takes its checkpoint
+  (through `cb_entry_count`) and, in `finish`, deletes from these maps every
+  entry at or above it, on both paths; entries from before the checkpoint
+  keep their names. Their types' handles are older than the checkpoint too,
+  so neither a rollback nor a commit moves them, and keying the reuse by the
+  type's handle stays sound; with `CC_SHARE_SYNTAX` off, alpha-equal types
+  may be two handles, which only misses a reuse (incompleteness, above).
 - **Numbers for names.** `symbol` and `symbolName` in `web/cubical-kernel.mjs`
   map names to numbers and back, with no handle involved; they allocate
   from a counter of the driver's own instead of `cb_fresh_symbol`, since no
   kernel name can meet them any more.
+
+Every map that replaces a kernel symbol, against every reset:
+
+| Map | Owner | Cleared when | Its keys die when |
+| --- | --- | --- | --- |
+| name → `CC_DEFREF` (`kernel.definitions`) | kernel wrapper | new keys deleted at rollback; handles relocated at commit (`finish`) | the definition at rollback; the handle moves at commit |
+| definition index → name (new) | kernel wrapper | new keys deleted at rollback (`sizes`) | the index at rollback only; a commit keeps every index |
+| name → signature record (`kernel.signatures`) | kernel wrapper | new keys deleted at rollback (`sizes`) | the index at rollback only |
+| signature index → name (new) | kernel wrapper | new keys deleted at rollback (`sizes`) | the index at rollback only |
+| name and type handle → entry; entry → name and variant (new, replacing `variantNames`, `freshNames` and the symbol on the entry) | kernel wrapper | in `finish`, entries at or above the checkpoint's entry count, at commit and at rollback | the entry at the commit or rollback of a checkpoint taken before it was made; never at a driver reset |
+| the driver's caches (`contextScopes`, `heads`, `guesses`, `alphaMemo` and the rest) | instruction driver | at every driver reset (`finish`, `inspect`, `define`, `admitSignature`) | their judgements and handles at commit or rollback; dropping them earlier only costs recomputation, since the entry maps above outlive them |
+| the encoder's and decoder's caches (`encoded`, `decoded`, `heads`) | syntax codec | at `finish` (`checker.syntax.reset()`) | their handles at commit or rollback |
+| `derivedHandles` | kernel wrapper | at `finish` | at commit or rollback |
+| name ↔ number (`symbol`, `symbolName`) | kernel wrapper | never | never |
 
 **Binder names in displays.** The kernel's normal forms no longer carry the
 source's binder names (today `decode` reads them with `symbolName`, and
@@ -1357,8 +1394,11 @@ Each PR is verified locally first, opened as a draft, and keeps
    `web/translator/arguments.mjs`, and the binders `resolveInductive` peels
    in `web/translator/inductive.mjs`); `differ` taking its scope's context;
    the inverse maps keyed by definition and signature index and kept in the
-   transaction's `sizes`, and the variant names moved off the kernel object
-   (section 5.3); the assertion that encoding against a
+   transaction's `sizes`, constructors named through their instance's
+   signature, and the entry maps moved off the driver onto the kernel
+   wrapper, truncated in `finish` to the checkpoint's entry count and kept
+   across driver resets (section 5.3's table of maps); `levelWithin`
+   comparing frontend levels without encoding; the assertion that encoding against a
    scope throws on a variable neither bound nor in the scope, run over the
    full suite to find any site the grep missed; and the driver's own map
    from name and type to entry, giving each new entry a new symbol so that
@@ -1522,6 +1562,19 @@ Each PR is verified locally first, opened as a draft, and keeps
   returning `Unit`, is accepted, as on main; so is
   `inductive I(A : U0) { c(x : Unit); }`, `def Ix(x : Unit) : U0 := I(Unit);`,
   `def f : forall x : Unit. Ix(x) := c;`.
+- **Names across resets** (section 5.3): an open workbench judgement
+  retained across an inspection (`inspect` drops the driver) keeps its
+  variables' names, and deriving again with the same names reuses its
+  entries, so the next instruction combines with it; an entry made before a
+  checkpoint keeps its name after `finish(false)`, and one made after it
+  loses its name at both `finish(true)` and `finish(false)`.
+- **Constructors of different signatures** (section 5.3): with
+  `inductive A { a; } inductive B { b; }`, `a` and `b`, both of payload 0,
+  decode as `a` and `b`, as do their eliminators' clauses.
+- **A diagnostic over levels** (section 5.3):
+  `inductive Bad(U < UU0, A : U) : U0 { pack(x : A); }` reports E514, and the
+  E514 cases of `cubist-tests/h1_acceptance_levels.cubist` keep their
+  messages.
 - **Names keyed by identity** (section 5.3): with `CC_SHARE_SYNTAX` off, two
   distinct `CC_DEFREF` handles for one definition decode to its name; a
   committed definition keeps its name after relocation; a definition made
@@ -1607,7 +1660,7 @@ Risks that remain:
   adversarial and replay tests, and a review that targets them, are the
   guard.
 
-## Appendix A. Every head-query site, classified
+## Appendix A. Every site that queries or encodes syntax, classified
 
 Every call in `web/` and `web/translator/` (main `a933a0bf`, leaving out
 `web/cubical-runtime.mjs`) that reaches a kernel query on syntax: the
@@ -1637,3 +1690,20 @@ the rows above describe through their callers. Rows 4 to 6 are the sites
 that change behavior; rows 1, 2 and 9 change only in that the scope is
 made before encoding; rows 3, 7 and 8 are unaffected. A site added later
 falls under PR 1's assertion.
+
+The head queries are not the only way syntax is encoded. Every call of
+`encode` and `encodeLevel` outside the encoder's own recursion in
+`web/cubical-syntax.mjs` (main's lines; `web/translator/` calls neither
+directly):
+
+| Purpose | Where the free variables come from | Scope after the change | Sites |
+| --- | --- | --- | --- |
+| a derivation in a context (`derived`) | the assumptions | the context's scope, made first, assumption by assumption (section 5.3) | `cubical-elaborator.mjs:391`, `:392`, `:395` |
+| an eliminator's next clause type (`nextClauseType`) | the assumptions | the same | `cubical-elaborator.mjs:439`, `:445`, `:446` |
+| a head query (`nf`) | rows 1 to 6 above | the scope the row names | `cubical-elaborator.mjs:505` |
+| a comparison by the guide (`differ`) | the asking scope | the asking scope (row 9) | `cubical-elaborator.mjs:518` |
+| a definition (`define`, and its retry without empty faces) | none: the required assumptions are abstracted as λ and Π first | the empty scope; a free variable is refused, as Define refuses an open judgement | `cubical-elaborator.mjs:562`, `:569` |
+| signature admission | the earlier universe and term parameters | the admission scope, which already holds their entries | `cubical-signatures.mjs:54`, `:58` (the declared universe's level), `:72` |
+| a diagnostic comparison of two levels (`levelWithin`, called from `translator/inductive.mjs:199`) | the declaration's universe parameters | none: compared on the frontend's level syntax, not encoded (section 5.3) | `cubical-elaborator.mjs:167` |
+| a view's roots and context (the kernel assembly) | the view's context | the judgement's own handles where the view has them (`checked.typeHandle`), otherwise the view's context's scope, made first | `cubical-assembly.mjs:28`, `:30`, `:38` |
+| a view's context (the graph view) | the view's context | the view's context's scope, made first | `cubical-graph-view.mjs:16` |
