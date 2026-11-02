@@ -72,8 +72,10 @@ export const fixture = new URL("tests/fixtures/evaluation-baseline.json", root);
 // Version 11 computes REPL and print value forms by the kernel's head
 // queries again: the JavaScript runtime evaluator of versions 8 to 10 was
 // removed on 2026-11-01 (docs/reports/runtime-repl-evaluation.md#removal),
-// and with it the runtime phase and its counters. The value forms the
-// runtime showed past the kernel's syntax depth stop with K344 again.
+// and with it the runtime phase and its counters. No outcome moves: every
+// value form a workload shows was the kernel's queries' too. The kernel's
+// head queries of the value forms the runtime computed are now counted, in
+// the demand phase.
 export const version = 11;
 
 const euclid = "import euclid; use nat;", unary = "import unat; use unat;", circle = "import circle; use unat;";
