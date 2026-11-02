@@ -530,6 +530,9 @@ export const diagnostics = [
   ["E666", "An axiom states a type, or a family of types: axiom T; or axiom F; where F(x) is a type."],
   ["E667", "This cubical kernel module has no handle generations. Rebuild it with `make wasm`."],
   ["E668", "The kernel's WebAssembly instance failed (…), and is not used again: nothing computed after the failure is kept."],
+  ["E669", "A checked definition has no registered name."],
+  ["E670", "No declared type is registered at signature …."],
+  ["E671", "The driver made no context entry …."],
   // Arguments and their inference
   ["E701", "… has no implicit parameters: give its arguments in parentheses, as …(…)."],
   ["E702", "… has … implicit parameter…, …; the double braces give …."],

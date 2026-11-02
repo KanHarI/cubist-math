@@ -283,8 +283,8 @@ export class CubicalKernel {
   // use (web/cubical-variables.mjs, freshBinder).
   freshSymbol() {
     this.assertOpen();
-    const id = uint32(this.module._cb_fresh_symbol(this.handle) >>> 0, "Symbol");
-    if (!id) throw this.failure("Could not allocate a symbol.");
+    const id = this.module._cb_fresh_symbol(this.handle) >>> 0;
+    if (!id) throw new Error("Could not allocate a symbol.");
     this.nextSymbol = Math.max(this.nextSymbol, id + 1);
     return id;
   }
