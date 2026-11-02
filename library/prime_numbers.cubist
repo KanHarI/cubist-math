@@ -102,7 +102,12 @@ computable def DivisorSearch(m, k : Nat) :
 
 // A candidate that does not divide m passes the search to the next one, one
 // closer to m: the call's distance is strictly smaller. At distance zero the
-// candidate is m, which divides m.
+// candidate is m, which divides m. The next candidate's distance is decided
+// on the bits, and the decision's own path is passed on; the proof from the
+// last distance only refutes the other branch. Passed on instead, that
+// proof would grow by a composition at every candidate, and the kernel's
+// queries, which substitute it unevaluated, would meet their syntax depth
+// guard (K344) within a hundred candidates.
 computable def divisor_search_step(m : Nat, above : 1 < m, k : Nat) :
   NatBelow(U0, DivisorSearch(m), k) -> DivisorSearch(m, k) := match k {
     b_zero => fun (
@@ -119,13 +124,22 @@ computable def divisor_search_step(m : Nat, above : 1 < m, k : Nat) :
       distance : d + b_positive(p) = m, d_above : 1 < d, none : NoDivisorBelow(m, d)
     ) => divisor_candidate(
       m, d, above, d_above, none,
-      fun (not_divides : Divides(d, m) -> Void) => below(
-        bpositive_pred(p), bpositive_pred_lt(p), succ(d),
-        trans(
-          nat_succ_add_shift(d, bpositive_pred(p)),
-          trans(cong(add(d), bpositive_succ_pred(p)), distance)
-        ), bnat_lt_succ_right(1, d, d_above), no_divisor_below_succ(m, d, none, not_divides)
-      )
+      fun (not_divides : Divides(d, m) -> Void) => match nat_decide(succ(d) + bpositive_pred(p), m) return LeastDivisor(
+        m
+      ) {
+        left onward_distance => below(
+          bpositive_pred(p), bpositive_pred_lt(p), succ(d), onward_distance,
+          bnat_lt_succ_right(1, d, d_above), no_divisor_below_succ(m, d, none, not_divides)
+        );
+        right off => absurd(
+          off(
+            trans(
+              nat_succ_add_shift(d, bpositive_pred(p)),
+              trans(cong(add(d), bpositive_succ_pred(p)), distance)
+            )
+          )
+        );
+      }
     );
   };
 
