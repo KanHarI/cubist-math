@@ -16,17 +16,20 @@ correctness are implemented, together with dependent Peano/strong recursion
 and factorial. The default-`Nat` migration is implemented below; its release checks pass.
 NUM2's binary integer ring/domain and rational field are the default `Z`
 and `Q` since 2026-10-26, with binary generic ring numerals and casts; the
-full normal forms of the rational inverses remain targets. EVAL3–EVAL8 remain open:
-[#289](https://github.com/KanHarI/cubist-math/pull/289) adds a
+full normal forms of the rational inverses remain targets. EVAL3–EVAL8 remain open.
+[#289](https://github.com/KanHarI/cubist-math/pull/289) added a
 [first internal EVAL3/EVAL4 query](#first-implementation-289) for ordinary
-data. Since its [REPL integration](#repl-integration) of 2026-10-26 it
-computes the value form of `evaluate e` and `print(evaluate(e))`, with one
-fallback to the kernel's head queries, and since 2026-10-28 it executes the
-point constructors of quotients and other higher and truncated sorts, as
-binary integers' and rationals'; no checker uses it, and patterns,
-`!`, `!!`, `!!!` and expected values stay on the kernel's queries. EVAL5's observation contract
+data, a runtime evaluator in JavaScript. From its
+[REPL integration](#repl-integration) of 2026-10-26 it computed the value
+form of `evaluate e` and `print(evaluate(e))`, with one fallback to the
+kernel's head queries, and from 2026-10-28 the point constructors of
+quotients and other higher and truncated sorts too. **It was removed on
+2026-11-01** ([removal](#removal-of-the-runtime-evaluator-2026-11-01)), with typed readback's
+W1; it is kept on branch `archive/js-runtime` at `d875dd08`. Value forms,
+patterns, `!`, `!!`, `!!!` and expected values are all the kernel's queries
+again. EVAL5's observation contract
 has shipped as the [demand marks](../historical/evaluation-demand-marks.md) and
-[folded normal forms](../historical/folded-normal-forms.md); its typed readback has not.
+[folded normal forms](../historical/folded-normal-forms.md); its typed readback was removed with the runtime.
 [#284](https://github.com/KanHarI/cubist-math/pull/284)'s explicit-evidence
 directives, `evaluate nonempty P by w;` and `evaluate empty P by r;`, check
 evidence without normalizing it.
@@ -60,8 +63,8 @@ type descent, level arithmetic and level canonicalization. Composition/Glue/HIT
 tube construction, the Glue-step reduction comparison (`normal_agree`/
 `parts_agree`), prerequisite head queries and frontend traversals remain
 open, and the fixed four larger BNat cases still hit the syntax guard.
-EVAL3/EVAL4 integration beyond the value form and the remaining protected
-traversals are still open.
+The remaining protected traversals are still open; EVAL3/EVAL4's runtime
+evaluator was removed on 2026-11-01.
 A [small arithmetic-free reproduction and partial-reduction report](../../reports/rational-normalization.md)
 now records the remaining failure. Its
 [completion path](#rational-full-normalization-completion-path) below assigns
@@ -118,6 +121,16 @@ stays within its stated contract.
   computes twice ([`duplicated-calls-24`](../../reports/runtime-repl-evaluation.md#findings)),
   is EVAL4 work; done on 2026-10-30 within each instance of a scope
   ([report](../../reports/runtime-repl-evaluation.md#sharing-of-repeated-calls)).
+
+**Decision of 2026-11-01** (the user: "Lets remove the runtime."): the
+runtime evaluator is removed, and value forms go back to the kernel's head
+queries alone ([removal](#removal-of-the-runtime-evaluator-2026-11-01)). On the library's
+binary workloads it gave nothing the kernel lacks: it fell back on every
+recursive value form, and the transport-free recursion work makes the
+kernel compute those. What it alone computed, deep unary values past the
+kernel's syntax depth and about 2.6 times the speed on wide values that are
+data throughout, is not central, and the kernel's rules are no longer
+implemented twice.
 
 ## Goal and current failure
 
@@ -181,8 +194,10 @@ samples agree on them. Times are medians on that machine, not portable
 targets. To repeat this historical behavior, use an isolated checkout of
 `b5a261c8` (or the pre-EVAL1 `fc0362d3`) and rebuild there with `make wasm`.
 Running these commands on the current sources measures the current record
-instead, version 10 since 2026-10-28, whose Euclid workloads are the
-library's ([EVAL7](#eval7-reduce-the-algorithms-work)):
+instead, version 11 since 2026-11-01, whose Euclid workloads are the
+library's ([EVAL7](#eval7-reduce-the-algorithms-work)) and whose value forms
+are the kernel's queries' again, the runtime removed
+([removal](#removal-of-the-runtime-evaluator-2026-11-01)):
 
 ```sh
 npm run baseline:evaluation
@@ -412,8 +427,9 @@ EVAL0 is done. EVAL1 is implemented in #266; EVAL2 and NUM0 are implemented belo
 NUM1's semiring, transport, equality/order and dependent-recursion work is
 implemented. The default-`Nat` compatibility migration is implemented with
 release validation passed (#278, 2026-10-18), and the default `Z`/`Q`
-migration on 2026-10-26. EVAL7 is implemented (2026-10-28). NUM2,
-EVAL3/EVAL4 and EVAL5 are partly delivered, as their rows say; the other
+migration on 2026-10-26. EVAL7 is implemented (2026-10-28). NUM2 and
+EVAL5 are partly delivered, and EVAL3/EVAL4's runtime evaluator was
+delivered in part and removed on 2026-11-01, as their rows say; the other
 rows remain. Sizes are relative
 scope, as in the work plan.
 
@@ -425,9 +441,9 @@ scope, as in the work plan.
 | NUM1 | Natural semiring isomorphism, U0 path/transport, bitwise setness, comparison correctness, H1 binary Peano view, coherent strong recursion and factorial; implemented | NUM0; semiring and order laws; H1 dependent elimination; computational univalence | L |
 | NUM2 | New binary-backed Z and Q, ring/domain/field laws and default APIs. Generic fractions (#279), binary integers (#280, #281) and the binary-rational API, released on folded normal forms (#283); binary generic ring numerals and the default `Z`/`Q` migration, with casts and rendering, on the same gate (2026-10-26). The rational inverses' full normal forms remain targets | NUM1; current quotients, rings and fractions | L |
 | EVAL2 | Memoized full normalization; implemented | EVAL0; independent of EVAL1 | M |
-| EVAL3 | Closure evaluator for a specified data fragment. A first internal query for ordinary data (#289), which computes REPL and print value forms (REPL integration); higher sorts, patterns and typed readback remain | EVAL0 and semantic contract | L |
-| EVAL4 | Explicit evaluation stack and bounded runtime. #289's machine loop and a synchronous observation for the checker, sharing of repeated calls, closed-environment pruning and memory calibration (2026-10-30); a responsive snapshot for asynchronous use waits for a caller that observes asynchronously, of which there is none | EVAL3 design; implement alongside it | M |
-| EVAL5 | Lazy observation and typed readback. The observation contract is implemented: demand marks (#304–#306) and folded normal forms (#309, #310); typed readback remains | EVAL3, EVAL4 | L |
+| EVAL3 | Closure evaluator for a specified data fragment. A first internal query for ordinary data (#289) computed REPL and print value forms from 2026-10-26 (REPL integration), higher sorts' point constructors from 2026-10-28. **Removed on 2026-11-01**, kept on branch `archive/js-runtime` ([removal](#removal-of-the-runtime-evaluator-2026-11-01)) | EVAL0 and semantic contract | L |
+| EVAL4 | Explicit evaluation stack and bounded runtime. #289's machine loop and a synchronous observation for the checker, sharing of repeated calls, closed-environment pruning and memory calibration (2026-10-30). **Removed with EVAL3's evaluator on 2026-11-01** | EVAL3 design; implement alongside it | M |
+| EVAL5 | Lazy observation and typed readback. The observation contract is implemented: demand marks (#304–#306) and folded normal forms (#309, #310). Typed readback's W1 (#337) was **removed with the runtime on 2026-11-01**; W2, held, is on branch `typed-readback-w2` | EVAL3, EVAL4 | L |
 | EVAL6 | Packed BNat runtime values and checked specialization | NUM0–NUM2, EVAL3, EVAL4; new profile | L |
 | EVAL7 | Efficient checked divisibility and search over BNat. **Implemented** on 2026-10-28: the library modules (part one), and the archive's Euclid consumers moved to the library's `euclid` with its divisibility and primality deleted from the archive (part two) | NUM1, EVAL0; independent of the new evaluator | M |
 | EVAL8 | Cubical integration, semantic review and release | Packages selected for release | L |
@@ -1148,6 +1164,9 @@ as well as avoided syntax allocation.
 
 #### First implementation (#289)
 
+Removed on 2026-11-01 with the REPL integration below
+([removal](#removal-of-the-runtime-evaluator-2026-11-01)); this records it as it was.
+
 [#289](https://github.com/KanHarI/cubist-math/pull/289) (2026-10-19) adds
 `RuntimeQuery` in `web/cubical-runtime.mjs`, described in its
 [report](../../reports/shared-runtime-evaluation.md). It is an internal query
@@ -1167,6 +1186,10 @@ would let a user's `evaluate euclid(4).1` use it, which the REPL integration
 below delivers for value forms.
 
 #### REPL integration
+
+Removed on 2026-11-01 ([removal](#removal-of-the-runtime-evaluator-2026-11-01)): value forms
+are the kernel's head queries' again. This records the integration as it
+was.
 
 On 2026-10-26 the value form, `evaluate e` in every REPL that runs entries
 as modules (the CLI, the REPL page, the reference pages' REPL bar and the
@@ -1289,6 +1312,42 @@ weak head, `left(relate(…))`, and today its entry pays the runtime's walk
 up to it and then the kernel's whole walk. Showing it needs no dimension or
 composition; the second slice refuses it, as specified, and a path
 constructor applied at an interval point stays unsupported either way.
+(Moot since the removal.)
+
+#### Removal of the runtime evaluator (2026-11-01)
+
+Decided by the user on 2026-11-01 (above, with the decisions of
+2026-10-26) and done the same day; the
+[report](../../reports/runtime-repl-evaluation.md#removal) lists what was
+deleted and every outcome that moved. Value forms are computed by the
+kernel's head queries alone, `valueForm` over the translator's
+`demandQueries`, as before the integration. `web/cubical-runtime.mjs`, the
+translator's runtime path and its records, the elaborator's query, the
+kernel class's handle tokens, the bridge's handle generation, the
+diagnostics only they raised (E487–E490 and E667, retired), typed readback
+W1 with its oracle, and the runtime's tests and probes are deleted. The
+outcomes that moved are the runtime's alone: `count_into(2 * 255, 0)`
+stops with K344 where it showed 510, and three stops at the runtime's
+allocation budget (E488) are now the kernel's answer, `tt`, or its guards,
+K344 and K336. Every other value form, compared with main on the demand
+marks corpus, the contracts, the docs examples and the baseline, is
+unchanged.
+
+**Where it is kept:** branch `archive/js-runtime` at
+`d875dd08b198e79e9fbb692935c4e6bd712324f5`, main after #345, with the REPL
+integration, EVAL4's items, typed readback W1, M3 and W4's EVAL8 record.
+W2, the per-node fallback held on 2026-10-30, is on branch
+`typed-readback-w2` at `b9992be1`, never merged.
+
+**Bringing it back** would mean restoring that code, its tests, its probes
+and its diagnostics' codes from the branch; carrying into its JavaScript
+machine every change since `d875dd08` to the kernel's β, η and ι rules,
+term kinds and signatures, checked again by the readback oracle over the
+corpora; recording the evaluation baseline at a new version; and writing
+W4's record again for the restored state. It would pay only for value
+forms the kernel cannot compute or computes slowly: deep unary values past
+its syntax depth, and wide values that are data throughout. EVAL3–EVAL8 as
+written above remain the plan for any evaluator taken up again.
 
 ### Rational full-normalization completion path
 
@@ -1422,9 +1481,10 @@ The [typed readback note](typed-readback.md) of 2026-10-28 specifies the
 readback, its correspondence and the observations it moves. The user
 accepted every recommendation the same day (D1–D6): readback serves
 displays and a per-node fallback, and no verdict consumes one. Its W1,
-readback and its oracle tests, is done; W2, the per-node fallback, is
-held (2026-10-30), since it runs slower in wall time than the whole-walk
-restart it replaces.
+readback and its oracle tests, was done, and was removed with the runtime
+on 2026-11-01; W2, the per-node fallback, was held (2026-10-30), since it
+runs slower in wall time than the whole-walk restart it replaces, and is
+kept on branch `typed-readback-w2`.
 
 Provide typed readback for demanded data and a separately specified way to
 inspect suspended fields. Keep function bodies as closures until application
@@ -1458,7 +1518,7 @@ do not close that failure based on its projection alone.
 Since EVAL7's part two (2026-10-28) this acceptance reads the library's
 Euclid over binary `Nat`. Its value forms, `euclid(4)` against `(5, _)` and
 the full normal form `!!!euclid(4)` compute by the kernel's queries; the
-runtime falls back from each at NUM1's compositions. The syntax depth guard
+runtime, until its removal, fell back from each at NUM1's compositions. The syntax depth guard
 now first stops `euclid(7).1`
 ([report](../../reports/binary-euclid.md)).
 
@@ -1620,5 +1680,8 @@ The order from 2026-10-26 on is in the work plan's
    on 2026-10-26 (constructor patterns await a decision), then the point
    constructors of set quotients so that `BInt` and `BQ` values evaluate;
 4. typed readback (EVAL5).
+
+Both 3 and 4 were removed with the runtime evaluator on 2026-11-01
+([removal](#removal-of-the-runtime-evaluator-2026-11-01)).
 
 EVAL7, with the archive's `euclid` deleted, proceeds alongside 3 and 4.

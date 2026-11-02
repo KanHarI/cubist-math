@@ -17,9 +17,10 @@ and compatibility gates passed. The reals roadmap stays paused. See the
    - B8 of the [debugging plan](runtime/rational-normalization-debug-plan.md),
      done on 2026-10-26;
    - the default binary `Z`/`Q`, gated on folded normal forms;
-   - #289's runtime in the REPLs: value forms on 2026-10-26; constructor
-     patterns and quotient point constructors remain;
-   - typed readback;
+   - #289's runtime in the REPLs: value forms on 2026-10-26, quotient
+     point constructors on 2026-10-28; removed on 2026-11-01, kept on
+     branch `archive/js-runtime`;
+   - typed readback, W1 removed with the runtime;
    - all of the archive's number theory moved to the library and removed
      from the archive ([NT1–NT5](archive-retirement.md#number-theory-in-the-library)),
      with EVAL7's primality, divisibility and Euclid as NT2.
@@ -165,10 +166,12 @@ and `module::name` references as continuing contracts.
 - [Runtime evaluation](runtime/runtime-evaluation-roadmap.md): EVAL0–EVAL2,
   NUM0, NUM1 and the default binary `Nat` are implemented; NUM2's binary
   integers and rationals are on main and are the default `Z`/`Q`.
-  EVAL3/EVAL4's runtime computes the REPLs' value forms (#320), higher
-  sorts' point constructors included (#324). EVAL5's observation contract
-  has shipped; its typed readback is decided in
-  [typed readback](runtime/typed-readback.md). EVAL6–EVAL8 remain.
+  EVAL3/EVAL4's runtime computed the REPLs' value forms (#320), higher
+  sorts' point constructors included (#324), until its removal on
+  2026-11-01; it is kept on branch `archive/js-runtime`, and value forms
+  are the kernel's queries' again. EVAL5's observation contract has
+  shipped; its [typed readback](runtime/typed-readback.md) was removed with
+  the runtime. EVAL6–EVAL8 remain.
 - [Rational normalization debugging plan](runtime/rational-normalization-debug-plan.md):
   the attribution of the rational full-normalization cluster; D1 and B8 done.
 - [Typed readback](runtime/typed-readback.md): EVAL5's readback of runtime

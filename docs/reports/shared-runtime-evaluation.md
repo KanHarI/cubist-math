@@ -1,5 +1,12 @@
 # Shared runtime execution: first implementation
 
+**Removed on 2026-11-01.** The runtime evaluator this report describes was
+removed from main by the user's decision of 2026-11-01: value forms are
+computed by the kernel's head queries again
+([removal](runtime-repl-evaluation.md#removal)). Its code is kept on branch
+`archive/js-runtime` at `d875dd08`. What follows is a dated record of the
+work as it stood.
+
 This is an internal EVAL3/EVAL4 query implementation for ordinary data. No
 checker, REPL or page uses it yet. It returns observations, not kernel evidence
 or full typed normal forms. Cubical execution, deep typed readback and the

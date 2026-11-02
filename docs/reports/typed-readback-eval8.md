@@ -1,5 +1,12 @@
 # Typed readback: the EVAL8 record (W4)
 
+**Removed on 2026-11-01.** The runtime evaluator and the readback this record reviews was
+removed from main by the user's decision of 2026-11-01: value forms are
+computed by the kernel's head queries again
+([removal](runtime-repl-evaluation.md#removal)). Its code is kept on branch
+`archive/js-runtime` at `d875dd08`. What follows is a dated record of the
+work as it stood.
+
 W4 of [typed readback](../roadmaps/runtime/typed-readback.md#8-work-items),
 written on 2026-11-01 on main `398e89ba` (#344 merged). It goes through
 [section 6](../roadmaps/runtime/typed-readback.md#6-eval8-interaction)'s

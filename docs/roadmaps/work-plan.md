@@ -765,14 +765,16 @@ its inverse contracts by the user's decision of 2026-10-26. The default
 `Z`/`Q` migration is gated the same way, on folded normal forms (decided
 2026-10-26). Full normalization of the inverses remains a target of the
 [debugging plan](runtime/rational-normalization-debug-plan.md), not a gate.
-[#289](https://github.com/KanHarI/cubist-math/pull/289) adds a first internal
-EVAL3/EVAL4 runtime query for ordinary data. Since 2026-10-26 the REPLs
-compute value forms through it, falling back once to the kernel's head
-queries on unsupported demand. Since #324 it also executes the point
-constructors of quotients and other higher sorts, so `BInt` and `BQ` value
-forms compute in it; path constructors and compositions fall back. EVAL5's observation
-contract shipped as the demand marks and folded normal forms. The rest of
-EVAL3–EVAL8 remains planned. The ordered-ring/field
+[#289](https://github.com/KanHarI/cubist-math/pull/289) added a first internal
+EVAL3/EVAL4 runtime query for ordinary data. From 2026-10-26 the REPLs
+computed value forms through it, falling back once to the kernel's head
+queries on unsupported demand, and from #324 it executed the point
+constructors of quotients and other higher sorts too. **The user removed
+it on 2026-11-01**, with typed readback's W1: value forms are the kernel's
+head queries' again, and the runtime is kept on branch `archive/js-runtime`
+at `d875dd08` ([removal](runtime/runtime-evaluation-roadmap.md#removal-of-the-runtime-evaluator-2026-11-01)).
+EVAL5's observation contract shipped as the demand marks and folded normal
+forms. The rest of EVAL3–EVAL8 remains planned. The ordered-ring/field
 definitions and algebra lattice landed in #267 over #268's inherited operation
 implementations.
 The versioned scratch evaluator's prime projections are
@@ -973,7 +975,16 @@ Each step lands in focused PRs under the review rule above.
       decimal magnitudes from their bits. The unary integers and rationals
       were removed by the user's decision; `UNat` remains for structural
       recursion.
-   3. **#289's runtime in the REPLs** (EVAL3/EVAL4 integration). The CLI,
+   3. **#289's runtime in the REPLs** (EVAL3/EVAL4 integration). **Removed
+      on 2026-11-01** by the user's decision, with 4's W1: value forms are
+      the kernel's head queries' again
+      ([removal](runtime/runtime-evaluation-roadmap.md#removal-of-the-runtime-evaluator-2026-11-01),
+      [report](../reports/runtime-repl-evaluation.md#removal)). The runtime
+      is kept on branch `archive/js-runtime` at
+      `d875dd08b198e79e9fbb692935c4e6bd712324f5`; bringing it back means
+      restoring it from there and carrying every later change to the
+      kernel's rules into its JavaScript machine, checked again by the
+      readback oracle. What follows records the step as it was done. The CLI,
       browser and contextual REPLs compute the value form and constructor
       patterns through the runtime query, with one specified fallback to
       today's kernel queries where it reports unsupported demand. Then the
@@ -1051,7 +1062,11 @@ Each step lands in focused PRs under the review rule above.
         2026-10-30): no path observes a query asynchronously, the value
         form's walk being synchronous, as the kernel's queries are; the
         item waits for a caller that observes asynchronously.
-   4. **Typed readback** (EVAL5): read runtime values back into kernel terms
+   4. **Typed readback** (EVAL5). **Removed with the runtime on
+      2026-11-01**: W1 is kept on branch `archive/js-runtime` with it, and
+      W2, held, on branch `typed-readback-w2` at `b9992be1`
+      ([typed readback](runtime/typed-readback.md)). What follows records
+      the step as it was done. Read runtime values back into kernel terms
       by their types, with the written readback correspondence and the
       applicable EVAL8 review. Decided on 2026-10-28
       ([typed readback](runtime/typed-readback.md)): readback serves displays

@@ -1,6 +1,21 @@
 # Typed readback: runtime values as kernel terms (EVAL5)
 
-Status: decided on 2026-10-28: the user accepted every recommendation of
+**Status since 2026-11-01: removed with the runtime.** The user decided on
+2026-11-01 to remove the JavaScript runtime evaluator, and the readback
+went with it: W1's `RuntimeQuery.readback`, its oracle and its tests are
+deleted, and value forms are the kernel's head queries' again
+([removal](runtime-evaluation-roadmap.md#removal-of-the-runtime-evaluator-2026-11-01),
+[report](../../reports/runtime-repl-evaluation.md#removal)). The runtime
+with W1, M3 and W4's record is kept on branch `archive/js-runtime` at
+`d875dd08b198e79e9fbb692935c4e6bd712324f5`; W2, the per-node fallback,
+held, on branch `typed-readback-w2` at `b9992be1`. Bringing the readback
+back means bringing the runtime back first, as the roadmap's removal
+section describes, then W1 from that branch, with its oracle run again
+over the corpora; W2 only with a design faster end to end than the
+whole-walk restart. What follows records the note as it was decided and
+carried out.
+
+Status before the removal: decided on 2026-10-28: the user accepted every recommendation of
 [section 11](#11-decisions) (D1–D6). Written on
 [#324](https://github.com/KanHarI/cubist-math/pull/324)'s branch at
 `6f5604e9`. This is step 2.4 of the work plan's
