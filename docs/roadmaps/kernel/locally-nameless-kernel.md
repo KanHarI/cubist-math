@@ -1,0 +1,832 @@
+# Variables by role: a locally nameless kernel
+
+Proposal of 2026-11-02, against main `a933a0bf`. Design only: nothing here is
+implemented. Every statement about current behavior names the C function
+that enforces it; the counts in [section 1.7](#17-what-the-names-cost-measured)
+and [section 6](#6-performance-expectations) come from a temporary
+instrumented build of main, not committed.
+
+**Decided by the user on 2026-11-02:**
+
+- The kernel's syntax names a variable's role by its node kind:
+  `CC_BOUND` for a bound variable, by de Bruijn index, and `CC_CONTEXT` for a
+  reference to a context entry. With `CC_DEFREF`, `CC_SORT`, `CC_CON` and
+  `CC_ELIM`, which already refer by index, every variable states what it is.
+- `CC_CONTEXT`'s payload is the entry's global id, a `cc_entry_id`, not a
+  symbol and not a position in the judgement's context.
+- The ABI moves to version 4: the driver reads and builds `CC_BOUND` and
+  `CC_CONTEXT` itself. No names are converted at the boundary.
+- The stopgap of branch `kernel-fast-multiplication` (a node lists up to
+  three free names) is not the fix.
+
+The rest is a recommendation for the user to accept or change.
+
+## Why
+
+`factorial(60)` took 138,249,298 of the kernel's query ticks on main, and
+136,678,663 of them (99%) were visits of `ck_term_free`, substitution's
+capture check (section 1.7). The report of the stopgap
+(`docs/reports/kernel-multiplication.md` on the local branch
+`kernel-fast-multiplication`, not on main) found the cause. The operand
+being searched is closed. Its parts mention
+names only because they sit under the arithmetic definitions' own binders
+(`bpositive_add`'s clauses bind `p`, `p_rec` and `b1`), and the node's
+filter of mentioned names (`symbols` in `cc_node`) counts bound names too, so
+the filter cannot rule the search out. In every evaluation measured below
+the check found a capture zero times.
+
+The stopgap lists up to three free names per node and brings
+`factorial(100)` from 3,263,063,793 ticks to 5,210,715. It is a cap: a node
+with a fourth free name is searched again, and the searches that remain on
+its branch (730,051 visits in `least_divisor(44521, tt).1`) are mostly that.
+The cost is not the arithmetic's but the representation's: one node kind,
+`CC_VAR`, stands for both a bound variable and a context reference, so
+substituting into a body must ask whether the value's free names meet the
+binders on the way down. A representation that tells the two apart has no
+such question to ask.
+
+## 1. Current state, from the source
+
+### 1.1 Three roles, one representation
+
+| Role | Today | Bound or created by | Enforced by |
+| --- | --- | --- | --- |
+| Bound term variable | `CC_VAR(symbol)` under `CC_PI`, `CC_LAM`, `CC_SIGMA`, whose payload is the symbol; it binds child 1 only, never the domain | the binder instructions, from the discharged entry's symbol | `ck_term_binder`; `ck_term_free` skips child 1 when the payload is the name |
+| Bound level variable | `CC_VAR(symbol)` inside a level (`U`'s child, `CC_LAPP`'s child 1, a `CC_SORT`'s recorded levels), under `CC_LPI`/`CC_LLAM` | `cc_instr_level_pi`, `cc_instr_level_lambda` | `ck_term_binder` counts `CC_LPI` and `CC_LLAM` among the term binders: level and term variables share one symbol space |
+| Bound dimension | a dimension index 0..63 in formulas, under `CC_PATH` (binds the family), `CC_PLAM` (family and body), `CC_COMP` (family and tube terms, not faces or base), `CC_HCOMP` (tube terms only), `CC_TRANS` (family only) | the dimension binder instructions, from the discharged dimension entry's index | `ck_dim_binder`, `ck_free_dims`, the binding rules in `substitution`'s `SUBSTITUTE_RENAME_DIMENSION` and `SUBSTITUTE_CHILDREN` stages |
+| Term context entry | `CC_VAR(symbol)`, the entry's symbol | `cc_instr_extend`: a symbol names at most one live entry; the same symbol at an alpha-equal type returns the same entry (`find_entry`) | `ck_instr_entry`, `cc_instr_variable` (`ck_var(e.symbol)`) |
+| Level entry | `CC_VAR(symbol)` in a level; its type is `LBound(1)` | `cc_instr_level`, sharing the term entries' symbols | `level_context` maps each normal-form key back to an entry with `find_entry` |
+| Dimension entry | the index itself; `cc_entry.symbol` is the index | `ck_instr_dimension_entry`, one per index, cached in `dimension_entries` | `ck_instr_merge` refuses two dimension entries with one index; `ck_instr_discharge` refuses a binder that would capture another dimension entry with its index |
+| Face entry | no name, no type: a clause | `ck_instr_face_entry`, used by `cc_instr_restrict`; its context is its clause's dimension entries | discharged by `ck_instr_on_face` where a partial element's face implies it |
+| Admission context | a signature's universe and term parameters, sort and earlier constructors, each `CC_VAR(symbol)` in constructor types | `cc_instr_signature_begin` reads the parameter symbols from the former's `CC_LPI`/`CC_PI` payloads; the sort symbol is an operand | `admission_context` matches entries to them by symbol, `reserved` forbids binders inside a constructor type to reuse them |
+| Global reference | `CC_DEFREF(index)`, `CC_SORT(signature index)`, `CC_CON(constructor number; instance)`, `CC_ELIM(signature index)` | `cc_instr_define`, the signature instructions | payloads are table indices; `ck_term_free` and substitution never treat them as names (`CC_DEFREF` has arity 0, the others' payloads are not compared with names) |
+
+So the kernel already has three kinds of reference: bound variables, context
+references and global references, and the last are indices today. The first
+two share `CC_VAR` and one symbol space, for terms and levels alike; for
+dimensions they share the index space 0..63. That sharing is why substitution
+needs a capture check: a binder's name (the discharged entry's symbol, as
+`former` and `cc_instr_lambda` write `e.symbol` into the payload) and a free
+name in the value are the same kind of thing, so they can collide.
+
+The symbol space is shared with the driver: `cc_kernel_fresh_symbol` and
+`ck_fresh_symbol` hand out `next_symbol`, and `ck_make` raises `next_symbol`
+past any symbol a `CC_VAR` or term binder is built with, so driver names and
+kernel names never meet. A rollback never lowers it.
+
+### 1.2 The kernel's own fresh names
+
+| Where | Function | Role the fresh name plays |
+| --- | --- | --- |
+| capture renaming | `substitution`, stage `SUBSTITUTE_RENAME_TERM` | a bound variable renamed so the value's free name is not captured |
+| dimension capture renaming | `substitution`, `SUBSTITUTE_RENAME_DIMENSION`, with `ck_fresh_dimension` | a bound dimension renamed likewise |
+| iota's display | `parts` (each constructor argument, each shown position), `arity` (a position's arity binders), `shown_positional` in `kernel/src/eliminators.c` | placeholders for bound variables of the constructor's type: opened binders, substituted away once the reduct is built (`ck_eliminate`) |
+| simultaneous substitution | `apply_substitution` in `kernel/src/signatures.c` | every admission symbol first renamed to a fresh one, so the values are never substituted into: a workaround for having no simultaneous substitution |
+| cumulativity | `ck_syntactic_cumulative` | one name to open two binders' bodies with, to compare them |
+| new binders | `cc_instr_eta` (Π and level Π), `ck_reduce_composition` (at Π and level Π), `ck_equiv_type`, `ck_fiber_type`, `ck_contractible_type`, `ck_identity_equiv`, `expected` and `ck_clause_type` in `eliminators.c`, `squash_type`, `cc_instr_sum_elim`'s case types | the bound variable of a binder the kernel builds |
+| new dimension binders | `cc_instr_eta` at a path type, `ck_fill`, path composition, `displayed`, `shown_boundary`, `ck_identity_equiv`, the Glue and higher-sort computations | the same for dimensions, chosen by `ck_fresh_dimension` below 64 |
+
+Every kernel fresh name is a bound variable, a placeholder for one, or, in
+`apply_substitution`, a placeholder for an admission symbol about to be
+replaced. None names a context entry or outlives the operation that took it
+except as a binder's name. Because each call takes new symbols, the result of
+`ck_constructor_type`, `ck_clause_type` or `ck_equiv_type` is a new handle
+every time, though the same up to bound names, and neither hash-consing nor
+the syntax memo can share it.
+
+### 1.3 Substitution and the capture check
+
+`ck_substitute(term, name, value)` (`kernel/src/term_substitution.c`) is one
+worklist, `substitution`, shared with dimension substitution:
+
+1. `term_substitution_ready` looks the request up in the syntax memo
+   (operation 3, keyed by term, name and value), takes a tick, and asks
+   `ck_term_free(term, name)`: a term without the name is returned as it is.
+2. At each term binder whose name is not the one substituted
+   (`SUBSTITUTE_RENAME_TERM`), it asks `ck_term_free(value, binder)`. If the
+   value mentions the binder's name it takes `ck_fresh_symbol`, renames the
+   binder's body by a nested substitution, and continues.
+3. At each dimension binder whose index the value's free dimensions contain
+   (`ck_free_dims(value)`), it renames the binder to `ck_fresh_dimension`.
+
+`ck_term_free` answers from `cc_node.symbols`, a 64-bit filter of every name
+the node mentions, bound ones included (`ck_make` ORs the children's masks
+and never clears a binder's bit), then from the syntax memo (operation 1),
+and otherwise searches. Dimensions are exact: `ck_free_dims` computes a
+node's free dimensions once, keeps them in `dims` with `dimensions_known`,
+and a dimension is bit `d` itself, not `d % 64`. So the dimension capture
+check costs nothing after the first scan, and the term capture check is the
+one that searches.
+
+Level substitution is term substitution: `ck_level_instantiate` is
+`ck_substitute` followed by `ck_canonical_levels`.
+
+`cc_kernel_rename` exposes free-name substitution to the driver (term or
+dimension), and `cc_kernel_endpoint_term` dimension substitution.
+
+### 1.4 Comparison up to bound names
+
+`ck_alpha_equal` (`kernel/src/term_conversion.c`) is a worklist. A binder
+pair pushes a binding (`bind`): the left and right names, a scope id interned
+in `alpha_scopes` so that equal renaming chains share memo keys, and 64-bit
+masks of the names renamed so far. `same_name` resolves a variable through
+the chain. Results go to `alpha_memo`, keyed by both handles and both scope
+ids. At a pair of which either node has depth 8 or more, `renamed_free` (via
+`ck_term_free`) and `renamed_dims_free` drop a scope that neither side
+mentions, so that shared subterms compare under the empty scope.
+`level_alpha` compares levels by normal form, giving each bound level
+variable the key `1 << 63 | scope`.
+`formula_equal` compares formulas clause by clause through the dimension
+scope; formulas are interned by set equality (`ck_formula` with `cc_equal`),
+so with no dimension renamed equal formulas are one id. A `CC_PAPP` is
+compared on its path only (arity 1 in `alpha_traverse`), not on its optional
+annotation.
+
+So "identical up to bound names", the instructions' side condition
+(`ck_instr_same`), is equality up to term, level and dimension binder names,
+with levels compared by normal form and formulas as clause sets, ignoring
+path-application annotations.
+`ck_syntactic_cumulative` opens two Π, Σ or level Π bodies with one fresh
+variable and compares them again; `cc_kernel_alpha_equal` is the query.
+
+### 1.5 Instructions that care about names
+
+- **Extend, Level, Variable.** `cc_instr_extend` and `cc_instr_level` key
+  entries by symbol (`find_entry`, `index_entry`); `cc_instr_variable`
+  builds `ck_var(e.symbol)`.
+- **Binders.** `former` (Pi, Sigma), `cc_instr_lambda`,
+  `cc_instr_level_pi`, `cc_instr_level_lambda`, `cc_instr_path`,
+  `cc_instr_path_lambda`, `cc_instr_comp`, `cc_instr_hcomp` and
+  `cc_instr_trans` discharge one entry with `ck_instr_bind` or
+  `ck_instr_discharge` (refused while another entry depends on it) and write
+  the entry's symbol or index into the binder's payload. The body is used as
+  it is: building a binder costs one node, whatever the body's size.
+- **Instantiation.** `cc_instr_apply`, `cc_instr_family`, `cc_instr_pair`
+  and `cc_instr_second` substitute into a Π or Σ body with `ck_substitute`;
+  `cc_instr_level_apply` with `ck_level_instantiate`; `cc_instr_path_apply`
+  and `cc_instr_path_at` with `ck_dimension_substitute`.
+- **Contexts.** `ck_instr_merge` is a sorted union of global entry ids;
+  `ck_instr_discharge` drops entries and publishes a new set; terms are never
+  touched, and an entry stays in `k->entries` after it is discharged.
+- **Positions through binders.** `cc_instr_step` and `cc_instr_replace`
+  follow a path of child indices (`locate`), through binders too
+  (`bound_under`). Step contracts the subterm found there as it is: its free
+  names include the names of the binders crossed. Replace requires that,
+  where the equality's sides use a name bound on the way down (`needed`, by
+  `ck_term_free` or `ck_free_dims`), the replacing equality's context hold an
+  entry with that name (`context_entry`, by symbol) at the binder's type,
+  and discharges it; a composition's dimension is refused there.
+- **Eta.** `cc_instr_eta` builds λ, level λ and path λ over fresh names.
+- **Restrict, systems, Glue.** `cc_instr_restrict`, `cc_instr_system_tube`,
+  `cc_instr_system_overlap`, `cc_instr_glue_piece` and
+  `cc_instr_glue_term_piece` read dimension names only: faces may not use the
+  composition's dimension, and a tube must be restricted already
+  (`ck_free_dims(u.term) & names`). `cc_instr_glue_piece` compares with
+  `ck_equiv_type`, built over fresh names each time.
+- **Signatures.** `cc_instr_signature_begin` takes its parameter symbols
+  from the former's binder payloads; `cc_instr_signature_constructor` checks
+  the context by symbol (`admission_context`), the shape by binder payloads
+  (`constructor_shape`, `positional`, `reserved`) and stores the constructor
+  type over the admission symbols; `ck_constructor_type` instantiates it by
+  `apply_substitution`.
+
+### 1.6 Caches, compaction and guards
+
+- `weak_cache`, `normal_cache` and `folded_cache` hold a completed weak head
+  or normal form per handle; no context is consulted, so a handle's answer is
+  global (`ck_whnf`, `normal`).
+- The syntax memo (`ck_memo_get`, `ck_memo_put`, 8,192 slots) holds
+  operation 1 (`ck_term_free`), 3 (term substitution), 4 (canonical levels),
+  5 (`normal_agree`) and 6 (dimension substitution). The alpha memo holds
+  comparisons by scope.
+- `cc_kernel_rollback` truncates the arena, the definitions, the judgement
+  store (facts, entries, context sets) and the signatures to the checkpoint,
+  and clears every cache and memo. `cc_kernel_commit_checkpoint` keeps the
+  nodes reachable from new definitions, the signatures' terms
+  (`signature_terms`) and `CC_DEFREF` nodes, renumbers them, clears the
+  caches, and truncates the judgement store, entries included
+  (`truncate_store`); an open signature blocks it. Definitions are closed
+  (`cc_instr_define` refuses a nonempty context), so no surviving definition
+  mentions an entry.
+- `ck_make` refuses syntax deeper than 512. `ck_enter` bounds nested
+  recursion to 448 steps and 4 MiB of stack (`CC_RECURSION_LIMIT`,
+  `CC_STACK_BUDGET`). Substitution, `ck_term_free`, `ck_free_dims`,
+  comparison, weak-head tails and full normalization are worklists (#291,
+  #292, #294, #297); the guards of #321 and #322, with their tests in
+  `kernel/tests/test_normalize.c`, `kernel/tests/test_traversals.c` and
+  `tests/weak-head-tail.test.mjs`, keep them so.
+
+### 1.7 What the names cost, measured
+
+Counts from main `a933a0bf` with temporary counters, through the REPL on the
+kernel's path (each entry after its setup; ticks are deterministic query
+steps):
+
+| Entry | Ticks | `ck_term_free` visits | Capture checks at binders | Captures found | Iota steps | Nodes made by iota | Fresh symbols |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `factorial(40)` | 7,764,892 | 7,201,496 (93%) | 55,006 | 0 | 10,149 | 130,468 | 43,527 |
+| `factorial(60)` | 138,249,298 | 136,678,663 (99%) | 148,799 | 0 | 31,229 | 410,503 | 136,092 |
+| `least_divisor(44521, tt).1` | 6,777,422 | 3,130,565 (46%) | 340,952 | 0 | 55,108 | 513,095 | 198,999 |
+| `least_element(…, 1000000, tt).1` | 5,183,171 | 3,272,148 (63%) | 217,147 | 0 | 18,725 | 202,817 | 73,501 |
+| Peano count of 300 | 1,908,195 | 812,440 (43%) | 128,293 | 0 | 10,412 | 104,347 | 38,526 |
+| `euclid(7).1` | 1,896,001 | 838,871 (44%) | 100,171 | 0 | 15,043 | 138,519 | 53,582 |
+
+Each iota step calls `ck_constructor_type` once and makes 9 to 13 nodes
+(the report on the stopgap branch found 1,406,670 of `factorial(100)`'s
+2,314,926 nodes made there).
+
+Checking, the import closure of `binary_rationals` (the setup of
+`evaluate 2/3 + 1/6`): 502,875 instructions, 11,223,319 ticks (7,521,025 in
+instructions, 3,702,294 in queries), of which 2,104,442 (19%) were
+`ck_term_free` visits; 581,268 capture checks found 231 captures; 4,004
+dimension binders were renamed; comparison bound 18,695 term or level
+binder pairs;
+75,715 fresh symbols were taken. The closure of `nat` (126,148 instructions,
+536,082 ticks) spent 79,204 ticks (15%) in `ck_term_free`.
+
+## 2. The options, compared on this kernel
+
+The question is how to represent the two roles that share `CC_VAR`. Global
+references stay as they are in every option.
+
+**(a) Locally nameless: bound variables by index, context references by
+entry.** A binder has no name; `CC_BOUND(i)` refers to the `i`-th enclosing
+binder; `CC_CONTEXT(e)` refers to entry `e`.
+
+- Substitution becomes instantiation of `CC_BOUND(0)` by a value that has no
+  loose indices: nothing in the value can be captured, so there is no check
+  and no renaming. A node's loose-index range (one more than its greatest
+  index not bound inside it) is exact and computed in `ck_make` from the
+  children, so a part with no loose index is skipped in O(1), with no cap.
+- Comparison of term and level binders needs no renaming: bodies compare
+  directly, and alpha-equivalent terms hash-cons to one handle.
+- Hash-consing shares what fresh names kept apart today: the kernel's
+  constructions become deterministic.
+- Context merging is unchanged: entries keep their global ids, so a merge
+  touches no term (the user's point, confirmed: `ck_instr_merge` is a union
+  of entry-id sets).
+- Discharge (a binder instruction) now abstracts: it replaces
+  `CC_CONTEXT(e)` by `CC_BOUND` at each depth. That is a traversal where
+  today there is none (section 3.3 measures it).
+- Replace under binders opens the target with the entries the driver names
+  for the binders crossed, and abstracts them out of the replacement.
+- Checkpoint compaction is unchanged for definitions (closed). Signature
+  constructor types must be stored closed over their admission telescope,
+  since commit truncates the entries they mention today by symbol.
+- Cost: working under a binder needs a variable for it, and abstracting
+  again needs a traversal.
+
+**(b) Pure de Bruijn indices for everything, context references included,
+with lifting.** A judgement's context would have to be a sequence, and a
+term's free variables positions in it. But contexts here are sets of global
+entries that premises merge (`ck_instr_merge`), not prefixes: every
+instruction with two premises would renumber both premises' terms, every
+discharge of an entry that is not last would lower the later references,
+and the same term in two contexts would be two nodes. Weakening, which is
+free today, would be a traversal. Every computation that moves a term under a
+binder would lift it. Rejected.
+
+**(c) De Bruijn levels for context references.** A level counted in the
+judgement's own context has (b)'s problem at every merge. A level counted in
+one global list of entries is the entry id itself, which is (a). The
+user's proposal of a position in the context list, with discharge
+decrementing later references, is the per-judgement variant: considered and
+rejected for the same reason (a merge would renumber terms, and a term would
+mean different things in different judgements, so its weak head and normal
+form could no longer be cached by handle).
+
+**(d) Names kept, with an exact free-name set per node.** Interned,
+out-of-line sets of free names (the stopgap without its cap). Substitution
+keeps its capture check, answered exactly; renaming stays (it is rare: 231
+in the measured closure); comparison keeps its renaming chains; hash-consing
+still keeps alpha-variants apart; the kernel's fresh names stay. Sets must
+be built for every new node (a union per node, quadratic in the worst case
+for a term with many free names, as under many binders), stored, interned,
+and rolled back and compacted with the arena. It fixes the measured cost but
+keeps the conflation of roles and all the machinery that serves it.
+
+**Recommendation: (a)**, with `CC_CONTEXT(e)` holding the global entry id.
+It removes the capture check rather than answering it faster, and it is the
+only option whose context handling is unchanged.
+
+### 2.1 The starting hypothesis, checked
+
+The proposal began as: bound variables by index, context entries by name,
+because judgements keep only the entries they use and merge contexts by
+entry; no capture check, exact loose-index ranges, one handle per
+alpha-equivalence class; costs in opening and closing binders and at the
+ABI. Against the source:
+
+- **Confirmed:** contexts are sets of global entries merged by
+  `ck_instr_merge` without touching terms, so context references must not be
+  positions; instantiation needs no capture check for term and level
+  binders; the loose-index range is exact and uncapped.
+- **Corrected: who opens binders.** Comparison does not open them (bodies
+  compare directly); the driver's decoding keeps a name stack, which is no
+  kernel work; iota needs no fresh variables at all. Only normalization,
+  Step at a position under binders, Glue's `parts_agree`, and queries on
+  terms with loose indices open binders, with an internal kind, not an
+  entry (section 3.1).
+- **Corrected: one handle per class** holds for term and level binder names
+  only. Dimension binder names, level syntax (compared by normal form) and
+  path-application annotations still differ by handle, so `ck_alpha_equal`
+  stays, without term scopes.
+- **Corrected: no renaming at all.** Dimension capture renaming stays, from
+  exact masks.
+- **Added: discharge now costs a traversal.** A binder instruction reuses
+  the body as it is today; abstraction rebuilds the nodes mentioning the
+  entry (section 3.3).
+- **Added: commit truncates entries**, so signature constructor types must
+  be stored closed (section 3.4).
+- **Added: checking may not get faster** (section 6.2).
+
+## 3. The proposed representation
+
+### 3.1 Node kinds
+
+| Kind | Payload | Children | Meaning |
+| --- | --- | --- | --- |
+| `CC_BOUND` (new) | de Bruijn index | none | the variable of the `i`-th enclosing term or level binder (0 the innermost) |
+| `CC_CONTEXT` (new) | `cc_entry_id` | none | a term or level entry of the judgement store |
+| `CC_OPENED` (new, internal) | de Bruijn level | none | a binder the kernel opened inside one operation; never in a judgement, a definition or a query's answer |
+| `CC_PI`, `CC_LAM`, `CC_SIGMA`, `CC_LPI`, `CC_LLAM` | 0 (no name) | as today | binds `CC_BOUND(0)` in child 1 |
+| `CC_DEFREF`, `CC_SORT`, `CC_CON`, `CC_ELIM` | as today | as today | global references |
+| `CC_VAR` | retired | | its number stays reserved, as `CC_NAT`'s is |
+
+Term and level binders form one de Bruijn chain: a level variable bound by
+`CC_LPI` is `CC_BOUND` like a term variable, and a level entry is
+`CC_CONTEXT` like a term entry, as they share `CC_VAR` today. A level normal
+form's key becomes the reference itself: `CC_CONTEXT(e)` keys by `e`, and
+`CC_BOUND(i)` and `CC_OPENED(m)` by `i` and `m` in two key ranges above every
+entry id, so `ck_level_build` rebuilds the right kind and `level_context`
+finds the entry without `find_entry`. `level_alpha`'s `1 << 63 | scope` keys
+go: bound level variables compare by index.
+
+**Why `CC_OPENED`.** Opening a binder to work under it needs a free variable
+that is not bound. A temporary entry would be a judgement-store record with
+a type judgement, a context and a scope, made by a query, and its id would be
+reused after the store truncates it. So the kernel gets a third, internal
+kind, numbered by de Bruijn level: a term whose greatest opened level is
+`m - 1` opens its next binder as `CC_OPENED(m)`. The choice is deterministic
+(the same binder opened in the same term gives the same handle, so caches
+are shared, which fresh symbols prevent today) and never clashes, since the
+opener takes a level above every one in the term. Closing `CC_OPENED(m)`
+replaces it by `CC_BOUND` at each depth, and since no greater level is in
+the term, the nodes containing it are exactly those whose greatest level is
+`m`. Every opening is closed before its operation returns; `ck_make` refuses
+`CC_OPENED` from `cc_kernel_term`, and a node field (below) lets each query
+and instruction check its answer in O(1).
+
+The driver opens binders too, but differently: to derive a body it needs a
+judgement in a context, so it makes a real entry with `cc_instr_extend`, as
+today, and instantiates the body with it (section 5.1). That entry is
+discharged by the binder instruction and truncated with the judgement store,
+as every entry is.
+
+A `CC_CONTEXT(e)` gives its variable's type directly, as `k->entries[e].type`;
+nothing is looked up by symbol.
+
+**Display spelling** lives in the driver, as the header already says of
+names. A binder node holds no name, since a name in the node would keep
+alpha-equivalent terms apart. The driver names bound variables when it
+decodes, and keeps its names for entries in its scopes (section 5.3).
+
+### 3.2 Node metadata
+
+`cc_node` keeps its size (48 bytes) if `depth` (at most 512) moves to 16 bits,
+as the stopgap did:
+
+- `loose`: one more than the greatest loose `CC_BOUND` index, 0 when the
+  node is locally closed. For `CC_BOUND(i)` it is `i + 1`; for a binder the
+  maximum of the domain's and the body's minus one; otherwise the children's
+  maximum. Exact.
+- `opened`: one more than the greatest `CC_OPENED` level, the same way.
+  Exact.
+- `contexts`: replaces `symbols`. A 64-bit filter of the `CC_CONTEXT` ids
+  the node mentions (bit `e % 64`). Zero exactly when the node mentions no
+  entry, which is the "mentions any context entry" flag; otherwise an
+  over-approximation, like `symbols` today but over context references only,
+  so a closed definition body or computed value is always zero.
+- `dims` and `dimensions_known` as today.
+
+### 3.3 Operations
+
+Proposed primitives, each a worklist like `substitution`, ticking per node,
+memoized in the syntax memo by their operands:
+
+- **Instantiate** `t` at index 0 by a locally closed value `v`: visit only
+  nodes with `loose > 0` that contain the index being replaced (at depth `d`,
+  nodes with `loose > d`); replace `CC_BOUND(d)` by `v`. No capture check: `v`
+  has no loose index to capture, and its `CC_CONTEXT` and `CC_OPENED`
+  references cannot be bound by a binder of `t`. Dimension capture stays: a
+  dimension binder of `t` whose index `v` mentions free is renamed as today
+  (`SUBSTITUTE_RENAME_DIMENSION`; 4,004 times in the measured closure, from
+  exact masks). A simultaneous form instantiates several indices in one pass
+  (signatures, iota).
+- **Abstract** `CC_CONTEXT(e)` in `t`: replace it by `CC_BOUND` at each depth.
+  Nodes whose `contexts` is zero are skipped exactly; nodes whose filter lacks
+  bit `e % 64` are skipped; others are searched, with the memo. It is used by
+  the binder instructions and by Replace.
+- **Open** a binder's body with `CC_OPENED(m)`, and **close** `CC_OPENED(m)`:
+  instantiate and abstract with exact pruning by `loose` and `opened`.
+
+The invariant that keeps the trusted reduction simple: **reduction,
+iota, composition, Glue and the equivalence constructions only ever see
+locally closed terms.** `ck_whnf` checks `loose == 0` in O(1) on entry. Then
+none of them shifts an index: a locally closed part moved under a new binder
+needs no lifting, and only the four primitives above touch indices.
+
+How each piece changes:
+
+- **Beta, Apply, Family, Pair, Second** (`weak`, `contract`,
+  `cc_instr_apply`, `cc_instr_family`, `cc_instr_pair`, `projection`):
+  `ck_substitute(body, payload, value)` becomes instantiate; the value is a
+  judgement term or a weak head's argument, locally closed.
+- **Level application** (`cc_instr_level_apply`, `CC_LAPP` in `weak`):
+  instantiate, then `ck_canonical_levels`.
+- **Eta at a weak head** (`weak` on `CC_LAM`, `CC_LLAM`): `λ. f (CC_BOUND 0)`
+  contracts when `f.loose == 0`, which is exact and O(1); `f` is then locally
+  closed and is the result. The `ck_term_free` calls go.
+- **Comparison** (`ck_alpha_equal`): no term scopes, no `renamed_free`, no
+  level keys by scope; binders compare their children directly. The
+  dimension scopes, level normal forms, formula comparison and the
+  `CC_PAPP` annotation rule stay, so the function stays, with the identical
+  handle as its first exit far more often.
+- **Cumulativity** (`ck_syntactic_cumulative`): compares the two bodies
+  directly, no fresh variable.
+- **Normalization** (`normal`): at a term or level binder, opens the body with
+  `CC_OPENED(m)`, normalizes it, and closes the result. The weak, normal and
+  folded caches stay keyed by handle; an opened body is a term like any
+  other, and determinism lets a binder opened twice hit the cache.
+  `parts_agree` (Glue's side conditions) opens a common binder before
+  comparing its parts likewise.
+- **Iota** (`ck_eliminate`): the display's fresh variables go. The
+  constructor's argument telescope is instantiated by the actual arguments,
+  each position's value `λ ys. elim(q(ys))` is built with `CC_BOUND`, and the
+  reduct is the clause applied to them. `ck_constructor_type` becomes one
+  simultaneous instantiation of the stored, closed constructor type
+  (section 3.4); its result for an instance and a constructor is the same
+  handle every time, so it can be memoized. Building the reduct directly for
+  a constructor without arity binders or dimensions, which every `BPositive`
+  constructor is, is the stopgap report's "next lever"; it is a separate
+  step (PR 4 below), not part of the representation change.
+- **Binder instructions** (`former`, `cc_instr_lambda`,
+  `cc_instr_level_pi`, `cc_instr_level_lambda`): the body, and for λ also
+  its type, is abstracted over the discharged entry. `ck_level_limit` reads
+  the entry's key before abstraction. The dimension binders' instructions
+  (`cc_instr_path`, `cc_instr_path_lambda`, `cc_instr_comp`, `cc_instr_hcomp`,
+  `cc_instr_trans`) are unchanged: they write the dimension's index into the
+  payload and traverse nothing.
+- **Step at a position under binders** (`cc_instr_step`): opens the target
+  with one `CC_OPENED` level per binder crossed, contracts, closes, and
+  rebuilds the path.
+- **Replace under binders** (`cc_instr_replace`): the driver names, for each
+  term binder crossed, the entry standing for it (0 where none is used),
+  since a binder has no symbol to match. The kernel checks each entry's type
+  against the binder's domain opened with the outer entries (as `ck_instr_same`
+  does today against the domain as written), opens the target with them,
+  compares with the equality's left side, abstracts them out of the right
+  side, and discharges them from the equality's context. This is an ABI
+  change of `cc_instr_replace`.
+- **Eta instruction, composition at Π and level Π, equivalence types,
+  clause types, the squash** (section 1.2's "new binders"): built directly
+  with `CC_BOUND`, or with `CC_OPENED` placeholders closed at the end, which
+  is the mechanical port of today's fresh-symbol code. Their results become
+  deterministic.
+- **Queries** (`cc_kernel_whnf`, `cc_kernel_normalize`,
+  `cc_kernel_normalize_folded`, `cc_kernel_endpoint_term`): accept a term
+  with loose indices, as the driver reads under binders, open its loose
+  indices with `CC_OPENED` levels, compute, and close the answer.
+  `cc_kernel_alpha_equal` compares such terms as they are. The driver needs
+  no entry to ask about a subterm. `cc_kernel_rename`'s term mode, which renamed free names, has no
+  use left for bound variables; it narrows to replacing one `CC_CONTEXT` by
+  another (or goes), and keeps its dimension mode.
+- **Hash-consing** (`ck_make`'s interning): unchanged code; it now identifies
+  alpha-equivalent terms whose binders differ only in term or level names.
+  Terms equal up to dimension binder names, level syntax or path
+  annotations remain distinct handles and are still compared by
+  `ck_alpha_equal`.
+- **Caches and checkpoint**: unchanged. Entry ids are truncated by rollback
+  and commit with the nodes made since the checkpoint, and commit keeps only
+  closed definitions and the signatures' closed terms (below), so no
+  surviving node mentions a truncated entry. `ck_make` refuses a
+  `CC_CONTEXT` whose id is not a live term or level entry.
+
+**Is abstraction hot?** Not in evaluation: the six entries above issue 4 to 6
+binder instructions each. In checking, the `binary_rationals` closure made
+35,163 abstractions (Pi, Sigma, λ and its type, level binders), which would
+rebuild 346,390 nodes containing the entry; a search with no filter would
+visit 1,179,595 nodes of those bodies. The `contexts` filter skips the
+closed parts and most parts mentioning other entries. That is 3% to 11% of
+the closure's 11.2 M ticks, against the 19% of `ck_term_free` visits removed.
+The computation's hot path is instantiation, which the exact `loose` range
+covers.
+
+### 3.4 Signatures
+
+While a signature is open, its parameters, sort and earlier constructors are
+entries, referenced as `CC_CONTEXT` like any other: the constructor type's
+judgement has them in its context. Since the former's binders have no names,
+`cc_instr_signature_begin` takes the parameter entries (level entries and term
+entries, in order) and the sort entry, and checks each entry's type against
+the former's telescope opened with the earlier ones; `cc_instr_signature_constructor`
+takes the constructor's entry. `admission_context` then compares entry ids
+instead of symbols, and `reserved` goes (a binder has nothing to shadow
+with). `constructor_shape` identifies positions by de Bruijn depth instead of
+binder payloads.
+
+On admission each constructor type is abstracted over the whole admission
+telescope (levels, parameters, sort, earlier constructors) and stored closed.
+Commit truncates the entries; the stored type mentions none of them. The
+signature's `former`, `level` and `parameter_types` are read from the closed
+former and carry loose indices relative to its prenex. `ck_constructor_type`
+and `complete_instance` instantiate simultaneously, replacing
+`apply_substitution`'s two passes of renaming and substitution per symbol.
+`cc_kernel_signature_symbol` has nothing left to report; the driver keeps
+the names it declared.
+
+### 3.5 What happens to today's machinery
+
+Goes: `ck_term_free`, the capture renaming of term binders, `ck_fresh_symbol`
+inside the kernel, `symbols`, the term scopes of `alpha_binding`,
+`renamed_free`, `bound_keys`' scope keys, `find_entry` for levels,
+`apply_substitution`'s renaming, the iota display's variables. Changes:
+`ck_substitute` (instantiate), `ck_level_instantiate`, `ck_alpha_equal`,
+`normal`, `ck_eliminate`, the binder instructions, `cc_instr_replace`,
+`cc_instr_step`, the signature instructions. Stays: dimension names and
+their capture renaming, `ck_free_dims`, formulas, entries and contexts, the
+judgement graph, checkpoints, the guards.
+
+## 4. Per binder class: what moves, and when
+
+- **Term binders** (`CC_PI`, `CC_LAM`, `CC_SIGMA`): move. They carry the
+  measured cost.
+- **Level binders** (`CC_LPI`, `CC_LLAM`): move with the term binders, in
+  the same change. They share `CC_VAR` and the symbol space today, and
+  `ck_term_binder` and `ck_level_instantiate` treat them as term binders;
+  moving them separately would keep `CC_VAR` alive for levels alone.
+- **Dimension binders** (`CC_PATH`, `CC_PLAM`, `CC_COMP`, `CC_HCOMP`,
+  `CC_TRANS`): stay named, for now and possibly for good. Their capture
+  check is already exact and costs nothing after `ck_free_dims`'s first
+  scan, so there is no performance reason. A bound dimension and a dimension
+  entry are both a bit of a formula's 64-bit clause masks (`cc_clause`); to
+  give bound dimensions de Bruijn indices the formula store would have to
+  tell the two apart in its bits, which splits the 64 rather than adding to
+  it.
+- **The 64-dimension cap** belongs to the formula representation, not to
+  binders: `cc_clause`'s masks and `CC_DIMENSIONS` in `kernel/include/cubical.h`,
+  the lattice operations of `kernel/src/formula.c`, `faces.c` and
+  `interval.c`, `cc_node.dims`, `dimension_entries`, `ck_fresh_dimension`,
+  the 64-bit check in `ck_instr_merge`, and `ck_restrict`'s and
+  `clause_included`'s loops. Making dimension entries `CC_CONTEXT(entry id)`
+  would not remove it, because formulas, not terms, hold dimensions; lifting
+  it needs a formula representation with unbounded dimension ids. That is a
+  separate project, unaffected by this one.
+- **Faces and Glue** bind nothing.
+
+## 5. The ABI boundary: version 4
+
+### 5.1 The kernel's side
+
+`CC_KERNEL_ABI_VERSION` becomes 4: `CC_VAR` is retired and reserved;
+`CC_BOUND` and `CC_CONTEXT` are added to `cc_term_kind`; a binder's payload
+must be 0; the child-order comment changes. `cc_instr_replace` takes the
+entries for the binders crossed; `cc_instr_signature_begin` and
+`cc_instr_signature_constructor` take entries instead of symbols. The queries
+accept terms with loose indices (section 3.3). One new query instantiates a
+term's loose indices with entries, for the driver's derivation under binders
+(`cc_kernel_instantiate`, a proposed name). `cc_instr_extend` and
+`cc_instr_level` may keep their symbol as the entry's label, so that, as
+today, the same label at the same type gives the same entry and the driver's
+scopes keep working; terms no longer mention it. The bridge
+(`wasm/cubical_bridge.c`) changes with the signatures, and the Makefile's
+export list gains the new query.
+
+### 5.2 The driver's side: call sites
+
+Lines that call the kernel through the wrapper (`.node(`, `.term(`, `.spine(`,
+`.head(`, `.normalize(`, `.normalizeFolded(`, `.alphaEqual(`, `.rename(`,
+`endpointTerm(`, `.symbolName(` or `_cb_`), and lines that name a variable or
+binder kind (`"Var"`, `"Lam"`, `"Pi"`, `"Sigma"`, `"LPi"`, `"LLam"`,
+`TERM_BINDERS`, `LEVEL_BINDERS`, `termBinders`, `symbolName`, `.rename(`),
+on main `a933a0bf`, leaving out `web/cubical-runtime.mjs`, which #348
+deletes:
+
+| Module | Kernel calls | Binder or variable lines | What changes |
+| --- | --- | --- | --- |
+| `web/cubical-kernel.mjs` | 37 | 12 | the kind table `cubicalKinds`, `CUBICAL_ABI_VERSION`, `term`, `node`, the new query |
+| `web/cubical-instructions.mjs` | 18 | 1 | `extend`, `level`, Replace's entries, the signature instructions, `rename` |
+| `web/cubical-syntax.mjs` | 29 | 11 | `encode`: bound names to `CC_BOUND` by depth, free names to entries; `decode`: a name stack for `CC_BOUND`, the driver's names for `CC_CONTEXT` |
+| `web/cubical-instruction-driver.mjs` | 81 | 49 | `deriveNode` opens binder bodies with the new entry, and its renaming of a level binder whose spelling a term entry holds goes; `scopeAt` hands Replace its entries; `agree`, `guide`, `sameHead` and `levelsEqual` compare term and level binders' bodies directly, so the term renaming chains (`pruneSymbols`, the term half of `chainId` and `unrenamed`) go, while the dimension chains (`prune`) and `renameBinder`, which renames dimensions, stay; `freeTermSymbols`, `binds` and `freshFormer` simplify or go |
+| `web/cubical-elaborator.mjs` | 13 | 18 | the display renamings of entries (`viewOfJudgement`, `nextClauseType`) become decoder names |
+| `web/cubical-program.mjs` | 3 | 13 | signature parameter names from the driver's own records |
+| `web/cubical-kernel-step.mjs` | 3 | 1 | positions are unchanged; reads of binder payloads |
+| `web/cubical-workbench-session.mjs`, `web/cubical-workbench-trace.mjs` | 7 | 3 | binder and variable labels in the workbench |
+| `web/cubical-assembly.mjs`, `web/cubical-graph-view.mjs` | 4 | 2 | node labels |
+| `web/translator/evaluation.mjs`, `web/translator/translate.mjs` | 6 | 4 | heads and spines only: unchanged |
+
+About 200 call sites in thirteen modules, of which about 115 lines are
+binder- or variable-aware, 49 of them in the instruction driver. The pattern
+counts include some lines about definition and signature spelling, which do
+not change, and leave out `translate.mjs`'s own `term` method, which is the
+translator's, not the kernel's.
+
+### 5.3 Two consequences for the driver
+
+**Raw syntax with free variables.** Today the driver encodes a source term
+with symbols before any entry exists (`encode` is called before
+`contextScope` makes the assumptions' entries, as in `nextClauseType`), and
+`deriveNode` maps each `Var` to its entry. With `CC_CONTEXT(entry id)`, raw
+syntax can name only an existing entry. Two ways: encode after the scope's
+entries exist, with the scope in the encoding cache's key; or encode the
+term's free variables as loose `CC_BOUND` indices in a known order (the term
+as the body of its free variables' telescope) and instantiate them with the
+entries when deriving (`cc_kernel_instantiate`). The second keeps the
+encoding cache per term and order; it is the recommendation.
+
+**Binder names in displays.** The kernel's normal forms no longer carry the
+source's binder names (today `decode` reads them with `symbolName`, and
+normal forms keep the definitions' names unless a capture renamed them).
+The display naming pass (`web/display-naming.mjs`) already renames binders
+apart; it would start from names the driver chooses: the source name where
+the driver encoded the binder node itself (its encoding cache maps syntax to
+handles), and a generated one otherwise. A normalized function shown with
+`!!` or in the workbench may show `x` where the source said `p`.
+
+### 5.4 Rejected: names at the boundary
+
+The kernel could have kept ABI 3, abstracting on `cc_kernel_term` and
+opening on `cc_kernel_node` with a display name per binder. It would make the
+read path allocate and fail (`cc_kernel_node` is read-only and `const`
+today), make `cb_subterm` open along its path, need a capture-free display
+name per binder (a free-name test on every read) and a hint table keyed by
+handle in the trusted kernel, and leave the driver's mirrored renaming
+machinery in place. The user chose ABI 4.
+
+## 6. Performance expectations
+
+### 6.1 Evaluation
+
+Ticks that disappear are `ck_term_free`'s visits. Ticks that appear are
+none on these entries: their values have no binders to normalize under,
+and they issue 4 to 6 binder instructions. So, to first order, the kernel's
+path costs main's ticks minus the visits. The iota construction (ticks spent
+in `ck_eliminate` after the argument's weak head, without the visits) is what
+the direct iota of PR 4 can cut further.
+
+| Entry | Main | Main minus visits (estimate) | Of which iota construction | Stopgap, three names |
+| --- | --- | --- | --- | --- |
+| `factorial(40)` | 7,764,892 | 563,396 | 216,972 | 596,941 |
+| `factorial(60)` | 138,249,298 | 1,570,635 | 652,794 | 1,621,886 |
+| `factorial(100)` | 3,263,063,793 | about 5.1 M (stopgap minus its 96,738 visits) | about 2.3 M (from the stopgap's 1,406,670 iota nodes at about 13 a step and 21 ticks a step) | 5,210,715 |
+| `least_divisor(44521, tt).1` | 6,777,422 | 3,646,857 | 904,309 | 4,356,552 |
+| `least_element(…, 1000000, tt).1` | 5,183,171 | 1,911,023 | 459,202 | 2,924,456 |
+| Peano count of 300 | 1,908,195 | 1,095,755 | 260,224 | 1,510,081 |
+| `euclid(7).1` | 1,896,001 | 1,057,130 | 251,364 | 1,249,296 |
+
+These are estimates: instantiation takes its ticks per node as substitution
+does, and deterministic constructions may hit caches more. Beyond ticks,
+iota's fresh variables and displays account for most nodes made in
+`factorial(100)` (1,406,670 of 2,314,926), whose time the stopgap's profile
+put 43% in `ck_make` and 28% in substitution.
+
+### 6.2 Checking
+
+In the `binary_rationals` closure the change removes 2,104,442 `ck_term_free`
+visits (19% of 11,223,319 ticks), the renaming in comparison (18,695 binder
+pairs, 15,181 scope prunings), 75,715 fresh symbols and the variants they
+made. It adds node rebuilds where today's code reuses the body as it is:
+
+| Added work | Nodes |
+| --- | --- |
+| normalization under 58,370 binders: open | 538,900 |
+| normalization under those binders: close | 844,976 |
+| binder instructions' abstraction (35,163) | 346,390 |
+| Step under binders (72,584 of 125,639 Steps cross 163,574 binders): open and close | 32,994 and 40,427 |
+
+About 1.8 M node rebuilds against 2.1 M visits removed, and a rebuild
+(hash-consed `ck_make`) costs more than a visit. **Checking may get no faster,
+and could get slower**, where it normalizes under binders; the `nat` closure
+normalized under 63 binders only. This must be measured in PR 3. If it
+regresses, the lever is normalizing a body without opening it, which means
+reduction on terms with loose indices and lifting wherever a computation
+builds a binder around a part: the invariant of section 3.3 would no longer
+hold, so it is a fallback, not the plan.
+
+### 6.3 What to measure
+
+On main and on each PR, each sample a new process:
+
+- `factorial(40)`, `factorial(60)`, `factorial(100)`,
+  `least_divisor(44521, tt).1`, `least_element(…, 1000000, tt).1`, the Peano
+  count of 300 and `euclid(7).1`, by `node tools/runtime-repl-probe.mjs NAME
+  kernel` (the probe's workloads; `factorial(60)` and `factorial(100)` are
+  added as the stopgap branch added them). Ticks, time, arena growth.
+- `7^60` nested to the right and to the left, and `power(7, 60)` with both
+  multiplication orders, the stopgap report's controls.
+- The evaluation baseline (`tools/evaluation-baseline.mjs`, recorded in
+  `tests/fixtures/evaluation-baseline.json`, which
+  `tests/evaluation-baseline.test.mjs` keeps in agreement with the code: every
+  PR that changes ticks records it again).
+- The cases of `tools/substitution-cost-probe.mjs`.
+- Checking: the library's import closures (ticks, time, arena), the archive
+  audit (`node tools/audit-cubical.mjs --all`), and `npm test`'s wall time.
+
+## 7. Staged implementation
+
+Each PR is verified locally first, opened as a draft, and keeps
+`make test`, `make sanitize SANITIZERS=undefined` (ASan runs in CI) and
+`npm test` green.
+
+1. **PR 1, driver: one place for variables and binders (ABI 3, JS only).**
+   Route every read and construction of binders and variables in the
+   modules of section 5.2 through one small module: read a binder, open its
+   body with an entry, build a binder over an entry, name a variable's role,
+   decode with a name stack. On ABI 3 it is implemented with symbols, so
+   nothing observable changes: same verdicts, same ticks, same baseline. It
+   confines the ABI switch's driver diff.
+2. **PR 2, kernel primitives (C only, ABI unchanged).** The node fields
+   (`loose`, `opened`, `contexts` beside `symbols`), the internal kinds, and
+   instantiate, abstract, open and close as worklists with ticks, the memo and
+   the allocation-failure paths, unused by the rules yet. C tests for their
+   laws (below). Optional: it can fold into PR 3 if the user prefers no
+   unused code on main.
+3. **PR 3, the switch: term and level binders, ABI 4.** `CC_VAR` retired,
+   `CC_BOUND` and `CC_CONTEXT` in; binders without payload; every change of
+   section 3.3 and 3.4; the bridge; PR 1's module switched to ABI 4; the
+   kernel guide (`docs/guides/kernel.md`) and the reference chapters
+   (`web/reference/kernel-terms.html`, `kernel-overview.html`,
+   `kernel-instructions.html`), whose identifiers
+   `tests/kernel-guide.test.mjs` checks; the evaluation baseline recorded
+   again. This is the large PR. Its acceptance is the differential run below
+   and the measurements of section 6.3, the checking cost included.
+4. **PR 4, direct iota.** Build the reduct from the clause, the arguments and
+   the eliminator applied to each recursive argument, without displaying the
+   constructor's telescope, keyed by the constructor's shape, which
+   admission computes once; constructors with arity binders or dimensions
+   keep the general construction. It changes how the trusted rule computes,
+   not the rule (H1 specification 3.7), and is reviewed as such.
+5. **PR 5, driver cleanup.** Delete what ABI 4 left dead: the JS renaming
+   chains, free-symbol sets and term renaming of the instruction driver.
+6. **Later, if ever:** dimension binders, and the 64-dimension cap, as their
+   own design.
+
+### 7.1 Verification
+
+- **C unit tests of the primitives** (`kernel/tests/test_substitution.c` and
+  a new file if it grows): open then close is the identity; close then open
+  is the identity on locally closed terms; instantiating equals opening and
+  then substituting the opened variable; `loose`, `opened` and `contexts`
+  agree with their definitions by recursion on 3,000 random terms over every
+  binder kind, as the stopgap's randomized test checks its lists; a closed
+  graph of 2^40 paths is instantiated and abstracted without being
+  traversed; depth-512
+  chains and wide DAGs stay within the worklists, as `test_traversals.c`
+  checks today; allocation faults and budget exhaustion leave no partial
+  result (`substitution_allocation_fault.h`, `traversal_allocation_fault.h`).
+  Mutating the binder case of `loose` must fail a test.
+- **The existing C tests** that build variables or term and level binders
+  (about 110 lines across `test_normalize.c`, `test_signatures.c`,
+  `test_substitution.c`, `test_levels.c`, `test_comparison.c` and others)
+  are rewritten for the new kinds. Capture tests become tests that instantiation under binders never
+  touches the value; dimension capture tests stay as they are.
+- **Differential run, old against new.** A temporary tool, run once with
+  main's build and once with the branch's, over the library, the archive
+  (`tools/audit-cubical.mjs --all`) and the `.cubist` fixtures of `tests/`:
+  per declaration its verdict and rejection class, and per `evaluate` entry
+  its printed value form and its folded and full normal forms decoded to
+  syntax. Verdicts must agree exactly; normal forms up to alpha-equivalence
+  of the decoded syntax (names are the driver's on both sides, so compare
+  with a name-insensitive equality). Differences are explained, or they
+  block.
+- **The stopgap's tick bounds** (`tests/binary-naturals.test.mjs` on
+  `kernel-fast-multiplication`: `factorial(60)` under 4,000,000 ticks,
+  `factorial(100)` under 12,000,000 with its low bits checked against
+  `2^97` dividing `100!`, and `7^60` nested to the right under three times
+  its ticks nested to the left) come over in PR 3 unchanged, as the
+  acceptance of the representation; PR 4 tightens the `factorial` bounds to
+  its measured ticks with a margin. The stopgap branch is not merged.
+
+## 8. Risks and open questions for the user
+
+1. **Checking speed.** Section 6.2 estimates no gain and possibly a loss in
+   checking that normalizes under binders. Is a checking regression of some
+   size acceptable for the evaluation gains, or must PR 3 be neutral?
+2. **Binder names in displays.** Normal forms lose the source's binder
+   names; the driver chooses them (section 5.3). Acceptable, or should the
+   kernel keep a hint per binder handle outside node identity?
+3. **Raw syntax with free variables.** Recommended: encode free variables as
+   loose indices and instantiate with entries when deriving (section 5.3).
+   Agreed?
+4. **Entry labels.** Keep `cc_instr_extend`'s symbol as a label (same label
+   and type, same entry), or drop it and let the driver keep its own map?
+5. **`CC_OPENED`.** A third, internal variable kind for binders the kernel
+   opens, rather than temporary entries (section 3.1). Agreed?
+6. **Replace's and the signature instructions' new operands** (entries for
+   the binders crossed; parameter, sort and constructor entries): an ABI
+   change in instructions the driver issues often.
+7. **PR 3's size.** PR 1's indirection and PR 2's primitives keep it to the
+   switch itself; it still changes the kernel, the bridge and the driver
+   together. Split PR 2 out or not?
+8. **Dimensions.** Stay named; the cap stays (section 4). Confirm that the
+   cap is out of scope.

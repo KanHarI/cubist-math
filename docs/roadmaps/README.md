@@ -149,6 +149,10 @@ those foundations:
   universe proposals E1/E2, each requiring a concrete use case.
 - [Learned search](kernel/learned-search.md): phases 1–2 delivered; optional
   learning and deployment phases 3–5 remain.
+- [Locally nameless kernel](kernel/locally-nameless-kernel.md): proposed on
+  2026-11-02; design only. Bound variables by de Bruijn index (`CC_BOUND`),
+  context references by entry id (`CC_CONTEXT`), ABI version 4, staged in
+  five PRs; replaces substitution's capture check.
 
 ## Frontend
 
