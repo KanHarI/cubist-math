@@ -118,6 +118,10 @@ export const signatureConstructor = (graph, signature, type, entry) =>
 // A level entry's place in the records below, where a term entry has its
 // type's handle.
 export const LEVEL = "level";
+// The children alpha-equality compares as syntax: none of a universe's, and
+// only the first of a path application (not its annotation), of a level
+// instantiation (not its level) and of an instance (not its recorded levels).
+const partsCompared = kind => kind === "U" ? 0 : kind === "PApp" || kind === "LApp" || kind === "Sort" ? 1 : 4;
 // The names of the term and level entries a session makes, kept by the kernel
 // wrapper beside its definitions (section 5.3): a driver is dropped more often
 // than entries die. Each entry has the name it was made for and the symbol it
@@ -135,7 +139,8 @@ export const LEVEL = "level";
 export class EntryNames {
   constructor(kernel) {
     this.kernel = kernel;
-    // entry → { entry, name, symbol, type }, and each name's records in order.
+    // entry → { entry, name, symbol, type, likeness }, and each name's
+    // records in order.
     this.records = new Map();
     this.named = new Map();
     // The live entry that holds a symbol.
@@ -144,17 +149,43 @@ export class EntryNames {
     // a variant names one stem for ever, as its display reads it (stems).
     this.variants = new Map();
     this.stems = new Map();
+    this.likenesses = new Map();
   }
   // A live entry made for `name` at `type`, a type's term handle or LEVEL,
-  // that `excluded` does not refuse; 0 when there is none.
+  // that `excluded` does not refuse; 0 when there is none. Only types alike
+  // are compared up to alpha-equality: one name bound at many types, as a
+  // binder of a type that mentions each of a search's fresh variables in
+  // turn, would otherwise compare each new type with every earlier one.
   find(name, type, excluded = () => false) {
     const records = this.named.get(name);
     if (!records) return 0;
     for (const record of records) if (record.type === type && !excluded(record.entry)) return record.entry;
     if (type === LEVEL) return 0;
+    const likeness = this.likeness(type);
     for (const record of records)
-      if (record.type !== LEVEL && record.type !== type && !excluded(record.entry) && this.kernel.alphaEqual(record.type, type)) return record.entry;
+      if (record.likeness === likeness && record.type !== type && !excluded(record.entry) && this.kernel.alphaEqual(record.type, type))
+        return record.entry;
     return 0;
+  }
+  // What two alpha-equal types share: the root's kind, and the free
+  // variables of the parts alpha-equality compares as syntax (a universe's
+  // level, an instantiation's, an instance's recorded levels, compared by
+  // normal form, and a path application's annotation, not compared, left
+  // out).
+  likeness(type) {
+    const free = handle => {
+      let known = this.likenesses.get(handle);
+      if (known) return known;
+      const node = this.kernel.node(handle), children = node.children.slice(0, partsCompared(node.kind));
+      known = new Set();
+      if (node.kind === "Var") known.add(referenceSymbol(node));
+      children.forEach((child, i) => {
+        if (child) for (const symbol of free(child)) if (!(i === 1 && binders.has(node.kind) && symbol === boundSymbol(node))) known.add(symbol);
+      });
+      this.likenesses.set(handle, known);
+      return known;
+    };
+    return `${this.kernel.node(type).kind} ${[...free(type)].sort((a, b) => a - b).join(",")}`;
   }
   // The spelling of a new entry's symbol for `name`: the name itself where
   // no live entry holds its symbol, unless the entry is to be `fresh`, and
@@ -174,7 +205,8 @@ export class EntryNames {
   // An entry the kernel made, for `name`, holding the symbol `spelling` names.
   record(entry, name, spelling, type) {
     if (this.records.has(entry)) return;
-    const record = { entry, name, symbol: this.kernel.symbol(spelling), type, keys: [...new Set([name, spelling])] };
+    const record = { entry, name, symbol: this.kernel.symbol(spelling), type, keys: [...new Set([name, spelling])],
+      likeness: type === LEVEL ? LEVEL : this.likeness(type) };
     this.records.set(entry, record);
     for (const key of record.keys) {
       if (!this.named.has(key)) this.named.set(key, []);
@@ -195,8 +227,10 @@ export class EntryNames {
     if (!record) throw new Error(`The driver made no context entry ${entry}.`);
     return record.name;
   }
-  // Entries from `count` on are gone: the kernel truncated them.
+  // Entries from `count` on are gone: the kernel truncated them, and moved
+  // the handles made with them, which the likenesses read.
   truncate(count) {
+    this.likenesses.clear();
     for (const [entry, record] of this.records) {
       if (entry < count) continue;
       this.records.delete(entry);
