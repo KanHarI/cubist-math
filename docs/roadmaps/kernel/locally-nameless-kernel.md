@@ -42,10 +42,15 @@ instrumented build of main, not committed.
   64-dimension cap is out of scope for this project (section 4). A later
   project could redesign formulas without the cap and move dimension
   binders to indices together.
+- The kernel keeps no names at all: `cc_instr_define` takes no symbol and
+  starts with `ck_instr_begin_stateful`, so each Define makes a new
+  definition and the driver reports duplicate names; signature and
+  constructor symbols, `cc_kernel_signature_symbol`, `cc_kernel_fresh_symbol`,
+  `cb_fresh_symbol` and `next_symbol` go. Every name lives in the driver,
+  mapped to handles (sections 3.5, 5.1, 5.3).
 
 The rest is a recommendation for the user to accept or change; section 8
-keeps the one question still open, the proposal to drop every remaining
-kernel symbol.
+lists the risks that remain, and no question is open.
 
 ## Why
 
@@ -466,11 +471,13 @@ The openers, and the operands each reserves above:
 | composition at Π and level Π (`ck_reduce_composition`) | the composition term |
 | `cc_kernel_whnf` on a term with loose indices (the driver's guide, section 5.1) | the query's term, which holds no opened level |
 
-Iota needs no opener: it instantiates the constructor's telescope by the
-actual arguments, and builds each position's λ over its arity binders by
-mirroring the position's own Π telescope (section 3.3). Were it ported with
-placeholders instead, it would reserve above its arguments, the eliminator
-and the instance, like the clause types.
+Iota needs no opener: its display reads the constructor's type with the
+arguments left as indices, through environments that hold the actual
+arguments and the positions' shown values, all closed, and it builds each
+position's λ over its arity binders by mirroring the position's own Π
+telescope (section 3.3). Were it ported with placeholders instead, it would
+reserve above its arguments, the eliminator and the instance, like the
+clause types.
 
 The driver opens binders too, but differently: to derive a body it needs a
 judgement in a context, so it makes a real entry with `cc_instr_extend`, as
@@ -588,8 +595,32 @@ How each piece changes:
   `parts_agree` (Glue's side conditions) opens a common binder before
   comparing its parts likewise.
 - **Iota** (`ck_eliminate`): the display's fresh variables go; its
-  construction stays. The constructor's argument telescope is instantiated
-  by the actual arguments. Each position `q_j : Π (ys : As). C_j` is shown by
+  construction stays, and so do the positions' identities while it runs.
+  Today `parts` stands for each constructor argument by a fresh variable,
+  and `shown_boundary` recognizes a boundary's head as a position by that
+  variable (`position_symbols`) or as an earlier constructor by `CC_CON`
+  before it replaces either by its displayed value; the actual arguments are
+  substituted only after the display is built. Instantiating the telescope
+  by the actual arguments first would erase those identities: for
+  `wrap(x : S, p : Path(S, x, x)) : S` applied to `x := (λ (z : S). z) base`,
+  the cube's endpoints would be applications headed by a λ, which
+  `shown_boundary` refuses as no constructor expression, though main admits
+  `wrap` and computes on it (a review verified both). So the display
+  traverses the constructor's type as stored, instantiated at the admission
+  telescope only (instance, parameters, earlier constructors as `Con(m; I)`,
+  none of which is a position), with the constructor's own arguments left
+  as indices, and reads two environments indexed by argument: the actual
+  one (each argument's value) and the displayed one (each position's shown
+  value). At a boundary's head, a position's index becomes its displayed
+  value applied to the boundary's arguments, an earlier constructor its
+  clause as today, and a data argument's index, inside a boundary's
+  arguments, its actual value. Heads are matched on the template, never on
+  an instantiated term. In iota both environments hold closed terms, the
+  actual arguments and the values below, so iota opens nothing; for
+  `ck_clause_type` both are the clause type's own variables, the general
+  case, which keeps `CC_OPENED` placeholders from the operation's counter
+  (section 3.1) and closes them at the end. Each position
+  `q_j : Π (ys : As). C_j` is shown by
   its value `λ ys. elim^{C_j}(q_j(ys))`, where `elim^C`, built by `lifted`,
   is `elim(y)` when `C` is the sort and `⟨i⟩ elim^{C'}(y @ i)` when `C` is a
   path type over `C'`, each path application annotated and each path
@@ -598,7 +629,7 @@ How each piece changes:
   `⟨i⟩ elim(p @ i)`, never as `elim(p)`, which would be ill-typed. The λ
   over the arity binders mirrors the position's own Π telescope, so its
   domains and the cube under it are reused with their loose indices as they
-  stand, and iota opens nothing; the cube's dimension binders stay named, as
+  stand; the cube's dimension binders stay named, as
   `lifted` names them today. The reduct is the clause applied to the
   arguments and the shown positions, then applied at the constructor's own
   dimensions with its displayed result type (`ck_apply_at`).
@@ -718,15 +749,21 @@ review reproduced the symbol with `inductive Tr : prop { inc; }`.
 
 ### 3.5 What happens to today's machinery
 
-Goes: `ck_term_free`, the capture renaming of term binders, `ck_fresh_symbol`
-inside the kernel, `symbols`, the term scopes of `alpha_binding`,
-`renamed_free`, `bound_keys`' scope keys, `find_entry` for levels,
-`apply_substitution`'s renaming, the iota display's variables. Changes:
+Goes: `ck_term_free`, the capture renaming of term binders,
+`ck_fresh_symbol`, `next_symbol`, `cc_kernel_fresh_symbol`, `symbols`, the
+term scopes of `alpha_binding`, `renamed_free`, `bound_keys`' scope keys,
+`find_entry`, `index_entry` and the entry index, `apply_substitution`'s
+renaming, the iota display's variables, every symbol a definition, entry,
+signature or constructor kept (`cc_definition.symbol`, `cc_entry.symbol` for
+term and level entries, `sort_symbol`, `symbols`, `cc_constructor.symbol`),
+and the refusals that read them ("Definition symbol is already
+registered.", "The symbol already names a context entry."). Changes:
 `ck_substitute` (instantiate), `ck_level_instantiate`, `ck_alpha_equal`,
 `normal`, `ck_eliminate`, the binder instructions, `cc_instr_replace`,
-`cc_instr_step`, the signature instructions. Stays: dimension names and
-their capture renaming, `ck_free_dims`, formulas, entries and contexts, the
-judgement graph, checkpoints, the guards.
+`cc_instr_step`, `cc_instr_extend`, `cc_instr_level`, `cc_instr_define`
+(stateful, no symbol), the signature instructions. Stays: dimension names
+and their capture renaming, `ck_free_dims`, formulas, entries and contexts,
+the judgement graph, checkpoints, the guards.
 
 ### 3.6 Entries the driver supplies: no aliasing
 
@@ -832,6 +869,8 @@ and they do not reach the memo: `cc_instr_signature_begin` and
 `cc_instr_signature_constructor` start with `ck_instr_begin_stateful`, which
 never answers from it, and `cc_instr_signature_close` records no derivation.
 Their entry operands are still recorded with the judgement, for reading.
+`cc_instr_define` loses its symbol operand and starts the same way, so that
+two Defines of one judgement make two definitions (section 8).
 `cc_kernel_instantiate` is a query: if its results are memoized, the key holds
 the body and the entry. Lambda, Pi, Sigma and the level binders
 take no new operand (their entry is already `entry`), and Step's internal
@@ -901,11 +940,16 @@ entries for the binders crossed, and `cc_judgement_info` reports them
 signatures report no symbols (section 3.4). `cc_instr_extend` and
 `cc_instr_level` take no symbol and make a new entry on every call;
 `cc_kernel_entry` reports no symbol for a term or level entry (a dimension
-entry's index stays). One new query opens a binder's body with an entry, for
-the driver's derivation under binders (`cc_kernel_instantiate`, a proposed
-name). `cc_kernel_whnf` accepts a term with loose indices (section 3.3). The
-bridge (`wasm/cubical_bridge.c`) changes with the signatures, and the
-Makefile's export list gains the new query.
+entry's index stays). `cc_instr_define` takes no symbol and is stateful, so
+two Defines of one closed judgement make two definitions, and
+`cc_kernel_definition` reports the value and the type only;
+`cc_kernel_fresh_symbol` and `cc_kernel_signature_symbol` go, and the kernel
+holds no `next_symbol`. One new query opens a binder's body with an entry,
+for the driver's derivation under binders (`cc_kernel_instantiate`, a
+proposed name). `cc_kernel_whnf` accepts a term with loose indices (section
+3.3). The bridge (`wasm/cubical_bridge.c`) changes with the signatures, and
+the Makefile's export list loses `cb_fresh_symbol` and gains the new
+query.
 
 **Every entry point that takes or returns syntax.** The driver reads
 subterms under binders (`cb_subterm`, `cb_node`), so any of them may come
@@ -926,7 +970,7 @@ the bridge):
 | `cc_kernel_rename` (`cb_rename`) | a term | the dimension mode as `cc_kernel_endpoint_term`. The term mode goes: its driver uses (the level-binder renaming and `freshFormer` in the instruction driver, the display renamings of `viewOfJudgement` and `nextClauseType`) all disappear with named binders and named entries |
 | `cc_kernel_instantiate` (new) | a binder body, an entry | replaces its index 0 by the entry, under section 3.6's condition |
 | `cc_instr_universe`, `cc_instr_level_apply`, `cc_instr_sort_level` (`cb_instr`) | a level | refuse a loose level, as `level_context` refuses an unknown variable today ("Unbound level variable.") |
-| `cc_instr_lookup` (`cb_instr`), `cc_kernel_definition` (`cb_definition`) | a reference | a `CC_DEFREF`: nothing loose |
+| `cc_instr_lookup` (`cb_instr`), `cc_kernel_definition` (`cb_definition`) | a reference | a `CC_DEFREF`: nothing loose; `cb_definition` reports the value and the type, no symbol |
 | `cc_kernel_node` (`cb_node`), `cb_subterm` | a handle | read as stored; a subterm under binders has loose indices, which the driver names by its name stack |
 | `cc_kernel_relocated` (`cb_relocated`) | a handle | translates the handle; reads no syntax |
 | `cc_kernel_judgement` (`cb_judgement`), `cc_kernel_entry` (`cb_entry`), `cc_kernel_mismatch` (`cb_mismatch`), `cc_kernel_signature` (`cb_signature`), `cc_kernel_signature_constructor` (`cb_signature_constructor`), `cc_kernel_definition` | return terms | judgement terms, entry types, definitions and mismatches are locally closed; a signature's former parts and constructor types carry loose indices over its prenex or admission telescope (section 3.4); no answer holds `CC_OPENED`; no symbol is reported for an entry or a signature |
@@ -937,9 +981,9 @@ The other exports take no syntax: `cb_abi_version`, `cb_new`, `cb_free`,
 `cb_step_budget`, `cb_work`, `cb_formula_begin`, `cb_formula_clause`,
 `cb_formula_end`, `cb_formula_view`, `cb_position_clear`,
 `cb_position_push`, `cb_position_set`, `cb_clear_error`, `cb_arena`,
-`cb_fresh_symbol`, `cb_judgement_count`, `cb_judgement_context`,
-`cb_entry_count` and `cb_extensions`. The other instructions of `cb_instr`
-take judgements, entries, formulas and numbers, not raw syntax.
+`cb_judgement_count`, `cb_judgement_context`, `cb_entry_count` and
+`cb_extensions`; `cb_fresh_symbol` goes. The other instructions of
+`cb_instr` take judgements, entries, formulas and numbers, not raw syntax.
 
 ### 5.2 The driver's side: call sites
 
@@ -958,8 +1002,8 @@ actually changes.
 
 | Module | Kernel calls | Variable, binder or symbol lines | What changes |
 | --- | --- | --- | --- |
-| `web/cubical-kernel.mjs` | 36 | 12 | the kind table `cubicalKinds`, `CUBICAL_ABI_VERSION`, `term`, `node`, `signature` (closed constructor types, no symbols), the new query |
-| `web/cubical-instructions.mjs` | 24 | 11 | `extend` and `level` with no name, Replace's entries, `signatureBegin` and `signatureConstructor` taking entries, `rename` (dimension mode only) |
+| `web/cubical-kernel.mjs` | 36 | 12 | the kind table `cubicalKinds`, `CUBICAL_ABI_VERSION`, `term`, `node`, `signature` (closed constructor types, no symbols), `definition` (no symbol), the new query; `symbol` and `symbolName` become driver-local, with no `_cb_fresh_symbol` |
+| `web/cubical-instructions.mjs` | 24 | 11 | `extend`, `level` and `define` with no name, Replace's entries, `signatureBegin` and `signatureConstructor` taking entries, `rename` (dimension mode only) |
 | `web/cubical-syntax.mjs` | 40 | 12 | `encode` and `encodeLevel` take a scope: bound names to `CC_BOUND` by depth, free names to the scope's entries, and the encoding cache keyed by the scope as it is by the dimension context (section 5.3); `decode` and `decodeLevel`: a name stack for `CC_BOUND`, the driver's names for `CC_CONTEXT`; `signatureRecord`'s names from the driver's records |
 | `web/cubical-instruction-driver.mjs` | 223 | 66 | `entry` and `contextScope` keep the map from name and type to entry that `cc_instr_extend` kept (section 5.3); `deriveNode` opens binder bodies with the new or reused entry, and its renaming of a level binder whose spelling a term entry holds goes; `scopeAt` hands Replace its entries; `agree`, `guide`, `sameHead` and `levelsEqual` compare term and level binders' bodies directly, so the term renaming chains (`pruneSymbols`, the term half of `chainId` and `unrenamed`) go, while the dimension chains (`prune`) and `renameBinder`, which renames dimensions, stay; `levelsEqual`'s keys by role (below); `freeTermSymbols`, `binds` and `freshFormer` simplify or go |
 | `web/cubical-elaborator.mjs` | 37 | 23 | scope first, then encoding: `derived`, `nextClauseType` and `nf` (section 5.3); the display renamings of entries (`viewOfJudgement`, `nextClauseType`) become decoder names; its `levelNormal` comparison of a level with its bound |
@@ -971,13 +1015,16 @@ actually changes.
 | `web/cubical-workbench-session.mjs`, `web/cubical-workbench-trace.mjs` | 11 | 3 | binder and variable labels in the workbench |
 | `web/cubical-assembly.mjs`, `web/cubical-graph-view.mjs` | 12 | 6 | node labels; the views encode a context's types with `kernel.symbol(entry.name)`, which must use the judgement's own handles or a scope made first (section 5.3) |
 | `web/translator/elaboration.mjs` | 1 | 0 | its scope's `nf` passes the scope's context to the elaborator's `nf`, which today takes none (section 5.3) |
+| `web/translator/proof-rewrite.mjs` | 8 `nf` calls | 2 synthetic variables | `simplificationRule`'s `simp_level` and `simp_parameter` become entries of a temporary scope (section 5.3) |
+| `web/translator/arguments.mjs` | 3 `nf` calls | 3 placeholder sites | `ArgumentSolver`'s placeholders and the unifier's `under` name become entries of a temporary scope (section 5.3) |
 
 Fourteen modules (thirteen in `web/` and one tool): about 430 kernel or
 graph calls and about 170 variable, binder or symbol lines, 223 and 66 of
-them in the instruction driver (the translator's `elaboration.mjs` adds one
-line). Unchanged: the other translator modules
-(`web/translator/evaluation.mjs`, `translate.mjs`, `match.mjs`, `hlevel.mjs`,
-`inductive.mjs`), which ask for heads and spines and read signature shapes
+them in the instruction driver, and three translator modules besides
+(`elaboration.mjs`, `proof-rewrite.mjs`, `arguments.mjs`). The other
+translator modules (`web/translator/evaluation.mjs`, `translate.mjs`,
+`match.mjs`, `hlevel.mjs`, `inductive.mjs`) bind their own variables into
+their scopes before asking about them, ask for heads and spines and read signature shapes
 (constructor counts, dimensions, the squash flag), and whose `"Var"` or
 `"Pi"` are the translator's own syntax; `web/cubical-transaction.mjs`
 (checkpoints and relocation); `web/cubical-reduction.mjs` (decodes through
@@ -1033,14 +1080,72 @@ changes:
 - The views (`web/cubical-assembly.mjs`, `web/cubical-graph-view.mjs`)
   encode a context's types with `kernel.symbol(entry.name)`; they take the
   judgement's own handles, or a scope made first.
+- Synthetic variables that the translator opens a binder with and then asks
+  about, outside the user's context. Each has a type, so each gets an
+  entry in a temporary scope extending the one it is asked in, made with
+  `contextScope` like any other and cached per key:
+  - `simplificationRule` in `web/translator/proof-rewrite.mjs` opens a
+    rule's level Π with a `simp_level` variable and each of its Π binders
+    with a `simp_parameter` variable before its `nf` calls: `simp_level` is a
+    level entry, and each `simp_parameter` a term entry at that binder's
+    domain, instantiated at the earlier parameters' entries. The rule's type
+    is checked, so each domain is a type in the scope of the earlier ones.
+    A valid `simp only [unat_add_zero]` proof (as in
+    `tests/proof-ergonomics.test.mjs`) depends on it: rejecting the
+    unknown `simp_parameter` would fail it.
+  - `ArgumentSolver` in `web/translator/arguments.mjs` stands for each of a
+    call's parameters by a placeholder variable (`unit.names.placeholder`),
+    with its domain recorded (`slot.domain`, the head's Π domain at the
+    earlier placeholders), and asks `nf` of types and terms that mention
+    them. A universe placeholder is a level entry; any other a term entry at
+    its domain, made in order, so each domain's earlier placeholders are
+    already entries. The unifier's descent under a pair of term binders
+    (`under` in `parts`) renames both bodies' variables to one fresh name
+    and later asks `nf` of parts that mention it (`unfolded`); that name
+    gets an entry at the left binder's domain. Its answers only guide the
+    search: the instructions check whatever it proposes.
+  - If a synthetic variable ever had no known type, the honest option is not
+    to ask the kernel about a term that mentions it: the query is reported
+    as stuck, the outcome the unifier already has for an undecided
+    comparison, and no type is invented for it.
 
-The encoding cache (`this.encoded`, keyed today by the term and the
-dimension context, `encode(term, dimensions, key)`) is keyed by the scope as
-well. A term whose encoding mentions no entry, its `contexts` filter zero,
-is cached without the scope, so closed parts are shared across scopes as
-they are today. The order needs no kernel change and is adopted first, on
-ABI 3, in PR 1, with symbols still standing for the entries; PR 3 then
-changes only what a reference is.
+  These are the sites found by a grep of the `nf` callers (about 80 calls
+  in fifteen modules of `web/` and `web/translator/`) for variables made
+  fresh and substituted into a body without a `bind` into the scope; the
+  others bind theirs (`hlevel.mjs`'s premises, `motives.mjs`'s
+  hypotheses, `inductive.mjs`'s constructor arguments, `match.mjs`). The
+  grep can miss a site, so PR 1 makes the rule an assertion: on ABI 3,
+  encoding against a scope throws on a free variable that is neither bound
+  by an enclosing binder nor in the scope, and the full suite run then lists
+  every site that still encodes before it binds.
+
+The encoding cache (`this.encoded`, keyed today by the term object and the
+dimension context, `encode(term, dimensions, key)`) must key by everything
+an encoding depends on. Today a free variable encodes as a global symbol, so
+the term and the dimension context suffice. After the switch a variable
+encodes as `CC_BOUND` at the depth of its binder or as the `CC_CONTEXT` of
+its entry, so the encoding of one syntax object depends on the binder
+stack around it and on the scope as well: one shared `Var("x")` object
+under `λ (x : A). x` encodes as `CC_BOUND(0)` and under
+`λ (x : A). λ (y : A). x` as `CC_BOUND(1)`, and reusing the first for the
+second would return the wrong argument at the right type, which no type
+check would notice. So the key is the term object, the dimension context
+restricted to its free dimensions, the scope, and the binder stack (the
+names of the enclosing binders, innermost first). An encoding with
+`loose == 0` does not depend on the binder stack, and one with
+`loose == 0` and `contexts == 0` has no free variable at all and depends on
+neither the binder stack nor the scope: only those are stored under the
+term and dimension context alone, and so shared across scopes and depths
+as closed parts are today. A lookup tries that scope-free key first, which
+is safe because a syntax object with no free variable encodes the same
+everywhere, then the full key. The decoder's cache (`this.decoded`, keyed
+by node and free dimensions) has the mirror condition: a node with
+`loose == 0` decodes the same under any name stack, and a node with loose
+indices is keyed by the names its loose indices take.
+
+The order needs no kernel change and is adopted first, on ABI 3, in PR 1,
+with symbols still standing for the entries; PR 3 then changes only what a
+reference is.
 
 `cc_kernel_instantiate` remains for one use only: `deriveNode` opens a
 binder's body with the entry it has just made or reused for that binder,
@@ -1062,6 +1167,21 @@ truncated then. A driver that fails to reuse an entry gets two distinct
 variables, and terms that mention one fail to match terms that mention the
 other: that is incompleteness, a check that fails, never unsoundness, since
 every judgement is still checked by the kernel.
+
+The same holds for every other name, since the kernel keeps none (decided
+2026-11-02). Definitions: the driver's `kernel.definitions` already maps a
+name to its `CC_DEFREF` (read by `encode`, relocated at commit by
+`web/cubical-transaction.mjs`), and an inverse map replaces
+`definition(reference).name` for `decode` and the views; the refusal of a
+second definition of one name is the driver's, which the program already
+reports as a duplicate (`gaps` in `web/cubical-program.mjs`), and since
+Define is stateful, defining one judgement under two names makes two
+definitions, as today. Signatures: `kernel.signatures`, the driver's record
+of each declaration's sort, parameter and constructor names, replaces the
+symbols `cc_kernel_signature` reported. Numbers for names: `symbol` and
+`symbolName` in `web/cubical-kernel.mjs` keep their map but allocate from a
+counter of the driver's own instead of `cb_fresh_symbol`, since no kernel
+name can meet them any more.
 
 **Binder names in displays.** The kernel's normal forms no longer carry the
 source's binder names (today `decode` reads them with `symbolName`, and
@@ -1178,9 +1298,17 @@ Each PR is verified locally first, opened as a draft, and keeps
    with its context and every caller of `nf` sorted into "fails on an
    ill-formed context" or "derives its context earlier", `differ`,
    signature admission, the views), with the encoding cache keyed by the
-   scope; and the driver's own map from name and type to entry, giving each
-   new entry a new symbol so that `cc_instr_extend`'s reuse by symbol is
-   never relied on. On ABI 3 it is implemented with symbols, so the kernel
+   scope; the temporary typed scopes of the translator's synthetic
+   variables (`simplificationRule` in `web/translator/proof-rewrite.mjs`,
+   `ArgumentSolver` and the unifier's `under` in
+   `web/translator/arguments.mjs`); the assertion that encoding against a
+   scope throws on a variable neither bound nor in the scope, run over the
+   full suite to find any site the grep missed; and the driver's own map
+   from name and type to entry, giving each new entry a new symbol so that
+   `cc_instr_extend`'s reuse by symbol is never relied on, and its maps
+   from names to definitions and signatures used for every read, so that no
+   reader asks the kernel for a symbol. The symbols themselves still come
+   from `cb_fresh_symbol` on ABI 3, where the kernel still makes its own. On ABI 3 it is implemented with symbols, so the kernel
    sees the same instructions: same verdicts and, but for the head queries'
    new context scopes, the same ticks. Its acceptance measures that cost,
    the derivations `contextScope` adds on the head-query path (instructions,
@@ -1199,8 +1327,10 @@ Each PR is verified locally first, opened as a draft, and keeps
    `CC_BOUND` and `CC_CONTEXT` in; binders without payload; every change of
    sections 3.3 to 3.7, the freshness conditions of section 3.6 and the
    derivation identity of section 3.7 included;
-   the bridge; the instruction signatures that change (`cc_instr_extend` and
-   `cc_instr_level` without a symbol, `cc_instr_replace` with its entries,
+   the bridge; the instruction signatures that change (`cc_instr_extend`,
+   `cc_instr_level` and `cc_instr_define` without a symbol, Define stateful,
+   `cc_kernel_fresh_symbol`, `cc_kernel_signature_symbol` and
+   `cb_fresh_symbol` gone, `cc_instr_replace` with its entries,
    the signature instructions with entries, `cc_kernel_entry` and the
    signature readers without symbols, `cc_kernel_instantiate` new,
    `cc_kernel_rename` without its term mode); PR 1's module switched to ABI
@@ -1299,6 +1429,25 @@ Each PR is verified locally first, opened as a draft, and keeps
   `q : Π (y : A). Path(S, base, base)`, gives `λ y. ⟨i⟩ elim(q(y) @ i)`; and
   after PR 4 neither constructor is eligible for the direct iota, while
   `BPositive`'s are, with equal reducts on both paths for the eligible ones.
+- **Positional boundaries in iota's display** (section 3.3): for
+  `wrap(x : S, p : Path(S, x, x)) : S`, Iota on
+  `wrap((λ (z : S). z) base, p)` computes as on main, its cube's endpoints
+  displayed through `x`'s shown value, never refused as a λ-headed
+  application; the same for a boundary that applies an earlier position to
+  a data argument, `p : Path(S, q(a), q(a))`, and for the clause types of both
+  constructors, compared with main's up to bound names.
+- **Encoding cache** (section 5.3): one shared `Var("x")` syntax object in
+  both `λ (x : A). x` and `λ (x : A). λ (y : A). x` encodes as `CC_BOUND(0)`
+  and `CC_BOUND(1)`, the second derivation checking the second term; a closed
+  subterm is shared across scopes and depths; a term mentioning an entry is
+  not reused in another scope.
+- **Synthetic variables** (section 5.3): the `simp only [unat_add_zero]`
+  proofs of `tests/proof-ergonomics.test.mjs` pass with `simp_level` and
+  `simp_parameter` as entries of a temporary scope; a call whose argument's
+  type depends on an earlier, solved hole (`tests/arguments.test.mjs`)
+  solves it through `nf` on a type mentioning the placeholder as an entry;
+  and PR 1's assertion, run over the full suite, reports no encoding of an
+  unbound variable.
 - **Loose terms at the boundary** (section 5.1): `cc_kernel_whnf` on a
   loose term answers with the same loose indices and no `CC_OPENED`, and
   equals the head computed by opening with an entry and abstracting it
@@ -1314,7 +1463,11 @@ Each PR is verified locally first, opened as a draft, and keeps
   in disjoint scopes reuses the entry, and a derivation repeated under it is
   answered from the memo; `λ (x : A). λ (x : A). x` derives with two
   entries, the inner `x` the inner binder's; two `cc_instr_extend` calls at
-  one type give two entries.
+  one type give two entries; two Defines of one closed judgement give two
+  definitions with distinct references; `cc_kernel_definition` and the
+  Lookup judgement report no symbol, and a definition's name, a
+  signature's names and a duplicate definition's refusal all come from the
+  driver.
 - **Metadata bounds** (section 3.2): the overflow tests listed there.
 - **The generated constructor** (section 3.4): `inductive Tr : prop { inc; }`
   admits, its squash is reported with `generated` set and no symbol, its stored type is
@@ -1336,18 +1489,18 @@ Each PR is verified locally first, opened as a draft, and keeps
   acceptance of the representation; PR 4 tightens the `factorial` bounds to
   its measured ticks with a margin. The stopgap branch is not merged.
 
-## 8. Open questions and risks
+## 8. Risks
 
-Answered on 2026-11-02 and moved to the decisions at the top: checking
-speed, binder names in displays, `CC_OPENED`, the new operands of Replace and
-the signature instructions, PR 2 as its own PR, raw syntax closed over
-entries (scope first), entries without names, and dimensions left out.
+No question is open. Answered on 2026-11-02 and recorded at the top:
+checking speed, binder names in displays, `CC_OPENED`, the new operands of
+Replace and the signature instructions, PR 2 as its own PR, raw syntax
+closed over entries (scope first), entries without names, dimensions left
+out, and no names in the kernel at all.
 
-**Still open: drop every remaining kernel symbol?** The decision on entries
-follows a principle: names live in the driver, which matches them to kernel
-handles. This is the proposal that applies it to the rest. After the switch
-and the decisions above, the kernel still holds symbols in these places,
-each checked in the C and the driver:
+**Where the kernel's last symbols go** (the record behind the last
+decision). The decision on entries followed a principle, that names live in
+the driver, which matches them to kernel handles; the user applied it to
+the rest. Each remaining symbol, checked in the C and the driver:
 
 | Symbol | What uses it today | Needed by the kernel? | Moves to the driver as |
 | --- | --- | --- | --- |
@@ -1356,7 +1509,7 @@ each checked in the C and the driver:
 | `cc_kernel_fresh_symbol` (`cb_fresh_symbol`), `next_symbol` | the driver's `symbol(name)` allocates its numbers there so that kernel names and its own never meet; `ck_make` raises `next_symbol` past every symbol a `CC_VAR` or binder is built with; `ck_fresh_symbol` serves the kernel's fresh names | No: after the switch no node, entry or signature holds a symbol, and the kernel's fresh names are gone (section 3.5) | the driver's own counter, or its names as strings; `symbol` and `symbolName` in `web/cubical-kernel.mjs` become driver-local |
 | `cc_kernel_entry`'s symbol for a dimension entry | the index of the dimension | Yes, but it is an index, not a name | stays |
 
-One consequence must be settled with it. Without a symbol, Define's
+One consequence was settled with it. Without a symbol, Define's
 derivation key is its premise alone, so defining the same closed judgement
 twice would answer the second time with the first definition's reference:
 two names for one `CC_DEFREF`. To keep one definition per Define, as today,
@@ -1364,7 +1517,7 @@ two names for one `CC_DEFREF`. To keep one definition per Define, as today,
 the memo, like the signature instructions. Then nothing in the kernel holds a
 name at all: definitions by index, signatures by index, constructors by
 number, entries by id, dimensions by index. ABI 4 is the time to do it,
-since every reader of these symbols changes in PR 3 anyway. Agreed?
+since every reader of these symbols changes in PR 3 anyway.
 
 Risks that remain:
 
@@ -1374,9 +1527,11 @@ Risks that remain:
 - PR 3 is large: it changes the kernel, the bridge and the driver together.
   PR 1's indirection and PR 2's primitives keep it to the switch itself.
 - Scope first costs the head queries a context derivation each new context
-  (cached per context key), and a caller of `nf` that asks before its
-  context's types are checked must be found and changed; PR 1 measures the
-  one and lists the other.
+  (cached per context key), and the translator's synthetic variables a
+  derivation of each domain they stand for; a caller of `nf` that asks
+  before its context's types are checked, or about a variable it never
+  bound, must be found and changed. PR 1 measures the one and finds the
+  other with its assertion.
 - The soundness of the change rests on the primitives' laws and on the
   conditions of sections 3.6 and 3.7, the places where a missing check
   would certify a false judgement rather than fail; section 7.1's
