@@ -45,7 +45,9 @@ This does not schedule the reals roadmap, `PosRat`, Archimedean bounds,
 completeness or analysis. The EVAL7 natural-number computation pilot
 remains bounded by its runtime contract. By the decisions of 2026-10-26,
 the phase also connects the runtime query of #289 to the REPLs, adds typed
-readback, and lands EVAL7's library Euclid, which replaces the archive's;
+readback, and lands EVAL7's library Euclid, which replaces the archive's
+(the runtime and its readback were removed again on 2026-11-01, kept on
+branch `archive/js-runtime`);
 K2.5's `axiom` definitions proceeded alongside, steps 1–4 done by
 2026-10-28, and step 5's in-place migration of the archive on 2026-10-29.
 After the phase, the simplicial track's ST0 and ST2 come first,
@@ -147,7 +149,7 @@ between columns.
 | Theories and notation | L2.4, complete on 2026-10-05: theories with carriers, operations with notation, and laws, which must state propositions (E818); models, sections, `extends` with labels and renaming, `T.Hom` and `T.Iso`. The library's algebraic hierarchy is its first client. On 2026-10-06 L2.4c (#167–#172) replaced `sort` with carriers as fields, `T.Model` with `Monoid(U)` and `open` with `use` (E180, E396, E183); L2.10a–e and i–k (#166, #173–#179) and L2.6's first slice, initial and free models (#188), are done. Since 2026-10-17 a child theory can implement inherited operations and laws (#268), and the algebra lattice has ordered-ring and ordered-field interfaces (#267) | L2.4b (structure identity, displayed models, after L3.1/L3.2); L2.6's revised checked capabilities, universal proofs, additional-law obligations and higher coherences; L2.10f–h, deferred. Proposed on 2026-10-07 ([categories](high-level-abstractions/categories.md)): morphisms by opt-in (L2.4d), user-defined morphisms (L2.4e, deferred), laws proved propositions (L2.11), implicit arguments in theory operations (L2.12), then categories, universal constructions and the abelian tower (L3.4–L3.6) |
 | Frontend tooling | CB0–CB7 and cleanup; exact source/generated/inspector contexts with an arbitrary-context REPL; #242 mutation CI, green remotely since #264; agreed RC refactoring and source-test migrations in #243–#263; one naming pass for every display (#311, #312); `module::name` references, which nothing shadows (#313) | Preserve the delivered contracts; no CB or agreed RC package remains. Display read-back defects in [pr-312-todo](../reports/pr-312-todo.md) |
 | Goal layer | L1.2/A5 core: `Goal`, `Transition`, one name supply, explicit scopes, shared reconstruction; multi-scrutinee motive abstraction | L1.2r |
-| Computability | L0.1: dependency tracking, `computable`, exact-value `evaluate`, CLI inspection. The `kernel extension: H1` marker, tracked apart from assumptions while H1 was experimental, was removed at its release. L2.9a expected-value patterns and L2.9b closed witness readout delivered in #181/#182 (2026-10-07, after the runtime evaluation investigation at `825c8b88`). EVAL0's evaluation baseline recorded on 2026-10-08; EVAL1 one-pass REPL evaluation implemented in #266; EVAL2 caches completed full normalizations; EVAL5's demand marks decided on 2026-10-21 and implemented for expected-value patterns in #304 and for printed values, the value form, in #305; folded normal forms, `!!` folded and `!!!` full (#307, #309, #310); explicit-evidence directives `evaluate nonempty/empty … by …` (#284); a first EVAL3/EVAL4 runtime query for ordinary data (#289), which since 2026-10-26 computes the REPLs' value forms, falling back once to the kernel's head queries | EVAL3/EVAL4's constructor patterns, quotient point constructors and EVAL4's open items, EVAL5's typed readback, EVAL6–EVAL8 |
+| Computability | L0.1: dependency tracking, `computable`, exact-value `evaluate`, CLI inspection. The `kernel extension: H1` marker, tracked apart from assumptions while H1 was experimental, was removed at its release. L2.9a expected-value patterns and L2.9b closed witness readout delivered in #181/#182 (2026-10-07, after the runtime evaluation investigation at `825c8b88`). EVAL0's evaluation baseline recorded on 2026-10-08; EVAL1 one-pass REPL evaluation implemented in #266; EVAL2 caches completed full normalizations; EVAL5's demand marks decided on 2026-10-21 and implemented for expected-value patterns in #304 and for printed values, the value form, in #305; folded normal forms, `!!` folded and `!!!` full (#307, #309, #310); explicit-evidence directives `evaluate nonempty/empty … by …` (#284); a first EVAL3/EVAL4 runtime query for ordinary data (#289), which from 2026-10-26 computed the REPLs' value forms, falling back once to the kernel's head queries, until its removal on 2026-11-01 (kept on branch `archive/js-runtime`) | EVAL3/EVAL4's evaluator, EVAL5's typed readback, EVAL6–EVAL8 |
 | Declarations | **Released** on 2026-10-02, on by default with no marker, after K2.1's review (Lemma H2 and the critical pairs approved on 2026-09-30, the model and canonicity on 2026-10-02): K2.2, K2.3, L2.1, L2.2a's first three slices (the expression `match`, the closing statement, and recursion whose other arguments vary), and since 2026-10-04 its fourth (several values and nested patterns), the match statement on sums, which replaced `cases`, and L2.2b's automatic clauses. Nat, W and pushouts are source declarations; sums stay native; the circle's winding number computes in source. K2.4a's differential gate/tooling is retired; K2.5's ledger verifier is implemented, and K2.5 removed the legacy truncation assumptions through `axiom` definitions (steps 1–4 by 2026-10-28; step 5, the archive migrated in place and the builtins removed, on 2026-10-29) | a review record per K2.2 family; L2.3, L2.3b and L2.7; stages 4 and 5 |
 | Computation notation | Design only. N1 core's prerequisites are delivered: L2.4 on 2026-10-05, and on 2026-10-06 L2.4c's theory families, whose laws state a monad's on sets (the identity monad is a `Monad`) | N0–N5; N1's later categorical bridge also needs L3.4 |
 | Simplicial types | Design only, proposed on 2026-10-24; `x ->[C] y` spelling agreed | ST0–ST6: preservation/model design, shared ordinary arrow syntax, separate directed shapes/extensions, synthetic categories and later mathematical bridges |
@@ -768,14 +770,16 @@ its inverse contracts by the user's decision of 2026-10-26. The default
 `Z`/`Q` migration is gated the same way, on folded normal forms (decided
 2026-10-26). Full normalization of the inverses remains a target of the
 [debugging plan](runtime/rational-normalization-debug-plan.md), not a gate.
-[#289](https://github.com/KanHarI/cubist-math/pull/289) adds a first internal
-EVAL3/EVAL4 runtime query for ordinary data. Since 2026-10-26 the REPLs
-compute value forms through it, falling back once to the kernel's head
-queries on unsupported demand. Since #324 it also executes the point
-constructors of quotients and other higher sorts, so `BInt` and `BQ` value
-forms compute in it; path constructors and compositions fall back. EVAL5's observation
-contract shipped as the demand marks and folded normal forms. The rest of
-EVAL3–EVAL8 remains planned. The ordered-ring/field
+[#289](https://github.com/KanHarI/cubist-math/pull/289) added a first internal
+EVAL3/EVAL4 runtime query for ordinary data. From 2026-10-26 the REPLs
+computed value forms through it, falling back once to the kernel's head
+queries on unsupported demand, and from #324 it executed the point
+constructors of quotients and other higher sorts too. **The user removed
+it on 2026-11-01**, with typed readback's W1: value forms are the kernel's
+head queries' again, and the runtime is kept on branch `archive/js-runtime`
+at `d875dd08` ([removal](runtime/runtime-evaluation-roadmap.md#removal-of-the-runtime-evaluator-2026-11-01)).
+EVAL5's observation contract shipped as the demand marks and folded normal
+forms. The rest of EVAL3–EVAL8 remains planned. The ordered-ring/field
 definitions and algebra lattice landed in #267 over #268's inherited operation
 implementations.
 The versioned scratch evaluator's prime projections are
@@ -976,7 +980,16 @@ Each step lands in focused PRs under the review rule above.
       decimal magnitudes from their bits. The unary integers and rationals
       were removed by the user's decision; `UNat` remains for structural
       recursion.
-   3. **#289's runtime in the REPLs** (EVAL3/EVAL4 integration). The CLI,
+   3. **#289's runtime in the REPLs** (EVAL3/EVAL4 integration). **Removed
+      on 2026-11-01** by the user's decision, with 4's W1: value forms are
+      the kernel's head queries' again
+      ([removal](runtime/runtime-evaluation-roadmap.md#removal-of-the-runtime-evaluator-2026-11-01),
+      [report](../reports/runtime-repl-evaluation.md#removal)). The runtime
+      is kept on branch `archive/js-runtime` at
+      `d875dd08b198e79e9fbb692935c4e6bd712324f5`; bringing it back means
+      restoring it from there and carrying every later change to the
+      kernel's rules into its JavaScript machine, checked again by the
+      readback oracle. What follows records the step as it was done. The CLI,
       browser and contextual REPLs compute the value form and constructor
       patterns through the runtime query, with one specified fallback to
       today's kernel queries where it reports unsupported demand. Then the
@@ -1054,7 +1067,11 @@ Each step lands in focused PRs under the review rule above.
         2026-10-30): no path observes a query asynchronously, the value
         form's walk being synchronous, as the kernel's queries are; the
         item waits for a caller that observes asynchronously.
-   4. **Typed readback** (EVAL5): read runtime values back into kernel terms
+   4. **Typed readback** (EVAL5). **Removed with the runtime on
+      2026-11-01**: W1 is kept on branch `archive/js-runtime` with it, and
+      W2, held, on branch `typed-readback-w2` at `b9992be1`
+      ([typed readback](runtime/typed-readback.md)). What follows records
+      the step as it was done. Read runtime values back into kernel terms
       by their types, with the written readback correspondence and the
       applicable EVAL8 review. Decided on 2026-10-28
       ([typed readback](runtime/typed-readback.md)): readback serves displays
@@ -1074,7 +1091,8 @@ Each step lands in focused PRs under the review rule above.
       computation, to the kernel. The whole-walk restart stays until a
       design faster end to end is ready. Since 2026-11-01 the library's
       strong and Peano recursion compute no transport, and the library
-      Euclid's and `factorial`'s value forms no longer fall back
+      Euclid's and `factorial`'s value forms no longer fell back, until
+      the runtime's removal the same day
       ([report](../reports/transport-free-recursion.md)). M3 was taken on 2026-10-30
       ([report](../reports/shared-runtime-evaluation.md#typed-readback-m3)):
       printed `!!` through the runtime gains on no printed `!!` of the
@@ -1276,7 +1294,8 @@ scheduled packages from advancing.
 7. **Runtime-phase scope — decided 2026-10-26:**
    - the site fix first;
    - then B8, the default `Z`/`Q`, #289's runtime in the REPLs, typed
-     readback and EVAL7;
+     readback and EVAL7 (the runtime and its readback removed on
+     2026-11-01);
    - all of the archive's number theory moves to the library and leaves the
      archive (NT1–NT5, with EVAL7 as NT2); counting is included, by the
      user's decision of 2026-11-01 (NT6, done on 2026-11-02);

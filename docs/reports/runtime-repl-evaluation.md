@@ -1,5 +1,12 @@
 # Runtime value forms in the REPLs
 
+**Removed on 2026-11-01.** The runtime evaluator this report describes was
+removed from main by the user's decision of 2026-11-01: value forms are
+computed by the kernel's head queries again
+([removal](#removal)). Its code is kept on branch
+`archive/js-runtime` at `d875dd08`. What follows is a dated record of the
+work as it stood.
+
 The first slice of the work plan's step 2.3 (EVAL3/EVAL4 integration),
 2026-10-26, on main `e7b67376`. The value form, which `print(evaluate(e));`
 and the REPL's `evaluate e;` show, is computed through
@@ -837,3 +844,185 @@ The two questions this slice left open were decided the same day:
   (Since 2026-10-30 `duplicated-calls-24` computes `tt`
   ([sharing](#sharing-of-repeated-calls)); `relayed-calls-24` stops at the
   cap where the kernel's queries answer.)
+
+## Removal
+
+On 2026-11-01 the user decided: "Lets remove the runtime." Value forms,
+`evaluate e`, `print(evaluate(e))` and the REPLs' and the reference's
+value forms, go back to the kernel's head queries alone, and the JavaScript
+runtime evaluator, with everything that existed only for it, is deleted.
+The reasons: on the library's binary workloads the runtime gave nothing the
+kernel's queries lack. It fell back on every recursive value form, at the
+compositions of NUM1's strong recursion, and the transport-free recursion
+work makes the kernel compute those. What it alone computed, intrinsically
+deep unary values such as `count_into(2 * 255, 0)` past the kernel's
+512-level syntax depth guard, and about 2.6 times the speed on wide values
+that are data throughout, the user judged not central. The rules the kernel
+computes by are no longer implemented twice, once in C and once in
+JavaScript.
+
+### Where it is kept
+
+- **The runtime:** branch `archive/js-runtime` at
+  `d875dd08b198e79e9fbb692935c4e6bd712324f5`, main as it was after #345:
+  the REPL integration (#320, #324), EVAL4's sharing of repeated calls,
+  closed-environment pruning and calibration (#344), typed readback W1 with
+  its oracle (#337), M3 (#343) and W4's EVAL8 record (#345).
+- **W2, the fallback per node (held on 2026-10-30):** branch
+  `typed-readback-w2` at `b9992be1`, which was never merged.
+
+### What was deleted
+
+- `web/cubical-runtime.mjs`: `RuntimeQuery`, `RuntimeError`, the machine,
+  its budgets and the readback (W1).
+- In the translator, `valueFormOf` and `runtimeQueries`
+  (`web/translator/translate.mjs`): the value form is
+  `valueForm(result.expression, at, …)` over the kernel's queries
+  (`demandQueries`), as before the integration. The print directive's
+  `valueForm` record (`by: "runtime"` or `"kernel"`, the runtime's counters,
+  the demand it did not support) and the program's copy of it on `prints`;
+  `runtimeStop` (`web/translator/evaluation.mjs`).
+- In the elaborator, `runtimeQuery`, `runtimeLimits` and
+  `shownConstructorOf`, folded back into `shownConstructor`; the program's
+  `runtimeEvaluation` option.
+- In the kernel's JavaScript class, `handleToken`, `handlesHeld` and the
+  module's `faultToken`, which only a query held across operations read.
+  In the bridge, the session's handle generation (`cb_generation`, moved on
+  by `cb_rollback` and `cb_commit_checkpoint`), its export and its tests
+  (`kernel/tests/test_bridge.c` and the WASM test). The kernel itself is
+  unchanged.
+- Diagnostics raised only by the runtime and the generation check, retired
+  by the registry's convention (kept, marked `"retired"`): E487, E488 and
+  E489 (its work, allocation and time limits), E490 (its own failure) and
+  E667 (a module without handle generations). No other code raised them.
+- Tests of the runtime alone: `tests/cubical-runtime.test.mjs`,
+  `tests/runtime-readback.test.mjs` and the readback oracle,
+  `tests/runtime-readback-oracle.mjs`, with its hooks in
+  `tests/evaluation-demand-marks.test.mjs` and
+  `tests/cubist-tests-inlined.mjs`; the demand marks corpus's second,
+  kernel-only print of each construct and its counts of what the runtime
+  computed; the kernel-fault test of a query held past its instance's
+  failure.
+- Tools: `tools/runtime-repl-probe.mjs` and `tools/folded-readback-probe.mjs`.
+  The evaluation baseline measures the kernel's value forms.
+
+`tests/runtime-evaluation.test.mjs` became `tests/value-forms.test.mjs`: every
+value form it compared, now the kernel's alone, with the outcomes below.
+Merging #346, the transport-free recursion, dropped its runtime tests (no
+fallback on the library's recursions, the runtime's step bound on
+`fib(22)`, the query reading Euclid's prime bit by bit) and the probe's
+new workloads, and moved its kernel checks to `tests/value-forms.test.mjs`:
+the value forms of Euclid, factorial, the searches and the Fibonacci,
+`euclid(7).1` as 71, the searches' limits (`least_divisor(44521, tt).1`
+211, `least_divisor(63001, tt).1` K344), least elements and Peano
+recursion past their old depth, and the million-tick bounds on `fib(25)`,
+`fun_fib(22, tt)` and `fun_fib(25, tt)`. Its contracts and Cubist tests
+are unchanged. The
+kernel-fault test and the static-site test inject their value-form fault in
+the kernel queries of the value form's walk (`valueForm`), where they had
+injected it in the runtime's reads.
+
+### What changed in observable behaviour
+
+Against main with the runtime, at `cedbd0dc` (#346's transport-free
+recursion merged), on this branch merged with it:
+
+| Value form | With the runtime | Now | Why |
+| --- | --- | --- | --- |
+| `count_into(2 * 255, 0)` (the reference's example, `tests/value-forms.test.mjs`, the static-site REPL scenario) | `510` | `K344` | The kernel's weak-head query substitutes the total into each call, past 512 levels; the runtime kept it as a value |
+| `least_divisor(63001, tt).1`, 251 * 251 (the baseline's `least-divisor-251-squared`) | `251` | `K344` | The 250 candidates' minimality certificate passes the kernel's syntax depth, in the value form as in the normal form |
+| `fun_fib(22, tt)` and `fun_fib(25, tt)` (the strong recursion contracts' function-valued Fibonacci, printed) | `E488` | `17711`, `75025` | The kernel's queries share the applications; the runtime recomputed them ([#346's gap](transport-free-recursion.md#sharing)) |
+| `count_into(100 * 100 * 100, 0)` (the old static-site scenario, replaced by `count_into(2 * 254, 0)`, 508) | `E488` | `K344` | The same depth, reached before any budget |
+| `least_divisor(1000003, tt).1` and `euclid(11).1` | `E488` | `K344` | A thousand candidates and more: the runtime's allocation budget, the kernel's syntax depth |
+| `relayed-calls-24`, `g24(tt)` | `E488` | `tt` | The kernel's cache shares the call two applications make by its syntax; the runtime shared within one application |
+| The old probe's list parity over 200,000 cells | `E488` | `K336` | The kernel's recursion guard on nested eliminators |
+
+Every other value form that the runtime computed was the kernel's, as the
+runtime's differential tests asserted, and is unchanged: compared on the
+same sources with main `cedbd0dc`, the 197 constructs of the demand marks
+corpus, every evaluated term of the 12 contract files that evaluate,
+printed in place of its directive, the two docs examples with evaluations,
+and the evaluation baseline's 23 value-form workloads as REPL entries,
+364 outcomes in all, are identical but for the three of the table (two
+`fun_fib` prints and `least-divisor-251-squared`). The same comparison
+with main `d875dd08`, before #346, found 355 outcomes identical. The
+`cubist-tests` modules' inlined outputs and the reference's `// Output:`
+comments pass unchanged, but for the reference's `count_into` example,
+which now shows 508 beside the K344 stop and a binary product past the
+depth. The corpus, contracts and examples took 93.7 s here against 123.4 s
+with the runtime, whose stops at its budget each cost half a second.
+
+**Speed since #346.** The user's reason for the removal held on main
+`d875dd08`: every recursive value form of the library fell back from the
+runtime to the kernel's queries. Since #346, merged the same day, the
+runtime computed them without falling back, and on the library's large
+products much faster than the kernel's queries, which now compute them
+alone (REPL entries, one run each on this machine):
+
+| Value form | With the runtime | Kernel's queries |
+| --- | --- | --- |
+| `factorial(40)` | 23 ms | 272 ms |
+| `factorial(60)` | 50 ms | 4,473 ms |
+| `factorial(100)` (shown to the depth of 512) | 173 ms | 107 s |
+| `least_divisor(44521, tt).1`, 211 | 165 ms | 394 ms |
+| `least_element(…240…).1` | 78 ms | 274 ms |
+| `count(300)`, Peano | 28 ms | 99 ms |
+| `euclid(7).1`, 71 | 46 ms | 100 ms |
+| `fib(25)` | 6 ms | 14 ms |
+
+The factorial's cost is the kernel's lazy multiplication of a large lazily
+computed right operand, which #346's report records as an open point
+([transport-free recursion](transport-free-recursion.md#workarounds-and-open-points)).
+
+The evaluation baseline is recorded at version 12
+(`tests/fixtures/evaluation-baseline.json`, at the merge `da56e69d`). One outcome
+moves: `least-divisor-251-squared`'s value form, which the runtime showed
+as 251, stops with K344, its demand phase counting the failed query's
+work, as the normal form's twin does in its normalization. The other 48
+texts, hashes and normal-form digests are version 11's, and every workload
+is deterministic over five samples. The runtime phase and its counters are
+gone. The value forms the runtime computed count the kernel's head queries
+in the demand phase: `euclid-3` 954 query steps (its literal's) become
+31,550, `euclid-5-prime` 955 become 197,480, `euclid-7-prime` 955 become
+1,922,061 and `factorial-5-print` 953 become 22,446; the workloads whose
+value forms the runtime did not compute, `euclid-4-pattern`, the expected
+value, the transport and the winding numbers, keep the kernel's work
+exactly. On this machine the small value forms run as fast or faster
+without the runtime's snapshot (`euclid-3` 12.6 to 7.6 ms cold), and the
+long searches slower (`euclid-7-prime` 65 to 109 ms, `least-divisor-251-squared`
+215 to 483 ms to its stop). The `cubist-tests`
+driver trace and the search-fuel baseline do not move.
+
+Before #346 was merged, on main `d875dd08`, the same removal recorded
+version 11 of the baseline with no outcome moving: every recursive value
+form then fell back from the runtime, so the kernel's work was already
+what the baseline recorded.
+
+### Bringing it back
+
+Branch `archive/js-runtime` holds the runtime, its integration and its
+tests whole; restoring it means:
+
+1. Restoring `web/cubical-runtime.mjs`, `valueFormOf` and `runtimeQueries`,
+   the elaborator's `runtimeQuery` and `runtimeLimits`, the program's
+   option, the print records, the kernel class's handle tokens and
+   `faultToken`, and the bridge's handle generation with its export and
+   tests. The retired codes E487–E490 and E667 come back with their
+   messages, which a retired code keeps for that.
+2. Bringing the machine up to the kernel's rules as they will then be. The
+   runtime executes β, η, the ι of declared types' point constructors and
+   their eliminators' clauses again, in JavaScript: every change to those
+   rules, to the term kinds or to signatures since `d875dd08` must be
+   carried into it, and the readback oracle (`normalize(R(e))` against
+   `normalize(e)` over every value form it computes) checked again over the
+   corpora. This second implementation of the kernel's rules is what the
+   removal gave up.
+3. Restoring its tests, the oracle's hooks and the probes, recording the
+   evaluation baseline at a new version, and writing W4's EVAL8 record
+   again for the restored state.
+4. W2, from `typed-readback-w2`, only with a design faster end to end than
+   the whole-walk restart, as decided on 2026-10-30.
+
+It would pay only for value forms the kernel cannot compute or computes
+slowly: deep unary values past its syntax depth, and wide values that are
+data throughout.

@@ -1,5 +1,16 @@
 # Binary recursion without transports
 
+**Update of 2026-11-01:** the runtime evaluator was removed the same day,
+by #348 on the user's decision ([removal](runtime-repl-evaluation.md#removal)): value
+forms are the kernel's queries' alone. This report's runtime figures are a
+dated record, the function-valued gap below is moot (`fun_fib(22, tt)` and
+`fun_fib(25, tt)` print 17711 and 75025 on the kernel's queries), and its
+kernel figures stand. Without the runtime, the least divisor of 251 * 251
+(`least-divisor-251-squared`), which the runtime showed as 251, stops with
+K344 in its value form as in its normal form, and the large products this
+report's last open point describes are left to the kernel's slower path:
+`factorial(60)`'s value form takes about 4.5 s where the runtime took 50 ms.
+
 2026-11-01, branch `bnat-transport-free-recursion` on main `d875dd08`.
 The library's arithmetic was binary-native, but its strong recursion and
 its dependent Peano recursion put transports on the computational path:
@@ -165,7 +176,8 @@ which it computes again at every call, and stops at its allocation budget
 (E488) at 22, where main's runtime fell back to the kernel's queries at a
 composition. The runtime is not changed for this, since it is to be
 removed (decided on 2026-11-01); until then its path regresses on
-higher-order branching recursion. The contracts check both on the kernel's
+higher-order branching recursion. (Removed by #348 the same day: the gap
+is moot.) The contracts check both on the kernel's
 queries, and the branching test bounds them to a million ticks there.
 
 ## After

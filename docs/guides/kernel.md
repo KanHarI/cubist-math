@@ -1082,8 +1082,7 @@ engine could not convert (a BigInt, a Symbol or an object) is refused before
 the call and ends nothing: the exports take 32-bit integers and doubles, so
 an exception from a call whose arguments convert came from the instance, or
 from the engine refusing to enter it for want of stack. A check on a failed
-instance ends at its next declaration, and a runtime query on it
-(`web/cubical-runtime.mjs`) publishes nothing more.
+instance ends at its next declaration.
 
 The command line replaces the instance itself: it checks its last source
 again and replays the REPL session's entries on the new instance, each as

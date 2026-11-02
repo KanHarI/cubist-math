@@ -380,10 +380,10 @@ export const diagnostics = [
   ["E484", "A demand mark, !, !! or !!!, starts a part of an expected value: the whole value, a pair's component, an injection's value or a constructor's argument; … is none of these."],
   ["E485", "evaluate e expecting _; would compute nothing: write !_ to compute the value's weak head, !!_ for its normal form, or !!!_ for its full normal form."],
   ["E486", "A !!! inside a !! part asks for a full normal form, which the !! part's normal form does not hold: write !!! on the outer part."],
-  ["E487", "The runtime's evaluation of the value form exhausted its work budget of … steps."],
-  ["E488", "The runtime's evaluation of the value form exhausted its allocation budget of … cells."],
-  ["E489", "The runtime's evaluation of the value form exceeded its time limit."],
-  ["E490", "The runtime failed to evaluate the value form: …"],
+  ["E487", "The runtime's evaluation of the value form exhausted its work budget of … steps.", "retired"],
+  ["E488", "The runtime's evaluation of the value form exhausted its allocation budget of … cells.", "retired"],
+  ["E489", "The runtime's evaluation of the value form exceeded its time limit.", "retired"],
+  ["E490", "The runtime failed to evaluate the value form: …", "retired"],
   ["E491", "… is the archive's legacy builtin, accepted only in archive modules: elsewhere use the library's Trunc, from h1_truncation, and its axioms LEM and Choice, from classical_axioms.", "retired"],
   // Inductive types and matching
   ["E501", "trunc(n) is supported up to n = …."],
@@ -528,7 +528,7 @@ export const diagnostics = [
   ["E664", "A transport's face is a face formula; found an interval point."],
   ["E665", "A partial element's face is a face formula; found an interval point."],
   ["E666", "An axiom states a type, or a family of types: axiom T; or axiom F; where F(x) is a type."],
-  ["E667", "This cubical kernel module has no handle generations. Rebuild it with `make wasm`."],
+  ["E667", "This cubical kernel module has no handle generations. Rebuild it with `make wasm`.", "retired"],
   ["E668", "The kernel's WebAssembly instance failed (…), and is not used again: nothing computed after the failure is kept."],
   // Arguments and their inference
   ["E701", "… has no implicit parameters: give its arguments in parentheses, as …(…)."],

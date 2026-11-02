@@ -145,8 +145,9 @@ runtime steps and a snapshot of about 16,140 nodes, whatever `n`. The
 kernel's queries then compute every library value form measured but
 `euclid(7)`, where the archive's stop from `euclid(4).1` on. (Since
 2026-11-01 neither recursion computes a transport, and the runtime
-computes every library value form measured:
-[transport-free recursion](transport-free-recursion.md).)
+computed every library value form measured:
+[transport-free recursion](transport-free-recursion.md). The runtime was
+removed the same day: [removal](runtime-repl-evaluation.md#removal).)
 
 **A depth limit, met by NUM1's strong recursion alone.** `7! + 1 = 71 * 71`
 takes 70 candidates, and the kernel's queries stop with K344 at the syntax
