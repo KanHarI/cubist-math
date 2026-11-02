@@ -56,3 +56,39 @@ computable def fib(n : Nat) : Nat := nat_strong_recursion(U0, fun (k : Nat) => N
 evaluate fib(25) expecting 75025;
 # test(strong_recursion.fibonacci_40)
 evaluate fib(40) expecting 102334155;
+
+// The same recursion at a function-valued family: each value is a
+// function of a unit, and the step applies both smaller values to it. The
+// kernel's queries share the applications as they share the values. The
+// runtime shares a returned function but not its repeated applications,
+// and stops at its allocation budget here (E488) until it is removed
+// (docs/reports/transport-free-recursion.md).
+computable def fun_fib_from(
+  p : BPositive, m : Nat, smaller : m < b_positive(p),
+  below : NatBelow(U0, fun (k : Nat) => Unit -> Nat, b_positive(p)), u : Unit
+) :
+  Nat := match m {
+    b_zero => 1;
+    b_positive(r) => below(b_positive(r), smaller)(u) + below(
+      bpositive_pred(r),
+      fib_below(bpositive_pred(r), b_positive(r), b_positive(p), bpositive_pred_lt(r), smaller)
+    )(u);
+  };
+
+computable def fun_fib_step(n : Nat, below : NatBelow(U0, fun (k : Nat) => Unit -> Nat, n)) :
+  Unit -> Nat := match n {
+    b_zero => fun (u : Unit) => 0;
+    b_positive(p) => fun (u : Unit) => fun_fib_from(
+      p, bpositive_pred(p), bpositive_pred_lt(p), below, u
+    );
+  };
+
+# test(strong_recursion.function_fibonacci)
+# expect_axioms([])
+computable def fun_fib(n : Nat, u : Unit) :
+  Nat := nat_strong_recursion(U0, fun (k : Nat) => Unit -> Nat, fun_fib_step, n)(u);
+
+# test(strong_recursion.function_fibonacci_22)
+evaluate fun_fib(22, tt) expecting 17711;
+# test(strong_recursion.function_fibonacci_25)
+evaluate fun_fib(25, tt) expecting 75025;

@@ -288,11 +288,15 @@ test("a branching strong recursion shares its smaller values on both paths", asy
   const session = new ReplSession(program);
   const prepared = await session.run(`import euclid;\nuse nat;\n${fibonacci}`);
   assert.deepEqual(prepared.filter(result => result.kind === "error").map(result => result.text), []);
-  const before = program.kernel.work().querySteps;
-  const [answer] = await session.run("evaluate fib(25);");
-  assert.equal(answer.text, "75025");
-  const ticks = Number(program.kernel.work().querySteps - before);
-  assert.ok(ticks < 1000000, `the kernel's queries took ${ticks} ticks`);
+  // The kernel's queries share the values, and at a function-valued family
+  // their applications too: main took 236,446 ticks for fun_fib(22, tt).
+  for (const [entry, value] of [["fib(25)", "75025"], ["fun_fib(22, tt)", "17711"], ["fun_fib(25, tt)", "75025"]]) {
+    const before = program.kernel.work().querySteps;
+    const [answer] = await session.run(`evaluate ${entry};`);
+    assert.equal(answer.text, value, entry);
+    const ticks = Number(program.kernel.work().querySteps - before);
+    assert.ok(ticks < 1000000, `the kernel's queries took ${ticks} ticks for ${entry}`);
+  }
   // The runtime computes it within a million steps, or, as on main, falls
   // back at a transport; it never stops at its allocation budget.
   const pairs = await alternately(t, `import euclid;\nuse nat;\n${fibonacci}\n${twice(["fib(22)"])}\n`);

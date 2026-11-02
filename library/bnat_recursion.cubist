@@ -135,8 +135,8 @@ computable def bnat_below_zero(U < UU0, P : BNat -> U) :
 // The values below succ(n), from those below n and the value at n: a
 // point below n is read from below, and n itself is the value, cast along
 // the bits' equality, which transports nothing. Both decisions read one
-// comparison of the bits; unary order only refutes their impossible
-// combination.
+// comparison of the bits, the same call in the extension's scope, so it is
+// computed once; unary order only refutes their impossible combination.
 computable def bnat_below_read(
   U < UU0, P : BNat -> U, n : BNat, below : BNatBelow(U, P, n), value : P(n), m : BNat,
   smaller : bnat_lt(m, bnat_succ(n)), less : Decidable(U0, bnat_lt(m, n)),
@@ -158,7 +158,7 @@ computable def bnat_below_extend(
   U < UU0, P : BNat -> U, n : BNat, below : BNatBelow(U, P, n), value : P(n)
 ) :
   BNatBelow(U, P, bnat_succ(n)) := fun (m : BNat, smaller : bnat_lt(m, bnat_succ(n))) => bnat_below_read(
-    U, P, n, below, value, m, smaller, bnat_lt_decide(m, n),
+    U, P, n, below, value, m, smaller, bordering_lt_decide(bnat_compare(m, n)),
     bordering_equal_decide(bnat_compare(m, n))
   );
 
@@ -301,7 +301,7 @@ computable def bnat_below_step_coherent(
   BNatBelowCoherent(U, P, step, bnat_succ(n), bnat_below_step(U, P, step, n, below)) := fun (
     m : BNat, smaller : bnat_lt(m, bnat_succ(n))
   ) => bnat_below_read_coherent(
-    U, P, step, n, below, coherent, equation, m, smaller, bnat_lt_decide(m, n),
+    U, P, step, n, below, coherent, equation, m, smaller, bordering_lt_decide(bnat_compare(m, n)),
     bordering_equal_decide(bnat_compare(m, n))
   );
 
