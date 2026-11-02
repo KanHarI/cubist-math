@@ -89,10 +89,27 @@ kernel names never meet. A rollback never lowers it.
 Every kernel fresh name is a bound variable, a placeholder for one, or, in
 `apply_substitution`, a placeholder for an admission symbol about to be
 replaced. None names a context entry or outlives the operation that took it
-except as a binder's name. Because each call takes new symbols, the result of
-`ck_constructor_type`, `ck_clause_type` or `ck_equiv_type` is a new handle
-every time, though the same up to bound names, and neither hash-consing nor
-the syntax memo can share it.
+except as a binder's name.
+
+A fresh name's cost and its effect on a result's identity differ by whether
+it stays in the result:
+
+- **Substituted away.** `apply_substitution` renames each admission symbol to
+  a fresh one, then substitutes the value for it; the constructor type's own
+  binders keep their names, and capture renaming touches them only when a
+  value mentions a free name that one of those binders also uses. So for a
+  closed instance, and for any instance whose free names avoid the
+  constructor type's binder names, `ck_constructor_type` returns the same
+  handle every call, by hash-consing (a review's control run: two Construct
+  instructions from distinct instance judgements gave one type handle). What
+  each call pays is the work: two substitution passes per admission symbol,
+  each keyed in the syntax memo by a fresh symbol no earlier call used, so
+  none is answered from the memo. The iota display's variables are likewise
+  substituted away from the reduct.
+- **Kept as a binder's name.** `ck_clause_type` (its Π binders are `parts`'s
+  fresh symbols), `ck_equiv_type` and its helpers, `cc_instr_eta` and
+  composition at Π and level Π return a new handle every call, the same up to
+  bound names, which neither hash-consing nor the syntax memo can share.
 
 ### 1.3 Substitution and the capture check
 
@@ -260,8 +277,10 @@ binder; `CC_CONTEXT(e)` refers to entry `e`.
   children, so a part with no loose index is skipped in O(1), with no cap.
 - Comparison of term and level binders needs no renaming: bodies compare
   directly, and alpha-equivalent terms hash-cons to one handle.
-- Hash-consing shares what fresh names kept apart today: the kernel's
-  constructions become deterministic.
+- Hash-consing shares what fresh binder names keep apart today (clause
+  types, equivalence types, eta and composition at Π), and the temporary
+  names whose passes cost work without changing the result
+  (`ck_constructor_type`, iota's display) go.
 - Context merging is unchanged: entries keep their global ids, so a merge
   touches no term (the user's point, confirmed: `ck_instr_merge` is a union
   of entry-id sets).
@@ -269,7 +288,10 @@ binder; `CC_CONTEXT(e)` refers to entry `e`.
   `CC_CONTEXT(e)` by `CC_BOUND` at each depth. That is a traversal where
   today there is none (section 3.3 measures it).
 - Replace under binders opens the target with the entries the driver names
-  for the binders crossed, and abstracts them out of the replacement.
+  for the binders crossed, and abstracts them out of the replacement. Those
+  entries must be fresh for the rewritten judgement (section 3.6): an entry
+  that a binder's name can no longer tell apart from an ambient one would
+  otherwise alias it.
 - Checkpoint compaction is unchanged for definitions (closed). Signature
   constructor types must be stored closed over their admission telescope,
   since commit truncates the entries they mention today by symbol.
@@ -338,6 +360,10 @@ ABI. Against the source:
   entry (section 3.3).
 - **Added: commit truncates entries**, so signature constructor types must
   be stored closed (section 3.4).
+- **Added: entries the driver supplies for binders must be fresh.** Today a
+  binder's name picks its entry; without names, Replace, the driver's
+  opening and signature admission each need a stated condition against an
+  aliased entry (section 3.6).
 - **Added: checking may not get faster** (section 6.2).
 
 ## 3. The proposed representation
@@ -465,8 +491,11 @@ How each piece changes:
   each position's value `λ ys. elim(q(ys))` is built with `CC_BOUND`, and the
   reduct is the clause applied to them. `ck_constructor_type` becomes one
   simultaneous instantiation of the stored, closed constructor type
-  (section 3.4); its result for an instance and a constructor is the same
-  handle every time, so it can be memoized. Building the reduct directly for
+  (section 3.4), with no renaming pass. Its result is already one handle per
+  closed instance today (section 1.2), so memoizing it by instance and
+  constructor needs no migration and could be done on main now; what the
+  migration changes is the per-call work, and that open instances get one
+  handle too. Building the reduct directly for
   a constructor without arity binders or dimensions, which every `BPositive`
   constructor is, is the stopgap report's "next lever"; it is a separate
   step (PR 4 below), not part of the representation change.
@@ -481,13 +510,15 @@ How each piece changes:
   with one `CC_OPENED` level per binder crossed, contracts, closes, and
   rebuilds the path.
 - **Replace under binders** (`cc_instr_replace`): the driver names, for each
-  term binder crossed, the entry standing for it (0 where none is used),
-  since a binder has no symbol to match. The kernel checks each entry's type
-  against the binder's domain opened with the outer entries (as `ck_instr_same`
-  does today against the domain as written), opens the target with them,
-  compares with the equality's left side, abstracts them out of the right
-  side, and discharges them from the equality's context. This is an ABI
-  change of `cc_instr_replace`.
+  term or level binder crossed, the entry standing for it (0 where none is
+  used), since a binder has no symbol to match. The kernel requires those
+  entries to be fresh (section 3.6), checks each entry's type against the
+  binder's domain opened with the outer entries (as `ck_instr_same` does
+  today against the domain as written), opens the target with them, refuses
+  if a loose index is left (a binder the target uses has no entry), compares
+  with the equality's left side, abstracts them out of the right side, and
+  discharges them from the equality's context. This is an ABI change of
+  `cc_instr_replace`.
 - **Eta instruction, composition at Π and level Π, equivalence types,
   clause types, the squash** (section 1.2's "new binders"): built directly
   with `CC_BOUND`, or with `CC_OPENED` placeholders closed at the end, which
@@ -498,9 +529,10 @@ How each piece changes:
   with loose indices, as the driver reads under binders, open its loose
   indices with `CC_OPENED` levels, compute, and close the answer.
   `cc_kernel_alpha_equal` compares such terms as they are. The driver needs
-  no entry to ask about a subterm. `cc_kernel_rename`'s term mode, which renamed free names, has no
-  use left for bound variables; it narrows to replacing one `CC_CONTEXT` by
-  another (or goes), and keeps its dimension mode.
+  no entry to ask about a subterm. `cc_kernel_rename`'s term mode, which
+  renamed free names, has no use left for bound variables; it narrows to
+  replacing one `CC_CONTEXT` by another (or goes), and keeps its dimension
+  mode.
 - **Hash-consing** (`ck_make`'s interning): unchanged code; it now identifies
   alpha-equivalent terms whose binders differ only in term or level names.
   Terms equal up to dimension binder names, level syntax or path
@@ -529,11 +561,12 @@ entries, referenced as `CC_CONTEXT` like any other: the constructor type's
 judgement has them in its context. Since the former's binders have no names,
 `cc_instr_signature_begin` takes the parameter entries (level entries and term
 entries, in order) and the sort entry, and checks each entry's type against
-the former's telescope opened with the earlier ones; `cc_instr_signature_constructor`
-takes the constructor's entry. `admission_context` then compares entry ids
-instead of symbols, and `reserved` goes (a binder has nothing to shadow
-with). `constructor_shape` identifies positions by de Bruijn depth instead of
-binder payloads.
+the former's telescope opened with the earlier ones;
+`cc_instr_signature_constructor` takes the constructor's entry. These entries
+must be pairwise distinct (section 3.6). `admission_context` then compares
+entry ids instead of symbols, and `reserved` goes (a binder has nothing to
+shadow with). `constructor_shape` identifies positions by de Bruijn depth
+instead of binder payloads.
 
 On admission each constructor type is abstracted over the whole admission
 telescope (levels, parameters, sort, earlier constructors) and stored closed.
@@ -542,8 +575,15 @@ signature's `former`, `level` and `parameter_types` are read from the closed
 former and carry loose indices relative to its prenex. `ck_constructor_type`
 and `complete_instance` instantiate simultaneously, replacing
 `apply_substitution`'s two passes of renaming and substitution per symbol.
-`cc_kernel_signature_symbol` has nothing left to report; the driver keeps
-the names it declared.
+
+What the signature reports to the driver (`cc_kernel_signature`,
+`cc_kernel_signature_symbol`, `cc_kernel_signature_constructor`): if entries
+keep their labels (question 4 of section 8), the signature copies the labels
+of its parameter, sort and constructor entries when it records them, and
+reports those as today's symbols; otherwise those fields go and the driver
+keeps the names it declared. Either way a constructor's type is reported
+closed, with loose indices over the admission telescope, which the driver
+decodes with its names for the telescope.
 
 ### 3.5 What happens to today's machinery
 
@@ -556,6 +596,67 @@ inside the kernel, `symbols`, the term scopes of `alpha_binding`,
 `cc_instr_step`, the signature instructions. Stays: dimension names and
 their capture renaming, `ck_free_dims`, formulas, entries and contexts, the
 judgement graph, checkpoints, the guards.
+
+### 3.6 Entries the driver supplies: no aliasing
+
+Today a binder's name is its entry's symbol, so the kernel finds the entry
+for a binder itself (`context_entry` in `cc_instr_replace`) and a binder
+cannot be confused with an ambient entry of another name. Once binders have
+no names, every place where the driver hands the kernel an entry to stand
+for a binder could alias an entry already in play: opening with it would
+make the binder's occurrences and the ambient ones one reference, and
+abstracting would then bind both. Each such place needs its own condition.
+
+- **Replace** (`cc_instr_replace`). Without a condition it certifies a false
+  equality. In `A : U0, e : A`, rewrite the body of `λ (x : A). (x, e)` by
+  reflexivity at `(e, e)`, supplying `e` for the binder `x`: opening makes the
+  target `(e, e)`, which is the equality's left side, the type check passes
+  (`e : A`), and abstracting `e` out of the replacement `(e, e)` gives
+  `λ (x : A). (x, x)`. Today's Replace refuses this: the binder's name `x` is
+  not `e`'s, so the target `(x, e)` is not the left side `(e, e)` (a review's
+  control run on ABI 3 confirmed it). So the kernel requires of the supplied
+  entries:
+  1. none is in the rewritten judgement's context, which by the
+     instructions' invariant holds every entry its term, other side and type
+     mention, so the opened target mentions a supplied entry only where its
+     binder's variable was, and abstraction binds nothing ambient;
+  2. they are pairwise distinct (as today, "One entry would be bound twice on
+     the path");
+  3. each is of its binder's kind (a level entry for a level binder) and has
+     the type of its binder's domain, opened with the entries supplied for
+     the binders outside it;
+  4. after opening, the target has no loose index left (a binder it uses has
+     an entry), and the same holds for each supplied entry's type;
+  5. discharging them from the equality's context passes
+     `ck_instr_discharge`, which refuses while a remaining entry depends on
+     one of them, as today.
+- **Binder instructions** (`former`, `cc_instr_lambda`, `cc_instr_level_pi`,
+  `cc_instr_level_lambda`). The entry abstracted is the one the rule
+  discharges, and every occurrence of it in the body is meant to become the
+  bound variable, so there is no ambient occurrence to alias. The condition
+  is today's: `ck_instr_bind` refuses while another entry of the body's
+  context depends on it.
+- **The driver's opening** (`cc_kernel_instantiate`). A query: it certifies
+  nothing, and the binder instruction that follows stays sound whatever the
+  driver opened with. But an entry already in the term would derive another
+  term than the one meant (`(x, e)` opened with `e` derives `λ. (0, 0)`), so
+  the query refuses an entry the term already mentions (the `contexts`
+  filter, then a search) and one entry for two indices. The driver opens
+  with the entry it has just made for the binder, as `deriveNode` binds one
+  per binder today.
+- **Signature admission** (`cc_instr_signature_begin`,
+  `cc_instr_signature_constructor`). The parameter, sort and constructor
+  entries must be pairwise distinct and of the right kind (level entries for
+  universe parameters, term entries otherwise), each typed by the telescope
+  opened with the ones before it. Distinctness makes abstraction over the
+  telescope unambiguous. No ambient entry can alias, because
+  `admission_context` allows only the admission entries in a constructor
+  type's context; after abstraction the stored type's `contexts` filter must
+  be zero, an O(1) check that nothing was left open.
+- **The kernel's own openings** (normalization, Step under binders, queries
+  on loose terms, constructions with `CC_OPENED` placeholders). A
+  `CC_OPENED` level is chosen above every level in the term, so it is fresh
+  by construction; nothing to check.
 
 ## 4. Per binder class: what moves, and when
 
@@ -604,32 +705,53 @@ export list gains the new query.
 
 ### 5.2 The driver's side: call sites
 
-Lines that call the kernel through the wrapper (`.node(`, `.term(`, `.spine(`,
-`.head(`, `.normalize(`, `.normalizeFolded(`, `.alphaEqual(`, `.rename(`,
-`endpointTerm(`, `.symbolName(` or `_cb_`), and lines that name a variable or
-binder kind (`"Var"`, `"Lam"`, `"Pi"`, `"Sigma"`, `"LPi"`, `"LLam"`,
-`TERM_BINDERS`, `LEVEL_BINDERS`, `termBinders`, `symbolName`, `.rename(`),
-on main `a933a0bf`, leaving out `web/cubical-runtime.mjs`, which #348
-deletes:
+Two counts per module on main `a933a0bf`, leaving out
+`web/cubical-runtime.mjs`, which #348 deletes. **Kernel calls**: lines
+matching any of `kernel.<name>(`, `graph.<name>(` or `g.<name>(` (the
+instruction graph), `.node(`, `read(` (as `levelNormal` reads nodes),
+`.children[`, `.term(`, `.spine(`, `.head(`, `.symbolName(` or `_cb_`.
+**Variable, binder or symbol lines**: lines naming a variable or binder kind
+(`"Var"`, `"Lam"`, `"Pi"`, `"Sigma"`, `"LPi"`, `"LLam"`, `TERM_BINDERS`,
+`LEVEL_BINDERS`, `termBinders`) or using symbols (`.symbol(`, `.symbol`,
+`symbolName`, `.rename(`, `.extend(`, `.bind(`, `levelEntry`,
+`signatureBegin`, `signatureConstructor`, `info.symbols`, `info.sort`). The
+patterns are wide on purpose and overcount; the third column says what
+actually changes.
 
-| Module | Kernel calls | Binder or variable lines | What changes |
+| Module | Kernel calls | Variable, binder or symbol lines | What changes |
 | --- | --- | --- | --- |
-| `web/cubical-kernel.mjs` | 37 | 12 | the kind table `cubicalKinds`, `CUBICAL_ABI_VERSION`, `term`, `node`, the new query |
-| `web/cubical-instructions.mjs` | 18 | 1 | `extend`, `level`, Replace's entries, the signature instructions, `rename` |
-| `web/cubical-syntax.mjs` | 29 | 11 | `encode`: bound names to `CC_BOUND` by depth, free names to entries; `decode`: a name stack for `CC_BOUND`, the driver's names for `CC_CONTEXT` |
-| `web/cubical-instruction-driver.mjs` | 81 | 49 | `deriveNode` opens binder bodies with the new entry, and its renaming of a level binder whose spelling a term entry holds goes; `scopeAt` hands Replace its entries; `agree`, `guide`, `sameHead` and `levelsEqual` compare term and level binders' bodies directly, so the term renaming chains (`pruneSymbols`, the term half of `chainId` and `unrenamed`) go, while the dimension chains (`prune`) and `renameBinder`, which renames dimensions, stay; `freeTermSymbols`, `binds` and `freshFormer` simplify or go |
-| `web/cubical-elaborator.mjs` | 13 | 18 | the display renamings of entries (`viewOfJudgement`, `nextClauseType`) become decoder names |
-| `web/cubical-program.mjs` | 3 | 13 | signature parameter names from the driver's own records |
-| `web/cubical-kernel-step.mjs` | 3 | 1 | positions are unchanged; reads of binder payloads |
-| `web/cubical-workbench-session.mjs`, `web/cubical-workbench-trace.mjs` | 7 | 3 | binder and variable labels in the workbench |
-| `web/cubical-assembly.mjs`, `web/cubical-graph-view.mjs` | 4 | 2 | node labels |
-| `web/translator/evaluation.mjs`, `web/translator/translate.mjs` | 6 | 4 | heads and spines only: unchanged |
+| `web/cubical-kernel.mjs` | 36 | 12 | the kind table `cubicalKinds`, `CUBICAL_ABI_VERSION`, `term`, `node`, `signature` (closed constructor types; labels or none), the new query |
+| `web/cubical-instructions.mjs` | 24 | 11 | `extend`, `level`, Replace's entries, `signatureBegin` and `signatureConstructor` taking entries, `rename` |
+| `web/cubical-syntax.mjs` | 40 | 12 | `encode` and `encodeLevel`: bound names to `CC_BOUND` by depth, free names to entries; `decode` and `decodeLevel`: a name stack for `CC_BOUND`, the driver's names for `CC_CONTEXT`; `signatureRecord`'s names |
+| `web/cubical-instruction-driver.mjs` | 223 | 66 | `deriveNode` opens binder bodies with the new entry, and its renaming of a level binder whose spelling a term entry holds goes; `scopeAt` hands Replace its entries; `agree`, `guide`, `sameHead` and `levelsEqual` compare term and level binders' bodies directly, so the term renaming chains (`pruneSymbols`, the term half of `chainId` and `unrenamed`) go, while the dimension chains (`prune`) and `renameBinder`, which renames dimensions, stay; `levelsEqual`'s keys by role (below); `freeTermSymbols`, `binds` and `freshFormer` simplify or go |
+| `web/cubical-elaborator.mjs` | 37 | 23 | the display renamings of entries (`viewOfJudgement`, `nextClauseType`) become decoder names; its `levelNormal` comparison of a level with its bound |
+| `web/cubical-levels.mjs` | 5 | 5 | `levelNormal` recognizes only `Var` and throws "Expected a level" on anything else; it must read `CC_BOUND` and `CC_CONTEXT` and key them by role, so that a bound level variable and an entry with equal numbers never meet |
+| `web/cubical-signatures.mjs` | 14 | 9 | admission passes entry names (`g.entry(sort).name`, `g.entry(entry).name`) to `signatureBegin` and `signatureConstructor`; it must pass the parameter, sort and constructor entries |
+| `web/cubical-program.mjs` | 8 | 15 | signature display: parameter and constructor names, constructor types decoded with names for the admission telescope |
+| `tools/proof-migration.mjs` | 8 | 8 | rebuilds a constructor's closed type from the signature's symbols and types: the same change as `cubical-program.mjs` |
+| `web/cubical-kernel-step.mjs` | 10 | 1 | positions are unchanged; reads of binder payloads |
+| `web/cubical-workbench-session.mjs`, `web/cubical-workbench-trace.mjs` | 11 | 3 | binder and variable labels in the workbench |
+| `web/cubical-assembly.mjs`, `web/cubical-graph-view.mjs` | 12 | 6 | node labels; the graph view builds its context with `kernel.symbol(entry.name)` for encoding, which takes entries (section 5.3) |
 
-About 200 call sites in thirteen modules, of which about 115 lines are
-binder- or variable-aware, 49 of them in the instruction driver. The pattern
-counts include some lines about definition and signature spelling, which do
-not change, and leave out `translate.mjs`'s own `term` method, which is the
-translator's, not the kernel's.
+Fourteen modules (thirteen in `web/` and one tool): about 430 kernel or
+graph calls and about 170 variable, binder or symbol lines, 223 and 66 of
+them in the instruction driver. Unchanged: the translator's modules
+(`web/translator/evaluation.mjs`, `translate.mjs`, `match.mjs`, `hlevel.mjs`,
+`inductive.mjs`), which ask for heads and spines and read signature shapes
+(constructor counts, dimensions, the squash flag), and whose `"Var"` or
+`"Pi"` are the translator's own syntax; `web/cubical-transaction.mjs`
+(checkpoints and relocation); `web/cubical-reduction.mjs` (decodes through
+`cubical-syntax.mjs`); and the probes in `tools/` that walk node children
+only (`evaluation-baseline.mjs`, `runtime-repl-probe.mjs`,
+`transport-normalization-probe.mjs`, `open-bnat-normalization-probe.mjs`).
+
+**Level keys by role.** Today a level normal form's variables are keyed by
+symbol on both sides of the boundary (`levelNormal`'s `offsets`, the
+kernel's `cc_level_term.key`). After the switch a level variable is
+`CC_BOUND(i)` or `CC_CONTEXT(e)`, and `i` and `e` are both small numbers, so
+keys must carry the role (in the kernel, two key ranges, section 3.1; in the
+driver, distinct keys such as a tag and the number), or a bound variable
+and an entry would compare equal.
 
 ### 5.3 Two consequences for the driver
 
@@ -742,9 +864,13 @@ Each PR is verified locally first, opened as a draft, and keeps
    Route every read and construction of binders and variables in the
    modules of section 5.2 through one small module: read a binder, open its
    body with an entry, build a binder over an entry, name a variable's role,
-   decode with a name stack. On ABI 3 it is implemented with symbols, so
-   nothing observable changes: same verdicts, same ticks, same baseline. It
-   confines the ABI switch's driver diff.
+   decode with a name stack, key a level variable by role (`levelNormal` in
+   `web/cubical-levels.mjs` and its callers, `levelsEqual` and the
+   elaborator's bound check), and issue the signature admission instructions
+   with entries (`web/cubical-signatures.mjs`; on ABI 3 the module passes the
+   entries' symbols). On ABI 3 it is implemented with symbols, so nothing
+   observable changes: same verdicts, same ticks, same baseline. It confines
+   the ABI switch's driver diff.
 2. **PR 2, kernel primitives (C only, ABI unchanged).** The node fields
    (`loose`, `opened`, `contexts` beside `symbols`), the internal kinds, and
    instantiate, abstract, open and close as worklists with ticks, the memo and
@@ -753,7 +879,11 @@ Each PR is verified locally first, opened as a draft, and keeps
    unused code on main.
 3. **PR 3, the switch: term and level binders, ABI 4.** `CC_VAR` retired,
    `CC_BOUND` and `CC_CONTEXT` in; binders without payload; every change of
-   section 3.3 and 3.4; the bridge; PR 1's module switched to ABI 4; the
+   sections 3.3 to 3.6, the freshness conditions of section 3.6 included;
+   the bridge; PR 1's module switched to ABI 4, with role-distinct level keys
+   and the signature instructions' entry operands, and the signature
+   consumers of section 5.2 (`cubical-program.mjs`,
+   `tools/proof-migration.mjs`) decoding closed constructor types; the
    kernel guide (`docs/guides/kernel.md`) and the reference chapters
    (`web/reference/kernel-terms.html`, `kernel-overview.html`,
    `kernel-instructions.html`), whose identifiers
@@ -780,16 +910,37 @@ Each PR is verified locally first, opened as a draft, and keeps
   agree with their definitions by recursion on 3,000 random terms over every
   binder kind, as the stopgap's randomized test checks its lists; a closed
   graph of 2^40 paths is instantiated and abstracted without being
-  traversed; depth-512
-  chains and wide DAGs stay within the worklists, as `test_traversals.c`
-  checks today; allocation faults and budget exhaustion leave no partial
-  result (`substitution_allocation_fault.h`, `traversal_allocation_fault.h`).
-  Mutating the binder case of `loose` must fail a test.
+  traversed; depth-512 chains and wide DAGs stay within the worklists, as
+  `test_traversals.c` checks today; allocation faults and budget exhaustion
+  leave no partial result (`substitution_allocation_fault.h`,
+  `traversal_allocation_fault.h`). Mutating the binder case of `loose` must
+  fail a test.
 - **The existing C tests** that build variables or term and level binders
   (about 110 lines across `test_normalize.c`, `test_signatures.c`,
   `test_substitution.c`, `test_levels.c`, `test_comparison.c` and others)
-  are rewritten for the new kinds. Capture tests become tests that instantiation under binders never
-  touches the value; dimension capture tests stay as they are.
+  are rewritten for the new kinds. Capture tests become tests that
+  instantiation under binders never touches the value; dimension capture
+  tests stay as they are.
+- **Adversarial instruction tests** (`kernel/tests/test_instructions.c` and
+  `test_signatures.c`), one per condition of section 3.6, each refused with
+  its own message, and each also run on main's ABI 3 where it can be
+  expressed there, as a control that today's kernel refuses it too:
+  1. Replace supplying an ambient entry for a binder: the example of
+     section 3.6, `λ (x : A). (x, e)` rewritten by reflexivity at `(e, e)`
+     with `e` for `x`;
+  2. Replace supplying one entry for two binders;
+  3. Replace supplying an entry of the wrong type, or of the wrong kind for
+     a level binder, or one whose type needs an outer binder that got none;
+  4. Replace giving no entry (0) for a binder the target uses;
+  5. Replace whose equality keeps an entry that depends on a supplied one;
+  6. accepted, with its result checked: a replacement whose right side uses
+     a binder's variable that its left side does not;
+  7. `cc_kernel_instantiate` with an entry the term already mentions, or one
+     entry for two indices;
+  8. SignatureBegin with a repeated parameter entry, a sort entry equal to a
+     parameter entry, or a term entry for a universe parameter;
+     SignatureConstructor with a constructor entry already in the telescope,
+     or a type whose context holds an entry outside it.
 - **Differential run, old against new.** A temporary tool, run once with
   main's build and once with the branch's, over the library, the archive
   (`tools/audit-cubical.mjs --all`) and the `.cubist` fixtures of `tests/`:
@@ -824,7 +975,10 @@ Each PR is verified locally first, opened as a draft, and keeps
    opens, rather than temporary entries (section 3.1). Agreed?
 6. **Replace's and the signature instructions' new operands** (entries for
    the binders crossed; parameter, sort and constructor entries): an ABI
-   change in instructions the driver issues often.
+   change in instructions the driver issues often, and a new soundness
+   obligation. Once binders have no names, an entry the driver supplies can
+   alias an ambient one; section 3.6 states the condition each place needs,
+   and section 7.1 tests each.
 7. **PR 3's size.** PR 1's indirection and PR 2's primitives keep it to the
    switch itself; it still changes the kernel, the bridge and the driver
    together. Split PR 2 out or not?
