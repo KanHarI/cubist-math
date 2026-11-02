@@ -85,11 +85,20 @@ kernel names never meet. A rollback never lowers it.
 | cumulativity | `ck_syntactic_cumulative` | one name to open two binders' bodies with, to compare them |
 | new binders | `cc_instr_eta` (Π and level Π), `ck_reduce_composition` (at Π and level Π), `ck_equiv_type`, `ck_fiber_type`, `ck_contractible_type`, `ck_identity_equiv`, `expected` and `ck_clause_type` in `eliminators.c`, `squash_type`, `cc_instr_sum_elim`'s case types | the bound variable of a binder the kernel builds |
 | new dimension binders | `cc_instr_eta` at a path type, `ck_fill`, path composition, `displayed`, `shown_boundary`, `ck_identity_equiv`, the Glue and higher-sort computations | the same for dimensions, chosen by `ck_fresh_dimension` below 64 |
+| the generated constructor | `cc_instr_signature_close`: the squash constructor's symbol (`.symbol = ck_fresh_symbol(k)`), which `add_constructor` keeps in the signature table and `cc_kernel_signature_constructor` reports; its `.self` in the shape check; and `squash_type`'s binders `y_j`, `z_j` | a label stored outside any term, the only fresh symbol that is; the binders are bound variables |
 
-Every kernel fresh name is a bound variable, a placeholder for one, or, in
-`apply_substitution`, a placeholder for an admission symbol about to be
-replaced. None names a context entry or outlives the operation that took it
-except as a binder's name.
+Every kernel fresh name is a bound variable, a placeholder for one, in
+`apply_substitution` a placeholder for an admission symbol about to be
+replaced, or the generated constructor's label. Apart from that label, none
+names anything or outlives the operation that took it except as a binder's
+name. The binder names that do persist sit in judgements' terms and types:
+eta's, the clause types', the eliminator's `Π (z : I). M(z)` (`expected`),
+composition's in a Step's result, the equivalence types' in Glue
+judgements, and capture renaming's. Besides `ck_fresh_symbol`, `next_symbol`
+moves only up, in `ck_make` past a symbol a `CC_VAR` or term binder is built
+with, which the entry and signature instructions use to reserve their
+symbols (`ck_var` in `cc_instr_extend`, `cc_instr_level`,
+`cc_instr_signature_begin` and `cc_instr_signature_constructor`).
 
 A fresh name's cost and its effect on a result's identity differ by whether
 it stays in the result:
@@ -392,16 +401,47 @@ go: bound level variables compare by index.
 that is not bound. A temporary entry would be a judgement-store record with
 a type judgement, a context and a scope, made by a query, and its id would be
 reused after the store truncates it. So the kernel gets a third, internal
-kind, numbered by de Bruijn level: a term whose greatest opened level is
-`m - 1` opens its next binder as `CC_OPENED(m)`. The choice is deterministic
-(the same binder opened in the same term gives the same handle, so caches
-are shared, which fresh symbols prevent today) and never clashes, since the
-opener takes a level above every one in the term. Closing `CC_OPENED(m)`
-replaces it by `CC_BOUND` at each depth, and since no greater level is in
-the term, the nodes containing it are exactly those whose greatest level is
-`m`. Every opening is closed before its operation returns; `ck_make` refuses
-`CC_OPENED` from `cc_kernel_term`, and a node field (below) lets each query
-and instruction check its answer in O(1).
+kind, numbered by de Bruijn level.
+
+**Reserving levels.** Each operation that opens binders reserves its levels
+from a counter of its own, a C local passed to the helpers it calls, never a
+kernel-wide field. The counter starts above every opened level in every
+operand the operation will combine with what it opens: the maximum of those
+operands' `opened` fields (below). It hands out one level per binder opened
+and reuses none before the operation ends. A rule local to the term being
+opened is not enough: porting `parts` (a clause type's telescope) with
+placeholders, for `fork : S → S → S`, opening the first argument puts
+`CC_OPENED(0)` into the constructed term `fork(OPENED(0))` but not into the
+rest of the telescope, `Π (y : S). S`, which still has no opened level; a
+term-local rule would open `y` at 0 as well and build `M(fork(y, y))` where
+`M(fork(x, y))` is meant. The operation's counter gives `y` level 1. The
+start is a function of the operands, so the same operation on the same
+operands opens the same binders at the same levels and makes the same
+handles: caches are shared, which fresh symbols prevent today.
+
+Closing `CC_OPENED(m)` replaces it by `CC_BOUND` at each depth, and visits
+only nodes with `opened > m`. Every opener closes in the reverse order of
+opening, and a nested operation closes its own levels before it returns, so
+when `m` is closed no greater level is live, and those nodes are exactly the
+ones containing it; closing out of order would visit more nodes, never give a
+wrong answer. Every opening is closed before its operation returns;
+`ck_make` refuses `CC_OPENED` from `cc_kernel_term`, and the `opened` field
+lets each query and instruction check its answer in O(1).
+
+The openers, and the operands each reserves above:
+
+| Opener | Operands its counter starts above |
+| --- | --- |
+| normalization under a binder (`normal`) | the binder term being normalized; it combines with nothing else, since the parent frame receives the closed result |
+| Step at a position under binders (`cc_instr_step`) | the target, whose judgement holds no opened level, so the crossed binders take 0, 1, … |
+| `parts_agree` (Glue's side conditions) | both sides |
+| clause and constructor types if ported with placeholders (`parts`, `arity`, `ck_clause_type`, `expected`) | the instance, the motive, the clauses given and the constructor type, and every argument opened so far, by the shared counter |
+| equivalence constructions (`ck_equiv_type`, `ck_fiber_type`, `ck_contractible_type`, `ck_identity_equiv`) | their type and term operands, which may hold levels when a Glue computation runs under a normalization's opened binder; the helpers share the caller's counter |
+| composition at Π and level Π (`ck_reduce_composition`) | the composition term |
+| queries on terms with loose indices | the query's term, which holds no opened level |
+
+Iota needs no opener: it instantiates the constructor's telescope by the
+actual arguments (section 3.3).
 
 The driver opens binders too, but differently: to derive a body it needs a
 judgement in a context, so it makes a real entry with `cc_instr_extend`, as
@@ -419,21 +459,52 @@ decodes, and keeps its names for entries in its scopes (section 5.3).
 
 ### 3.2 Node metadata
 
-`cc_node` keeps its size (48 bytes) if `depth` (at most 512) moves to 16 bits,
-as the stopgap did:
+Today's `cc_node` is 48 bytes, natively (arm64) and under WebAssembly
+(wasm32), measured with `sizeof` and `offsetof`: `kind` (the enum, 4 bytes)
+at 0, `payload` at 4, `child[4]` at 8, `depth` (`unsigned`) at 24,
+`dimensions_known` at 28, padding to 32, `symbols` at 32, `dims` at 40.
+Adding two 32-bit counters as they stand would make it 56. Narrowing `kind`
+to 8 bits (the largest kind, `CC_LIST`, is 53; three new kinds make 56) and
+`depth` to 16 bits (`ck_make` bounds it by 512) keeps 48, with full 32-bit
+counters; the same `sizeof` check of this layout gives 48 on both targets:
+
+| Offset | Field | Width | Range |
+| --- | --- | --- | --- |
+| 0 | `kind` | 8 bits | the `cc_term_kind` values, below 256 |
+| 1 | `dimensions_known` | 8 bits | as today |
+| 2 | `depth` | 16 bits | 1 to 512, refused above by `ck_make` as today |
+| 4 | `payload` | 32 bits | as today; for `CC_BOUND` and `CC_OPENED` below `UINT32_MAX` |
+| 8 | `child[4]` | 4 × 32 bits | as today |
+| 24 | `loose` | 32 bits | 0 to `UINT32_MAX` |
+| 28 | `opened` | 32 bits | 0 to `UINT32_MAX` |
+| 32 | `contexts` | 64 bits | the filter, replacing `symbols` |
+| 40 | `dims` | 64 bits | as today |
 
 - `loose`: one more than the greatest loose `CC_BOUND` index, 0 when the
-  node is locally closed. For `CC_BOUND(i)` it is `i + 1`; for a binder the
-  maximum of the domain's and the body's minus one; otherwise the children's
-  maximum. Exact.
-- `opened`: one more than the greatest `CC_OPENED` level, the same way.
-  Exact.
+  node is locally closed. For `CC_BOUND(i)` it is `i + 1`; for a binder, the
+  larger of the domain's `loose` and the body's `loose` less one (0 when the
+  body's is 0); otherwise the children's maximum. Exact.
+- `opened`: one more than the greatest `CC_OPENED` level, the children's
+  maximum, no binder lowering it. Exact.
 - `contexts`: replaces `symbols`. A 64-bit filter of the `CC_CONTEXT` ids
   the node mentions (bit `e % 64`). Zero exactly when the node mentions no
   entry, which is the "mentions any context entry" flag; otherwise an
   over-approximation, like `symbols` today but over context references only,
   so a closed definition body or computed value is always zero.
 - `dims` and `dimensions_known` as today.
+
+The only way a counter could overflow is a leaf: `i + 1` for `CC_BOUND(i)`
+with `i = UINT32_MAX` would wrap to 0 and call an open term closed, and a
+binder or a parent never adds. So `ck_make` refuses `CC_BOUND` and
+`CC_OPENED` with payload `UINT32_MAX` as a resource error, as it refuses a
+`CC_VAR` or binder symbol of `UINT32_MAX` today ("Term symbol space
+exhausted."), and refuses `CC_OPENED` from `cc_kernel_term` altogether. An
+opener's counter that would reach `UINT32_MAX` fails its operation the same
+way; in practice levels stay near the syntax depth. Overflow tests: a
+`CC_BOUND(UINT32_MAX - 1)` leaf has `loose == UINT32_MAX` and is not closed;
+`CC_BOUND(UINT32_MAX)` is refused by `cc_kernel_term`; a binder over the
+largest leaf lowers it by one; and the randomized metadata test draws
+indices near both ends.
 
 ### 3.3 Operations
 
@@ -518,7 +589,8 @@ How each piece changes:
   if a loose index is left (a binder the target uses has no entry), compares
   with the equality's left side, abstracts them out of the right side, and
   discharges them from the equality's context. This is an ABI change of
-  `cc_instr_replace`.
+  `cc_instr_replace`, and the entry vector joins its derivation's memo key
+  (section 3.7).
 - **Eta instruction, composition at Π and level Π, equivalence types,
   clause types, the squash** (section 1.2's "new binders"): built directly
   with `CC_BOUND`, or with `CC_OPENED` placeholders closed at the end, which
@@ -584,6 +656,21 @@ reports those as today's symbols; otherwise those fields go and the driver
 keeps the names it declared. Either way a constructor's type is reported
 closed, with loose indices over the admission telescope, which the driver
 decodes with its names for the telescope.
+
+**The generated constructor.** `cc_instr_signature_close` appends the
+squash with a fresh symbol today. After the change it needs neither an entry
+nor a symbol. It is the last constructor, so no constructor type refers to
+it, and nothing would ever open the telescope with an entry for it. Its type
+is built closed directly, the sort as the `CC_BOUND` that stands for it in
+the telescope and `y_j`, `z_j` as `CC_BOUND`, and checked by
+`constructor_shape` as today; `.self`, which only stops a constructor from
+naming itself, has nothing to compare for it. Its label is 0 with
+`generated` set, under either answer to question 4, and the driver names it
+by that flag. `signatureRecord` in `web/cubical-syntax.mjs` already calls it
+`squash` by the flag; `cubical-program.mjs` (`shown`) and
+`tools/proof-migration.mjs` (`earlier`) read `c.symbol` for every
+constructor, the squash's included, and would name it by the flag too. A
+review reproduced the symbol with `inductive Tr : prop { inc; }`.
 
 ### 3.5 What happens to today's machinery
 
@@ -655,8 +742,51 @@ abstracting would then bind both. Each such place needs its own condition.
   be zero, an O(1) check that nothing was left open.
 - **The kernel's own openings** (normalization, Step under binders, queries
   on loose terms, constructions with `CC_OPENED` placeholders). A
-  `CC_OPENED` level is chosen above every level in the term, so it is fresh
-  by construction; nothing to check.
+  `CC_OPENED` level comes from the opener's counter, which starts above every
+  level in every operand it combines (section 3.1), so it is fresh by that
+  discipline; the condition is that each opener's operand list is complete,
+  which the `fork` test of section 7.1 checks for the hardest case.
+
+### 3.7 The new operands in the derivation memo
+
+An instruction answers a repeated derivation from the memo before it checks
+anything: `ck_instr_begin` hashes the derivation (`derivation_hash`: the
+rule, `premise[4]`, `entry`, `operand[2]`, the depth and the position bytes),
+looks it up, and returns the earlier judgement on a match
+(`same_derivation`), and `cc_instr_replace` returns at once when it does.
+Replace's derivation records its two premises, its side and its position.
+With the new API, the binder entries are a further operand that changes the
+result: replacing `tt` inside `λ (x : Unit). tt` by `tt ≡ (λ (z : Unit). tt) e`
+with the vector `[e]` abstracts `e`, giving `λ (x : Unit). (λ (z : Unit). tt) x`
+with `e` discharged, while `[0]` leaves `e` free in the result and in its
+context. Under today's key the two would be one derivation, so the second
+would be answered with the first's judgement and skip its own checks
+(section 3.6).
+
+So the vector is part of the derivation:
+
+- **Storage.** A new store of `uint32_t` entry ids beside `positions`, with
+  the derivation recording its offset; the count is the number of term and
+  level binders the position crosses, at most the depth, which
+  `ck_instr_begin` bounds by 1,024. The pending vector is kept with
+  `pending_position` while the instruction runs, and the store is truncated
+  at rollback and commit with the others (a sixth slot of
+  `checkpoint_store`).
+- **Identity.** `derivation_hash` hashes the vector after the position bytes,
+  and `same_derivation` compares it entry by entry, so vectors that differ
+  anywhere, `0` against an entry included, are different derivations.
+- **Reading.** `cc_judgement_info` reports the vector beside the position,
+  for the driver's views of a derivation.
+
+The other instructions that gain operands are the signature instructions,
+and they do not reach the memo: `cc_instr_signature_begin` and
+`cc_instr_signature_constructor` start with `ck_instr_begin_stateful`, which
+never answers from it, and `cc_instr_signature_close` records no derivation.
+Their entry operands are still recorded with the judgement, for reading.
+`cc_kernel_instantiate` is a query: if its results are memoized, the key holds
+the term and the whole entry vector. Lambda, Pi, Sigma and the level binders
+take no new operand (their entry is already `entry`), and Step's internal
+openings are no operand.
 
 ## 4. Per binder class: what moves, and when
 
@@ -692,8 +822,10 @@ abstracting would then bind both. Each such place needs its own condition.
 `CC_KERNEL_ABI_VERSION` becomes 4: `CC_VAR` is retired and reserved;
 `CC_BOUND` and `CC_CONTEXT` are added to `cc_term_kind`; a binder's payload
 must be 0; the child-order comment changes. `cc_instr_replace` takes the
-entries for the binders crossed; `cc_instr_signature_begin` and
-`cc_instr_signature_constructor` take entries instead of symbols. The queries
+entries for the binders crossed, and `cc_judgement_info` reports them
+(section 3.7); `cc_instr_signature_begin` and
+`cc_instr_signature_constructor` take entries instead of symbols, and a
+generated constructor reports label 0 (section 3.4). The queries
 accept terms with loose indices (section 3.3). One new query instantiates a
 term's loose indices with entries, for the driver's derivation under binders
 (`cc_kernel_instantiate`, a proposed name). `cc_instr_extend` and
@@ -871,15 +1003,18 @@ Each PR is verified locally first, opened as a draft, and keeps
    entries' symbols). On ABI 3 it is implemented with symbols, so nothing
    observable changes: same verdicts, same ticks, same baseline. It confines
    the ABI switch's driver diff.
-2. **PR 2, kernel primitives (C only, ABI unchanged).** The node fields
-   (`loose`, `opened`, `contexts` beside `symbols`), the internal kinds, and
-   instantiate, abstract, open and close as worklists with ticks, the memo and
-   the allocation-failure paths, unused by the rules yet. C tests for their
-   laws (below). Optional: it can fold into PR 3 if the user prefers no
-   unused code on main.
+2. **PR 2, kernel primitives (C only, ABI unchanged).** The packed node
+   layout of section 3.2 with `loose` and `opened` and their bounds (`symbols`
+   stays until PR 3, where `contexts` takes its slot, so the node stays at 48
+   bytes throughout), the internal kinds, and instantiate, abstract, open and
+   close as worklists with ticks, the memo and the allocation-failure paths,
+   with the opened-level counter of section 3.1, unused by the rules yet. C
+   tests for their laws and bounds (below). Optional: it can fold into PR 3
+   if the user prefers no unused code on main.
 3. **PR 3, the switch: term and level binders, ABI 4.** `CC_VAR` retired,
    `CC_BOUND` and `CC_CONTEXT` in; binders without payload; every change of
-   sections 3.3 to 3.6, the freshness conditions of section 3.6 included;
+   sections 3.3 to 3.7, the freshness conditions of section 3.6 and the
+   derivation identity of section 3.7 included;
    the bridge; PR 1's module switched to ABI 4, with role-distinct level keys
    and the signature instructions' entry operands, and the signature
    consumers of section 5.2 (`cubical-program.mjs`,
@@ -941,6 +1076,23 @@ Each PR is verified locally first, opened as a draft, and keeps
      parameter entry, or a term entry for a universe parameter;
      SignatureConstructor with a constructor entry already in the telescope,
      or a type whose context holds an entry outside it.
+- **Replay tests of the derivation memo** (section 3.7): the same Replace
+  (premises, side, position) issued with `[e]` and then with `[0]`, the
+  example there, gives two judgements with different terms and contexts,
+  neither answered by the other's entry; a vector refused after an accepted
+  one with the same premises and position is still refused; the same vector
+  twice gives the same judgement.
+- **Opened levels across operands** (section 3.1): the clause type of
+  `fork : S → S → S` is `Π (x : I). Π (y : I). Π (x̄ : M(x)). Π (ȳ : M(y)).
+  M(fork(x, y))`, compared with that type built by hand, the two arguments
+  apart; the same for a constructor with two data arguments of one type; an
+  equivalence type built under a normalization's opened binder, whose
+  operands hold level 0, takes its own binders above it; `parts_agree` on
+  two sides with different greatest levels.
+- **Metadata bounds** (section 3.2): the overflow tests listed there.
+- **The generated constructor** (section 3.4): `inductive Tr : prop { inc; }`
+  admits, its squash has label 0 and `generated` set, its stored type is
+  closed, and an eliminator over `Tr` computes on it as today.
 - **Differential run, old against new.** A temporary tool, run once with
   main's build and once with the branch's, over the library, the archive
   (`tools/audit-cubical.mjs --all`) and the `.cubist` fixtures of `tests/`:
