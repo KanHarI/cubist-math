@@ -22,6 +22,7 @@
 //   node tools/runtime-repl-probe.mjs NAME[,NAME] [runtime|kernel|readback]
 import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import createCubical from "../web/dist/cubical.mjs";
@@ -30,6 +31,10 @@ import { ReplSession } from "../web/repl-session.mjs";
 import { RuntimeQuery } from "../web/cubical-runtime.mjs";
 import { sourceReader } from "./module-sources.mjs";
 import { assertFreshBuild, sourceHash } from "./build-stamp.mjs";
+
+// The strong recursion contracts' Fibonacci, as a REPL setup.
+const fibonacci = ["import euclid; use nat;", ...readFileSync(new URL("../tests/fixtures/contracts/strong_recursion_contracts.cubist", import.meta.url), "utf8")
+  .split("\n").filter(line => !/^(#|import |use |evaluate )/.test(line))].join("\n");
 
 export const workloads = {
   // The library's Euclid over binary Nat (library/euclid.cubist,
@@ -41,8 +46,24 @@ export const workloads = {
   "euclid-5-prime": ["import euclid; use nat;", "evaluate euclid(5).1;"],
   "euclid-6-prime": ["import euclid; use nat;", "evaluate euclid(6).1;"],
   "euclid-10-prime": ["import euclid; use nat;", "evaluate euclid(10).1;"],
-  // 7! + 1 = 71 * 71: the search's 70 candidates pass the kernel's depth guard.
+  // 7! + 1 = 71 * 71: the search's 70 candidates. The kernel's queries met
+  // their syntax depth guard (K344) here until the strong recursion and the
+  // search stopped growing their terms at each candidate
+  // (docs/reports/transport-free-recursion.md).
   "euclid-7-prime": ["import euclid; use nat;", "evaluate euclid(7).1;"],
+  // The search's limits on the kernel's path: 210 candidates compute, and at
+  // 250 its minimality certificate is past the guard.
+  "least-divisor-211-squared": ["import euclid; use nat;", "evaluate least_divisor(44521, tt).1;"],
+  "least-divisor-251-squared": ["import euclid; use nat;", "evaluate least_divisor(63001, tt).1;"],
+  // Least elements and Peano recursion, on the same transport-free recursion.
+  "least-element-240": ["import least_elements; use nat;",
+    "evaluate least_element(fun (n : Nat) => 240 <= n, fun (n : Nat) => bnat_le_decide(240, n), 1000000, tt).1;"],
+  "peano-count-300": ["import nat; use nat; def count(n : Nat) : Nat := nat_peano(U0, fun (m : Nat) => Nat, 0, fun (m, c : Nat) => succ(c), n);",
+    "evaluate count(300);"],
+  // A branching strong recursion, sharing its smaller values: the Fibonacci
+  // of tests/fixtures/contracts/strong_recursion_contracts.cubist.
+  "fibonacci-22": [fibonacci, "evaluate fib(22);"],
+  "fibonacci-25": [fibonacci, "evaluate fib(25);"],
   // An exact expected value is compared by the kernel's queries on either path.
   "euclid-3-expecting": ["import euclid; use nat;", "evaluate euclid(3).1 expecting 7;"],
   "euclid-5-expecting": ["import euclid; use nat;", "evaluate euclid(5).1 expecting 11;"],

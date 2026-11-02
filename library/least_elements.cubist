@@ -40,40 +40,60 @@ computable def least_at(P : Nat -> U0, d : Nat, holds : P(d), none : NoneBelow(P
     )
   );
 
-// The search with k candidates to go: from a candidate d, with P nowhere
-// below it and P(d + k), it finds the least.
-computable def LeastSearch(P : Nat -> U0, k : Nat) :
-  U0 := forall d : Nat. NoneBelow(P, d) -> P(d + k) -> Least(P);
+// The search at distance k from a witness n: a candidate d with d + k = n,
+// with P nowhere below it, finds the least.
+computable def LeastSearch(P : Nat -> U0, n, k : Nat) :
+  U0 := forall d : Nat. d + k = n -> NoneBelow(P, d) -> Least(P);
 
-// With none to go, P holds at the candidate.
-computable def least_search_zero(P : Nat -> U0) :
-  LeastSearch(P, 0) := fun (d : Nat, none : NoneBelow(P, d), holds : P(d + 0)) => least_at(
-    P, d, comp(fun (i : Interval) => P(nat_add_zero(d) @ i), holds), none
-  );
-
-// Otherwise the candidate is decided: where P holds the search ends, and
-// where it fails the next candidate goes on, with one fewer to go.
-computable def least_search_succ(
-  P : Nat -> U0, decide : forall n : Nat. Decidable(U0, P(n)), k : Nat, onward : LeastSearch(P, k)
+// Each candidate is decided: where P holds the search ends, and where it
+// fails the next candidate goes on, one closer to the witness, so the
+// call's distance is strictly smaller. At distance zero the candidate is
+// the witness, so P holding there only refutes the decision's other
+// branch. As in prime_numbers' divisor search, the next distance is
+// decided on the bits, and the proof from the last one only refutes.
+computable def least_search_step(
+  P : Nat -> U0, decide : forall n : Nat. Decidable(U0, P(n)), n : Nat, holds : P(n), k : Nat
 ) :
-  LeastSearch(P, succ(k)) := fun (d : Nat, none : NoneBelow(P, d), holds : P(d + succ(k))) => match decide(
-    d
-  ) return Least(P) {
-    left here => least_at(P, d, here, none);
-    right fails => onward(
-      succ(d), none_below_succ(P, d, none, fails),
-      comp(fun (i : Interval) => P(nat_succ_add_shift(d, k) @ ~i), holds)
-    );
+  NatBelow(U0, LeastSearch(P, n), k) -> LeastSearch(P, n, k) := match k {
+    b_zero => fun (
+      below : NatBelow(U0, LeastSearch(P, n), b_zero), d : Nat, distance : d + b_zero = n,
+      none : NoneBelow(P, d)
+    ) => match decide(d) return Least(P) {
+      left here => least_at(P, d, here, none);
+      right fails => absurd(
+        fails(comp(fun (i : Interval) => P(trans(sym(nat_add_zero(d)), distance) @ ~i), holds))
+      );
+    };
+    b_positive(p) => fun (
+      below : NatBelow(U0, LeastSearch(P, n), b_positive(p)), d : Nat,
+      distance : d + b_positive(p) = n, none : NoneBelow(P, d)
+    ) => match decide(d) return Least(P) {
+      left here => least_at(P, d, here, none);
+      right fails => match nat_decide(succ(d) + bpositive_pred(p), n) return Least(P) {
+        left onward_distance => below(
+          bpositive_pred(p), bpositive_pred_lt(p), succ(d), onward_distance,
+          none_below_succ(P, d, none, fails)
+        );
+        right off => absurd(
+          off(
+            trans(
+              nat_succ_add_shift(d, bpositive_pred(p)),
+              trans(cong(add(d), bpositive_succ_pred(p)), distance)
+            )
+          )
+        );
+      };
+    };
   };
 
 // The least natural where a decidable P holds, from a witness n: the search
-// from 0 with n candidates to go, by nat's Peano recursion.
+// from 0 at distance n, by nat's strong recursion.
 computable def least_element(
   P : Nat -> U0, decide : forall n : Nat. Decidable(U0, P(n)), n : Nat, holds : P(n)
 ) :
-  Least(P) := nat_peano(
-    U0, LeastSearch(P), least_search_zero(P), least_search_succ(P, decide), n, 0,
-    none_below_zero(P), comp(fun (i : Interval) => P(nat_zero_add(n) @ ~i), holds)
+  Least(P) := nat_strong_recursion(
+    U0, LeastSearch(P, n), least_search_step(P, decide, n, holds), n, 0, nat_zero_add(n),
+    none_below_zero(P)
   );
 
 // A least element is unique: each is at most the other.

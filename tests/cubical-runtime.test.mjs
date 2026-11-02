@@ -836,20 +836,34 @@ def deep := parity(100 * 100);
   assert.equal(kernel.arena().nodes, before);
 });
 
-// The library's Euclid computes by NUM1's strong recursion, which
-// transports along offset paths: its prime is demand the runtime refuses at
-// a composition, having built no kernel syntax.
-test("the library Euclid's prime stops the runtime at a composition, allocating no native syntax", async t => {
+// A binary natural observed bit by bit: b_zero, or b_positive of bits
+// ending at bp_one, the least significant first (library/bnat.cubist).
+async function binary(query, handle = query.root) {
+  const top = await query.observe(handle);
+  assert.equal(top.kind, "Con");
+  if (top.index === 0) return 0n;
+  let value = 0n, weight = 1n;
+  for (let bit = await query.observe(top.args[0]); ; bit = await query.observe(bit.args[0]), weight *= 2n) {
+    assert.equal(bit.kind, "Con");
+    if (bit.index === 0) return value + weight;
+    if (bit.index === 2) value += weight;
+  }
+}
+
+// The library's Euclid computes by nat's strong recursion, which steps a
+// course of values by the bits and retypes nothing
+// (library/bnat_recursion.cubist): its prime computes in the runtime, which
+// builds no kernel syntax.
+test("the library Euclid's prime computes in the runtime, allocating no native syntax", async t => {
   const { query, kernel } = await setup(t, `
 import euclid; use nat;
 def four := euclid(4);
 def five := euclid(5);
 `);
-  for (const name of ["four", "five"]) {
+  for (const [name, prime] of [["four", 5n], ["five", 11n]]) {
     const before = kernel.arena().nodes, runtime = query(name, { milliseconds: budget(30000) }), pair = await runtime.observe();
     assert.equal(pair.kind, "Pair");
-    await assert.rejects(runtime.observe(pair.first), error => fails("unsupported")(error)
-      && error.message === "Runtime execution of Comp is not implemented.");
+    assert.equal(await binary(runtime, pair.first), prime);
     assert.equal(kernel.arena().nodes, before, "runtime allocated native substitution syntax");
     const retained = runtime.retainedObjects();
     assert.ok(retained.runtimeObjects > 0);

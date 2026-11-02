@@ -66,10 +66,10 @@ test("each workload's outcome, normalizations and comparisons are the recorded o
   }
 });
 
-// The library's Euclid computes by NUM1's strong recursion, whose
-// compositions the runtime does not execute: it reports the demand
-// unsupported, and the kernel's head queries compute the value form again.
-// Its argument is a binary literal, which elaboration normalizes once.
+// The library's Euclid computes by nat's strong recursion, which computes
+// no transport (docs/reports/transport-free-recursion.md): the runtime
+// computes the value form with no fallback, asking the kernel for no weak
+// head. Its argument is a binary literal, which elaboration normalizes once.
 test("REPL evaluation and print show the value form, normalizing only the literal", async () => {
   const repl = await cold("euclid-3"), print = await cold("euclid-3-print"), normal = await cold("euclid-3-normal");
   assert.equal(repl.outcome.sha256, print.outcome.sha256);
@@ -78,10 +78,10 @@ test("REPL evaluation and print show the value form, normalizing only the litera
   for (const run of [repl, print]) {
     assert.equal(run.phases.normalize.calls, 1);
     assert.equal(run.phases.compare, undefined);
-    // The runtime is asked first; its one failure is the fallback.
-    assert.ok(run.phases.runtime.failures === 1 && run.runtime.steps > 0);
-    assert.equal(run.phases.runtime.nodes, 0, "the runtime builds no kernel syntax");
-    assert.ok(run.phases.demand.calls > 0);
+    // The runtime is asked, and computes the whole value form.
+    assert.ok(run.phases.runtime.calls > 0 && !run.phases.runtime.failures && run.runtime.steps > 0);
+    assert.ok(!run.phases.runtime.nodes, "the runtime builds no kernel syntax");
+    assert.equal(run.phases.demand, undefined);
     assert.ok(run.entry.querySteps < normal.entry.querySteps, "the value form costs less than the normal form");
   }
   // A divisibility decision is ordinary data: the runtime computes it,
@@ -114,21 +114,23 @@ test("REPL evaluation of !!!e normalizes once without self-comparison and agrees
 });
 
 test("the depth failures are reproduced, with the work done before them", async () => {
-  // 7! + 1 = 71 * 71: the least divisor search's 70 candidates pass the
-  // kernel's syntax depth guard, in the normal form and in the weak heads
-  // the value form asks after the runtime's fallback.
-  const normal = await cold("euclid-7-prime-normal"), shown = await cold("euclid-7-prime");
-  for (const [run, phase] of [[normal, "normalize"], [shown, "demand"]]) {
-    assert.equal(run.outcome.code, "K344", phase);
-    assert.equal(run.phases[phase].failures, 1, phase);
-    assert.ok(run.phases[phase].querySteps > 0 && run.phases[phase].nodes > 10000, `${phase} counts the failed query's work`);
-    assert.equal(run.phases.compare, undefined, `${phase} fails before any comparison`);
-  }
-  assert.equal(shown.phases.runtime.failures, 1);
+  // 251 * 251: the least divisor search's 250 candidates build a minimality
+  // certificate past the kernel's syntax depth guard in the normal form;
+  // the runtime computes the value form.
+  const normal = await cold("least-divisor-251-squared-normal"), shown = await cold("least-divisor-251-squared");
+  assert.equal(normal.outcome.code, "K344");
+  assert.equal(normal.phases.normalize.failures, 1);
+  assert.ok(normal.phases.normalize.querySteps > 0 && normal.phases.normalize.nodes > 10000, "the failed query's work is counted");
+  assert.equal(normal.phases.compare, undefined, "it fails before any comparison");
+  assert.equal(shown.outcome.text, "251");
+  assert.ok(shown.phases.runtime.calls > 0 && !shown.phases.runtime.failures);
   // Below that depth the kernel's queries compute the library's values that
-  // the archive's unary Euclid could not: its K344 began at euclid(4).
+  // the archive's unary Euclid could not, its K344 beginning at euclid(4),
+  // and, since the recursion computes no transport, euclid(7)'s prime,
+  // whose 70 candidates passed the guard before.
   for (const [id, value] of [["euclid-4", "(5, (tt, <fun>), tt)"], ["euclid-4-prime", "5"], ["euclid-4-prime-print", "5"],
-    ["euclid-5-prime", "11"], ["euclid-4-pattern", "(5, <unevaluated>)"], ["euclid-5-prime-normal", "11"]]) {
+    ["euclid-5-prime", "11"], ["euclid-4-pattern", "(5, <unevaluated>)"], ["euclid-5-prime-normal", "11"],
+    ["euclid-7-prime", "71"], ["euclid-7-prime-normal", "71"]]) {
     const run = await cold(id);
     assert.equal(run.outcome.text, value, id);
     assert.equal(run.outcome.status, "value", id);

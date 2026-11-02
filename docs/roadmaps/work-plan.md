@@ -1072,7 +1072,10 @@ Each step lands in focused PRs under the review rule above.
       because a composition at a data sort reads its base's weak head and
       a fallback that forces nothing leaves that base, the rest of the
       computation, to the kernel. The whole-walk restart stays until a
-      design faster end to end is ready. M3 was taken on 2026-10-30
+      design faster end to end is ready. Since 2026-11-01 the library's
+      strong and Peano recursion compute no transport, and the library
+      Euclid's and `factorial`'s value forms no longer fall back
+      ([report](../reports/transport-free-recursion.md)). M3 was taken on 2026-10-30
       ([report](../reports/shared-runtime-evaluation.md#typed-readback-m3)):
       printed `!!` through the runtime gains on no printed `!!` of the
       corpora and runs slower on rationals, so W3 is not taken and printed

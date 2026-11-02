@@ -1,7 +1,7 @@
 {
-  "version": 10,
-  "generatedAt": "2026-10-30T09:34:46.815Z",
-  "revision": "3a548750d93597414fcc2425a1847b271a48d68c",
+  "version": 11,
+  "generatedAt": "2026-11-02T00:14:20.680Z",
+  "revision": "0b22669e3ec88d3bab99e24d5730a6f352d64c17",
   "modified": false,
   "build": {
     "kernelSources": "0df2c8cddc23c0fc58f62b6445e1f4cce3138c28685613d85f157584afa0391a",
@@ -40,38 +40,41 @@
       "outcome": {"status":"value","text":"(7, (tt, <fun>), tt)","length":20,"sha256":"7284170f81cf29a2"},
       "deterministic": true,
       "import": {
-        "instructions": 152364,
-        "rejected": 282,
-        "instructionSteps": 416206,
-        "queries": 15235,
-        "querySteps": 189048,
-        "nodes": 21643,
-        "ms": {"median":1570.155,"min":1548.751,"max":1588.995,"samples":5}
+        "instructions": 171336,
+        "rejected": 353,
+        "instructionSteps": 493183,
+        "queries": 17537,
+        "querySteps": 235149,
+        "nodes": 24784,
+        "ms": {"median":2351.114,"min":2312.253,"max":3024.993,"samples":5}
       },
-      "total": {"instructions":100,"instructionSteps":454,"queries":17,"querySteps":26944,"nodes":7302,"peakNodes":28945,"peakBytes":3151872},
+      "total": {"instructions":100,"instructionSteps":453,"queries":7,"querySteps":954,"nodes":362,"peakNodes":25146,"peakBytes":3151872},
       "runtime": {
-        "steps": 4687,
-        "allocatedCells": 4224,
-        "forces": 432,
-        "hits": 13,
-        "beta": 119,
-        "iota": 23,
-        "maxFrames": 104,
-        "snapshotNodes": 490,
-        "snapshotDefinitions": 21,
-        "shared": 7
+        "steps": 39173,
+        "allocatedCells": 26092,
+        "forces": 4852,
+        "hits": 404,
+        "beta": 1406,
+        "iota": 318,
+        "maxFrames": 166,
+        "snapshotNodes": 1426,
+        "snapshotDefinitions": 53,
+        "shared": 41
       },
-      "ms": {"cold":{"median":9.346,"min":9.282,"max":9.753,"samples":5},"unobserved":7.574,"warm":{"median":3.229,"min":2.738,"max":4.045,"samples":15}},
+      "ms": {
+        "cold": {"median":12.561,"min":12.281,"max":19.538,"samples":5},
+        "unobserved": 10.322,
+        "warm": {"median":6.357,"min":4.754,"max":11.941,"samples":15}
+      },
       "phases": {
-        "check": {"calls":2,"instructions":6,"instructionSteps":49,"nodes":10,"coldMs":0.156,"warmMs":0.02},
-        "inventory": {"calls":2,"coldMs":0.104,"warmMs":0.032},
-        "normalize": {"calls":1,"queries":1,"querySteps":985,"nodes":205,"coldMs":0.095,"warmMs":0.011},
-        "decode": {"calls":1,"coldMs":0.005,"warmMs":0.003},
-        "elaborate": {"calls":1,"instructions":94,"instructionSteps":405,"queries":6,"querySteps":128,"nodes":147,"coldMs":3.017,"warmMs":1.634},
-        "runtime": {"calls":3,"failures":1,"coldMs":2.15,"warmMs":0.328},
-        "demand": {"calls":10,"queries":10,"querySteps":25831,"nodes":6940,"coldMs":1.759,"warmMs":0.028},
-        "render": {"calls":1,"coldMs":0.269,"warmMs":0.11},
-        "other": {"calls":1,"coldMs":1.786,"warmMs":0.903}
+        "check": {"calls":2,"instructions":6,"instructionSteps":49,"nodes":10,"coldMs":0.223,"warmMs":0.025},
+        "inventory": {"calls":2,"coldMs":0.14,"warmMs":0.048},
+        "normalize": {"calls":1,"queries":1,"querySteps":826,"nodes":205,"coldMs":0.118,"warmMs":0.019},
+        "decode": {"calls":1,"coldMs":0.006,"warmMs":0.004},
+        "elaborate": {"calls":1,"instructions":94,"instructionSteps":404,"queries":6,"querySteps":128,"nodes":147,"coldMs":3.704,"warmMs":2.264},
+        "runtime": {"calls":11,"coldMs":5.534,"warmMs":1.7},
+        "render": {"calls":1,"coldMs":0.352,"warmMs":0.151},
+        "other": {"calls":1,"coldMs":2.435,"warmMs":1.42}
       },
       "depth": {
         "check": {
@@ -104,7 +107,7 @@
           "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
         }
       },
-      "maxRssMiB": {"median":322.3,"min":321.5,"max":325.2,"samples":5}
+      "maxRssMiB": {"median":346.9,"min":343.4,"max":353,"samples":5}
     },
     {
       "id": "euclid-3-normal",
@@ -116,32 +119,32 @@
         "text": "(7, (tt, fun (d26 : BNat, above27 : match match d26 return BOrdering { b_zero => b_greater; b_positive(x) => match x return BOrdering { bp_one => b_equal; bp_e…",
         "length": 1000,
         "sha256": "097c6a6c3f91f257",
-        "normal": "e1ea1115694d247e"
+        "normal": "3227eae7cb03adaf"
       },
       "deterministic": true,
       "import": {
-        "instructions": 152364,
-        "rejected": 282,
-        "instructionSteps": 416206,
-        "queries": 15235,
-        "querySteps": 189048,
-        "nodes": 21643,
-        "ms": {"median":1582.309,"min":1555.898,"max":1716.403,"samples":5}
+        "instructions": 171336,
+        "rejected": 353,
+        "instructionSteps": 493183,
+        "queries": 17537,
+        "querySteps": 235149,
+        "nodes": 24784,
+        "ms": {"median":2024.321,"min":1873.27,"max":2190.711,"samples":5}
       },
-      "total": {"instructions":100,"instructionSteps":454,"queries":8,"querySteps":455804,"nodes":114725,"peakNodes":136368,"peakBytes":20584448},
+      "total": {"instructions":100,"instructionSteps":453,"queries":8,"querySteps":441225,"nodes":109441,"peakNodes":134225,"peakBytes":20584448},
       "ms": {
-        "cold": {"median":134.244,"min":127.423,"max":140.241,"samples":5},
-        "unobserved": 132.981,
-        "warm": {"median":68.54,"min":60.498,"max":90.235,"samples":15}
+        "cold": {"median":142.499,"min":130.284,"max":162.58,"samples":5},
+        "unobserved": 140.026,
+        "warm": {"median":72.463,"min":59.026,"max":135.762,"samples":15}
       },
       "phases": {
-        "check": {"calls":2,"instructions":6,"instructionSteps":49,"nodes":10,"coldMs":0.158,"warmMs":0.027},
-        "inventory": {"calls":2,"coldMs":0.1,"warmMs":0.049},
-        "normalize": {"calls":2,"queries":2,"querySteps":455676,"nodes":114568,"coldMs":26.439,"warmMs":0.029},
-        "decode": {"calls":2,"coldMs":23.496,"warmMs":0.011},
-        "elaborate": {"calls":1,"instructions":94,"instructionSteps":405,"queries":6,"querySteps":128,"nodes":147,"coldMs":3.091,"warmMs":2.326},
-        "render": {"calls":1,"coldMs":79.347,"warmMs":63.893},
-        "other": {"calls":1,"coldMs":1.651,"warmMs":1.27}
+        "check": {"calls":2,"instructions":6,"instructionSteps":49,"nodes":10,"coldMs":0.174,"warmMs":0.028},
+        "inventory": {"calls":2,"coldMs":0.11,"warmMs":0.049},
+        "normalize": {"calls":2,"queries":2,"querySteps":441097,"nodes":109284,"coldMs":28.815,"warmMs":0.027},
+        "decode": {"calls":2,"coldMs":21.607,"warmMs":0.011},
+        "elaborate": {"calls":1,"instructions":94,"instructionSteps":404,"queries":6,"querySteps":128,"nodes":147,"coldMs":3.315,"warmMs":2.346},
+        "render": {"calls":1,"coldMs":86.654,"warmMs":68.693},
+        "other": {"calls":1,"coldMs":1.854,"warmMs":1.354}
       },
       "depth": {
         "check": {
@@ -151,14 +154,14 @@
           "kinds": {"App":3,"Sigma":2}
         },
         "normalize": {
-          "depth": 264,
-          "allocated": 114363,
+          "depth": 256,
+          "allocated": 109079,
           "chain": [
             "Pair.2",
             "Pair.1",
             "Pair.2",
             "Lam.1 ×4",
-            "Comp.2 ×9",
+            "Comp.2 ×7",
             "SumRec.2",
             "Lam.1",
             "Abort.1",
@@ -171,10 +174,10 @@
             "Lam.1 ×3",
             "App.0 ×2"
           ],
-          "kinds": {"App":49606,"Lam":12279,"Var":9652,"Tube":7883,"Comp":5434,"Path":5260,"PApp":4669,"Pi":3730}
+          "kinds": {"App":47745,"Lam":12401,"Var":9046,"Tube":7187,"Path":5113,"PApp":4533,"Comp":4469,"Pi":3512}
         }
       },
-      "maxRssMiB": {"median":473.2,"min":467,"max":478.3,"samples":5}
+      "maxRssMiB": {"median":481.6,"min":478.8,"max":485.4,"samples":5}
     },
     {
       "id": "euclid-3-print",
@@ -184,38 +187,37 @@
       "outcome": {"status":"value","text":"(7, (tt, <fun>), tt)","length":20,"sha256":"7284170f81cf29a2"},
       "deterministic": true,
       "import": {
-        "instructions": 152364,
-        "rejected": 282,
-        "instructionSteps": 416206,
-        "queries": 15235,
-        "querySteps": 189048,
-        "nodes": 21643,
-        "ms": {"median":1598.156,"min":1540.269,"max":1654.862,"samples":5}
+        "instructions": 171336,
+        "rejected": 353,
+        "instructionSteps": 493183,
+        "queries": 17537,
+        "querySteps": 235149,
+        "nodes": 24784,
+        "ms": {"median":1760.733,"min":1745.331,"max":1866.825,"samples":5}
       },
-      "total": {"instructions":100,"instructionSteps":454,"queries":17,"querySteps":26944,"nodes":7302,"peakNodes":28945,"peakBytes":3151872},
+      "total": {"instructions":100,"instructionSteps":453,"queries":7,"querySteps":954,"nodes":362,"peakNodes":25146,"peakBytes":3151872},
       "runtime": {
-        "steps": 4687,
-        "allocatedCells": 4224,
-        "forces": 432,
-        "hits": 13,
-        "beta": 119,
-        "iota": 23,
-        "maxFrames": 104,
-        "snapshotNodes": 490,
-        "snapshotDefinitions": 21,
-        "shared": 7
+        "steps": 39173,
+        "allocatedCells": 26092,
+        "forces": 4852,
+        "hits": 404,
+        "beta": 1406,
+        "iota": 318,
+        "maxFrames": 166,
+        "snapshotNodes": 1426,
+        "snapshotDefinitions": 53,
+        "shared": 41
       },
-      "ms": {"cold":{"median":9.245,"min":9.152,"max":9.86,"samples":5},"unobserved":8.373,"warm":{"median":3.372,"min":2.754,"max":4.038,"samples":15}},
+      "ms": {"cold":{"median":10.437,"min":10.269,"max":10.868,"samples":5},"unobserved":8.599,"warm":{"median":4.299,"min":3.846,"max":7.31,"samples":15}},
       "phases": {
-        "check": {"calls":2,"instructions":6,"instructionSteps":49,"nodes":10,"coldMs":0.15,"warmMs":0.02},
-        "inventory": {"calls":2,"coldMs":0.097,"warmMs":0.032},
-        "normalize": {"calls":1,"queries":1,"querySteps":985,"nodes":205,"coldMs":0.085,"warmMs":0.011},
+        "check": {"calls":2,"instructions":6,"instructionSteps":49,"nodes":10,"coldMs":0.151,"warmMs":0.021},
+        "inventory": {"calls":2,"coldMs":0.1,"warmMs":0.035},
+        "normalize": {"calls":1,"queries":1,"querySteps":826,"nodes":205,"coldMs":0.078,"warmMs":0.011},
         "decode": {"calls":1,"coldMs":0.005,"warmMs":0.003},
-        "elaborate": {"calls":1,"instructions":94,"instructionSteps":405,"queries":6,"querySteps":128,"nodes":147,"coldMs":2.989,"warmMs":1.839},
-        "runtime": {"calls":3,"failures":1,"coldMs":2.14,"warmMs":0.328},
-        "demand": {"calls":10,"queries":10,"querySteps":25831,"nodes":6940,"coldMs":1.74,"warmMs":0.028},
-        "render": {"calls":1,"coldMs":0.274,"warmMs":0.114},
-        "other": {"calls":1,"coldMs":1.769,"warmMs":0.9}
+        "elaborate": {"calls":1,"instructions":94,"instructionSteps":404,"queries":6,"querySteps":128,"nodes":147,"coldMs":3.087,"warmMs":1.837},
+        "runtime": {"calls":11,"coldMs":4.893,"warmMs":1.242},
+        "render": {"calls":1,"coldMs":0.287,"warmMs":0.117},
+        "other": {"calls":1,"coldMs":1.793,"warmMs":0.942}
       },
       "depth": {
         "check": {
@@ -248,7 +250,7 @@
           "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
         }
       },
-      "maxRssMiB": {"median":324.2,"min":322.1,"max":325.3,"samples":5}
+      "maxRssMiB": {"median":343.1,"min":339.5,"max":348.4,"samples":5}
     },
     {
       "id": "euclid-3-print-normal",
@@ -260,32 +262,32 @@
         "text": "(7, (tt, fun (d26 : BNat, above27 : match match d26 return BOrdering { b_zero => b_greater; b_positive(x) => match x return BOrdering { bp_one => b_equal; bp_e…",
         "length": 1000,
         "sha256": "097c6a6c3f91f257",
-        "normal": "e1ea1115694d247e"
+        "normal": "3227eae7cb03adaf"
       },
       "deterministic": true,
       "import": {
-        "instructions": 152364,
-        "rejected": 282,
-        "instructionSteps": 416206,
-        "queries": 15235,
-        "querySteps": 189048,
-        "nodes": 21643,
-        "ms": {"median":1613.04,"min":1549.635,"max":1727.459,"samples":5}
+        "instructions": 171336,
+        "rejected": 353,
+        "instructionSteps": 493183,
+        "queries": 17537,
+        "querySteps": 235149,
+        "nodes": 24784,
+        "ms": {"median":1744.05,"min":1739.945,"max":1827.71,"samples":5}
       },
-      "total": {"instructions":100,"instructionSteps":454,"queries":8,"querySteps":455804,"nodes":114725,"peakNodes":136368,"peakBytes":20584448},
+      "total": {"instructions":100,"instructionSteps":453,"queries":8,"querySteps":441225,"nodes":109441,"peakNodes":134225,"peakBytes":20584448},
       "ms": {
-        "cold": {"median":131.383,"min":128.063,"max":150.109,"samples":5},
-        "unobserved": 126.587,
-        "warm": {"median":68.398,"min":58.732,"max":86.703,"samples":15}
+        "cold": {"median":125.87,"min":123.517,"max":135.274,"samples":5},
+        "unobserved": 121.109,
+        "warm": {"median":69.51,"min":56.497,"max":79.976,"samples":15}
       },
       "phases": {
-        "check": {"calls":2,"instructions":6,"instructionSteps":49,"nodes":10,"coldMs":0.171,"warmMs":0.027},
-        "inventory": {"calls":2,"coldMs":0.111,"warmMs":0.047},
-        "normalize": {"calls":2,"queries":2,"querySteps":455676,"nodes":114568,"coldMs":27.153,"warmMs":0.025},
-        "decode": {"calls":2,"coldMs":23.471,"warmMs":0.011},
-        "elaborate": {"calls":1,"instructions":94,"instructionSteps":405,"queries":6,"querySteps":128,"nodes":147,"coldMs":3.199,"warmMs":2.191},
-        "render": {"calls":1,"coldMs":75.417,"warmMs":64.811},
-        "other": {"calls":1,"coldMs":1.67,"warmMs":1.254}
+        "check": {"calls":2,"instructions":6,"instructionSteps":49,"nodes":10,"coldMs":0.153,"warmMs":0.026},
+        "inventory": {"calls":2,"coldMs":0.102,"warmMs":0.045},
+        "normalize": {"calls":2,"queries":2,"querySteps":441097,"nodes":109284,"coldMs":25.28,"warmMs":0.021},
+        "decode": {"calls":2,"coldMs":19.635,"warmMs":0.011},
+        "elaborate": {"calls":1,"instructions":94,"instructionSteps":404,"queries":6,"querySteps":128,"nodes":147,"coldMs":3.07,"warmMs":2.104},
+        "render": {"calls":1,"coldMs":75.598,"warmMs":65.737},
+        "other": {"calls":1,"coldMs":1.585,"warmMs":1.287}
       },
       "depth": {
         "check": {
@@ -295,14 +297,14 @@
           "kinds": {"App":3,"Sigma":2}
         },
         "normalize": {
-          "depth": 264,
-          "allocated": 114363,
+          "depth": 256,
+          "allocated": 109079,
           "chain": [
             "Pair.2",
             "Pair.1",
             "Pair.2",
             "Lam.1 ×4",
-            "Comp.2 ×9",
+            "Comp.2 ×7",
             "SumRec.2",
             "Lam.1",
             "Abort.1",
@@ -315,10 +317,10 @@
             "Lam.1 ×3",
             "App.0 ×2"
           ],
-          "kinds": {"App":49606,"Lam":12279,"Var":9652,"Tube":7883,"Comp":5434,"Path":5260,"PApp":4669,"Pi":3730}
+          "kinds": {"App":47745,"Lam":12401,"Var":9046,"Tube":7187,"Path":5113,"PApp":4533,"Comp":4469,"Pi":3512}
         }
       },
-      "maxRssMiB": {"median":472.6,"min":459.9,"max":479.8,"samples":5}
+      "maxRssMiB": {"median":478.9,"min":474.5,"max":479.1,"samples":5}
     },
     {
       "id": "euclid-4",
@@ -328,42 +330,41 @@
       "outcome": {"status":"value","text":"(5, (tt, <fun>), tt)","length":20,"sha256":"136bce0f506cd447"},
       "deterministic": true,
       "import": {
-        "instructions": 152364,
-        "rejected": 282,
-        "instructionSteps": 416206,
-        "queries": 15235,
-        "querySteps": 189048,
-        "nodes": 21643,
-        "ms": {"median":1684.414,"min":1600.416,"max":1709.329,"samples":5}
+        "instructions": 171336,
+        "rejected": 353,
+        "instructionSteps": 493183,
+        "queries": 17537,
+        "querySteps": 235149,
+        "nodes": 24784,
+        "ms": {"median":1753.08,"min":1746.906,"max":1758.972,"samples":5}
       },
-      "total": {"instructions":101,"instructionSteps":457,"queries":17,"querySteps":61786,"nodes":16910,"peakNodes":38553,"peakBytes":5117952},
+      "total": {"instructions":101,"instructionSteps":456,"queries":7,"querySteps":954,"nodes":362,"peakNodes":25146,"peakBytes":3151872},
       "runtime": {
-        "steps": 4938,
-        "allocatedCells": 4380,
-        "forces": 466,
-        "hits": 17,
-        "beta": 128,
-        "iota": 26,
-        "maxFrames": 112,
-        "snapshotNodes": 494,
-        "snapshotDefinitions": 21,
-        "shared": 7
+        "steps": 73054,
+        "allocatedCells": 45125,
+        "forces": 9600,
+        "hits": 999,
+        "beta": 2742,
+        "iota": 710,
+        "maxFrames": 272,
+        "snapshotNodes": 1551,
+        "snapshotDefinitions": 54,
+        "shared": 42
       },
       "ms": {
-        "cold": {"median":12.048,"min":11.655,"max":15.499,"samples":5},
-        "unobserved": 10.048,
-        "warm": {"median":3.782,"min":2.802,"max":6.902,"samples":15}
+        "cold": {"median":12.376,"min":12.285,"max":12.968,"samples":5},
+        "unobserved": 10.831,
+        "warm": {"median":7.304,"min":4.524,"max":8.835,"samples":15}
       },
       "phases": {
-        "check": {"calls":2,"instructions":6,"instructionSteps":49,"nodes":10,"coldMs":0.164,"warmMs":0.023},
-        "inventory": {"calls":2,"coldMs":0.11,"warmMs":0.036},
-        "normalize": {"calls":1,"queries":1,"querySteps":985,"nodes":205,"coldMs":0.099,"warmMs":0.014},
+        "check": {"calls":2,"instructions":6,"instructionSteps":49,"nodes":10,"coldMs":0.153,"warmMs":0.02},
+        "inventory": {"calls":2,"coldMs":0.109,"warmMs":0.033},
+        "normalize": {"calls":1,"queries":1,"querySteps":826,"nodes":205,"coldMs":0.076,"warmMs":0.011},
         "decode": {"calls":1,"coldMs":0.005,"warmMs":0.003},
-        "elaborate": {"calls":1,"instructions":95,"instructionSteps":408,"queries":6,"querySteps":128,"nodes":147,"coldMs":3.21,"warmMs":1.928},
-        "runtime": {"calls":3,"failures":1,"coldMs":2.219,"warmMs":0.36},
-        "demand": {"calls":10,"queries":10,"querySteps":60673,"nodes":16548,"coldMs":4.116,"warmMs":0.028},
-        "render": {"calls":1,"coldMs":0.297,"warmMs":0.114},
-        "other": {"calls":1,"coldMs":1.908,"warmMs":0.967}
+        "elaborate": {"calls":1,"instructions":95,"instructionSteps":407,"queries":6,"querySteps":128,"nodes":147,"coldMs":3.003,"warmMs":1.715},
+        "runtime": {"calls":11,"coldMs":6.886,"warmMs":4.523},
+        "render": {"calls":1,"coldMs":0.282,"warmMs":0.117},
+        "other": {"calls":1,"coldMs":1.869,"warmMs":0.965}
       },
       "depth": {
         "check": {
@@ -396,7 +397,7 @@
           "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
         }
       },
-      "maxRssMiB": {"median":326.1,"min":324.1,"max":327.3,"samples":5}
+      "maxRssMiB": {"median":339.1,"min":335.9,"max":348.2,"samples":5}
     },
     {
       "id": "euclid-4-normal",
@@ -408,32 +409,32 @@
         "text": "(5, (tt, fun (d26 : BNat, above27 : match match d26 return BOrdering { b_zero => b_greater; b_positive(x) => match x return BOrdering { bp_one => b_equal; bp_e…",
         "length": 1000,
         "sha256": "4ea1cd25e5f3e787",
-        "normal": "3e38a7b9bbb6042d"
+        "normal": "7ac8c557bf392c1e"
       },
       "deterministic": true,
       "import": {
-        "instructions": 152364,
-        "rejected": 282,
-        "instructionSteps": 416206,
-        "queries": 15235,
-        "querySteps": 189048,
-        "nodes": 21643,
-        "ms": {"median":1556.848,"min":1537.397,"max":1631.031,"samples":5}
+        "instructions": 171336,
+        "rejected": 353,
+        "instructionSteps": 493183,
+        "queries": 17537,
+        "querySteps": 235149,
+        "nodes": 24784,
+        "ms": {"median":1764.116,"min":1749.221,"max":1801.454,"samples":5}
       },
-      "total": {"instructions":101,"instructionSteps":457,"queries":8,"querySteps":887666,"nodes":294374,"peakNodes":316017,"peakBytes":36313088},
+      "total": {"instructions":101,"instructionSteps":456,"queries":8,"querySteps":845825,"nodes":275413,"peakNodes":300197,"peakBytes":36313088},
       "ms": {
-        "cold": {"median":155.595,"min":143.069,"max":186.624,"samples":5},
-        "unobserved": 138.433,
-        "warm": {"median":52.66,"min":47.6,"max":74.783,"samples":15}
+        "cold": {"median":143.251,"min":137.103,"max":153.723,"samples":5},
+        "unobserved": 140.184,
+        "warm": {"median":52.164,"min":44.821,"max":70.696,"samples":15}
       },
       "phases": {
-        "check": {"calls":2,"instructions":6,"instructionSteps":49,"nodes":10,"coldMs":0.157,"warmMs":0.026},
-        "inventory": {"calls":2,"coldMs":0.101,"warmMs":0.041},
-        "normalize": {"calls":2,"queries":2,"querySteps":887538,"nodes":294217,"coldMs":56.039,"warmMs":0.034},
-        "decode": {"calls":2,"coldMs":18.16,"warmMs":0.011},
-        "elaborate": {"calls":1,"instructions":95,"instructionSteps":408,"queries":6,"querySteps":128,"nodes":147,"coldMs":2.977,"warmMs":2.338},
-        "render": {"calls":1,"coldMs":71.225,"warmMs":49.479},
-        "other": {"calls":1,"coldMs":1.711,"warmMs":1.237}
+        "check": {"calls":2,"instructions":6,"instructionSteps":49,"nodes":10,"coldMs":0.153,"warmMs":0.025},
+        "inventory": {"calls":2,"coldMs":0.11,"warmMs":0.044},
+        "normalize": {"calls":2,"queries":2,"querySteps":845697,"nodes":275256,"coldMs":52.563,"warmMs":0.021},
+        "decode": {"calls":2,"coldMs":27.038,"warmMs":0.011},
+        "elaborate": {"calls":1,"instructions":95,"instructionSteps":407,"queries":6,"querySteps":128,"nodes":147,"coldMs":3.059,"warmMs":2.131},
+        "render": {"calls":1,"coldMs":65.177,"warmMs":48.832},
+        "other": {"calls":1,"coldMs":1.703,"warmMs":1.219}
       },
       "depth": {
         "check": {
@@ -443,30 +444,30 @@
           "kinds": {"App":3,"Sigma":2}
         },
         "normalize": {
-          "depth": 216,
-          "allocated": 294012,
+          "depth": 192,
+          "allocated": 275051,
           "chain": [
             "Pair.2",
             "Pair.1",
             "Pair.2",
             "Lam.1 ×4",
-            "Comp.2 ×8",
             "SumRec.1",
             "Lam.1",
-            "Comp.2 ×2",
             "SumRec.1",
             "Lam.1",
-            "Comp.2 ×2",
             "SumRec.2",
             "Lam.1",
             "Comp.0",
             "App.1 ×2",
-            "PApp.0"
+            "PApp.0",
+            "Abort.1",
+            "Comp.0",
+            "App.1 ×2"
           ],
-          "kinds": {"App":93533,"Tube":39883,"Var":28225,"Comp":26419,"Lam":18884,"Fst":16508,"Pair":16134,"Snd":11091}
+          "kinds": {"App":89386,"Tube":36459,"Var":26320,"Comp":22805,"Lam":19078,"Fst":15010,"Pair":14755,"Snd":10045}
         }
       },
-      "maxRssMiB": {"median":491,"min":467.3,"max":494,"samples":5}
+      "maxRssMiB": {"median":496.2,"min":487,"max":501.4,"samples":5}
     },
     {
       "id": "euclid-4-pattern",
@@ -476,26 +477,26 @@
       "outcome": {"status":"value","text":"(5, <unevaluated>)","length":18,"sha256":"3070dd9733d74dc8"},
       "deterministic": true,
       "import": {
-        "instructions": 152364,
-        "rejected": 282,
-        "instructionSteps": 416206,
-        "queries": 15235,
-        "querySteps": 189048,
-        "nodes": 21643,
-        "ms": {"median":1557.508,"min":1548.066,"max":1654.461,"samples":5}
+        "instructions": 171336,
+        "rejected": 353,
+        "instructionSteps": 493183,
+        "queries": 17537,
+        "querySteps": 235149,
+        "nodes": 24784,
+        "ms": {"median":1755.858,"min":1749.687,"max":1763.687,"samples":5}
       },
-      "total": {"instructions":169,"instructionSteps":665,"queries":13,"querySteps":57961,"nodes":15928,"peakNodes":37571,"peakBytes":5117952},
-      "ms": {"cold":{"median":12.052,"min":10.781,"max":15.719,"samples":5},"unobserved":8.697,"warm":{"median":4.617,"min":3.967,"max":5.336,"samples":15}},
+      "total": {"instructions":169,"instructionSteps":663,"queries":13,"querySteps":71647,"nodes":18151,"peakNodes":42935,"peakBytes":5117952},
+      "ms": {"cold":{"median":11.379,"min":11.331,"max":16.409,"samples":5},"unobserved":9.675,"warm":{"median":4.695,"min":4.319,"max":4.835,"samples":15}},
       "phases": {
-        "check": {"calls":4,"instructions":19,"instructionSteps":103,"nodes":29,"coldMs":0.268,"warmMs":0.046},
-        "inventory": {"calls":4,"coldMs":0.165,"warmMs":0.071},
-        "normalize": {"calls":4,"queries":4,"querySteps":57596,"nodes":15651,"coldMs":3.818,"warmMs":0.043},
-        "decode": {"calls":4,"coldMs":0.032,"warmMs":0.011},
-        "elaborate": {"calls":2,"instructions":121,"instructionSteps":480,"queries":7,"querySteps":185,"nodes":181,"coldMs":5.204,"warmMs":3.254},
-        "demand": {"calls":1,"queries":1,"querySteps":179,"nodes":51,"coldMs":0.065,"warmMs":0.005},
-        "compare": {"calls":1,"instructions":29,"instructionSteps":82,"nodes":16,"coldMs":0.205,"warmMs":0.027},
-        "render": {"calls":1,"coldMs":0.278,"warmMs":0.093},
-        "other": {"calls":1,"queries":1,"querySteps":1,"coldMs":1.892,"warmMs":0.976}
+        "check": {"calls":4,"instructions":19,"instructionSteps":104,"nodes":29,"coldMs":0.255,"warmMs":0.046},
+        "inventory": {"calls":4,"coldMs":0.146,"warmMs":0.067},
+        "normalize": {"calls":4,"queries":4,"querySteps":71283,"nodes":17874,"coldMs":4.077,"warmMs":0.027},
+        "decode": {"calls":4,"coldMs":0.027,"warmMs":0.01},
+        "elaborate": {"calls":2,"instructions":121,"instructionSteps":478,"queries":7,"querySteps":185,"nodes":181,"coldMs":4.656,"warmMs":3.381},
+        "demand": {"calls":1,"queries":1,"querySteps":178,"nodes":51,"coldMs":0.056,"warmMs":0.004},
+        "compare": {"calls":1,"instructions":29,"instructionSteps":81,"nodes":16,"coldMs":0.175,"warmMs":0.025},
+        "render": {"calls":1,"coldMs":0.255,"warmMs":0.087},
+        "other": {"calls":1,"queries":1,"querySteps":1,"coldMs":1.756,"warmMs":0.907}
       },
       "depth": {
         "check": {
@@ -505,31 +506,31 @@
           "kinds": {"App":3,"Sigma":2}
         },
         "normalize": {
-          "depth": 124,
-          "allocated": 15030,
+          "depth": 86,
+          "allocated": 205,
           "chain": [
-            "App.1",
-            "SumRec.2",
-            "Lam.1",
-            "SumRec.2",
+            "App.0",
+            "Elim.1",
+            "List.0",
             "Lam.1",
             "App.0",
-            "Lam.1",
-            "App.0 ×2",
-            "App.1 ×2",
-            "PLam.1",
-            "Comp.1",
-            "Tube.1",
-            "Tube.0",
-            "PApp.0",
+            "Elim.1",
+            "List.0",
             "App.1",
-            "PLam.1"
+            "App.0",
+            "Elim.1",
+            "List.1",
+            "List.0",
+            "Lam.1 ×3",
+            "App.0",
+            "Elim.1",
+            "List.0"
           ],
-          "kinds": {"App":7038,"Lam":2074,"Var":1607,"Comp":782,"Pi":664,"Tube":400,"Pair":388,"List":344}
+          "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
         },
         "compare": {"depth":6,"allocated":16,"chain":["PLam.1","App.1 ×2","App.0","Con.0","Sort"],"kinds":{"Var":11,"Pi":3,"PLam":1,"Path":1}}
       },
-      "maxRssMiB": {"median":324.3,"min":322.6,"max":324.6,"samples":5}
+      "maxRssMiB": {"median":341.9,"min":341,"max":347.1,"samples":5}
     },
     {
       "id": "euclid-4-pattern-normal",
@@ -541,33 +542,33 @@
         "text": "(5, (tt, fun (d26 : BNat, above27 : match match d26 return BOrdering { b_zero => b_greater; b_positive(x) => match x return BOrdering { bp_one => b_equal; bp_e…",
         "length": 1000,
         "sha256": "4ea1cd25e5f3e787",
-        "normal": "3e38a7b9bbb6042d"
+        "normal": "7ac8c557bf392c1e"
       },
       "deterministic": true,
       "import": {
-        "instructions": 152364,
-        "rejected": 282,
-        "instructionSteps": 416206,
-        "queries": 15235,
-        "querySteps": 189048,
-        "nodes": 21643,
-        "ms": {"median":1567.218,"min":1541.475,"max":1581.983,"samples":5}
+        "instructions": 171336,
+        "rejected": 353,
+        "instructionSteps": 493183,
+        "queries": 17537,
+        "querySteps": 235149,
+        "nodes": 24784,
+        "ms": {"median":1849.392,"min":1750.856,"max":1937.297,"samples":5}
       },
-      "total": {"instructions":169,"instructionSteps":673,"queries":12,"querySteps":888796,"nodes":294640,"peakNodes":316283,"peakBytes":36313088},
+      "total": {"instructions":169,"instructionSteps":670,"queries":12,"querySteps":846996,"nodes":275668,"peakNodes":300452,"peakBytes":36313088},
       "ms": {
-        "cold": {"median":146.651,"min":143.37,"max":163.831,"samples":5},
-        "unobserved": 141.047,
-        "warm": {"median":56.263,"min":51.001,"max":76.182,"samples":15}
+        "cold": {"median":147.846,"min":138.118,"max":166.98,"samples":5},
+        "unobserved": 156.787,
+        "warm": {"median":55.91,"min":49.343,"max":71.413,"samples":15}
       },
       "phases": {
-        "check": {"calls":4,"instructions":19,"instructionSteps":106,"nodes":29,"coldMs":0.263,"warmMs":0.052},
-        "inventory": {"calls":4,"coldMs":0.155,"warmMs":0.082},
-        "normalize": {"calls":4,"queries":4,"querySteps":888559,"nodes":294415,"coldMs":55.904,"warmMs":0.072},
-        "decode": {"calls":4,"coldMs":20.451,"warmMs":0.012},
-        "elaborate": {"calls":2,"instructions":121,"instructionSteps":485,"queries":7,"querySteps":236,"nodes":181,"coldMs":4.919,"warmMs":3.65},
-        "compare": {"calls":1,"instructions":29,"instructionSteps":82,"nodes":15,"coldMs":0.167,"warmMs":0.044},
-        "render": {"calls":1,"coldMs":61.442,"warmMs":51.035},
-        "other": {"calls":1,"queries":1,"querySteps":1,"coldMs":2.174,"warmMs":1.39}
+        "check": {"calls":4,"instructions":19,"instructionSteps":106,"nodes":29,"coldMs":0.271,"warmMs":0.052},
+        "inventory": {"calls":4,"coldMs":0.164,"warmMs":0.083},
+        "normalize": {"calls":4,"queries":4,"querySteps":846760,"nodes":275443,"coldMs":57.76,"warmMs":0.051},
+        "decode": {"calls":4,"coldMs":17.666,"warmMs":0.013},
+        "elaborate": {"calls":2,"instructions":121,"instructionSteps":483,"queries":7,"querySteps":235,"nodes":181,"coldMs":5.373,"warmMs":3.758},
+        "compare": {"calls":1,"instructions":29,"instructionSteps":81,"nodes":15,"coldMs":0.171,"warmMs":0.04},
+        "render": {"calls":1,"coldMs":63.451,"warmMs":50.509},
+        "other": {"calls":1,"queries":1,"querySteps":1,"coldMs":2.252,"warmMs":1.409}
       },
       "depth": {
         "check": {
@@ -577,31 +578,31 @@
           "kinds": {"App":3,"Sigma":2}
         },
         "normalize": {
-          "depth": 216,
-          "allocated": 294012,
+          "depth": 192,
+          "allocated": 275051,
           "chain": [
             "Pair.2",
             "Pair.1",
             "Pair.2",
             "Lam.1 ×4",
-            "Comp.2 ×8",
             "SumRec.1",
             "Lam.1",
-            "Comp.2 ×2",
             "SumRec.1",
             "Lam.1",
-            "Comp.2 ×2",
             "SumRec.2",
             "Lam.1",
             "Comp.0",
             "App.1 ×2",
-            "PApp.0"
+            "PApp.0",
+            "Abort.1",
+            "Comp.0",
+            "App.1 ×2"
           ],
-          "kinds": {"App":93533,"Tube":39883,"Var":28225,"Comp":26419,"Lam":18884,"Fst":16508,"Pair":16134,"Snd":11091}
+          "kinds": {"App":89386,"Tube":36459,"Var":26320,"Comp":22805,"Lam":19078,"Fst":15010,"Pair":14755,"Snd":10045}
         },
         "compare": {"depth":6,"allocated":15,"chain":["Path.1","App.1 ×2","App.0","Con.0","Sort"],"kinds":{"Var":11,"Pi":3,"Path":1}}
       },
-      "maxRssMiB": {"median":476.3,"min":473.8,"max":494,"samples":5}
+      "maxRssMiB": {"median":489.7,"min":486.3,"max":501.2,"samples":5}
     },
     {
       "id": "euclid-3-prime",
@@ -611,38 +612,37 @@
       "outcome": {"status":"value","text":"7","length":1,"sha256":"7902699be42c8a8e"},
       "deterministic": true,
       "import": {
-        "instructions": 152364,
-        "rejected": 282,
-        "instructionSteps": 416206,
-        "queries": 15235,
-        "querySteps": 189048,
-        "nodes": 21643,
-        "ms": {"median":1599.247,"min":1550.644,"max":1640.757,"samples":5}
+        "instructions": 171336,
+        "rejected": 353,
+        "instructionSteps": 493183,
+        "queries": 17537,
+        "querySteps": 235149,
+        "nodes": 24784,
+        "ms": {"median":1882.783,"min":1754.43,"max":1898.951,"samples":5}
       },
-      "total": {"instructions":101,"instructionSteps":455,"queries":12,"querySteps":23898,"nodes":6509,"peakNodes":28152,"peakBytes":3151872},
+      "total": {"instructions":101,"instructionSteps":454,"queries":8,"querySteps":955,"nodes":363,"peakNodes":25147,"peakBytes":3151872},
       "runtime": {
-        "steps": 4692,
-        "allocatedCells": 4229,
-        "forces": 433,
-        "hits": 13,
-        "beta": 119,
-        "iota": 23,
-        "maxFrames": 105,
-        "snapshotNodes": 491,
-        "snapshotDefinitions": 21,
-        "shared": 7
+        "steps": 29101,
+        "allocatedCells": 20373,
+        "forces": 3454,
+        "hits": 287,
+        "beta": 986,
+        "iota": 234,
+        "maxFrames": 167,
+        "snapshotNodes": 1369,
+        "snapshotDefinitions": 49,
+        "shared": 24
       },
-      "ms": {"cold":{"median":9.293,"min":9.057,"max":11.722,"samples":5},"unobserved":9.652,"warm":{"median":3.826,"min":2.844,"max":6.122,"samples":15}},
+      "ms": {"cold":{"median":9.968,"min":9.412,"max":10.383,"samples":5},"unobserved":8.447,"warm":{"median":3.975,"min":3.58,"max":6.871,"samples":15}},
       "phases": {
-        "check": {"calls":2,"instructions":4,"instructionSteps":30,"nodes":6,"coldMs":0.127,"warmMs":0.024},
-        "inventory": {"calls":2,"coldMs":0.102,"warmMs":0.038},
-        "normalize": {"calls":1,"queries":1,"querySteps":985,"nodes":205,"coldMs":0.101,"warmMs":0.013},
+        "check": {"calls":2,"instructions":4,"instructionSteps":30,"nodes":6,"coldMs":0.13,"warmMs":0.02},
+        "inventory": {"calls":2,"coldMs":0.101,"warmMs":0.031},
+        "normalize": {"calls":1,"queries":1,"querySteps":826,"nodes":205,"coldMs":0.082,"warmMs":0.015},
         "decode": {"calls":1,"coldMs":0.005,"warmMs":0.003},
-        "elaborate": {"calls":1,"instructions":97,"instructionSteps":425,"queries":7,"querySteps":129,"nodes":152,"coldMs":3.247,"warmMs":1.92},
-        "runtime": {"calls":2,"failures":1,"coldMs":2.119,"warmMs":0.356},
-        "demand": {"calls":4,"queries":4,"querySteps":22784,"nodes":6146,"coldMs":1.604,"warmMs":0.014},
-        "render": {"calls":1,"coldMs":0.264,"warmMs":0.096},
-        "other": {"calls":1,"coldMs":1.733,"warmMs":0.951}
+        "elaborate": {"calls":1,"instructions":97,"instructionSteps":424,"queries":7,"querySteps":129,"nodes":152,"coldMs":3.15,"warmMs":1.833},
+        "runtime": {"calls":5,"coldMs":4.127,"warmMs":1.043},
+        "render": {"calls":1,"coldMs":0.261,"warmMs":0.1},
+        "other": {"calls":1,"coldMs":1.792,"warmMs":0.926}
       },
       "depth": {
         "check": {"depth":13,"allocated":1,"chain":["Fst.0","App.1","App.0","App.1 ×2","App.0","App.1 ×4","App.0","Con.0","Sort"],"kinds":{"Fst":1}},
@@ -670,7 +670,7 @@
           "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
         }
       },
-      "maxRssMiB": {"median":323.3,"min":321.8,"max":324.1,"samples":5}
+      "maxRssMiB": {"median":341.1,"min":337.5,"max":347.1,"samples":5}
     },
     {
       "id": "euclid-3-prime-normal",
@@ -680,24 +680,24 @@
       "outcome": {"status":"value","text":"7","length":1,"sha256":"7902699be42c8a8e","normal":"d7d31f8f153a5d61"},
       "deterministic": true,
       "import": {
-        "instructions": 152364,
-        "rejected": 282,
-        "instructionSteps": 416206,
-        "queries": 15235,
-        "querySteps": 189048,
-        "nodes": 21643,
-        "ms": {"median":1667.256,"min":1582.803,"max":1727.008,"samples":5}
+        "instructions": 171336,
+        "rejected": 353,
+        "instructionSteps": 493183,
+        "queries": 17537,
+        "querySteps": 235149,
+        "nodes": 24784,
+        "ms": {"median":1869.579,"min":1772.699,"max":1894.448,"samples":5}
       },
-      "total": {"instructions":101,"instructionSteps":455,"queries":9,"querySteps":23914,"nodes":6511,"peakNodes":28154,"peakBytes":3151872},
-      "ms": {"cold":{"median":6.895,"min":6.446,"max":7.112,"samples":5},"unobserved":8.423,"warm":{"median":2.748,"min":2.37,"max":3.264,"samples":15}},
+      "total": {"instructions":101,"instructionSteps":454,"queries":9,"querySteps":29693,"nodes":7506,"peakNodes":32290,"peakBytes":3151872},
+      "ms": {"cold":{"median":7.067,"min":6.964,"max":7.226,"samples":5},"unobserved":5.492,"warm":{"median":2.754,"min":2.56,"max":3.978,"samples":15}},
       "phases": {
-        "check": {"calls":2,"instructions":4,"instructionSteps":30,"nodes":6,"coldMs":0.129,"warmMs":0.024},
-        "inventory": {"calls":2,"coldMs":0.093,"warmMs":0.031},
-        "normalize": {"calls":2,"queries":2,"querySteps":23785,"nodes":6353,"coldMs":1.619,"warmMs":0.013},
-        "decode": {"calls":2,"coldMs":0.024,"warmMs":0.008},
-        "elaborate": {"calls":1,"instructions":97,"instructionSteps":425,"queries":7,"querySteps":129,"nodes":152,"coldMs":3.12,"warmMs":1.66},
-        "render": {"calls":1,"coldMs":0.246,"warmMs":0.081},
-        "other": {"calls":1,"coldMs":1.476,"warmMs":0.866}
+        "check": {"calls":2,"instructions":4,"instructionSteps":30,"nodes":6,"coldMs":0.135,"warmMs":0.024},
+        "inventory": {"calls":2,"coldMs":0.106,"warmMs":0.036},
+        "normalize": {"calls":2,"queries":2,"querySteps":29564,"nodes":7348,"coldMs":1.853,"warmMs":0.015},
+        "decode": {"calls":2,"coldMs":0.022,"warmMs":0.008},
+        "elaborate": {"calls":1,"instructions":97,"instructionSteps":424,"queries":7,"querySteps":129,"nodes":152,"coldMs":3.277,"warmMs":1.747},
+        "render": {"calls":1,"coldMs":0.247,"warmMs":0.084},
+        "other": {"calls":1,"coldMs":1.42,"warmMs":0.846}
       },
       "depth": {
         "check": {"depth":13,"allocated":1,"chain":["Fst.0","App.1","App.0","App.1 ×2","App.0","App.1 ×4","App.0","Con.0","Sort"],"kinds":{"Fst":1}},
@@ -725,7 +725,7 @@
           "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
         }
       },
-      "maxRssMiB": {"median":321.7,"min":321.5,"max":322.7,"samples":5}
+      "maxRssMiB": {"median":340.3,"min":338.3,"max":345.5,"samples":5}
     },
     {
       "id": "euclid-3-prime-expected",
@@ -735,25 +735,25 @@
       "outcome": {"status":"value","text":"7","length":1,"sha256":"7902699be42c8a8e","normal":"d7d31f8f153a5d61"},
       "deterministic": true,
       "import": {
-        "instructions": 152364,
-        "rejected": 282,
-        "instructionSteps": 416206,
-        "queries": 15235,
-        "querySteps": 189048,
-        "nodes": 21643,
-        "ms": {"median":1683.673,"min":1579.389,"max":1921.955,"samples":5}
+        "instructions": 171336,
+        "rejected": 353,
+        "instructionSteps": 493183,
+        "queries": 17537,
+        "querySteps": 235149,
+        "nodes": 24784,
+        "ms": {"median":1864.713,"min":1851.574,"max":1868.398,"samples":5}
       },
-      "total": {"instructions":176,"instructionSteps":713,"queries":13,"querySteps":25278,"nodes":6933,"peakNodes":28576,"peakBytes":3151872},
-      "ms": {"cold":{"median":9.318,"min":9.037,"max":9.935,"samples":5},"unobserved":6.853,"warm":{"median":4.901,"min":4.226,"max":6.174,"samples":15}},
+      "total": {"instructions":176,"instructionSteps":707,"queries":13,"querySteps":31287,"nodes":7952,"peakNodes":32736,"peakBytes":3151872},
+      "ms": {"cold":{"median":10.49,"min":9.643,"max":15.448,"samples":5},"unobserved":10.499,"warm":{"median":5.167,"min":4.417,"max":5.363,"samples":15}},
       "phases": {
-        "check": {"calls":4,"instructions":16,"instructionSteps":104,"nodes":28,"coldMs":0.224,"warmMs":0.047},
-        "inventory": {"calls":4,"coldMs":0.143,"warmMs":0.068},
-        "normalize": {"calls":4,"queries":4,"querySteps":25040,"nodes":6689,"coldMs":1.677,"warmMs":0.044},
-        "decode": {"calls":4,"coldMs":0.028,"warmMs":0.012},
-        "elaborate": {"calls":2,"instructions":120,"instructionSteps":510,"queries":9,"querySteps":238,"nodes":199,"coldMs":5.192,"warmMs":3.528},
-        "compare": {"calls":2,"instructions":40,"instructionSteps":99,"nodes":17,"coldMs":0.262,"warmMs":0.072},
-        "render": {"calls":1,"coldMs":0.238,"warmMs":0.083},
-        "other": {"calls":1,"coldMs":1.53,"warmMs":0.969}
+        "check": {"calls":4,"instructions":16,"instructionSteps":101,"nodes":28,"coldMs":0.233,"warmMs":0.045},
+        "inventory": {"calls":4,"coldMs":0.151,"warmMs":0.064},
+        "normalize": {"calls":4,"queries":4,"querySteps":31035,"nodes":7708,"coldMs":1.956,"warmMs":0.155},
+        "decode": {"calls":4,"coldMs":0.027,"warmMs":0.012},
+        "elaborate": {"calls":2,"instructions":120,"instructionSteps":507,"queries":9,"querySteps":252,"nodes":199,"coldMs":6.073,"warmMs":3.693},
+        "compare": {"calls":2,"instructions":40,"instructionSteps":99,"nodes":17,"coldMs":0.251,"warmMs":0.069},
+        "render": {"calls":1,"coldMs":0.243,"warmMs":0.081},
+        "other": {"calls":1,"coldMs":1.596,"warmMs":0.929}
       },
       "depth": {
         "check": {"depth":16,"allocated":21,"chain":["Pi.0","App.1 ×3","App.0","App.1 ×8","App.0","Con.0","Sort"],"kinds":{"Pi":14,"App":4,"Var":3}},
@@ -782,7 +782,7 @@
         },
         "compare": {"depth":6,"allocated":13,"chain":["PLam.1","App.1 ×2","App.0","Con.0","Sort"],"kinds":{"Var":9,"Pi":2,"PLam":1,"Path":1}}
       },
-      "maxRssMiB": {"median":322.5,"min":319.6,"max":322.9,"samples":5}
+      "maxRssMiB": {"median":341.2,"min":341,"max":346.7,"samples":5}
     },
     {
       "id": "euclid-4-prime",
@@ -792,38 +792,41 @@
       "outcome": {"status":"value","text":"5","length":1,"sha256":"ef2d127de37b942b"},
       "deterministic": true,
       "import": {
-        "instructions": 152364,
-        "rejected": 282,
-        "instructionSteps": 416206,
-        "queries": 15235,
-        "querySteps": 189048,
-        "nodes": 21643,
-        "ms": {"median":1590.228,"min":1544.964,"max":1666.152,"samples":5}
+        "instructions": 171336,
+        "rejected": 353,
+        "instructionSteps": 493183,
+        "queries": 17537,
+        "querySteps": 235149,
+        "nodes": 24784,
+        "ms": {"median":1864.495,"min":1788.577,"max":2070.814,"samples":5}
       },
-      "total": {"instructions":102,"instructionSteps":458,"queries":12,"querySteps":57053,"nodes":15662,"peakNodes":37305,"peakBytes":5117952},
+      "total": {"instructions":102,"instructionSteps":457,"queries":8,"querySteps":955,"nodes":363,"peakNodes":25147,"peakBytes":3151872},
       "runtime": {
-        "steps": 4943,
-        "allocatedCells": 4385,
-        "forces": 467,
-        "hits": 17,
-        "beta": 128,
-        "iota": 26,
-        "maxFrames": 113,
-        "snapshotNodes": 495,
-        "snapshotDefinitions": 21,
-        "shared": 7
+        "steps": 70144,
+        "allocatedCells": 43369,
+        "forces": 9204,
+        "hits": 965,
+        "beta": 2637,
+        "iota": 680,
+        "maxFrames": 273,
+        "snapshotNodes": 1512,
+        "snapshotDefinitions": 51,
+        "shared": 31
       },
-      "ms": {"cold":{"median":11.187,"min":11.116,"max":11.616,"samples":5},"unobserved":16.144,"warm":{"median":3.09,"min":2.804,"max":4.232,"samples":15}},
+      "ms": {
+        "cold": {"median":12.625,"min":11.975,"max":13.162,"samples":5},
+        "unobserved": 11.166,
+        "warm": {"median":7.623,"min":4.506,"max":9.723,"samples":15}
+      },
       "phases": {
-        "check": {"calls":2,"instructions":4,"instructionSteps":30,"nodes":6,"coldMs":0.125,"warmMs":0.022},
-        "inventory": {"calls":2,"coldMs":0.096,"warmMs":0.031},
-        "normalize": {"calls":1,"queries":1,"querySteps":985,"nodes":205,"coldMs":0.085,"warmMs":0.014},
-        "decode": {"calls":1,"coldMs":0.005,"warmMs":0.003},
-        "elaborate": {"calls":1,"instructions":98,"instructionSteps":428,"queries":7,"querySteps":129,"nodes":152,"coldMs":3.094,"warmMs":1.701},
-        "runtime": {"calls":2,"failures":1,"coldMs":2.152,"warmMs":0.319},
-        "demand": {"calls":4,"queries":4,"querySteps":55939,"nodes":15299,"coldMs":3.705,"warmMs":0.014},
-        "render": {"calls":1,"coldMs":0.245,"warmMs":0.096},
-        "other": {"calls":1,"coldMs":1.722,"warmMs":0.874}
+        "check": {"calls":2,"instructions":4,"instructionSteps":30,"nodes":6,"coldMs":0.132,"warmMs":0.022},
+        "inventory": {"calls":2,"coldMs":0.103,"warmMs":0.034},
+        "normalize": {"calls":1,"queries":1,"querySteps":826,"nodes":205,"coldMs":0.088,"warmMs":0.016},
+        "decode": {"calls":1,"coldMs":0.006,"warmMs":0.003},
+        "elaborate": {"calls":1,"instructions":98,"instructionSteps":427,"queries":7,"querySteps":129,"nodes":152,"coldMs":3.388,"warmMs":1.926},
+        "runtime": {"calls":5,"coldMs":6.748,"warmMs":4.523},
+        "render": {"calls":1,"coldMs":0.259,"warmMs":0.103},
+        "other": {"calls":1,"coldMs":1.868,"warmMs":1.014}
       },
       "depth": {
         "check": {"depth":14,"allocated":1,"chain":["Fst.0","App.1","App.0","App.1 ×2","App.0","App.1 ×5","App.0","Con.0","Sort"],"kinds":{"Fst":1}},
@@ -851,7 +854,7 @@
           "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
         }
       },
-      "maxRssMiB": {"median":324.3,"min":321.1,"max":325,"samples":5}
+      "maxRssMiB": {"median":341.5,"min":339.2,"max":348.7,"samples":5}
     },
     {
       "id": "euclid-4-prime-normal",
@@ -861,52 +864,52 @@
       "outcome": {"status":"value","text":"5","length":1,"sha256":"ef2d127de37b942b","normal":"f124cdfe51dff23e"},
       "deterministic": true,
       "import": {
-        "instructions": 152364,
-        "rejected": 282,
-        "instructionSteps": 416206,
-        "queries": 15235,
-        "querySteps": 189048,
-        "nodes": 21643,
-        "ms": {"median":1648.151,"min":1565.664,"max":1780.113,"samples":5}
+        "instructions": 171336,
+        "rejected": 353,
+        "instructionSteps": 493183,
+        "queries": 17537,
+        "querySteps": 235149,
+        "nodes": 24784,
+        "ms": {"median":1754.489,"min":1739.035,"max":1889.151,"samples":5}
       },
-      "total": {"instructions":102,"instructionSteps":458,"queries":9,"querySteps":57069,"nodes":15662,"peakNodes":37305,"peakBytes":5117952},
-      "ms": {"cold":{"median":9.238,"min":8.572,"max":11.522,"samples":5},"unobserved":7.357,"warm":{"median":2.947,"min":2.405,"max":4.209,"samples":15}},
+      "total": {"instructions":102,"instructionSteps":457,"queries":9,"querySteps":71115,"nodes":17890,"peakNodes":42674,"peakBytes":5117952},
+      "ms": {"cold":{"median":9.022,"min":8.94,"max":14.313,"samples":5},"unobserved":7.515,"warm":{"median":2.555,"min":2.473,"max":3.213,"samples":15}},
       "phases": {
-        "check": {"calls":2,"instructions":4,"instructionSteps":30,"nodes":6,"coldMs":0.137,"warmMs":0.025},
-        "inventory": {"calls":2,"coldMs":0.111,"warmMs":0.034},
-        "normalize": {"calls":2,"queries":2,"querySteps":56940,"nodes":15504,"coldMs":3.749,"warmMs":0.017},
-        "decode": {"calls":2,"coldMs":0.024,"warmMs":0.008},
-        "elaborate": {"calls":1,"instructions":98,"instructionSteps":428,"queries":7,"querySteps":129,"nodes":152,"coldMs":3.396,"warmMs":1.758},
-        "render": {"calls":1,"coldMs":0.27,"warmMs":0.084},
-        "other": {"calls":1,"coldMs":1.503,"warmMs":0.888}
+        "check": {"calls":2,"instructions":4,"instructionSteps":30,"nodes":6,"coldMs":0.12,"warmMs":0.021},
+        "inventory": {"calls":2,"coldMs":0.103,"warmMs":0.031},
+        "normalize": {"calls":2,"queries":2,"querySteps":70986,"nodes":17732,"coldMs":4.062,"warmMs":0.011},
+        "decode": {"calls":2,"coldMs":0.018,"warmMs":0.008},
+        "elaborate": {"calls":1,"instructions":98,"instructionSteps":427,"queries":7,"querySteps":129,"nodes":152,"coldMs":3.138,"warmMs":1.63},
+        "render": {"calls":1,"coldMs":0.239,"warmMs":0.081},
+        "other": {"calls":1,"coldMs":1.351,"warmMs":0.778}
       },
       "depth": {
         "check": {"depth":14,"allocated":1,"chain":["Fst.0","App.1","App.0","App.1 ×2","App.0","App.1 ×5","App.0","Con.0","Sort"],"kinds":{"Fst":1}},
         "normalize": {
-          "depth": 124,
-          "allocated": 15299,
+          "depth": 86,
+          "allocated": 205,
           "chain": [
-            "App.1",
-            "SumRec.2",
-            "Lam.1",
-            "SumRec.2",
+            "App.0",
+            "Elim.1",
+            "List.0",
             "Lam.1",
             "App.0",
-            "Lam.1",
-            "App.0 ×2",
-            "App.1 ×2",
-            "PLam.1",
-            "Comp.1",
-            "Tube.1",
-            "Tube.0",
-            "PApp.0",
+            "Elim.1",
+            "List.0",
             "App.1",
-            "PLam.1"
+            "App.0",
+            "Elim.1",
+            "List.1",
+            "List.0",
+            "Lam.1 ×3",
+            "App.0",
+            "Elim.1",
+            "List.0"
           ],
-          "kinds": {"App":7185,"Lam":2109,"Var":1648,"Comp":783,"Pi":682,"Tube":400,"Pair":390,"List":352}
+          "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
         }
       },
-      "maxRssMiB": {"median":323.7,"min":323.4,"max":327.3,"samples":5}
+      "maxRssMiB": {"median":344.1,"min":338.6,"max":347,"samples":5}
     },
     {
       "id": "euclid-4-prime-print",
@@ -916,42 +919,37 @@
       "outcome": {"status":"value","text":"5","length":1,"sha256":"ef2d127de37b942b"},
       "deterministic": true,
       "import": {
-        "instructions": 152364,
-        "rejected": 282,
-        "instructionSteps": 416206,
-        "queries": 15235,
-        "querySteps": 189048,
-        "nodes": 21643,
-        "ms": {"median":1621.199,"min":1607.99,"max":1711.465,"samples":5}
+        "instructions": 171336,
+        "rejected": 353,
+        "instructionSteps": 493183,
+        "queries": 17537,
+        "querySteps": 235149,
+        "nodes": 24784,
+        "ms": {"median":1794.868,"min":1739.48,"max":1959.605,"samples":5}
       },
-      "total": {"instructions":102,"instructionSteps":458,"queries":12,"querySteps":57053,"nodes":15662,"peakNodes":37305,"peakBytes":5117952},
+      "total": {"instructions":102,"instructionSteps":457,"queries":8,"querySteps":955,"nodes":363,"peakNodes":25147,"peakBytes":3151872},
       "runtime": {
-        "steps": 4943,
-        "allocatedCells": 4385,
-        "forces": 467,
-        "hits": 17,
-        "beta": 128,
-        "iota": 26,
-        "maxFrames": 113,
-        "snapshotNodes": 495,
-        "snapshotDefinitions": 21,
-        "shared": 7
+        "steps": 70144,
+        "allocatedCells": 43369,
+        "forces": 9204,
+        "hits": 965,
+        "beta": 2637,
+        "iota": 680,
+        "maxFrames": 273,
+        "snapshotNodes": 1512,
+        "snapshotDefinitions": 51,
+        "shared": 31
       },
-      "ms": {
-        "cold": {"median":12.282,"min":11.187,"max":12.906,"samples":5},
-        "unobserved": 14.956,
-        "warm": {"median":3.429,"min":2.853,"max":4.818,"samples":15}
-      },
+      "ms": {"cold":{"median":12.81,"min":11.833,"max":13.62,"samples":5},"unobserved":10.491,"warm":{"median":7.173,"min":4.305,"max":8.799,"samples":15}},
       "phases": {
-        "check": {"calls":2,"instructions":4,"instructionSteps":30,"nodes":6,"coldMs":0.13,"warmMs":0.023},
-        "inventory": {"calls":2,"coldMs":0.101,"warmMs":0.033},
-        "normalize": {"calls":1,"queries":1,"querySteps":985,"nodes":205,"coldMs":0.108,"warmMs":0.016},
-        "decode": {"calls":1,"coldMs":0.005,"warmMs":0.003},
-        "elaborate": {"calls":1,"instructions":98,"instructionSteps":428,"queries":7,"querySteps":129,"nodes":152,"coldMs":3.298,"warmMs":1.93},
-        "runtime": {"calls":2,"failures":1,"coldMs":2.184,"warmMs":0.366},
-        "demand": {"calls":4,"queries":4,"querySteps":55939,"nodes":15299,"coldMs":3.866,"warmMs":0.015},
-        "render": {"calls":1,"coldMs":0.273,"warmMs":0.1},
-        "other": {"calls":1,"coldMs":1.985,"warmMs":0.935}
+        "check": {"calls":2,"instructions":4,"instructionSteps":30,"nodes":6,"coldMs":0.13,"warmMs":0.021},
+        "inventory": {"calls":2,"coldMs":0.107,"warmMs":0.032},
+        "normalize": {"calls":1,"queries":1,"querySteps":826,"nodes":205,"coldMs":0.077,"warmMs":0.013},
+        "decode": {"calls":1,"coldMs":0.006,"warmMs":0.003},
+        "elaborate": {"calls":1,"instructions":98,"instructionSteps":427,"queries":7,"querySteps":129,"nodes":152,"coldMs":3.183,"warmMs":1.894},
+        "runtime": {"calls":5,"coldMs":6.813,"warmMs":4.369},
+        "render": {"calls":1,"coldMs":0.26,"warmMs":0.095},
+        "other": {"calls":1,"coldMs":1.972,"warmMs":0.974}
       },
       "depth": {
         "check": {"depth":14,"allocated":1,"chain":["Fst.0","App.1","App.0","App.1 ×2","App.0","App.1 ×5","App.0","Con.0","Sort"],"kinds":{"Fst":1}},
@@ -979,7 +977,7 @@
           "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
         }
       },
-      "maxRssMiB": {"median":323.7,"min":323.3,"max":327.3,"samples":5}
+      "maxRssMiB": {"median":341.3,"min":340.1,"max":343.4,"samples":5}
     },
     {
       "id": "euclid-4-prime-print-normal",
@@ -989,52 +987,52 @@
       "outcome": {"status":"value","text":"5","length":1,"sha256":"ef2d127de37b942b","normal":"f124cdfe51dff23e"},
       "deterministic": true,
       "import": {
-        "instructions": 152364,
-        "rejected": 282,
-        "instructionSteps": 416206,
-        "queries": 15235,
-        "querySteps": 189048,
-        "nodes": 21643,
-        "ms": {"median":1543.774,"min":1539.876,"max":1555.419,"samples":5}
+        "instructions": 171336,
+        "rejected": 353,
+        "instructionSteps": 493183,
+        "queries": 17537,
+        "querySteps": 235149,
+        "nodes": 24784,
+        "ms": {"median":1746.437,"min":1742.634,"max":1746.82,"samples":5}
       },
-      "total": {"instructions":102,"instructionSteps":458,"queries":9,"querySteps":57069,"nodes":15662,"peakNodes":37305,"peakBytes":5117952},
-      "ms": {"cold":{"median":8.524,"min":8.482,"max":8.921,"samples":5},"unobserved":6.973,"warm":{"median":2.477,"min":2.369,"max":3.091,"samples":15}},
+      "total": {"instructions":102,"instructionSteps":457,"queries":9,"querySteps":71115,"nodes":17890,"peakNodes":42674,"peakBytes":5117952},
+      "ms": {"cold":{"median":8.921,"min":8.887,"max":8.978,"samples":5},"unobserved":7.657,"warm":{"median":2.594,"min":2.469,"max":3.728,"samples":15}},
       "phases": {
-        "check": {"calls":2,"instructions":4,"instructionSteps":30,"nodes":6,"coldMs":0.123,"warmMs":0.023},
-        "inventory": {"calls":2,"coldMs":0.097,"warmMs":0.031},
-        "normalize": {"calls":2,"queries":2,"querySteps":56940,"nodes":15504,"coldMs":3.627,"warmMs":0.011},
-        "decode": {"calls":2,"coldMs":0.02,"warmMs":0.008},
-        "elaborate": {"calls":1,"instructions":98,"instructionSteps":428,"queries":7,"querySteps":129,"nodes":152,"coldMs":3.078,"warmMs":1.575},
-        "render": {"calls":1,"coldMs":0.243,"warmMs":0.08},
-        "other": {"calls":1,"coldMs":1.322,"warmMs":0.746}
+        "check": {"calls":2,"instructions":4,"instructionSteps":30,"nodes":6,"coldMs":0.117,"warmMs":0.021},
+        "inventory": {"calls":2,"coldMs":0.103,"warmMs":0.031},
+        "normalize": {"calls":2,"queries":2,"querySteps":70986,"nodes":17732,"coldMs":4.027,"warmMs":0.011},
+        "decode": {"calls":2,"coldMs":0.018,"warmMs":0.008},
+        "elaborate": {"calls":1,"instructions":98,"instructionSteps":427,"queries":7,"querySteps":129,"nodes":152,"coldMs":3.085,"warmMs":1.629},
+        "render": {"calls":1,"coldMs":0.237,"warmMs":0.081},
+        "other": {"calls":1,"coldMs":1.338,"warmMs":0.771}
       },
       "depth": {
         "check": {"depth":14,"allocated":1,"chain":["Fst.0","App.1","App.0","App.1 ×2","App.0","App.1 ×5","App.0","Con.0","Sort"],"kinds":{"Fst":1}},
         "normalize": {
-          "depth": 124,
-          "allocated": 15299,
+          "depth": 86,
+          "allocated": 205,
           "chain": [
-            "App.1",
-            "SumRec.2",
-            "Lam.1",
-            "SumRec.2",
+            "App.0",
+            "Elim.1",
+            "List.0",
             "Lam.1",
             "App.0",
-            "Lam.1",
-            "App.0 ×2",
-            "App.1 ×2",
-            "PLam.1",
-            "Comp.1",
-            "Tube.1",
-            "Tube.0",
-            "PApp.0",
+            "Elim.1",
+            "List.0",
             "App.1",
-            "PLam.1"
+            "App.0",
+            "Elim.1",
+            "List.1",
+            "List.0",
+            "Lam.1 ×3",
+            "App.0",
+            "Elim.1",
+            "List.0"
           ],
-          "kinds": {"App":7185,"Lam":2109,"Var":1648,"Comp":783,"Pi":682,"Tube":400,"Pair":390,"List":352}
+          "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
         }
       },
-      "maxRssMiB": {"median":323.4,"min":323.1,"max":325.7,"samples":5}
+      "maxRssMiB": {"median":340,"min":339.4,"max":342.6,"samples":5}
     },
     {
       "id": "euclid-5-prime",
@@ -1044,38 +1042,41 @@
       "outcome": {"status":"value","text":"11","length":2,"sha256":"4fc82b26aecb47d2"},
       "deterministic": true,
       "import": {
-        "instructions": 152364,
-        "rejected": 282,
-        "instructionSteps": 416206,
-        "queries": 15235,
-        "querySteps": 189048,
-        "nodes": 21643,
-        "ms": {"median":1543.863,"min":1536.95,"max":1599.302,"samples":5}
+        "instructions": 171336,
+        "rejected": 353,
+        "instructionSteps": 493183,
+        "queries": 17537,
+        "querySteps": 235149,
+        "nodes": 24784,
+        "ms": {"median":1960.165,"min":1757.044,"max":2069.661,"samples":5}
       },
-      "total": {"instructions":103,"instructionSteps":461,"queries":13,"querySteps":160432,"nodes":40738,"peakNodes":62381,"peakBytes":5642240},
+      "total": {"instructions":103,"instructionSteps":460,"queries":8,"querySteps":955,"nodes":363,"peakNodes":25147,"peakBytes":3151872},
       "runtime": {
-        "steps": 5184,
-        "allocatedCells": 4526,
-        "forces": 501,
-        "hits": 21,
-        "beta": 137,
-        "iota": 29,
-        "maxFrames": 122,
-        "snapshotNodes": 496,
-        "snapshotDefinitions": 21,
-        "shared": 7
+        "steps": 204894,
+        "allocatedCells": 117499,
+        "forces": 28182,
+        "hits": 3424,
+        "beta": 8069,
+        "iota": 2269,
+        "maxFrames": 413,
+        "snapshotNodes": 1513,
+        "snapshotDefinitions": 51,
+        "shared": 49
       },
-      "ms": {"cold":{"median":17.07,"min":17.022,"max":17.58,"samples":5},"unobserved":15.698,"warm":{"median":3.095,"min":2.972,"max":4.102,"samples":15}},
+      "ms": {
+        "cold": {"median":20.229,"min":19.79,"max":20.712,"samples":5},
+        "unobserved": 20.084,
+        "warm": {"median":8.261,"min":6.851,"max":12.082,"samples":15}
+      },
       "phases": {
-        "check": {"calls":2,"instructions":4,"instructionSteps":30,"nodes":6,"coldMs":0.12,"warmMs":0.019},
-        "inventory": {"calls":2,"coldMs":0.096,"warmMs":0.03},
-        "normalize": {"calls":1,"queries":1,"querySteps":985,"nodes":205,"coldMs":0.092,"warmMs":0.012},
-        "decode": {"calls":1,"coldMs":0.005,"warmMs":0.003},
-        "elaborate": {"calls":1,"instructions":99,"instructionSteps":431,"queries":7,"querySteps":129,"nodes":152,"coldMs":3.152,"warmMs":1.687},
-        "runtime": {"calls":2,"failures":1,"coldMs":2.15,"warmMs":0.326},
-        "demand": {"calls":5,"queries":5,"querySteps":159318,"nodes":40375,"coldMs":9.405,"warmMs":0.02},
-        "render": {"calls":1,"coldMs":0.267,"warmMs":0.114},
-        "other": {"calls":1,"coldMs":1.786,"warmMs":0.851}
+        "check": {"calls":2,"instructions":4,"instructionSteps":30,"nodes":6,"coldMs":0.129,"warmMs":0.023},
+        "inventory": {"calls":2,"coldMs":0.108,"warmMs":0.034},
+        "normalize": {"calls":1,"queries":1,"querySteps":826,"nodes":205,"coldMs":0.098,"warmMs":0.018},
+        "decode": {"calls":1,"coldMs":0.006,"warmMs":0.003},
+        "elaborate": {"calls":1,"instructions":99,"instructionSteps":430,"queries":7,"querySteps":129,"nodes":152,"coldMs":3.406,"warmMs":1.955},
+        "runtime": {"calls":6,"coldMs":14.279,"warmMs":5.01},
+        "render": {"calls":1,"coldMs":0.311,"warmMs":0.129},
+        "other": {"calls":1,"coldMs":1.947,"warmMs":1.091}
       },
       "depth": {
         "check": {"depth":15,"allocated":1,"chain":["Fst.0","App.1","App.0","App.1 ×2","App.0","App.1 ×6","App.0","Con.0","Sort"],"kinds":{"Fst":1}},
@@ -1103,7 +1104,7 @@
           "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
         }
       },
-      "maxRssMiB": {"median":325.4,"min":325,"max":329.1,"samples":5}
+      "maxRssMiB": {"median":341.5,"min":339,"max":346.4,"samples":5}
     },
     {
       "id": "euclid-5-prime-normal",
@@ -1113,109 +1114,100 @@
       "outcome": {"status":"value","text":"11","length":2,"sha256":"4fc82b26aecb47d2","normal":"587eb98d9a7d0d75"},
       "deterministic": true,
       "import": {
-        "instructions": 152364,
-        "rejected": 282,
-        "instructionSteps": 416206,
-        "queries": 15235,
-        "querySteps": 189048,
-        "nodes": 21643,
-        "ms": {"median":1536.911,"min":1531.994,"max":1569.178,"samples":5}
+        "instructions": 171336,
+        "rejected": 353,
+        "instructionSteps": 493183,
+        "queries": 17537,
+        "querySteps": 235149,
+        "nodes": 24784,
+        "ms": {"median":1957.702,"min":1949.918,"max":1991.853,"samples":5}
       },
-      "total": {"instructions":103,"instructionSteps":461,"queries":9,"querySteps":160450,"nodes":40738,"peakNodes":62381,"peakBytes":5642240},
+      "total": {"instructions":103,"instructionSteps":460,"queries":9,"querySteps":197498,"nodes":46152,"peakNodes":70936,"peakBytes":9574400},
       "ms": {
-        "cold": {"median":14.572,"min":14.275,"max":14.984,"samples":5},
-        "unobserved": 13.318,
-        "warm": {"median":2.497,"min":2.405,"max":3.109,"samples":15}
+        "cold": {"median":18.063,"min":17.804,"max":24.513,"samples":5},
+        "unobserved": 16.315,
+        "warm": {"median":3.614,"min":2.634,"max":17.482,"samples":15}
       },
       "phases": {
-        "check": {"calls":2,"instructions":4,"instructionSteps":30,"nodes":6,"coldMs":0.129,"warmMs":0.022},
-        "inventory": {"calls":2,"coldMs":0.103,"warmMs":0.031},
-        "normalize": {"calls":2,"queries":2,"querySteps":160321,"nodes":40580,"coldMs":9.301,"warmMs":0.011},
-        "decode": {"calls":2,"coldMs":0.027,"warmMs":0.008},
-        "elaborate": {"calls":1,"instructions":99,"instructionSteps":431,"queries":7,"querySteps":129,"nodes":152,"coldMs":3.17,"warmMs":1.574},
-        "render": {"calls":1,"coldMs":0.26,"warmMs":0.09},
-        "other": {"calls":1,"coldMs":1.42,"warmMs":0.756}
+        "check": {"calls":2,"instructions":4,"instructionSteps":30,"nodes":6,"coldMs":0.136,"warmMs":0.025},
+        "inventory": {"calls":2,"coldMs":0.108,"warmMs":0.039},
+        "normalize": {"calls":2,"queries":2,"querySteps":197369,"nodes":45994,"coldMs":12.41,"warmMs":0.022},
+        "decode": {"calls":2,"coldMs":0.043,"warmMs":0.01},
+        "elaborate": {"calls":1,"instructions":99,"instructionSteps":430,"queries":7,"querySteps":129,"nodes":152,"coldMs":3.529,"warmMs":2.231},
+        "render": {"calls":1,"coldMs":0.304,"warmMs":0.099},
+        "other": {"calls":1,"coldMs":1.634,"warmMs":1.035}
       },
       "depth": {
         "check": {"depth":15,"allocated":1,"chain":["Fst.0","App.1","App.0","App.1 ×2","App.0","App.1 ×6","App.0","Con.0","Sort"],"kinds":{"Fst":1}},
         "normalize": {
-          "depth": 228,
-          "allocated": 40375,
+          "depth": 86,
+          "allocated": 205,
           "chain": [
-            "App.1",
-            "SumRec.2",
-            "Lam.1",
-            "SumRec.2",
+            "App.0",
+            "Elim.1",
+            "List.0",
             "Lam.1",
             "App.0",
-            "Lam.1",
-            "App.0 ×2",
-            "App.1 ×2",
-            "PLam.1",
-            "Comp.1",
-            "Tube.1",
-            "Tube.0",
-            "PApp.0",
+            "Elim.1",
+            "List.0",
             "App.1",
-            "PLam.1"
+            "App.0",
+            "Elim.1",
+            "List.1",
+            "List.0",
+            "Lam.1 ×3",
+            "App.0",
+            "Elim.1",
+            "List.0"
           ],
-          "kinds": {"App":19010,"Var":5178,"Lam":5020,"Comp":1998,"Pi":1834,"Pair":1142,"Tube":1001,"List":821}
+          "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
         }
       },
-      "maxRssMiB": {"median":325.1,"min":324.4,"max":325.9,"samples":5}
+      "maxRssMiB": {"median":349.2,"min":347.6,"max":365.4,"samples":5}
     },
     {
       "id": "euclid-7-prime",
       "contract": "repl",
       "setup": "import euclid; use nat;",
       "entry": "evaluate euclid(7).1;",
-      "outcome": {"status":"error","code":"K344","text":"K344: Native prototype syntax depth exceeds 512.","length":48,"sha256":"5e7e4ab653bb0f92"},
+      "outcome": {"status":"value","text":"71","length":2,"sha256":"7f2253d7e228b22a"},
       "deterministic": true,
       "import": {
-        "instructions": 152364,
-        "rejected": 282,
-        "instructionSteps": 416206,
-        "queries": 15235,
-        "querySteps": 189048,
-        "nodes": 21643,
-        "ms": {"median":1539.817,"min":1531.413,"max":1562.148,"samples":5}
+        "instructions": 171336,
+        "rejected": 353,
+        "instructionSteps": 493183,
+        "queries": 17537,
+        "querySteps": 235149,
+        "nodes": 24784,
+        "ms": {"median":1884.58,"min":1853.98,"max":1928.787,"samples":5}
       },
-      "total": {
-        "instructions": 105,
-        "instructionSteps": 467,
-        "queries": 9,
-        "failedQueries": 1,
-        "querySteps": 634130,
-        "nodes": 135590,
-        "peakNodes": 157233,
-        "peakBytes": 20584448
-      },
+      "total": {"instructions":105,"instructionSteps":466,"queries":8,"querySteps":955,"nodes":363,"peakNodes":25147,"peakBytes":3151872},
       "runtime": {
-        "steps": 5666,
-        "allocatedCells": 4808,
-        "forces": 569,
-        "hits": 29,
-        "beta": 155,
-        "iota": 35,
-        "maxFrames": 140,
-        "snapshotNodes": 498,
-        "snapshotDefinitions": 21,
-        "shared": 7
+        "steps": 2496192,
+        "allocatedCells": 1378853,
+        "forces": 348198,
+        "hits": 49576,
+        "beta": 100497,
+        "iota": 31168,
+        "maxFrames": 1295,
+        "snapshotNodes": 1515,
+        "snapshotDefinitions": 51,
+        "shared": 187
       },
       "ms": {
-        "cold": {"median":42.095,"min":41.459,"max":44.823,"samples":5},
-        "unobserved": 40.561,
-        "warm": {"median":3.146,"min":2.883,"max":16.71,"samples":15}
+        "cold": {"median":64.905,"min":56.73,"max":65.804,"samples":5},
+        "unobserved": 65.155,
+        "warm": {"median":42.281,"min":41.18,"max":49.864,"samples":15}
       },
       "phases": {
-        "check": {"calls":2,"instructions":4,"instructionSteps":30,"nodes":6,"coldMs":0.123,"warmMs":0.019},
-        "inventory": {"calls":2,"coldMs":0.095,"warmMs":0.033},
-        "normalize": {"calls":1,"queries":1,"querySteps":985,"nodes":205,"coldMs":0.092,"warmMs":0.012},
-        "decode": {"calls":1,"coldMs":0.005,"warmMs":0.003},
-        "elaborate": {"calls":1,"instructions":101,"instructionSteps":437,"queries":7,"querySteps":129,"nodes":152,"coldMs":3.193,"warmMs":1.715},
-        "runtime": {"calls":2,"failures":1,"coldMs":2.201,"warmMs":0.352},
-        "demand": {"calls":1,"failures":1,"queries":1,"failedQueries":1,"querySteps":633016,"nodes":135227,"coldMs":34.37,"warmMs":0.034},
-        "other": {"calls":1,"coldMs":2.009,"warmMs":0.984}
+        "check": {"calls":2,"instructions":4,"instructionSteps":30,"nodes":6,"coldMs":0.141,"warmMs":0.024},
+        "inventory": {"calls":2,"coldMs":0.104,"warmMs":0.047},
+        "normalize": {"calls":1,"queries":1,"querySteps":826,"nodes":205,"coldMs":0.096,"warmMs":0.019},
+        "decode": {"calls":1,"coldMs":0.006,"warmMs":0.003},
+        "elaborate": {"calls":1,"instructions":101,"instructionSteps":436,"queries":7,"querySteps":129,"nodes":152,"coldMs":3.413,"warmMs":2.179},
+        "runtime": {"calls":9,"coldMs":58.24,"warmMs":38.217},
+        "render": {"calls":1,"coldMs":0.341,"warmMs":0.193},
+        "other": {"calls":1,"coldMs":2.011,"warmMs":1.172}
       },
       "depth": {
         "check": {"depth":17,"allocated":1,"chain":["Fst.0","App.1","App.0","App.1 ×2","App.0","App.1 ×8","App.0","Con.0","Sort"],"kinds":{"Fst":1}},
@@ -1243,70 +1235,308 @@
           "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
         }
       },
-      "maxRssMiB": {"median":338.4,"min":338.2,"max":345.5,"samples":5}
+      "maxRssMiB": {"median":352,"min":350.6,"max":360.2,"samples":5}
     },
     {
       "id": "euclid-7-prime-normal",
       "contract": "replNormal",
       "setup": "import euclid; use nat;",
       "entry": "evaluate !!!euclid(7).1;",
-      "outcome": {"status":"error","code":"K344","text":"K344: Native prototype syntax depth exceeds 512.","length":48,"sha256":"5e7e4ab653bb0f92"},
+      "outcome": {"status":"value","text":"71","length":2,"sha256":"7f2253d7e228b22a","normal":"05f6a497d1807e6c"},
       "deterministic": true,
       "import": {
-        "instructions": 152364,
-        "rejected": 282,
-        "instructionSteps": 416206,
-        "queries": 15235,
-        "querySteps": 189048,
-        "nodes": 21643,
-        "ms": {"median":1562.789,"min":1547.124,"max":1575.178,"samples":5}
+        "instructions": 171336,
+        "rejected": 353,
+        "instructionSteps": 493183,
+        "queries": 17537,
+        "querySteps": 235149,
+        "nodes": 24784,
+        "ms": {"median":1859.453,"min":1848.758,"max":1970.163,"samples":5}
       },
-      "total": {
-        "instructions": 105,
-        "instructionSteps": 467,
-        "queries": 9,
-        "failedQueries": 1,
-        "querySteps": 634130,
-        "nodes": 135590,
-        "peakNodes": 157233,
-        "peakBytes": 20584448
+      "total": {"instructions":105,"instructionSteps":466,"queries":9,"querySteps":1922085,"nodes":402812,"peakNodes":427596,"peakBytes":36313088},
+      "ms": {
+        "cold": {"median":119.416,"min":118.92,"max":129.973,"samples":5},
+        "unobserved": 156.596,
+        "warm": {"median":2.992,"min":2.64,"max":15.695,"samples":15}
       },
-      "ms": {"cold":{"median":39.334,"min":39.019,"max":40.207,"samples":5},"unobserved":37.308,"warm":{"median":2.57,"min":2.422,"max":3.416,"samples":15}},
       "phases": {
-        "check": {"calls":2,"instructions":4,"instructionSteps":30,"nodes":6,"coldMs":0.12,"warmMs":0.02},
-        "inventory": {"calls":2,"coldMs":0.095,"warmMs":0.033},
-        "normalize": {"calls":2,"failures":1,"queries":2,"failedQueries":1,"querySteps":634001,"nodes":135432,"coldMs":34.188,"warmMs":0.034},
-        "decode": {"calls":1,"coldMs":0.005,"warmMs":0.003},
-        "elaborate": {"calls":1,"instructions":101,"instructionSteps":437,"queries":7,"querySteps":129,"nodes":152,"coldMs":3.206,"warmMs":1.612},
-        "other": {"calls":1,"coldMs":1.722,"warmMs":0.871}
+        "check": {"calls":2,"instructions":4,"instructionSteps":30,"nodes":6,"coldMs":0.137,"warmMs":0.027},
+        "inventory": {"calls":2,"coldMs":0.112,"warmMs":0.037},
+        "normalize": {"calls":2,"queries":2,"querySteps":1921956,"nodes":402654,"coldMs":113.217,"warmMs":0.023},
+        "decode": {"calls":2,"coldMs":0.051,"warmMs":0.008},
+        "elaborate": {"calls":1,"instructions":101,"instructionSteps":436,"queries":7,"querySteps":129,"nodes":152,"coldMs":3.385,"warmMs":1.907},
+        "render": {"calls":1,"coldMs":0.334,"warmMs":0.122},
+        "other": {"calls":1,"coldMs":1.669,"warmMs":0.866}
       },
       "depth": {
         "check": {"depth":17,"allocated":1,"chain":["Fst.0","App.1","App.0","App.1 ×2","App.0","App.1 ×8","App.0","Con.0","Sort"],"kinds":{"Fst":1}},
         "normalize": {
-          "depth": 512,
-          "allocated": 135227,
-          "chain": [
-            "PLam.1",
-            "Comp.1",
-            "Tube.1",
-            "Tube.0",
-            "PApp.0",
-            "App.1",
-            "PLam.1",
-            "Comp.1",
-            "Tube.1",
-            "Tube.0",
-            "PApp.0",
-            "Comp.1",
-            "Tube.0",
-            "Comp.1",
-            "Tube.0",
-            "App.1"
-          ],
-          "kinds": {"App":66762,"Var":19765,"Lam":15708,"Pi":6290,"Comp":5458,"Pair":3714,"Tube":2827,"List":2341}
+          "depth": 186,
+          "allocated": 402449,
+          "chain": ["App.1","SumRec.2","Lam.1","SumRec.2","Lam.1","App.0","Lam.1","SumRec.1","Lam.1","App.1","App.0","App.1","App.0","App.1","App.0","App.1"],
+          "kinds": {"App":212790,"Lam":68418,"Var":53524,"Pi":16536,"List":12702,"Pair":6738,"SumRec":5336,"Elim":5192}
         }
       },
-      "maxRssMiB": {"median":338,"min":325.2,"max":339.3,"samples":5}
+      "maxRssMiB": {"median":380.5,"min":379.6,"max":386.4,"samples":5}
+    },
+    {
+      "id": "least-divisor-251-squared",
+      "contract": "repl",
+      "setup": "import euclid; use nat;",
+      "entry": "evaluate least_divisor(63001, tt).1;",
+      "outcome": {"status":"value","text":"251","length":3,"sha256":"c75d3f1f5bcd6914"},
+      "deterministic": true,
+      "import": {
+        "instructions": 171336,
+        "rejected": 353,
+        "instructionSteps": 493183,
+        "queries": 17537,
+        "querySteps": 235149,
+        "nodes": 24784,
+        "ms": {"median":1754.94,"min":1728.585,"max":1913.066,"samples":5}
+      },
+      "total": {"instructions":129,"instructionSteps":3435,"queries":8,"querySteps":2170,"nodes":1521,"peakNodes":26305,"peakBytes":3151872},
+      "runtime": {
+        "steps": 12313023,
+        "allocatedCells": 6791946,
+        "forces": 1711932,
+        "hits": 255811,
+        "beta": 492716,
+        "iota": 160459,
+        "maxFrames": 3385,
+        "snapshotNodes": 1445,
+        "snapshotDefinitions": 47,
+        "shared": 650
+      },
+      "ms": {
+        "cold": {"median":214.893,"min":209.477,"max":223.379,"samples":5},
+        "unobserved": 219.308,
+        "warm": {"median":200.475,"min":189.371,"max":208.923,"samples":15}
+      },
+      "phases": {
+        "check": {"calls":2,"instructions":7,"instructionSteps":35,"nodes":7,"coldMs":0.139,"warmMs":0.023},
+        "inventory": {"calls":2,"coldMs":0.104,"warmMs":0.039},
+        "normalize": {"calls":1,"queries":1,"querySteps":2020,"nodes":550,"coldMs":0.137,"warmMs":0.019},
+        "decode": {"calls":1,"coldMs":0.005,"warmMs":0.004},
+        "elaborate": {"calls":1,"instructions":122,"instructionSteps":3400,"queries":7,"querySteps":150,"nodes":964,"coldMs":5.681,"warmMs":3.845},
+        "runtime": {"calls":10,"coldMs":204.341,"warmMs":195.038},
+        "render": {"calls":1,"coldMs":0.364,"warmMs":0.219},
+        "other": {"calls":1,"coldMs":2.37,"warmMs":1.25}
+      },
+      "depth": {
+        "check": {
+          "depth": 17,
+          "allocated": 2,
+          "chain": ["Fst.0","App.0","App.1","App.0","App.1 ×2","App.0","App.1 ×7","App.0","Con.0","Sort"],
+          "kinds": {"Fst":1,"App":1}
+        },
+        "normalize": {
+          "depth": 86,
+          "allocated": 550,
+          "chain": [
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "Lam.1",
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "App.1",
+            "App.0",
+            "Elim.1",
+            "List.1",
+            "List.0",
+            "Lam.1 ×3",
+            "App.0",
+            "Elim.1",
+            "List.0"
+          ],
+          "kinds": {"App":255,"List":104,"Lam":79,"Var":57,"Pi":35,"Elim":20}
+        }
+      },
+      "maxRssMiB": {"median":420.8,"min":387,"max":421.8,"samples":5}
+    },
+    {
+      "id": "least-divisor-251-squared-normal",
+      "contract": "replNormal",
+      "setup": "import euclid; use nat;",
+      "entry": "evaluate !!!least_divisor(63001, tt).1;",
+      "outcome": {"status":"error","code":"K344","text":"K344: Native prototype syntax depth exceeds 512.","length":48,"sha256":"5e7e4ab653bb0f92"},
+      "deterministic": true,
+      "import": {
+        "instructions": 171336,
+        "rejected": 353,
+        "instructionSteps": 493183,
+        "queries": 17537,
+        "querySteps": 235149,
+        "nodes": 24784,
+        "ms": {"median":1821.289,"min":1747.181,"max":1888.849,"samples":5}
+      },
+      "total": {
+        "instructions": 129,
+        "instructionSteps": 3435,
+        "queries": 9,
+        "failedQueries": 1,
+        "querySteps": 7532601,
+        "nodes": 1534692,
+        "peakNodes": 1559476,
+        "peakBytes": 143267840
+      },
+      "ms": {
+        "cold": {"median":457.802,"min":454.188,"max":516.108,"samples":5},
+        "unobserved": 455.4,
+        "warm": {"median":6.461,"min":6.046,"max":12.597,"samples":15}
+      },
+      "phases": {
+        "check": {"calls":2,"instructions":7,"instructionSteps":35,"nodes":7,"coldMs":0.134,"warmMs":0.021},
+        "inventory": {"calls":2,"coldMs":0.102,"warmMs":0.045},
+        "normalize": {"calls":2,"failures":1,"queries":2,"failedQueries":1,"querySteps":7532451,"nodes":1533721,"coldMs":450.708,"warmMs":1.921},
+        "decode": {"calls":1,"coldMs":0.005,"warmMs":0.004},
+        "elaborate": {"calls":1,"instructions":122,"instructionSteps":3400,"queries":7,"querySteps":150,"nodes":964,"coldMs":5.469,"warmMs":3.496},
+        "other": {"calls":1,"coldMs":1.912,"warmMs":0.995}
+      },
+      "depth": {
+        "check": {
+          "depth": 17,
+          "allocated": 2,
+          "chain": ["Fst.0","App.0","App.1","App.0","App.1 ×2","App.0","App.1 ×7","App.0","Con.0","Sort"],
+          "kinds": {"Fst":1,"App":1}
+        },
+        "normalize": {
+          "depth": 512,
+          "allocated": 1533171,
+          "chain": ["SumRec.2","Lam.1","SumRec.2","Lam.1","App.0","Lam.1","SumRec.1","Lam.1","App.1","App.0","App.1","App.0","App.1","App.0","App.1","App.0"],
+          "kinds": {"App":814707,"Lam":246897,"Var":221715,"Pi":65971,"List":44678,"Pair":26797,"SumRec":19679,"Elim":17922}
+        }
+      },
+      "maxRssMiB": {"median":500.7,"min":499.3,"max":506.9,"samples":5}
+    },
+    {
+      "id": "fibonacci-25",
+      "contract": "repl",
+      "setup": "import euclid; use nat;\n// Nat's strong recursion, branching: Fibonacci asks for the values at the\n// predecessor and at its predecessor. The values below each n hold every\n// smaller value once, so the two calls share what they reach; a recursion\n// that recomputed them takes exponential time, and its kernel queries ran\n// out of arena (K347) at 40 (docs/reports/transport-free-recursion.md).\n// The order helper uses only what main's library had, so that the same\n// cases run there.\n// Authority: docs/roadmaps/runtime/runtime-evaluation-roadmap.md#num0-and-num1-representations-algebraic-agreement-and-numerical-induction\n\n// Below m and m below n, so below n: decided on the bits, with unary order\n// refuting the other branch.\ncomputable def fib_below(k, m, n : Nat, less : k < m, smaller : m < n) :\n  k < n := match bnat_lt_decide(k, n) return k < n {\n    left yes => yes;\n    right no => absurd(\n      unat_lt_le_absurd(\n        bnat_to_unat(k), bnat_to_unat(n),\n        unat_le_trans(\n          unat::succ(bnat_to_unat(k)), bnat_to_unat(m), bnat_to_unat(n), bnat_lt_decode(k, m, less),\n          unat_le_trans(\n            bnat_to_unat(m), unat::succ(bnat_to_unat(m)), bnat_to_unat(n),\n            unat_le_step(bnat_to_unat(m), bnat_to_unat(m), unat_le_refl(bnat_to_unat(m))),\n            bnat_lt_decode(m, n, smaller)\n          )\n        ), bnat_le_decode(n, k, bnat_le_of_not_lt(k, n, no))\n      )\n    );\n  };\n\n// At p, from its predecessor m: fib(1) = 1, and otherwise the values at m\n// and at m's predecessor.\ncomputable def fib_from(\n  p : BPositive, m : Nat, smaller : m < b_positive(p),\n  below : NatBelow(U0, fun (k : Nat) => Nat, b_positive(p))\n) :\n  Nat := match m {\n    b_zero => 1;\n    b_positive(r) => below(b_positive(r), smaller) + below(\n      bpositive_pred(r),\n      fib_below(bpositive_pred(r), b_positive(r), b_positive(p), bpositive_pred_lt(r), smaller)\n    );\n  };\n\ncomputable def fib_step(n : Nat, below : NatBelow(U0, fun (k : Nat) => Nat, n)) : Nat := match n {\n    b_zero => 0;\n    b_positive(p) => fib_from(p, bpositive_pred(p), bpositive_pred_lt(p), below);\n  };\n\ncomputable def fib(n : Nat) : Nat := nat_strong_recursion(U0, fun (k : Nat) => Nat, fib_step, n);\n\n\n// The same recursion at a function-valued family: each value is a\n// function of a unit, and the step applies both smaller values to it. The\n// kernel's queries share the applications as they share the values. The\n// runtime shares a returned function but not its repeated applications,\n// and stops at its allocation budget here (E488) until it is removed\n// (docs/reports/transport-free-recursion.md).\ncomputable def fun_fib_from(\n  p : BPositive, m : Nat, smaller : m < b_positive(p),\n  below : NatBelow(U0, fun (k : Nat) => Unit -> Nat, b_positive(p)), u : Unit\n) :\n  Nat := match m {\n    b_zero => 1;\n    b_positive(r) => below(b_positive(r), smaller)(u) + below(\n      bpositive_pred(r),\n      fib_below(bpositive_pred(r), b_positive(r), b_positive(p), bpositive_pred_lt(r), smaller)\n    )(u);\n  };\n\ncomputable def fun_fib_step(n : Nat, below : NatBelow(U0, fun (k : Nat) => Unit -> Nat, n)) :\n  Unit -> Nat := match n {\n    b_zero => fun (u : Unit) => 0;\n    b_positive(p) => fun (u : Unit) => fun_fib_from(\n      p, bpositive_pred(p), bpositive_pred_lt(p), below, u\n    );\n  };\n\ncomputable def fun_fib(n : Nat, u : Unit) :\n  Nat := nat_strong_recursion(U0, fun (k : Nat) => Unit -> Nat, fun_fib_step, n)(u);\n\n",
+      "entry": "evaluate fib(25);",
+      "outcome": {"status":"value","text":"75025","length":5,"sha256":"53a000093408dfa6"},
+      "deterministic": true,
+      "import": {
+        "instructions": 172871,
+        "rejected": 353,
+        "instructionSteps": 498341,
+        "queries": 17788,
+        "querySteps": 242288,
+        "nodes": 25054,
+        "ms": {"median":1782.914,"min":1781.864,"max":1789.367,"samples":5}
+      },
+      "total": {"instructions":103,"instructionSteps":451,"queries":7,"querySteps":1381,"nodes":447,"peakNodes":25501,"peakBytes":3151872},
+      "runtime": {
+        "steps": 206261,
+        "allocatedCells": 116474,
+        "forces": 27983,
+        "hits": 3373,
+        "beta": 8597,
+        "iota": 2178,
+        "maxFrames": 1296,
+        "snapshotNodes": 1096,
+        "snapshotDefinitions": 33,
+        "shared": 106
+      },
+      "ms": {
+        "cold": {"median":20.406,"min":19.823,"max":20.853,"samples":5},
+        "unobserved": 18.587,
+        "warm": {"median":8.029,"min":6.944,"max":10.28,"samples":15}
+      },
+      "phases": {
+        "check": {"calls":2,"instructions":4,"instructionSteps":32,"nodes":6,"coldMs":0.119,"warmMs":0.023},
+        "inventory": {"calls":2,"coldMs":0.094,"warmMs":0.032},
+        "normalize": {"calls":1,"queries":1,"querySteps":1253,"nodes":293,"coldMs":0.097,"warmMs":0.012},
+        "decode": {"calls":1,"coldMs":0.01,"warmMs":0.003},
+        "elaborate": {"calls":1,"instructions":99,"instructionSteps":419,"queries":6,"querySteps":128,"nodes":148,"coldMs":3.477,"warmMs":2.227},
+        "runtime": {"calls":19,"coldMs":14.119,"warmMs":4.345},
+        "render": {"calls":1,"coldMs":0.346,"warmMs":0.323},
+        "other": {"calls":1,"coldMs":1.76,"warmMs":1.075}
+      },
+      "depth": {
+        "check": {"depth":15,"allocated":1,"chain":["App.1","App.0","App.1 ×3","App.0","App.1 ×6","App.0","Con.0","Sort"],"kinds":{"App":1}},
+        "normalize": {
+          "depth": 86,
+          "allocated": 293,
+          "chain": [
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "Lam.1",
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "App.1",
+            "App.0",
+            "Elim.1",
+            "List.1",
+            "List.0",
+            "Lam.1 ×3",
+            "App.0",
+            "Elim.1",
+            "List.0"
+          ],
+          "kinds": {"App":141,"Lam":44,"List":44,"Var":33,"Pi":20,"Elim":11}
+        }
+      },
+      "maxRssMiB": {"median":345.3,"min":340.7,"max":347.1,"samples":5}
+    },
+    {
+      "id": "fibonacci-25-normal",
+      "contract": "replNormal",
+      "setup": "import euclid; use nat;\n// Nat's strong recursion, branching: Fibonacci asks for the values at the\n// predecessor and at its predecessor. The values below each n hold every\n// smaller value once, so the two calls share what they reach; a recursion\n// that recomputed them takes exponential time, and its kernel queries ran\n// out of arena (K347) at 40 (docs/reports/transport-free-recursion.md).\n// The order helper uses only what main's library had, so that the same\n// cases run there.\n// Authority: docs/roadmaps/runtime/runtime-evaluation-roadmap.md#num0-and-num1-representations-algebraic-agreement-and-numerical-induction\n\n// Below m and m below n, so below n: decided on the bits, with unary order\n// refuting the other branch.\ncomputable def fib_below(k, m, n : Nat, less : k < m, smaller : m < n) :\n  k < n := match bnat_lt_decide(k, n) return k < n {\n    left yes => yes;\n    right no => absurd(\n      unat_lt_le_absurd(\n        bnat_to_unat(k), bnat_to_unat(n),\n        unat_le_trans(\n          unat::succ(bnat_to_unat(k)), bnat_to_unat(m), bnat_to_unat(n), bnat_lt_decode(k, m, less),\n          unat_le_trans(\n            bnat_to_unat(m), unat::succ(bnat_to_unat(m)), bnat_to_unat(n),\n            unat_le_step(bnat_to_unat(m), bnat_to_unat(m), unat_le_refl(bnat_to_unat(m))),\n            bnat_lt_decode(m, n, smaller)\n          )\n        ), bnat_le_decode(n, k, bnat_le_of_not_lt(k, n, no))\n      )\n    );\n  };\n\n// At p, from its predecessor m: fib(1) = 1, and otherwise the values at m\n// and at m's predecessor.\ncomputable def fib_from(\n  p : BPositive, m : Nat, smaller : m < b_positive(p),\n  below : NatBelow(U0, fun (k : Nat) => Nat, b_positive(p))\n) :\n  Nat := match m {\n    b_zero => 1;\n    b_positive(r) => below(b_positive(r), smaller) + below(\n      bpositive_pred(r),\n      fib_below(bpositive_pred(r), b_positive(r), b_positive(p), bpositive_pred_lt(r), smaller)\n    );\n  };\n\ncomputable def fib_step(n : Nat, below : NatBelow(U0, fun (k : Nat) => Nat, n)) : Nat := match n {\n    b_zero => 0;\n    b_positive(p) => fib_from(p, bpositive_pred(p), bpositive_pred_lt(p), below);\n  };\n\ncomputable def fib(n : Nat) : Nat := nat_strong_recursion(U0, fun (k : Nat) => Nat, fib_step, n);\n\n\n// The same recursion at a function-valued family: each value is a\n// function of a unit, and the step applies both smaller values to it. The\n// kernel's queries share the applications as they share the values. The\n// runtime shares a returned function but not its repeated applications,\n// and stops at its allocation budget here (E488) until it is removed\n// (docs/reports/transport-free-recursion.md).\ncomputable def fun_fib_from(\n  p : BPositive, m : Nat, smaller : m < b_positive(p),\n  below : NatBelow(U0, fun (k : Nat) => Unit -> Nat, b_positive(p)), u : Unit\n) :\n  Nat := match m {\n    b_zero => 1;\n    b_positive(r) => below(b_positive(r), smaller)(u) + below(\n      bpositive_pred(r),\n      fib_below(bpositive_pred(r), b_positive(r), b_positive(p), bpositive_pred_lt(r), smaller)\n    )(u);\n  };\n\ncomputable def fun_fib_step(n : Nat, below : NatBelow(U0, fun (k : Nat) => Unit -> Nat, n)) :\n  Unit -> Nat := match n {\n    b_zero => fun (u : Unit) => 0;\n    b_positive(p) => fun (u : Unit) => fun_fib_from(\n      p, bpositive_pred(p), bpositive_pred_lt(p), below, u\n    );\n  };\n\ncomputable def fun_fib(n : Nat, u : Unit) :\n  Nat := nat_strong_recursion(U0, fun (k : Nat) => Unit -> Nat, fun_fib_step, n)(u);\n\n",
+      "entry": "evaluate !!!fib(25);",
+      "outcome": {"status":"value","text":"75025","length":5,"sha256":"53a000093408dfa6","normal":"f91c61bc39aeb25c"},
+      "deterministic": true,
+      "import": {
+        "instructions": 172871,
+        "rejected": 353,
+        "instructionSteps": 498341,
+        "queries": 17788,
+        "querySteps": 242288,
+        "nodes": 25054,
+        "ms": {"median":1791.423,"min":1785.961,"max":1801.135,"samples":5}
+      },
+      "total": {"instructions":103,"instructionSteps":451,"queries":8,"querySteps":207538,"nodes":47938,"peakNodes":72992,"peakBytes":9574400},
+      "ms": {"cold":{"median":16.858,"min":16.77,"max":17.297,"samples":5},"unobserved":15.191,"warm":{"median":3.041,"min":2.962,"max":4.079,"samples":15}},
+      "phases": {
+        "check": {"calls":2,"instructions":4,"instructionSteps":32,"nodes":6,"coldMs":0.119,"warmMs":0.021},
+        "inventory": {"calls":2,"coldMs":0.095,"warmMs":0.032},
+        "normalize": {"calls":2,"queries":2,"querySteps":207410,"nodes":47784,"coldMs":11.658,"warmMs":0.01},
+        "decode": {"calls":2,"coldMs":0.057,"warmMs":0.007},
+        "elaborate": {"calls":1,"instructions":99,"instructionSteps":419,"queries":6,"querySteps":128,"nodes":148,"coldMs":3.434,"warmMs":2.012},
+        "render": {"calls":1,"coldMs":0.209,"warmMs":0.171},
+        "other": {"calls":1,"coldMs":1.256,"warmMs":0.773}
+      },
+      "depth": {
+        "check": {"depth":15,"allocated":1,"chain":["App.1","App.0","App.1 ×3","App.0","App.1 ×6","App.0","Con.0","Sort"],"kinds":{"App":1}},
+        "normalize": {
+          "depth": 86,
+          "allocated": 293,
+          "chain": [
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "Lam.1",
+            "App.0",
+            "Elim.1",
+            "List.0",
+            "App.1",
+            "App.0",
+            "Elim.1",
+            "List.1",
+            "List.0",
+            "Lam.1 ×3",
+            "App.0",
+            "Elim.1",
+            "List.0"
+          ],
+          "kinds": {"App":141,"Lam":44,"List":44,"Var":33,"Pi":20,"Elim":11}
+        }
+      },
+      "maxRssMiB": {"median":345.9,"min":330.8,"max":349.2,"samples":5}
     },
     {
       "id": "factorial-4",
@@ -1316,38 +1546,37 @@
       "outcome": {"status":"value","text":"24","length":2,"sha256":"c2356069e9d1e79c"},
       "deterministic": true,
       "import": {
-        "instructions": 152364,
-        "rejected": 282,
-        "instructionSteps": 416206,
-        "queries": 15235,
-        "querySteps": 189048,
-        "nodes": 21643,
-        "ms": {"median":1552.287,"min":1536.046,"max":1582.198,"samples":5}
+        "instructions": 171336,
+        "rejected": 353,
+        "instructionSteps": 493183,
+        "queries": 17537,
+        "querySteps": 235149,
+        "nodes": 24784,
+        "ms": {"median":1755.839,"min":1747.14,"max":1770.932,"samples":5}
       },
-      "total": {"instructions":83,"instructionSteps":403,"queries":13,"querySteps":13769,"nodes":3868,"peakNodes":25511,"peakBytes":3151872},
+      "total": {"instructions":83,"instructionSteps":401,"queries":7,"querySteps":953,"nodes":344,"peakNodes":25128,"peakBytes":3151872},
       "runtime": {
-        "steps": 4037,
-        "allocatedCells": 3529,
-        "forces": 390,
-        "hits": 15,
-        "beta": 107,
-        "iota": 26,
-        "maxFrames": 69,
-        "snapshotNodes": 384,
-        "snapshotDefinitions": 15,
-        "shared": 7
+        "steps": 15981,
+        "allocatedCells": 11787,
+        "forces": 1818,
+        "hits": 141,
+        "beta": 541,
+        "iota": 112,
+        "maxFrames": 167,
+        "snapshotNodes": 930,
+        "snapshotDefinitions": 29,
+        "shared": 14
       },
-      "ms": {"cold":{"median":8.256,"min":7.997,"max":8.557,"samples":5},"unobserved":6.61,"warm":{"median":2.993,"min":2.885,"max":7.577,"samples":15}},
+      "ms": {"cold":{"median":8.121,"min":8.111,"max":8.647,"samples":5},"unobserved":6.64,"warm":{"median":3.384,"min":3.177,"max":5.161,"samples":15}},
       "phases": {
-        "check": {"calls":2,"instructions":4,"instructionSteps":32,"nodes":6,"coldMs":0.123,"warmMs":0.019},
-        "inventory": {"calls":2,"coldMs":0.095,"warmMs":0.031},
-        "normalize": {"calls":1,"queries":1,"querySteps":985,"nodes":205,"coldMs":0.082,"warmMs":0.012},
+        "check": {"calls":2,"instructions":4,"instructionSteps":32,"nodes":6,"coldMs":0.132,"warmMs":0.019},
+        "inventory": {"calls":2,"coldMs":0.099,"warmMs":0.031},
+        "normalize": {"calls":1,"queries":1,"querySteps":826,"nodes":205,"coldMs":0.07,"warmMs":0.009},
         "decode": {"calls":1,"coldMs":0.005,"warmMs":0.003},
-        "elaborate": {"calls":1,"instructions":79,"instructionSteps":371,"queries":6,"querySteps":126,"nodes":133,"coldMs":2.815,"warmMs":1.631},
-        "runtime": {"calls":2,"failures":1,"coldMs":1.989,"warmMs":0.288},
-        "demand": {"calls":6,"queries":6,"querySteps":12658,"nodes":3524,"coldMs":0.977,"warmMs":0.027},
-        "render": {"calls":1,"coldMs":0.275,"warmMs":0.131},
-        "other": {"calls":1,"coldMs":1.742,"warmMs":0.859}
+        "elaborate": {"calls":1,"instructions":79,"instructionSteps":369,"queries":6,"querySteps":127,"nodes":133,"coldMs":2.801,"warmMs":1.71},
+        "runtime": {"calls":7,"coldMs":3.038,"warmMs":0.717},
+        "render": {"calls":1,"coldMs":0.294,"warmMs":0.125},
+        "other": {"calls":1,"coldMs":1.693,"warmMs":0.859}
       },
       "depth": {
         "check": {"depth":13,"allocated":1,"chain":["App.1","App.0","App.1 ×2","App.0","App.1 ×5","App.0","Con.0","Sort"],"kinds":{"App":1}},
@@ -1375,7 +1604,7 @@
           "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
         }
       },
-      "maxRssMiB": {"median":321.5,"min":320.3,"max":322.6,"samples":5}
+      "maxRssMiB": {"median":340.5,"min":337.6,"max":342.5,"samples":5}
     },
     {
       "id": "factorial-4-normal",
@@ -1385,24 +1614,24 @@
       "outcome": {"status":"value","text":"24","length":2,"sha256":"c2356069e9d1e79c","normal":"ecdaf4456b908a19"},
       "deterministic": true,
       "import": {
-        "instructions": 152364,
-        "rejected": 282,
-        "instructionSteps": 416206,
-        "queries": 15235,
-        "querySteps": 189048,
-        "nodes": 21643,
-        "ms": {"median":1542.138,"min":1538.702,"max":1566.485,"samples":5}
+        "instructions": 171336,
+        "rejected": 353,
+        "instructionSteps": 493183,
+        "queries": 17537,
+        "querySteps": 235149,
+        "nodes": 24784,
+        "ms": {"median":1750.438,"min":1743.923,"max":1777.143,"samples":5}
       },
-      "total": {"instructions":83,"instructionSteps":403,"queries":8,"querySteps":13793,"nodes":3872,"peakNodes":25515,"peakBytes":3151872},
-      "ms": {"cold":{"median":5.626,"min":5.521,"max":6.033,"samples":5},"unobserved":4.257,"warm":{"median":2.474,"min":2.335,"max":3.097,"samples":15}},
+      "total": {"instructions":83,"instructionSteps":401,"queries":8,"querySteps":17848,"nodes":4476,"peakNodes":29260,"peakBytes":3151872},
+      "ms": {"cold":{"median":5.752,"min":5.654,"max":10.181,"samples":5},"unobserved":4.778,"warm":{"median":2.861,"min":2.387,"max":3.086,"samples":15}},
       "phases": {
-        "check": {"calls":2,"instructions":4,"instructionSteps":32,"nodes":6,"coldMs":0.121,"warmMs":0.02},
-        "inventory": {"calls":2,"coldMs":0.094,"warmMs":0.031},
-        "normalize": {"calls":2,"queries":2,"querySteps":13667,"nodes":3733,"coldMs":1.007,"warmMs":0.011},
-        "decode": {"calls":2,"coldMs":0.03,"warmMs":0.008},
-        "elaborate": {"calls":1,"instructions":79,"instructionSteps":371,"queries":6,"querySteps":126,"nodes":133,"coldMs":2.806,"warmMs":1.566},
-        "render": {"calls":1,"coldMs":0.258,"warmMs":0.099},
-        "other": {"calls":1,"coldMs":1.318,"warmMs":0.745}
+        "check": {"calls":2,"instructions":4,"instructionSteps":32,"nodes":6,"coldMs":0.134,"warmMs":0.02},
+        "inventory": {"calls":2,"coldMs":0.096,"warmMs":0.032},
+        "normalize": {"calls":2,"queries":2,"querySteps":17721,"nodes":4337,"coldMs":1.063,"warmMs":0.009},
+        "decode": {"calls":2,"coldMs":0.027,"warmMs":0.008},
+        "elaborate": {"calls":1,"instructions":79,"instructionSteps":369,"queries":6,"querySteps":127,"nodes":133,"coldMs":2.861,"warmMs":1.802},
+        "render": {"calls":1,"coldMs":0.252,"warmMs":0.097},
+        "other": {"calls":1,"coldMs":1.328,"warmMs":0.784}
       },
       "depth": {
         "check": {"depth":13,"allocated":1,"chain":["App.1","App.0","App.1 ×2","App.0","App.1 ×5","App.0","Con.0","Sort"],"kinds":{"App":1}},
@@ -1430,7 +1659,7 @@
           "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
         }
       },
-      "maxRssMiB": {"median":321.6,"min":320.8,"max":323.4,"samples":5}
+      "maxRssMiB": {"median":337.2,"min":330.8,"max":338.5,"samples":5}
     },
     {
       "id": "factorial-5-print",
@@ -1440,38 +1669,37 @@
       "outcome": {"status":"value","text":"120","length":3,"sha256":"2abaca4911e68fa9"},
       "deterministic": true,
       "import": {
-        "instructions": 152364,
-        "rejected": 282,
-        "instructionSteps": 416206,
-        "queries": 15235,
-        "querySteps": 189048,
-        "nodes": 21643,
-        "ms": {"median":1544.938,"min":1538.77,"max":1575.105,"samples":5}
+        "instructions": 171336,
+        "rejected": 353,
+        "instructionSteps": 493183,
+        "queries": 17537,
+        "querySteps": 235149,
+        "nodes": 24784,
+        "ms": {"median":1748.232,"min":1741.084,"max":1759.772,"samples":5}
       },
-      "total": {"instructions":84,"instructionSteps":406,"queries":15,"querySteps":17217,"nodes":4790,"peakNodes":26433,"peakBytes":3151872},
+      "total": {"instructions":84,"instructionSteps":404,"queries":7,"querySteps":953,"nodes":344,"peakNodes":25128,"peakBytes":3151872},
       "runtime": {
-        "steps": 4278,
-        "allocatedCells": 3670,
-        "forces": 424,
-        "hits": 19,
-        "beta": 116,
-        "iota": 29,
-        "maxFrames": 78,
-        "snapshotNodes": 385,
-        "snapshotDefinitions": 15,
-        "shared": 7
+        "steps": 20170,
+        "allocatedCells": 14264,
+        "forces": 2372,
+        "hits": 204,
+        "beta": 704,
+        "iota": 156,
+        "maxFrames": 209,
+        "snapshotNodes": 987,
+        "snapshotDefinitions": 29,
+        "shared": 17
       },
-      "ms": {"cold":{"median":8.394,"min":8.265,"max":8.85,"samples":5},"unobserved":6.691,"warm":{"median":3.666,"min":2.992,"max":3.86,"samples":15}},
+      "ms": {"cold":{"median":8.465,"min":8.424,"max":9.291,"samples":5},"unobserved":7.535,"warm":{"median":3.509,"min":3.397,"max":5.461,"samples":15}},
       "phases": {
-        "check": {"calls":2,"instructions":4,"instructionSteps":32,"nodes":6,"coldMs":0.123,"warmMs":0.02},
-        "inventory": {"calls":2,"coldMs":0.096,"warmMs":0.031},
-        "normalize": {"calls":1,"queries":1,"querySteps":985,"nodes":205,"coldMs":0.084,"warmMs":0.01},
+        "check": {"calls":2,"instructions":4,"instructionSteps":32,"nodes":6,"coldMs":0.125,"warmMs":0.02},
+        "inventory": {"calls":2,"coldMs":0.104,"warmMs":0.043},
+        "normalize": {"calls":1,"queries":1,"querySteps":826,"nodes":205,"coldMs":0.068,"warmMs":0.009},
         "decode": {"calls":1,"coldMs":0.005,"warmMs":0.003},
-        "elaborate": {"calls":1,"instructions":80,"instructionSteps":374,"queries":6,"querySteps":126,"nodes":133,"coldMs":2.851,"warmMs":1.724},
-        "runtime": {"calls":2,"failures":1,"coldMs":2.012,"warmMs":0.29},
-        "demand": {"calls":8,"queries":8,"querySteps":16106,"nodes":4446,"coldMs":1.164,"warmMs":0.023},
-        "render": {"calls":1,"coldMs":0.3,"warmMs":0.155},
-        "other": {"calls":1,"coldMs":1.709,"warmMs":0.884}
+        "elaborate": {"calls":1,"instructions":80,"instructionSteps":372,"queries":6,"querySteps":127,"nodes":133,"coldMs":2.831,"warmMs":1.66},
+        "runtime": {"calls":9,"coldMs":3.302,"warmMs":0.725},
+        "render": {"calls":1,"coldMs":0.311,"warmMs":0.154},
+        "other": {"calls":1,"coldMs":1.73,"warmMs":0.91}
       },
       "depth": {
         "check": {"depth":14,"allocated":1,"chain":["App.1","App.0","App.1 ×2","App.0","App.1 ×6","App.0","Con.0","Sort"],"kinds":{"App":1}},
@@ -1499,7 +1727,7 @@
           "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
         }
       },
-      "maxRssMiB": {"median":322.7,"min":321.7,"max":326.4,"samples":5}
+      "maxRssMiB": {"median":340.8,"min":337.5,"max":342.1,"samples":5}
     },
     {
       "id": "factorial-5-print-normal",
@@ -1509,24 +1737,24 @@
       "outcome": {"status":"value","text":"120","length":3,"sha256":"2abaca4911e68fa9","normal":"dbe9a178d20ca486"},
       "deterministic": true,
       "import": {
-        "instructions": 152364,
-        "rejected": 282,
-        "instructionSteps": 416206,
-        "queries": 15235,
-        "querySteps": 189048,
-        "nodes": 21643,
-        "ms": {"median":1571.672,"min":1527.478,"max":1589.943,"samples":5}
+        "instructions": 171336,
+        "rejected": 353,
+        "instructionSteps": 493183,
+        "queries": 17537,
+        "querySteps": 235149,
+        "nodes": 24784,
+        "ms": {"median":1751.816,"min":1747.136,"max":1772.432,"samples":5}
       },
-      "total": {"instructions":84,"instructionSteps":406,"queries":8,"querySteps":17247,"nodes":4796,"peakNodes":26439,"peakBytes":3151872},
-      "ms": {"cold":{"median":6.122,"min":5.778,"max":6.486,"samples":5},"unobserved":4.414,"warm":{"median":2.731,"min":2.39,"max":3.419,"samples":15}},
+      "total": {"instructions":84,"instructionSteps":404,"queries":8,"querySteps":22476,"nodes":5684,"peakNodes":30468,"peakBytes":3151872},
+      "ms": {"cold":{"median":6.426,"min":6.009,"max":6.688,"samples":5},"unobserved":8.337,"warm":{"median":2.555,"min":2.389,"max":3.935,"samples":15}},
       "phases": {
-        "check": {"calls":2,"instructions":4,"instructionSteps":32,"nodes":6,"coldMs":0.125,"warmMs":0.021},
-        "inventory": {"calls":2,"coldMs":0.098,"warmMs":0.033},
-        "normalize": {"calls":2,"queries":2,"querySteps":17121,"nodes":4657,"coldMs":1.252,"warmMs":0.015},
-        "decode": {"calls":2,"coldMs":0.045,"warmMs":0.009},
-        "elaborate": {"calls":1,"instructions":80,"instructionSteps":374,"queries":6,"querySteps":126,"nodes":133,"coldMs":2.972,"warmMs":1.707},
-        "render": {"calls":1,"coldMs":0.287,"warmMs":0.113},
-        "other": {"calls":1,"coldMs":1.343,"warmMs":0.813}
+        "check": {"calls":2,"instructions":4,"instructionSteps":32,"nodes":6,"coldMs":0.137,"warmMs":0.02},
+        "inventory": {"calls":2,"coldMs":0.097,"warmMs":0.032},
+        "normalize": {"calls":2,"queries":2,"querySteps":22349,"nodes":5545,"coldMs":1.312,"warmMs":0.01},
+        "decode": {"calls":2,"coldMs":0.042,"warmMs":0.009},
+        "elaborate": {"calls":1,"instructions":80,"instructionSteps":372,"queries":6,"querySteps":127,"nodes":133,"coldMs":3.238,"warmMs":1.604},
+        "render": {"calls":1,"coldMs":0.279,"warmMs":0.106},
+        "other": {"calls":1,"coldMs":1.337,"warmMs":0.78}
       },
       "depth": {
         "check": {"depth":14,"allocated":1,"chain":["App.1","App.0","App.1 ×2","App.0","App.1 ×6","App.0","Con.0","Sort"],"kinds":{"App":1}},
@@ -1554,7 +1782,7 @@
           "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
         }
       },
-      "maxRssMiB": {"median":321.4,"min":320.9,"max":323.9,"samples":5}
+      "maxRssMiB": {"median":342.2,"min":323.1,"max":347.4,"samples":5}
     },
     {
       "id": "divides-3-6",
@@ -1564,18 +1792,18 @@
       "outcome": {"status":"value","text":"left((2, <path>))","length":17,"sha256":"d5c4e7c34b9f3c06"},
       "deterministic": true,
       "import": {
-        "instructions": 152364,
-        "rejected": 282,
-        "instructionSteps": 416206,
-        "queries": 15235,
-        "querySteps": 189048,
-        "nodes": 21643,
-        "ms": {"median":1579.22,"min":1559.127,"max":1587.706,"samples":5}
+        "instructions": 171336,
+        "rejected": 353,
+        "instructionSteps": 493183,
+        "queries": 17537,
+        "querySteps": 235149,
+        "nodes": 24784,
+        "ms": {"median":1754.296,"min":1745.883,"max":1856.997,"samples":5}
       },
-      "total": {"instructions":140,"instructionSteps":593,"queries":9,"querySteps":1801,"nodes":541,"peakNodes":22184,"peakBytes":3151872},
+      "total": {"instructions":140,"instructionSteps":590,"queries":9,"querySteps":1588,"nodes":541,"peakNodes":25325,"peakBytes":3151872},
       "runtime": {
-        "steps": 12329,
-        "allocatedCells": 8867,
+        "steps": 12330,
+        "allocatedCells": 8875,
         "forces": 1470,
         "hits": 115,
         "beta": 378,
@@ -1585,16 +1813,16 @@
         "snapshotDefinitions": 24,
         "shared": 16
       },
-      "ms": {"cold":{"median":10.153,"min":9.852,"max":10.454,"samples":5},"unobserved":8.731,"warm":{"median":5.312,"min":4.527,"max":6.658,"samples":15}},
+      "ms": {"cold":{"median":10.629,"min":9.876,"max":15.575,"samples":5},"unobserved":7.931,"warm":{"median":5.46,"min":4.709,"max":8.392,"samples":15}},
       "phases": {
-        "check": {"calls":3,"instructions":6,"instructionSteps":58,"nodes":14,"coldMs":0.171,"warmMs":0.036},
-        "inventory": {"calls":3,"coldMs":0.132,"warmMs":0.055},
-        "normalize": {"calls":2,"queries":2,"querySteps":1615,"nodes":328,"coldMs":0.145,"warmMs":0.021},
+        "check": {"calls":3,"instructions":6,"instructionSteps":58,"nodes":14,"coldMs":0.188,"warmMs":0.035},
+        "inventory": {"calls":3,"coldMs":0.143,"warmMs":0.051},
+        "normalize": {"calls":2,"queries":2,"querySteps":1404,"nodes":328,"coldMs":0.108,"warmMs":0.017},
         "decode": {"calls":2,"coldMs":0.008,"warmMs":0.005},
-        "elaborate": {"calls":1,"instructions":134,"instructionSteps":535,"queries":7,"querySteps":186,"nodes":199,"coldMs":4.793,"warmMs":3.324},
-        "runtime": {"calls":7,"coldMs":2.851,"warmMs":0.565},
-        "render": {"calls":1,"coldMs":0.252,"warmMs":0.09},
-        "other": {"calls":1,"coldMs":1.742,"warmMs":0.94}
+        "elaborate": {"calls":1,"instructions":134,"instructionSteps":532,"queries":7,"querySteps":184,"nodes":199,"coldMs":4.821,"warmMs":3.442},
+        "runtime": {"calls":7,"coldMs":2.847,"warmMs":0.551},
+        "render": {"calls":1,"coldMs":0.25,"warmMs":0.092},
+        "other": {"calls":1,"coldMs":2.032,"warmMs":1.012}
       },
       "depth": {
         "check": {"depth":16,"allocated":8,"chain":["App.1 ×2","App.0","App.1 ×2","App.0","App.1 ×7","App.0","Con.0","Sort"],"kinds":{"App":7,"Pi":1}},
@@ -1622,7 +1850,7 @@
           "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
         }
       },
-      "maxRssMiB": {"median":322.4,"min":319.3,"max":324.4,"samples":5}
+      "maxRssMiB": {"median":341.5,"min":338.7,"max":343.8,"samples":5}
     },
     {
       "id": "divides-3-6-normal",
@@ -1632,24 +1860,24 @@
       "outcome": {"status":"value","text":"left((2, refl(6)))","length":18,"sha256":"6e03f6289c8328db","normal":"f2b26adff7e23af9"},
       "deterministic": true,
       "import": {
-        "instructions": 152364,
-        "rejected": 282,
-        "instructionSteps": 416206,
-        "queries": 15235,
-        "querySteps": 189048,
-        "nodes": 21643,
-        "ms": {"median":1591.298,"min":1543.076,"max":1864.292,"samples":5}
+        "instructions": 171336,
+        "rejected": 353,
+        "instructionSteps": 493183,
+        "queries": 17537,
+        "querySteps": 235149,
+        "nodes": 24784,
+        "ms": {"median":1762.482,"min":1749.697,"max":1770.434,"samples":5}
       },
-      "total": {"instructions":140,"instructionSteps":593,"queries":10,"querySteps":25287,"nodes":6829,"peakNodes":28472,"peakBytes":3151872},
-      "ms": {"cold":{"median":10.03,"min":9.717,"max":14.451,"samples":5},"unobserved":7.731,"warm":{"median":5.502,"min":4.599,"max":6.354,"samples":15}},
+      "total": {"instructions":140,"instructionSteps":590,"queries":10,"querySteps":25559,"nodes":6829,"peakNodes":31613,"peakBytes":3151872},
+      "ms": {"cold":{"median":10.281,"min":9.787,"max":10.479,"samples":5},"unobserved":7.799,"warm":{"median":5.022,"min":4.756,"max":6.38,"samples":15}},
       "phases": {
-        "check": {"calls":3,"instructions":6,"instructionSteps":58,"nodes":14,"coldMs":0.177,"warmMs":0.036},
-        "inventory": {"calls":3,"coldMs":0.136,"warmMs":0.053},
-        "normalize": {"calls":3,"queries":3,"querySteps":25101,"nodes":6616,"coldMs":1.694,"warmMs":0.027},
-        "decode": {"calls":3,"coldMs":0.172,"warmMs":0.007},
-        "elaborate": {"calls":1,"instructions":134,"instructionSteps":535,"queries":7,"querySteps":186,"nodes":199,"coldMs":4.767,"warmMs":3.359},
-        "render": {"calls":1,"coldMs":1.655,"warmMs":0.858},
-        "other": {"calls":1,"coldMs":1.403,"warmMs":0.867}
+        "check": {"calls":3,"instructions":6,"instructionSteps":58,"nodes":14,"coldMs":0.176,"warmMs":0.035},
+        "inventory": {"calls":3,"coldMs":0.137,"warmMs":0.052},
+        "normalize": {"calls":3,"queries":3,"querySteps":25375,"nodes":6616,"coldMs":1.666,"warmMs":0.02},
+        "decode": {"calls":3,"coldMs":0.163,"warmMs":0.008},
+        "elaborate": {"calls":1,"instructions":134,"instructionSteps":532,"queries":7,"querySteps":184,"nodes":199,"coldMs":5.063,"warmMs":3.248},
+        "render": {"calls":1,"coldMs":1.653,"warmMs":0.835},
+        "other": {"calls":1,"coldMs":1.363,"warmMs":0.838}
       },
       "depth": {
         "check": {"depth":16,"allocated":8,"chain":["App.1 ×2","App.0","App.1 ×2","App.0","App.1 ×7","App.0","Con.0","Sort"],"kinds":{"App":7,"Pi":1}},
@@ -1677,7 +1905,7 @@
           "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
         }
       },
-      "maxRssMiB": {"median":322.6,"min":321.9,"max":325.2,"samples":5}
+      "maxRssMiB": {"median":343.2,"min":328.8,"max":347.7,"samples":5}
     },
     {
       "id": "divides-4-6",
@@ -1687,18 +1915,18 @@
       "outcome": {"status":"value","text":"right(<fun>)","length":12,"sha256":"6cfe59cf29046830"},
       "deterministic": true,
       "import": {
-        "instructions": 152364,
-        "rejected": 282,
-        "instructionSteps": 416206,
-        "queries": 15235,
-        "querySteps": 189048,
-        "nodes": 21643,
-        "ms": {"median":1587.096,"min":1562.41,"max":1646.438,"samples":5}
+        "instructions": 171336,
+        "rejected": 353,
+        "instructionSteps": 493183,
+        "queries": 17537,
+        "querySteps": 235149,
+        "nodes": 24784,
+        "ms": {"median":1760.31,"min":1749.534,"max":1836.597,"samples":5}
       },
-      "total": {"instructions":140,"instructionSteps":593,"queries":9,"querySteps":1801,"nodes":541,"peakNodes":22184,"peakBytes":3151872},
+      "total": {"instructions":140,"instructionSteps":590,"queries":9,"querySteps":1588,"nodes":541,"peakNodes":25325,"peakBytes":3151872},
       "runtime": {
-        "steps": 10682,
-        "allocatedCells": 8141,
+        "steps": 10683,
+        "allocatedCells": 8149,
         "forces": 1186,
         "hits": 87,
         "beta": 304,
@@ -1708,16 +1936,16 @@
         "snapshotDefinitions": 25,
         "shared": 16
       },
-      "ms": {"cold":{"median":9.616,"min":9.494,"max":10.949,"samples":5},"unobserved":7.659,"warm":{"median":5.508,"min":4.547,"max":8.475,"samples":15}},
+      "ms": {"cold":{"median":9.44,"min":9.408,"max":10.18,"samples":5},"unobserved":11.799,"warm":{"median":5.233,"min":4.549,"max":5.759,"samples":15}},
       "phases": {
-        "check": {"calls":3,"instructions":6,"instructionSteps":58,"nodes":14,"coldMs":0.175,"warmMs":0.035},
-        "inventory": {"calls":3,"coldMs":0.134,"warmMs":0.057},
-        "normalize": {"calls":2,"queries":2,"querySteps":1615,"nodes":328,"coldMs":0.155,"warmMs":0.021},
+        "check": {"calls":3,"instructions":6,"instructionSteps":58,"nodes":14,"coldMs":0.178,"warmMs":0.032},
+        "inventory": {"calls":3,"coldMs":0.14,"warmMs":0.049},
+        "normalize": {"calls":2,"queries":2,"querySteps":1404,"nodes":328,"coldMs":0.108,"warmMs":0.014},
         "decode": {"calls":2,"coldMs":0.008,"warmMs":0.005},
-        "elaborate": {"calls":1,"instructions":134,"instructionSteps":535,"queries":7,"querySteps":186,"nodes":199,"coldMs":4.735,"warmMs":3.401},
-        "runtime": {"calls":3,"coldMs":2.691,"warmMs":0.698},
-        "render": {"calls":1,"coldMs":0.091,"warmMs":0.025},
-        "other": {"calls":1,"coldMs":1.629,"warmMs":0.929}
+        "elaborate": {"calls":1,"instructions":134,"instructionSteps":532,"queries":7,"querySteps":184,"nodes":199,"coldMs":4.645,"warmMs":3.378},
+        "runtime": {"calls":3,"coldMs":2.672,"warmMs":0.605},
+        "render": {"calls":1,"coldMs":0.09,"warmMs":0.025},
+        "other": {"calls":1,"coldMs":1.631,"warmMs":0.863}
       },
       "depth": {
         "check": {
@@ -1750,7 +1978,7 @@
           "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
         }
       },
-      "maxRssMiB": {"median":322.4,"min":322,"max":323.5,"samples":5}
+      "maxRssMiB": {"median":338.7,"min":338.1,"max":341.9,"samples":5}
     },
     {
       "id": "divides-4-6-normal",
@@ -1766,28 +1994,28 @@
       },
       "deterministic": true,
       "import": {
-        "instructions": 152364,
-        "rejected": 282,
-        "instructionSteps": 416206,
-        "queries": 15235,
-        "querySteps": 189048,
-        "nodes": 21643,
-        "ms": {"median":1575.122,"min":1526.761,"max":1598.405,"samples":5}
+        "instructions": 171336,
+        "rejected": 353,
+        "instructionSteps": 493183,
+        "queries": 17537,
+        "querySteps": 235149,
+        "nodes": 24784,
+        "ms": {"median":1776.397,"min":1750.253,"max":1829.755,"samples":5}
       },
-      "total": {"instructions":140,"instructionSteps":593,"queries":10,"querySteps":99031,"nodes":28365,"peakNodes":50008,"peakBytes":5642240},
+      "total": {"instructions":140,"instructionSteps":590,"queries":10,"querySteps":99615,"nodes":28365,"peakNodes":53149,"peakBytes":5117952},
       "ms": {
-        "cold": {"median":38.688,"min":37.949,"max":39.417,"samples":5},
-        "unobserved": 34.168,
-        "warm": {"median":20.679,"min":19.922,"max":24.271,"samples":15}
+        "cold": {"median":38.043,"min":37.456,"max":41.689,"samples":5},
+        "unobserved": 34.368,
+        "warm": {"median":22.016,"min":19.787,"max":35.004,"samples":15}
       },
       "phases": {
-        "check": {"calls":3,"instructions":6,"instructionSteps":58,"nodes":14,"coldMs":0.169,"warmMs":0.036},
-        "inventory": {"calls":3,"coldMs":0.129,"warmMs":0.056},
-        "normalize": {"calls":3,"queries":3,"querySteps":98845,"nodes":28152,"coldMs":6.379,"warmMs":0.034},
-        "decode": {"calls":3,"coldMs":3.307,"warmMs":0.008},
-        "elaborate": {"calls":1,"instructions":134,"instructionSteps":535,"queries":7,"querySteps":186,"nodes":199,"coldMs":4.691,"warmMs":3.702},
-        "render": {"calls":1,"coldMs":22.378,"warmMs":16.003},
-        "other": {"calls":1,"coldMs":1.538,"warmMs":1.086}
+        "check": {"calls":3,"instructions":6,"instructionSteps":58,"nodes":14,"coldMs":0.175,"warmMs":0.038},
+        "inventory": {"calls":3,"coldMs":0.142,"warmMs":0.058},
+        "normalize": {"calls":3,"queries":3,"querySteps":99431,"nodes":28152,"coldMs":6.134,"warmMs":0.031},
+        "decode": {"calls":3,"coldMs":3.296,"warmMs":0.009},
+        "elaborate": {"calls":1,"instructions":134,"instructionSteps":532,"queries":7,"querySteps":184,"nodes":199,"coldMs":4.785,"warmMs":3.726},
+        "render": {"calls":1,"coldMs":21.643,"warmMs":15.971},
+        "other": {"calls":1,"coldMs":1.518,"warmMs":1.15}
       },
       "depth": {
         "check": {
@@ -1820,7 +2048,7 @@
           "kinds": {"App":11140,"Tube":2904,"Lam":2729,"Var":2246,"Path":1365,"PApp":1356,"Comp":1268,"PLam":822}
         }
       },
-      "maxRssMiB": {"median":367,"min":365.2,"max":367.5,"samples":5}
+      "maxRssMiB": {"median":387,"min":383.4,"max":393.7,"samples":5}
     },
     {
       "id": "divides-5-121",
@@ -1830,37 +2058,37 @@
       "outcome": {"status":"value","text":"right(<fun>)","length":12,"sha256":"6cfe59cf29046830"},
       "deterministic": true,
       "import": {
-        "instructions": 152364,
-        "rejected": 282,
-        "instructionSteps": 416206,
-        "queries": 15235,
-        "querySteps": 189048,
-        "nodes": 21643,
-        "ms": {"median":1536.546,"min":1532.688,"max":1577.512,"samples":5}
+        "instructions": 171336,
+        "rejected": 353,
+        "instructionSteps": 493183,
+        "queries": 17537,
+        "querySteps": 235149,
+        "nodes": 24784,
+        "ms": {"median":1748.502,"min":1744.779,"max":1790.452,"samples":5}
       },
-      "total": {"instructions":143,"instructionSteps":600,"queries":9,"querySteps":2624,"nodes":761,"peakNodes":22404,"peakBytes":3151872},
+      "total": {"instructions":143,"instructionSteps":599,"queries":9,"querySteps":2415,"nodes":761,"peakNodes":25545,"peakBytes":3151872},
       "runtime": {
-        "steps": 16880,
-        "allocatedCells": 11934,
+        "steps": 16879,
+        "allocatedCells": 11941,
         "forces": 2020,
         "hits": 172,
         "beta": 525,
         "iota": 163,
         "maxFrames": 329,
-        "snapshotNodes": 789,
+        "snapshotNodes": 788,
         "snapshotDefinitions": 27,
         "shared": 24
       },
-      "ms": {"cold":{"median":10.754,"min":10.679,"max":11.032,"samples":5},"unobserved":8.703,"warm":{"median":6.197,"min":5.282,"max":7.605,"samples":15}},
+      "ms": {"cold":{"median":11.362,"min":10.699,"max":11.771,"samples":5},"unobserved":14.009,"warm":{"median":5.962,"min":5.39,"max":7.225,"samples":15}},
       "phases": {
-        "check": {"calls":3,"instructions":6,"instructionSteps":58,"nodes":14,"coldMs":0.19,"warmMs":0.038},
-        "inventory": {"calls":3,"coldMs":0.13,"warmMs":0.057},
-        "normalize": {"calls":2,"queries":2,"querySteps":2438,"nodes":549,"coldMs":0.201,"warmMs":0.022},
-        "decode": {"calls":2,"coldMs":0.008,"warmMs":0.005},
-        "elaborate": {"calls":1,"instructions":137,"instructionSteps":542,"queries":7,"querySteps":186,"nodes":198,"coldMs":5.445,"warmMs":4.09},
-        "runtime": {"calls":3,"coldMs":3.107,"warmMs":0.734},
-        "render": {"calls":1,"coldMs":0.09,"warmMs":0.025},
-        "other": {"calls":1,"coldMs":1.621,"warmMs":0.884}
+        "check": {"calls":3,"instructions":6,"instructionSteps":58,"nodes":14,"coldMs":0.183,"warmMs":0.036},
+        "inventory": {"calls":3,"coldMs":0.135,"warmMs":0.056},
+        "normalize": {"calls":2,"queries":2,"querySteps":2228,"nodes":549,"coldMs":0.159,"warmMs":0.017},
+        "decode": {"calls":2,"coldMs":0.009,"warmMs":0.005},
+        "elaborate": {"calls":1,"instructions":137,"instructionSteps":541,"queries":7,"querySteps":187,"nodes":198,"coldMs":5.48,"warmMs":4.222},
+        "runtime": {"calls":3,"coldMs":3.085,"warmMs":0.713},
+        "render": {"calls":1,"coldMs":0.089,"warmMs":0.025},
+        "other": {"calls":1,"coldMs":1.678,"warmMs":0.866}
       },
       "depth": {
         "check": {
@@ -1893,7 +2121,7 @@
           "kinds": {"App":102,"Lam":31,"Var":25,"List":24,"Pi":15,"Elim":8}
         }
       },
-      "maxRssMiB": {"median":322.8,"min":322.1,"max":323,"samples":5}
+      "maxRssMiB": {"median":341.3,"min":338.1,"max":344,"samples":5}
     },
     {
       "id": "divides-5-121-normal",
@@ -1909,28 +2137,28 @@
       },
       "deterministic": true,
       "import": {
-        "instructions": 152364,
-        "rejected": 282,
-        "instructionSteps": 416206,
-        "queries": 15235,
-        "querySteps": 189048,
-        "nodes": 21643,
-        "ms": {"median":1551.8,"min":1548.261,"max":1598.125,"samples":5}
+        "instructions": 171336,
+        "rejected": 353,
+        "instructionSteps": 493183,
+        "queries": 17537,
+        "querySteps": 235149,
+        "nodes": 24784,
+        "ms": {"median":1758.472,"min":1744.022,"max":1798.516,"samples":5}
       },
-      "total": {"instructions":143,"instructionSteps":600,"queries":10,"querySteps":1342907,"nodes":571950,"peakNodes":593593,"peakBytes":80353280},
+      "total": {"instructions":143,"instructionSteps":599,"queries":10,"querySteps":1346214,"nodes":571950,"peakNodes":596734,"peakBytes":80353280},
       "ms": {
-        "cold": {"median":153.253,"min":150.564,"max":154.933,"samples":5},
-        "unobserved": 149.292,
-        "warm": {"median":24.476,"min":23.069,"max":28.418,"samples":15}
+        "cold": {"median":152.768,"min":150.589,"max":155.337,"samples":5},
+        "unobserved": 150.691,
+        "warm": {"median":24.371,"min":23.204,"max":28.963,"samples":15}
       },
       "phases": {
-        "check": {"calls":3,"instructions":6,"instructionSteps":58,"nodes":14,"coldMs":0.192,"warmMs":0.041},
-        "inventory": {"calls":3,"coldMs":0.131,"warmMs":0.071},
-        "normalize": {"calls":3,"queries":3,"querySteps":1342721,"nodes":571738,"coldMs":107.96,"warmMs":0.035},
-        "decode": {"calls":3,"coldMs":11.804,"warmMs":0.009},
-        "elaborate": {"calls":1,"instructions":137,"instructionSteps":542,"queries":7,"querySteps":186,"nodes":198,"coldMs":5.427,"warmMs":4.328},
-        "render": {"calls":1,"coldMs":25.805,"warmMs":18.959},
-        "other": {"calls":1,"coldMs":1.621,"warmMs":1.104}
+        "check": {"calls":3,"instructions":6,"instructionSteps":58,"nodes":14,"coldMs":0.184,"warmMs":0.041},
+        "inventory": {"calls":3,"coldMs":0.133,"warmMs":0.071},
+        "normalize": {"calls":3,"queries":3,"querySteps":1346027,"nodes":571738,"coldMs":104.18,"warmMs":0.032},
+        "decode": {"calls":3,"coldMs":12.58,"warmMs":0.009},
+        "elaborate": {"calls":1,"instructions":137,"instructionSteps":541,"queries":7,"querySteps":187,"nodes":198,"coldMs":5.457,"warmMs":4.442},
+        "render": {"calls":1,"coldMs":28.818,"warmMs":18.713},
+        "other": {"calls":1,"coldMs":1.631,"warmMs":1.095}
       },
       "depth": {
         "check": {
@@ -1946,7 +2174,7 @@
           "kinds": {"Comp":103011,"Tube":93406,"App":86835,"Fst":64954,"Pair":64176,"Var":58915,"Snd":44002,"Pi":25005}
         }
       },
-      "maxRssMiB": {"median":435.4,"min":432.3,"max":437.2,"samples":5}
+      "maxRssMiB": {"median":450.9,"min":450.1,"max":454,"samples":5}
     },
     {
       "id": "multiply-12-12",
@@ -1962,12 +2190,12 @@
         "queries": 1392,
         "querySteps": 8617,
         "nodes": 2573,
-        "ms": {"median":214.655,"min":209.595,"max":215.847,"samples":5}
+        "ms": {"median":207.79,"min":207.219,"max":214.836,"samples":5}
       },
       "total": {"instructions":21,"instructionSteps":66,"nodes":21,"peakNodes":2594,"peakBytes":1147648},
       "runtime": {
-        "steps": 9687,
-        "allocatedCells": 5515,
+        "steps": 9688,
+        "allocatedCells": 5517,
         "forces": 1263,
         "hits": 466,
         "beta": 351,
@@ -1977,19 +2205,19 @@
         "snapshotDefinitions": 2,
         "shared": 1
       },
-      "ms": {"cold":{"median":10.634,"min":10.485,"max":10.83,"samples":5},"unobserved":8.209,"warm":{"median":3.976,"min":3.345,"max":5.48,"samples":15}},
+      "ms": {"cold":{"median":10.584,"min":10.45,"max":10.665,"samples":5},"unobserved":8.2,"warm":{"median":3.963,"min":3.278,"max":5.447,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":19,"instructionSteps":60,"nodes":19,"coldMs":0.838,"warmMs":0.315},
-        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.045,"warmMs":0.008},
-        "inventory": {"calls":1,"coldMs":0.053,"warmMs":0.016},
-        "runtime": {"calls":146,"coldMs":2.781,"warmMs":0.645},
-        "render": {"calls":1,"coldMs":4.848,"warmMs":1.941},
-        "other": {"calls":1,"coldMs":2.102,"warmMs":1.094}
+        "elaborate": {"calls":1,"instructions":19,"instructionSteps":60,"nodes":19,"coldMs":0.818,"warmMs":0.31},
+        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.043,"warmMs":0.008},
+        "inventory": {"calls":1,"coldMs":0.049,"warmMs":0.016},
+        "runtime": {"calls":146,"coldMs":2.767,"warmMs":0.639},
+        "render": {"calls":1,"coldMs":4.794,"warmMs":1.923},
+        "other": {"calls":1,"coldMs":2.091,"warmMs":1.09}
       },
       "depth": {
         "check": {"depth":16,"allocated":2,"chain":["App.0","App.1 ×12","App.0","Con.0","Sort"],"kinds":{"App":2}}
       },
-      "maxRssMiB": {"median":136.2,"min":135.8,"max":136.4,"samples":5}
+      "maxRssMiB": {"median":136.1,"min":136,"max":136.3,"samples":5}
     },
     {
       "id": "multiply-12-12-normal",
@@ -2005,18 +2233,18 @@
         "queries": 1392,
         "querySteps": 8617,
         "nodes": 2573,
-        "ms": {"median":233.541,"min":213.02,"max":241.335,"samples":5}
+        "ms": {"median":207.6,"min":207.306,"max":208.485,"samples":5}
       },
       "total": {"instructions":21,"instructionSteps":66,"queries":1,"querySteps":5347,"nodes":2317,"peakNodes":4890,"peakBytes":1377024},
-      "ms": {"cold":{"median":6.085,"min":5.771,"max":6.475,"samples":5},"unobserved":5.053,"warm":{"median":1.541,"min":1.284,"max":2.744,"samples":15}},
+      "ms": {"cold":{"median":5.754,"min":5.728,"max":5.792,"samples":5},"unobserved":5.578,"warm":{"median":1.466,"min":1.245,"max":2.612,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":19,"instructionSteps":60,"nodes":19,"coldMs":0.898,"warmMs":0.33},
-        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.044,"warmMs":0.009},
-        "inventory": {"calls":1,"coldMs":0.054,"warmMs":0.019},
-        "normalize": {"calls":1,"queries":1,"querySteps":5347,"nodes":2296,"coldMs":0.636,"warmMs":0.004},
-        "decode": {"calls":1,"coldMs":0.355,"warmMs":0.003},
-        "render": {"calls":1,"coldMs":3.23,"warmMs":0.835},
-        "other": {"calls":1,"coldMs":0.86,"warmMs":0.353}
+        "elaborate": {"calls":1,"instructions":19,"instructionSteps":60,"nodes":19,"coldMs":0.821,"warmMs":0.289},
+        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.038,"warmMs":0.008},
+        "inventory": {"calls":1,"coldMs":0.053,"warmMs":0.018},
+        "normalize": {"calls":1,"queries":1,"querySteps":5347,"nodes":2296,"coldMs":0.53,"warmMs":0.003},
+        "decode": {"calls":1,"coldMs":0.347,"warmMs":0.002},
+        "render": {"calls":1,"coldMs":3.15,"warmMs":0.82},
+        "other": {"calls":1,"coldMs":0.795,"warmMs":0.303}
       },
       "depth": {
         "check": {"depth":16,"allocated":2,"chain":["App.0","App.1 ×12","App.0","Con.0","Sort"],"kinds":{"App":2}},
@@ -2027,7 +2255,7 @@
           "kinds": {"App":1448,"Var":637,"Pi":156,"Lam":28,"List":14,"Elim":13}
         }
       },
-      "maxRssMiB": {"median":135.7,"min":135.2,"max":136.8,"samples":5}
+      "maxRssMiB": {"median":135,"min":134.7,"max":135.7,"samples":5}
     },
     {
       "id": "multiply-2-254",
@@ -2043,12 +2271,12 @@
         "queries": 1392,
         "querySteps": 8617,
         "nodes": 2573,
-        "ms": {"median":214.468,"min":210.03,"max":220.388,"samples":5}
+        "ms": {"median":207.888,"min":207.203,"max":209.157,"samples":5}
       },
       "total": {"instructions":263,"instructionSteps":792,"nodes":263,"peakNodes":2836,"peakBytes":1147648},
       "runtime": {
-        "steps": 32227,
-        "allocatedCells": 19183,
+        "steps": 32228,
+        "allocatedCells": 19185,
         "forces": 4115,
         "hits": 1276,
         "beta": 1029,
@@ -2059,22 +2287,22 @@
         "shared": 1
       },
       "ms": {
-        "cold": {"median":24.106,"min":24.057,"max":25.459,"samples":5},
-        "unobserved": 20.035,
-        "warm": {"median":12.527,"min":11.699,"max":17.553,"samples":15}
+        "cold": {"median":23.949,"min":23.773,"max":24.152,"samples":5},
+        "unobserved": 20.222,
+        "warm": {"median":12.208,"min":11.419,"max":16.472,"samples":15}
       },
       "phases": {
-        "elaborate": {"calls":1,"instructions":261,"instructionSteps":786,"nodes":261,"coldMs":2.967,"warmMs":0.591},
-        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.049,"warmMs":0.012},
-        "inventory": {"calls":1,"coldMs":0.106,"warmMs":0.051},
-        "runtime": {"calls":510,"coldMs":4.866,"warmMs":1.95},
-        "render": {"calls":1,"coldMs":11.784,"warmMs":7.079},
-        "other": {"calls":1,"coldMs":4.364,"warmMs":2.959}
+        "elaborate": {"calls":1,"instructions":261,"instructionSteps":786,"nodes":261,"coldMs":2.916,"warmMs":0.535},
+        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.05,"warmMs":0.011},
+        "inventory": {"calls":1,"coldMs":0.105,"warmMs":0.051},
+        "runtime": {"calls":510,"coldMs":5.171,"warmMs":1.904},
+        "render": {"calls":1,"coldMs":11.685,"warmMs":6.985},
+        "other": {"calls":1,"coldMs":3.969,"warmMs":2.856}
       },
       "depth": {
         "check": {"depth":257,"allocated":2,"chain":["App.1 ×254","App.0","Con.0","Sort"],"kinds":{"App":2}}
       },
-      "maxRssMiB": {"median":158,"min":145.4,"max":158.5,"samples":5}
+      "maxRssMiB": {"median":157.6,"min":145.6,"max":158,"samples":5}
     },
     {
       "id": "multiply-2-254-normal",
@@ -2090,18 +2318,22 @@
         "queries": 1392,
         "querySteps": 8617,
         "nodes": 2573,
-        "ms": {"median":212.29,"min":210.391,"max":220.67,"samples":5}
+        "ms": {"median":208.524,"min":208.214,"max":208.716,"samples":5}
       },
       "total": {"instructions":263,"instructionSteps":792,"queries":1,"querySteps":18360,"nodes":7939,"peakNodes":10512,"peakBytes":1835776},
-      "ms": {"cold":{"median":12.159,"min":11.763,"max":12.74,"samples":5},"unobserved":10.633,"warm":{"median":3.473,"min":2.395,"max":5.289,"samples":15}},
+      "ms": {
+        "cold": {"median":11.816,"min":11.742,"max":12.031,"samples":5},
+        "unobserved": 10.312,
+        "warm": {"median":3.491,"min":2.294,"max":4.851,"samples":15}
+      },
       "phases": {
-        "elaborate": {"calls":1,"instructions":261,"instructionSteps":786,"nodes":261,"coldMs":2.953,"warmMs":0.667},
-        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.051,"warmMs":0.012},
-        "inventory": {"calls":1,"coldMs":0.106,"warmMs":0.056},
-        "normalize": {"calls":1,"queries":1,"querySteps":18360,"nodes":7676,"coldMs":1.279,"warmMs":0.004},
-        "decode": {"calls":1,"coldMs":0.555,"warmMs":0.002},
-        "render": {"calls":1,"coldMs":6.304,"warmMs":2.044},
-        "other": {"calls":1,"coldMs":0.816,"warmMs":0.346}
+        "elaborate": {"calls":1,"instructions":261,"instructionSteps":786,"nodes":261,"coldMs":2.911,"warmMs":0.505},
+        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.048,"warmMs":0.011},
+        "inventory": {"calls":1,"coldMs":0.104,"warmMs":0.062},
+        "normalize": {"calls":1,"queries":1,"querySteps":18360,"nodes":7676,"coldMs":1.251,"warmMs":0.004},
+        "decode": {"calls":1,"coldMs":0.552,"warmMs":0.003},
+        "render": {"calls":1,"coldMs":6.126,"warmMs":2.025},
+        "other": {"calls":1,"coldMs":0.82,"warmMs":0.337}
       },
       "depth": {
         "check": {"depth":257,"allocated":2,"chain":["App.1 ×254","App.0","Con.0","Sort"],"kinds":{"App":2}},
@@ -2112,7 +2344,7 @@
           "kinds": {"App":4856,"Var":2043,"Pi":510,"Lam":260,"List":4,"Elim":3}
         }
       },
-      "maxRssMiB": {"median":137.6,"min":137.4,"max":138.1,"samples":5}
+      "maxRssMiB": {"median":137.8,"min":137.3,"max":138.1,"samples":5}
     },
     {
       "id": "multiply-2-255",
@@ -2128,12 +2360,12 @@
         "queries": 1392,
         "querySteps": 8617,
         "nodes": 2573,
-        "ms": {"median":213.957,"min":212.225,"max":215.745,"samples":5}
+        "ms": {"median":215.635,"min":208.09,"max":221.897,"samples":5}
       },
       "total": {"instructions":264,"instructionSteps":795,"nodes":264,"peakNodes":2837,"peakBytes":1147648},
       "runtime": {
-        "steps": 32352,
-        "allocatedCells": 19257,
+        "steps": 32353,
+        "allocatedCells": 19259,
         "forces": 4131,
         "hits": 1281,
         "beta": 1033,
@@ -2144,22 +2376,22 @@
         "shared": 1
       },
       "ms": {
-        "cold": {"median":24.349,"min":24.207,"max":24.479,"samples":5},
-        "unobserved": 21.052,
-        "warm": {"median":12.317,"min":11.648,"max":16.662,"samples":15}
+        "cold": {"median":24.175,"min":23.915,"max":25.036,"samples":5},
+        "unobserved": 20.152,
+        "warm": {"median":12.366,"min":11.612,"max":17.243,"samples":15}
       },
       "phases": {
-        "elaborate": {"calls":1,"instructions":262,"instructionSteps":789,"nodes":262,"coldMs":2.958,"warmMs":0.595},
-        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.048,"warmMs":0.01},
-        "inventory": {"calls":1,"coldMs":0.107,"warmMs":0.051},
-        "runtime": {"calls":512,"coldMs":5.289,"warmMs":2.686},
-        "render": {"calls":1,"coldMs":11.885,"warmMs":6.305},
-        "other": {"calls":1,"coldMs":4.069,"warmMs":2.902}
+        "elaborate": {"calls":1,"instructions":262,"instructionSteps":789,"nodes":262,"coldMs":2.948,"warmMs":0.587},
+        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.047,"warmMs":0.011},
+        "inventory": {"calls":1,"coldMs":0.104,"warmMs":0.051},
+        "runtime": {"calls":512,"coldMs":4.854,"warmMs":2.088},
+        "render": {"calls":1,"coldMs":11.857,"warmMs":6.495},
+        "other": {"calls":1,"coldMs":4.409,"warmMs":3.042}
       },
       "depth": {
         "check": {"depth":258,"allocated":2,"chain":["App.1 ×255","App.0","Con.0","Sort"],"kinds":{"App":2}}
       },
-      "maxRssMiB": {"median":146,"min":145.4,"max":146.1,"samples":5}
+      "maxRssMiB": {"median":145.7,"min":145.5,"max":158.3,"samples":5}
     },
     {
       "id": "multiply-2-255-normal",
@@ -2175,18 +2407,22 @@
         "queries": 1392,
         "querySteps": 8617,
         "nodes": 2573,
-        "ms": {"median":215.148,"min":211.382,"max":215.926,"samples":5}
+        "ms": {"median":208.907,"min":206.47,"max":209.733,"samples":5}
       },
       "total": {"instructions":264,"instructionSteps":795,"queries":1,"querySteps":18428,"nodes":7970,"peakNodes":10543,"peakBytes":1835776},
-      "ms": {"cold":{"median":12.043,"min":11.466,"max":12.224,"samples":5},"unobserved":10.38,"warm":{"median":3.594,"min":2.435,"max":4.966,"samples":15}},
+      "ms": {
+        "cold": {"median":12.048,"min":11.773,"max":12.548,"samples":5},
+        "unobserved": 10.222,
+        "warm": {"median":3.451,"min":2.292,"max":4.975,"samples":15}
+      },
       "phases": {
-        "elaborate": {"calls":1,"instructions":262,"instructionSteps":789,"nodes":262,"coldMs":2.959,"warmMs":0.748},
-        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.05,"warmMs":0.011},
-        "inventory": {"calls":1,"coldMs":0.107,"warmMs":0.056},
-        "normalize": {"calls":1,"queries":1,"querySteps":18428,"nodes":7706,"coldMs":1.286,"warmMs":0.004},
-        "decode": {"calls":1,"coldMs":0.564,"warmMs":0.002},
-        "render": {"calls":1,"coldMs":6.251,"warmMs":2.062},
-        "other": {"calls":1,"coldMs":0.838,"warmMs":0.363}
+        "elaborate": {"calls":1,"instructions":262,"instructionSteps":789,"nodes":262,"coldMs":2.896,"warmMs":0.7},
+        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.048,"warmMs":0.011},
+        "inventory": {"calls":1,"coldMs":0.105,"warmMs":0.056},
+        "normalize": {"calls":1,"queries":1,"querySteps":18428,"nodes":7706,"coldMs":1.255,"warmMs":0.004},
+        "decode": {"calls":1,"coldMs":0.561,"warmMs":0.002},
+        "render": {"calls":1,"coldMs":6.397,"warmMs":2.053},
+        "other": {"calls":1,"coldMs":0.806,"warmMs":0.337}
       },
       "depth": {
         "check": {"depth":258,"allocated":2,"chain":["App.1 ×255","App.0","Con.0","Sort"],"kinds":{"App":2}},
@@ -2197,7 +2433,7 @@
           "kinds": {"App":4875,"Var":2051,"Pi":512,"Lam":261,"List":4,"Elim":3}
         }
       },
-      "maxRssMiB": {"median":138,"min":136.7,"max":138,"samples":5}
+      "maxRssMiB": {"median":137.8,"min":137.8,"max":138,"samples":5}
     },
     {
       "id": "multiply-2-255-print",
@@ -2213,12 +2449,12 @@
         "queries": 1392,
         "querySteps": 8617,
         "nodes": 2573,
-        "ms": {"median":210.436,"min":208.771,"max":213.691,"samples":5}
+        "ms": {"median":208.757,"min":207.307,"max":209.492,"samples":5}
       },
       "total": {"instructions":264,"instructionSteps":795,"nodes":264,"peakNodes":2837,"peakBytes":1147648},
       "runtime": {
-        "steps": 32352,
-        "allocatedCells": 19257,
+        "steps": 32353,
+        "allocatedCells": 19259,
         "forces": 4131,
         "hits": 1281,
         "beta": 1033,
@@ -2229,22 +2465,22 @@
         "shared": 1
       },
       "ms": {
-        "cold": {"median":24.113,"min":24.059,"max":24.166,"samples":5},
-        "unobserved": 20.539,
-        "warm": {"median":12.233,"min":11.492,"max":16.575,"samples":15}
+        "cold": {"median":24.077,"min":23.892,"max":24.389,"samples":5},
+        "unobserved": 20.438,
+        "warm": {"median":12.083,"min":11.507,"max":16.362,"samples":15}
       },
       "phases": {
-        "elaborate": {"calls":1,"instructions":262,"instructionSteps":789,"nodes":262,"coldMs":2.92,"warmMs":0.574},
-        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.048,"warmMs":0.01},
+        "elaborate": {"calls":1,"instructions":262,"instructionSteps":789,"nodes":262,"coldMs":2.891,"warmMs":0.546},
+        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.049,"warmMs":0.012},
         "inventory": {"calls":1,"coldMs":0.105,"warmMs":0.051},
-        "runtime": {"calls":512,"coldMs":5.223,"warmMs":2.614},
-        "render": {"calls":1,"coldMs":11.87,"warmMs":6.302},
-        "other": {"calls":1,"coldMs":3.992,"warmMs":2.909}
+        "runtime": {"calls":512,"coldMs":5.251,"warmMs":1.958},
+        "render": {"calls":1,"coldMs":11.859,"warmMs":6.273},
+        "other": {"calls":1,"coldMs":4.003,"warmMs":3.014}
       },
       "depth": {
         "check": {"depth":258,"allocated":2,"chain":["App.1 ×255","App.0","Con.0","Sort"],"kinds":{"App":2}}
       },
-      "maxRssMiB": {"median":145.6,"min":145.1,"max":145.8,"samples":5}
+      "maxRssMiB": {"median":145.6,"min":145.4,"max":146,"samples":5}
     },
     {
       "id": "multiply-2-255-print-normal",
@@ -2260,22 +2496,18 @@
         "queries": 1392,
         "querySteps": 8617,
         "nodes": 2573,
-        "ms": {"median":209.842,"min":207.768,"max":212.232,"samples":5}
+        "ms": {"median":209.012,"min":206.577,"max":209.497,"samples":5}
       },
       "total": {"instructions":264,"instructionSteps":795,"queries":1,"querySteps":18428,"nodes":7970,"peakNodes":10543,"peakBytes":1835776},
-      "ms": {
-        "cold": {"median":12.097,"min":11.954,"max":12.312,"samples":5},
-        "unobserved": 10.452,
-        "warm": {"median":3.527,"min":2.336,"max":4.855,"samples":15}
-      },
+      "ms": {"cold":{"median":11.918,"min":11.81,"max":12.171,"samples":5},"unobserved":19.854,"warm":{"median":3.5,"min":2.346,"max":4.83,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":262,"instructionSteps":789,"nodes":262,"coldMs":2.94,"warmMs":0.723},
-        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.049,"warmMs":0.012},
-        "inventory": {"calls":1,"coldMs":0.104,"warmMs":0.054},
-        "normalize": {"calls":1,"queries":1,"querySteps":18428,"nodes":7706,"coldMs":1.269,"warmMs":0.004},
+        "elaborate": {"calls":1,"instructions":262,"instructionSteps":789,"nodes":262,"coldMs":2.894,"warmMs":0.705},
+        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.048,"warmMs":0.011},
+        "inventory": {"calls":1,"coldMs":0.105,"warmMs":0.055},
+        "normalize": {"calls":1,"queries":1,"querySteps":18428,"nodes":7706,"coldMs":1.259,"warmMs":0.004},
         "decode": {"calls":1,"coldMs":0.562,"warmMs":0.002},
-        "render": {"calls":1,"coldMs":6.36,"warmMs":2.041},
-        "other": {"calls":1,"coldMs":0.809,"warmMs":0.341}
+        "render": {"calls":1,"coldMs":6.205,"warmMs":2.04},
+        "other": {"calls":1,"coldMs":0.809,"warmMs":0.345}
       },
       "depth": {
         "check": {"depth":258,"allocated":2,"chain":["App.1 ×255","App.0","Con.0","Sort"],"kinds":{"App":2}},
@@ -2286,7 +2518,7 @@
           "kinds": {"App":4875,"Var":2051,"Pi":512,"Lam":261,"List":4,"Elim":3}
         }
       },
-      "maxRssMiB": {"median":138,"min":137.7,"max":138.4,"samples":5}
+      "maxRssMiB": {"median":137.7,"min":137.4,"max":138.2,"samples":5}
     },
     {
       "id": "multiply-2-256-print",
@@ -2307,12 +2539,12 @@
         "queries": 1392,
         "querySteps": 8617,
         "nodes": 2573,
-        "ms": {"median":209.473,"min":208.47,"max":210.389,"samples":5}
+        "ms": {"median":210.58,"min":208.333,"max":221.056,"samples":5}
       },
       "total": {"instructions":265,"instructionSteps":798,"nodes":265,"peakNodes":2838,"peakBytes":1147648},
       "runtime": {
-        "steps": 32438,
-        "allocatedCells": 19316,
+        "steps": 32439,
+        "allocatedCells": 19318,
         "forces": 4141,
         "hits": 1282,
         "beta": 1037,
@@ -2323,22 +2555,22 @@
         "shared": 1
       },
       "ms": {
-        "cold": {"median":33.16,"min":32.944,"max":33.239,"samples":5},
-        "unobserved": 29.115,
-        "warm": {"median":15.417,"min":14.713,"max":19.775,"samples":15}
+        "cold": {"median":33.074,"min":32.931,"max":33.676,"samples":5},
+        "unobserved": 29.169,
+        "warm": {"median":14.913,"min":14.525,"max":19.553,"samples":15}
       },
       "phases": {
-        "elaborate": {"calls":1,"instructions":263,"instructionSteps":792,"nodes":263,"coldMs":2.924,"warmMs":0.595},
-        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.048,"warmMs":0.01},
-        "inventory": {"calls":1,"coldMs":0.106,"warmMs":0.052},
-        "runtime": {"calls":513,"coldMs":4.872,"warmMs":2.155},
-        "render": {"calls":1,"coldMs":20.684,"warmMs":10.199},
-        "other": {"calls":1,"coldMs":4.475,"warmMs":3.039}
+        "elaborate": {"calls":1,"instructions":263,"instructionSteps":792,"nodes":263,"coldMs":2.926,"warmMs":0.567},
+        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.047,"warmMs":0.011},
+        "inventory": {"calls":1,"coldMs":0.105,"warmMs":0.052},
+        "runtime": {"calls":513,"coldMs":5.269,"warmMs":2.124},
+        "render": {"calls":1,"coldMs":20.707,"warmMs":9.905},
+        "other": {"calls":1,"coldMs":4.02,"warmMs":2.851}
       },
       "depth": {
         "check": {"depth":259,"allocated":2,"chain":["App.1 ×256","App.0","Con.0","Sort"],"kinds":{"App":2}}
       },
-      "maxRssMiB": {"median":157.2,"min":154.3,"max":158.6,"samples":5}
+      "maxRssMiB": {"median":154.1,"min":143,"max":156.9,"samples":5}
     },
     {
       "id": "multiply-2-256-print-normal",
@@ -2354,16 +2586,16 @@
         "queries": 1392,
         "querySteps": 8617,
         "nodes": 2573,
-        "ms": {"median":219.46,"min":210.611,"max":231.307,"samples":5}
+        "ms": {"median":208.808,"min":208.369,"max":212.315,"samples":5}
       },
       "total": {"instructions":265,"instructionSteps":798,"queries":1,"failedQueries":1,"querySteps":18495,"nodes":7999,"peakNodes":10572,"peakBytes":1835776},
-      "ms": {"cold":{"median":5.494,"min":5.329,"max":5.63,"samples":5},"unobserved":4.127,"warm":{"median":1.339,"min":0.893,"max":1.775,"samples":15}},
+      "ms": {"cold":{"median":5.308,"min":5.208,"max":5.488,"samples":5},"unobserved":3.949,"warm":{"median":1.302,"min":0.839,"max":1.688,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":263,"instructionSteps":792,"nodes":263,"coldMs":2.932,"warmMs":0.704},
-        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.047,"warmMs":0.011},
-        "inventory": {"calls":1,"coldMs":0.105,"warmMs":0.056},
-        "normalize": {"calls":1,"failures":1,"queries":1,"failedQueries":1,"querySteps":18495,"nodes":7734,"coldMs":1.34,"warmMs":0.013},
-        "other": {"calls":1,"coldMs":1.009,"warmMs":0.431}
+        "elaborate": {"calls":1,"instructions":263,"instructionSteps":792,"nodes":263,"coldMs":2.922,"warmMs":0.686},
+        "check": {"calls":1,"instructions":2,"instructionSteps":6,"nodes":2,"coldMs":0.047,"warmMs":0.012},
+        "inventory": {"calls":1,"coldMs":0.105,"warmMs":0.054},
+        "normalize": {"calls":1,"failures":1,"queries":1,"failedQueries":1,"querySteps":18495,"nodes":7734,"coldMs":1.302,"warmMs":0.012},
+        "other": {"calls":1,"coldMs":0.952,"warmMs":0.391}
       },
       "depth": {
         "check": {"depth":259,"allocated":2,"chain":["App.1 ×256","App.0","Con.0","Sort"],"kinds":{"App":2}},
@@ -2374,7 +2606,7 @@
           "kinds": {"App":4892,"Var":2059,"Pi":514,"Lam":262,"List":4,"Elim":3}
         }
       },
-      "maxRssMiB": {"median":136.2,"min":135.8,"max":136.5,"samples":5}
+      "maxRssMiB": {"median":136.2,"min":136.1,"max":136.7,"samples":5}
     },
     {
       "id": "transport-closed",
@@ -2392,19 +2624,19 @@
         "querySteps": 168101,
         "exhausted": 18,
         "nodes": 16448,
-        "ms": {"median":1018.786,"min":980.139,"max":1127.159,"samples":5}
+        "ms": {"median":951.001,"min":944.968,"max":957.582,"samples":5}
       },
       "total": {"instructions":54,"instructionSteps":143,"queries":7,"querySteps":150,"nodes":110,"peakNodes":16558,"peakBytes":3020800},
       "runtime": {"steps":8,"allocatedCells":9,"forces":1,"hits":0,"beta":0,"iota":0,"maxFrames":1,"snapshotNodes":1,"snapshotDefinitions":0,"shared":0},
-      "ms": {"cold":{"median":7.976,"min":6.89,"max":9.829,"samples":5},"unobserved":5.679,"warm":{"median":3.069,"min":2.369,"max":3.777,"samples":15}},
+      "ms": {"cold":{"median":6.841,"min":6.669,"max":6.993,"samples":5},"unobserved":5.697,"warm":{"median":2.548,"min":2.306,"max":3.567,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":37,"instructionSteps":97,"queries":1,"querySteps":1,"nodes":17,"coldMs":2.891,"warmMs":1.765},
-        "check": {"calls":1,"instructions":17,"instructionSteps":46,"nodes":14,"coldMs":0.274,"warmMs":0.05},
-        "inventory": {"calls":1,"coldMs":0.063,"warmMs":0.021},
-        "runtime": {"calls":2,"failures":1,"coldMs":0.68,"warmMs":0.065},
-        "demand": {"calls":6,"queries":6,"querySteps":149,"nodes":79,"coldMs":0.124,"warmMs":0.017},
-        "render": {"calls":1,"coldMs":1.726,"warmMs":0.157},
-        "other": {"calls":1,"coldMs":2.171,"warmMs":0.87}
+        "elaborate": {"calls":1,"instructions":37,"instructionSteps":97,"queries":1,"querySteps":1,"nodes":17,"coldMs":2.36,"warmMs":1.477},
+        "check": {"calls":1,"instructions":17,"instructionSteps":46,"nodes":14,"coldMs":0.222,"warmMs":0.038},
+        "inventory": {"calls":1,"coldMs":0.055,"warmMs":0.018},
+        "runtime": {"calls":2,"failures":1,"coldMs":0.66,"warmMs":0.058},
+        "demand": {"calls":6,"queries":6,"querySteps":149,"nodes":79,"coldMs":0.108,"warmMs":0.016},
+        "render": {"calls":1,"coldMs":1.542,"warmMs":0.145},
+        "other": {"calls":1,"coldMs":1.835,"warmMs":0.789}
       },
       "depth": {
         "check": {
@@ -2414,7 +2646,7 @@
           "kinds": {"App":6,"PApp":4,"Comp":2,"Lam":1,"Pi":1}
         }
       },
-      "maxRssMiB": {"median":288.1,"min":287.3,"max":296,"samples":5}
+      "maxRssMiB": {"median":288,"min":287.5,"max":288.2,"samples":5}
     },
     {
       "id": "transport-closed-normal",
@@ -2432,18 +2664,18 @@
         "querySteps": 168101,
         "exhausted": 18,
         "nodes": 16448,
-        "ms": {"median":963.875,"min":950.962,"max":995.068,"samples":5}
+        "ms": {"median":944.873,"min":943.373,"max":958.544,"samples":5}
       },
       "total": {"instructions":54,"instructionSteps":143,"queries":2,"querySteps":165,"nodes":110,"peakNodes":16558,"peakBytes":3020800},
-      "ms": {"cold":{"median":5.826,"min":5.651,"max":6,"samples":5},"unobserved":4.819,"warm":{"median":2.732,"min":2.161,"max":3.96,"samples":15}},
+      "ms": {"cold":{"median":5.727,"min":5.669,"max":5.88,"samples":5},"unobserved":4.698,"warm":{"median":2.293,"min":2.161,"max":3.028,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":37,"instructionSteps":97,"queries":1,"querySteps":1,"nodes":17,"coldMs":2.411,"warmMs":1.685},
-        "check": {"calls":1,"instructions":17,"instructionSteps":46,"nodes":14,"coldMs":0.236,"warmMs":0.042},
-        "inventory": {"calls":1,"coldMs":0.054,"warmMs":0.024},
-        "normalize": {"calls":1,"queries":1,"querySteps":164,"nodes":79,"coldMs":0.091,"warmMs":0.005},
-        "decode": {"calls":1,"coldMs":0.006,"warmMs":0.002},
-        "render": {"calls":1,"coldMs":1.614,"warmMs":0.129},
-        "other": {"calls":1,"coldMs":1.4,"warmMs":0.77}
+        "elaborate": {"calls":1,"instructions":37,"instructionSteps":97,"queries":1,"querySteps":1,"nodes":17,"coldMs":2.384,"warmMs":1.426},
+        "check": {"calls":1,"instructions":17,"instructionSteps":46,"nodes":14,"coldMs":0.216,"warmMs":0.036},
+        "inventory": {"calls":1,"coldMs":0.053,"warmMs":0.019},
+        "normalize": {"calls":1,"queries":1,"querySteps":164,"nodes":79,"coldMs":0.079,"warmMs":0.005},
+        "decode": {"calls":1,"coldMs":0.006,"warmMs":0.003},
+        "render": {"calls":1,"coldMs":1.591,"warmMs":0.11},
+        "other": {"calls":1,"coldMs":1.391,"warmMs":0.699}
       },
       "depth": {
         "check": {
@@ -2459,7 +2691,7 @@
           "kinds": {"Comp":22,"Var":11,"Pair":10,"Fst":10,"Snd":10,"Pi":5,"App":5,"Tube":5}
         }
       },
-      "maxRssMiB": {"median":287.3,"min":286.7,"max":288.2,"samples":5}
+      "maxRssMiB": {"median":287.8,"min":287.7,"max":288.1,"samples":5}
     },
     {
       "id": "winding-2",
@@ -2477,24 +2709,24 @@
         "querySteps": 168101,
         "exhausted": 18,
         "nodes": 16448,
-        "ms": {"median":971.71,"min":953.328,"max":974.495,"samples":5}
+        "ms": {"median":946.128,"min":942.365,"max":952.982,"samples":5}
       },
       "total": {"instructions":31,"instructionSteps":164,"queries":4,"querySteps":59442,"nodes":16132,"peakNodes":32580,"peakBytes":3020800},
       "runtime": {"steps":134,"allocatedCells":142,"forces":9,"hits":0,"beta":3,"iota":0,"maxFrames":7,"snapshotNodes":21,"snapshotDefinitions":2,"shared":0},
-      "ms": {"cold":{"median":8.99,"min":8.904,"max":9.289,"samples":5},"unobserved":7.977,"warm":{"median":1.25,"min":1.163,"max":1.687,"samples":15}},
+      "ms": {"cold":{"median":8.867,"min":8.812,"max":8.941,"samples":5},"unobserved":7.824,"warm":{"median":1.243,"min":1.164,"max":1.589,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":29,"instructionSteps":153,"nodes":39,"coldMs":1.106,"warmMs":0.302},
-        "check": {"calls":1,"instructions":2,"instructionSteps":11,"nodes":3,"coldMs":0.103,"warmMs":0.007},
-        "inventory": {"calls":1,"coldMs":0.049,"warmMs":0.015},
-        "runtime": {"calls":2,"failures":1,"coldMs":0.84,"warmMs":0.08},
-        "demand": {"calls":4,"queries":4,"querySteps":59442,"nodes":16090,"coldMs":3.651,"warmMs":0.015},
-        "render": {"calls":1,"coldMs":1.479,"warmMs":0.106},
-        "other": {"calls":1,"coldMs":1.773,"warmMs":0.718}
+        "elaborate": {"calls":1,"instructions":29,"instructionSteps":153,"nodes":39,"coldMs":1.053,"warmMs":0.298},
+        "check": {"calls":1,"instructions":2,"instructionSteps":11,"nodes":3,"coldMs":0.096,"warmMs":0.007},
+        "inventory": {"calls":1,"coldMs":0.048,"warmMs":0.015},
+        "runtime": {"calls":2,"failures":1,"coldMs":0.83,"warmMs":0.08},
+        "demand": {"calls":4,"queries":4,"querySteps":59442,"nodes":16090,"coldMs":3.628,"warmMs":0.014},
+        "render": {"calls":1,"coldMs":1.478,"warmMs":0.105},
+        "other": {"calls":1,"coldMs":1.727,"warmMs":0.717}
       },
       "depth": {
         "check": {"depth":10,"allocated":3,"chain":["App.1","PApp.0","App.0 ×6","LApp.0","DefRef"],"kinds":{"App":2,"PApp":1}}
       },
-      "maxRssMiB": {"median":287.4,"min":286.8,"max":288.8,"samples":5}
+      "maxRssMiB": {"median":288.7,"min":286.7,"max":296.4,"samples":5}
     },
     {
       "id": "winding-2-normal",
@@ -2512,18 +2744,18 @@
         "querySteps": 168101,
         "exhausted": 18,
         "nodes": 16448,
-        "ms": {"median":953.733,"min":944.534,"max":979.954,"samples":5}
+        "ms": {"median":947.982,"min":944.893,"max":949.729,"samples":5}
       },
       "total": {"instructions":31,"instructionSteps":164,"queries":1,"querySteps":59458,"nodes":16134,"peakNodes":32582,"peakBytes":3020800},
-      "ms": {"cold":{"median":7.763,"min":7.675,"max":8.142,"samples":5},"unobserved":6.908,"warm":{"median":1.063,"min":1.031,"max":2.718,"samples":15}},
+      "ms": {"cold":{"median":7.713,"min":7.686,"max":7.768,"samples":5},"unobserved":6.809,"warm":{"median":1.068,"min":1.03,"max":1.409,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":29,"instructionSteps":153,"nodes":39,"coldMs":1.068,"warmMs":0.303},
-        "check": {"calls":1,"instructions":2,"instructionSteps":11,"nodes":3,"coldMs":0.097,"warmMs":0.008},
-        "inventory": {"calls":1,"coldMs":0.05,"warmMs":0.016},
+        "elaborate": {"calls":1,"instructions":29,"instructionSteps":153,"nodes":39,"coldMs":1.063,"warmMs":0.3},
+        "check": {"calls":1,"instructions":2,"instructionSteps":11,"nodes":3,"coldMs":0.101,"warmMs":0.008},
+        "inventory": {"calls":1,"coldMs":0.049,"warmMs":0.016},
         "normalize": {"calls":1,"queries":1,"querySteps":59458,"nodes":16092,"coldMs":3.624,"warmMs":0.003},
         "decode": {"calls":1,"coldMs":0.016,"warmMs":0.002},
-        "render": {"calls":1,"coldMs":1.573,"warmMs":0.1},
-        "other": {"calls":1,"coldMs":1.303,"warmMs":0.645}
+        "render": {"calls":1,"coldMs":1.576,"warmMs":0.099},
+        "other": {"calls":1,"coldMs":1.291,"warmMs":0.648}
       },
       "depth": {
         "check": {"depth":10,"allocated":3,"chain":["App.1","PApp.0","App.0 ×6","LApp.0","DefRef"],"kinds":{"App":2,"PApp":1}},
@@ -2534,7 +2766,7 @@
           "kinds": {"App":2119,"Comp":2112,"Var":1821,"Tube":1527,"Pi":1457,"Path":1376,"Sigma":1058,"Pair":878}
         }
       },
-      "maxRssMiB": {"median":288.9,"min":286.7,"max":294.4,"samples":5}
+      "maxRssMiB": {"median":288.6,"min":286.9,"max":289.1,"samples":5}
     },
     {
       "id": "winding-minus-2",
@@ -2552,24 +2784,24 @@
         "querySteps": 168101,
         "exhausted": 18,
         "nodes": 16448,
-        "ms": {"median":981.778,"min":970.217,"max":983.227,"samples":5}
+        "ms": {"median":949.776,"min":946.368,"max":958.911,"samples":5}
       },
       "total": {"instructions":15,"instructionSteps":54,"queries":4,"querySteps":112648,"nodes":29284,"peakNodes":45732,"peakBytes":4855808},
       "runtime": {"steps":124,"allocatedCells":132,"forces":9,"hits":0,"beta":3,"iota":0,"maxFrames":7,"snapshotNodes":19,"snapshotDefinitions":2,"shared":0},
-      "ms": {"cold":{"median":12.206,"min":12.004,"max":12.848,"samples":5},"unobserved":11.364,"warm":{"median":1.35,"min":1.194,"max":1.984,"samples":15}},
+      "ms": {"cold":{"median":11.985,"min":11.951,"max":12.011,"samples":5},"unobserved":11.068,"warm":{"median":1.339,"min":1.19,"max":1.693,"samples":15}},
       "phases": {
-        "elaborate": {"calls":1,"instructions":13,"instructionSteps":42,"nodes":10,"coldMs":0.991,"warmMs":0.394},
-        "check": {"calls":1,"instructions":2,"instructionSteps":12,"nodes":3,"coldMs":0.101,"warmMs":0.007},
-        "inventory": {"calls":1,"coldMs":0.052,"warmMs":0.016},
-        "runtime": {"calls":2,"failures":1,"coldMs":0.838,"warmMs":0.079},
-        "demand": {"calls":4,"queries":4,"querySteps":112648,"nodes":29271,"coldMs":6.883,"warmMs":0.014},
-        "render": {"calls":1,"coldMs":1.517,"warmMs":0.107},
-        "other": {"calls":1,"coldMs":1.823,"warmMs":0.726}
+        "elaborate": {"calls":1,"instructions":13,"instructionSteps":42,"nodes":10,"coldMs":0.953,"warmMs":0.39},
+        "check": {"calls":1,"instructions":2,"instructionSteps":12,"nodes":3,"coldMs":0.094,"warmMs":0.008},
+        "inventory": {"calls":1,"coldMs":0.051,"warmMs":0.016},
+        "runtime": {"calls":2,"failures":1,"coldMs":0.826,"warmMs":0.078},
+        "demand": {"calls":4,"queries":4,"querySteps":112648,"nodes":29271,"coldMs":6.829,"warmMs":0.017},
+        "render": {"calls":1,"coldMs":1.48,"warmMs":0.105},
+        "other": {"calls":1,"coldMs":1.743,"warmMs":0.719}
       },
       "depth": {
         "check": {"depth":8,"allocated":3,"chain":["App.1","PApp.0","App.1 ×3","App.0","Con.0","Sort"],"kinds":{"App":2,"PApp":1}}
       },
-      "maxRssMiB": {"median":289.2,"min":288.9,"max":297.3,"samples":5}
+      "maxRssMiB": {"median":289.4,"min":289.1,"max":291.4,"samples":5}
     },
     {
       "id": "winding-minus-2-normal",
@@ -2587,18 +2819,22 @@
         "querySteps": 168101,
         "exhausted": 18,
         "nodes": 16448,
-        "ms": {"median":1029.16,"min":988.452,"max":1178.369,"samples":5}
+        "ms": {"median":943.655,"min":942.329,"max":945.66,"samples":5}
       },
       "total": {"instructions":15,"instructionSteps":54,"queries":1,"querySteps":112662,"nodes":29285,"peakNodes":45733,"peakBytes":4855808},
-      "ms": {"cold":{"median":11.954,"min":10.863,"max":12.328,"samples":5},"unobserved":9.96,"warm":{"median":1.195,"min":1.077,"max":2.018,"samples":15}},
+      "ms": {
+        "cold": {"median":10.838,"min":10.737,"max":10.862,"samples":5},
+        "unobserved": 10.022,
+        "warm": {"median":1.175,"min":1.058,"max":1.494,"samples":15}
+      },
       "phases": {
-        "elaborate": {"calls":1,"instructions":13,"instructionSteps":42,"nodes":10,"coldMs":1.033,"warmMs":0.397},
-        "check": {"calls":1,"instructions":2,"instructionSteps":12,"nodes":3,"coldMs":0.101,"warmMs":0.008},
-        "inventory": {"calls":1,"coldMs":0.052,"warmMs":0.017},
-        "normalize": {"calls":1,"queries":1,"querySteps":112662,"nodes":29272,"coldMs":7.386,"warmMs":0.003},
-        "decode": {"calls":1,"coldMs":0.035,"warmMs":0.002},
-        "render": {"calls":1,"coldMs":1.721,"warmMs":0.102},
-        "other": {"calls":1,"coldMs":1.487,"warmMs":0.675}
+        "elaborate": {"calls":1,"instructions":13,"instructionSteps":42,"nodes":10,"coldMs":0.948,"warmMs":0.378},
+        "check": {"calls":1,"instructions":2,"instructionSteps":12,"nodes":3,"coldMs":0.098,"warmMs":0.007},
+        "inventory": {"calls":1,"coldMs":0.049,"warmMs":0.016},
+        "normalize": {"calls":1,"queries":1,"querySteps":112662,"nodes":29272,"coldMs":6.823,"warmMs":0.003},
+        "decode": {"calls":1,"coldMs":0.013,"warmMs":0.002},
+        "render": {"calls":1,"coldMs":1.589,"warmMs":0.099},
+        "other": {"calls":1,"coldMs":1.292,"warmMs":0.672}
       },
       "depth": {
         "check": {"depth":8,"allocated":3,"chain":["App.1","PApp.0","App.1 ×3","App.0","Con.0","Sort"],"kinds":{"App":2,"PApp":1}},
@@ -2609,7 +2845,7 @@
           "kinds": {"App":3987,"Comp":3371,"Var":3332,"Tube":3158,"Pi":2787,"Path":2644,"Sigma":2004,"Pair":1426}
         }
       },
-      "maxRssMiB": {"median":289.3,"min":288.9,"max":291.7,"samples":5}
+      "maxRssMiB": {"median":291,"min":288.9,"max":291.6,"samples":5}
     }
   ]
 }

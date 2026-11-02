@@ -42,38 +42,78 @@ computable def bnat_odd_offset(a : BNat, p : BPositive) :
     a, b_positive(bp_odd(p))
   ) := trans(cong(bnat_succ, bnat_even_offset(a, p)), bnat_succ_add(a, b_positive(bp_even(p))));
 
+computable def BNatFamilyTotal(U < UU0, P : BNat -> U) : U := exists n : BNat. P(n);
+
+// A reindexing moves a value along a path between indices. The advance
+// below moves each value along its offset's path with one, so a reindexing
+// that computes no transport gives an iterator that computes none.
+computable def BNatReindex(U < UU0, P : BNat -> U) :
+  U := forall a : BNat. forall b : BNat. a = b -> P(a) -> P(b);
+
+// A reindexing agrees with its path, as a path of total values.
+computable def BNatReindexTotal(U < UU0, P : BNat -> U, reindex : BNatReindex(U, P)) :
+  U := forall a : BNat. forall b : BNat. forall same : a = b. forall x : P(a).
+  typed(BNatFamilyTotal(U, P), (a, x)) = (b, reindex(a, b, same, x));
+
+// The reindexing of any family: the two indices have equal bits, so the
+// value is read at the second through bnat_equal_cast, which recurses on
+// the bits; the path only refutes.
+computable def bnat_equal_reindex(U < UU0, P : BNat -> U) :
+  BNatReindex(U, P) := fun (a, b : BNat, same : a = b, x : P(a)) => bnat_equal_cast(
+    U, P, a, b, bnat_equal_decided(a, b, same), x
+  );
+
+computable def bnat_equal_reindex_total(U < UU0, P : BNat -> U) :
+  BNatReindexTotal(U, P, bnat_equal_reindex(U, P)) := fun (a, b : BNat, same : a = b, x : P(a)) => bnat_equal_cast_total(
+    U, P, a, b, bnat_equal_decided(a, b, same), x
+  );
+
 // This is the executable dependent iterator. Offsets use binary arithmetic;
 // the index is not recovered by counting through an auxiliary unary state.
 computable def bpositive_advance(
-  U < UU0, P : BNat -> U, step : (forall n : BNat. P(n) -> P(bnat_succ(n))), p : BPositive,
-  a : BNat, x : P(a)
+  U < UU0, P : BNat -> U, reindex : BNatReindex(U, P),
+  step : (forall n : BNat. P(n) -> P(bnat_succ(n))), p : BPositive, a : BNat, x : P(a)
 ) :
   P(bnat_add(a, b_positive(p))) := match p {
-    bp_one => comp(fun (i : Interval) => P(bnat_succ_offset(a) @ i), step(a, x));
-    bp_even(q) => comp(
-      fun (i : Interval) => P(bnat_even_offset(a, q) @ i),
+    bp_one => reindex(
+      bnat_succ(a), bnat_add(a, b_positive(bp_one)), bnat_succ_offset(a), step(a, x)
+    );
+    bp_even(q) => reindex(
+      bnat_add(bnat_add(a, b_positive(q)), b_positive(q)), bnat_add(a, b_positive(bp_even(q))),
+      bnat_even_offset(a, q),
       bpositive_advance(
-        U, P, step, q, bnat_add(a, b_positive(q)), bpositive_advance(U, P, step, q, a, x)
+        U, P, reindex, step, q, bnat_add(a, b_positive(q)),
+        bpositive_advance(U, P, reindex, step, q, a, x)
       )
     );
-    bp_odd(q) => comp(
-      fun (i : Interval) => P(bnat_odd_offset(a, q) @ i),
+    bp_odd(q) => reindex(
+      bnat_succ(bnat_add(bnat_add(a, b_positive(q)), b_positive(q))),
+      bnat_add(a, b_positive(bp_odd(q))), bnat_odd_offset(a, q),
       step(
         bnat_add(bnat_add(a, b_positive(q)), b_positive(q)),
         bpositive_advance(
-          U, P, step, q, bnat_add(a, b_positive(q)), bpositive_advance(U, P, step, q, a, x)
+          U, P, reindex, step, q, bnat_add(a, b_positive(q)),
+          bpositive_advance(U, P, reindex, step, q, a, x)
         )
       )
     );
   };
 
-computable def bnat_peano(
-  U < UU0, P : BNat -> U, z : P(b_zero), step : (forall n : BNat. P(n) -> P(bnat_succ(n))), n : BNat
+computable def bnat_peano_reindexed(
+  U < UU0, P : BNat -> U, reindex : BNatReindex(U, P), z : P(b_zero),
+  step : (forall n : BNat. P(n) -> P(bnat_succ(n))), n : BNat
 ) :
   P(n) := match n {
     b_zero => z;
-    b_positive(p) => bpositive_advance(U, P, step, p, b_zero, z);
+    b_positive(p) => bpositive_advance(U, P, reindex, step, p, b_zero, z);
   };
+
+// The Peano eliminator reindexes along equal bits: it computes no
+// transport, for arbitrary dependent P.
+computable def bnat_peano(
+  U < UU0, P : BNat -> U, z : P(b_zero), step : (forall n : BNat. P(n) -> P(bnat_succ(n))), n : BNat
+) :
+  P(n) := bnat_peano_reindexed(U, P, bnat_equal_reindex(U, P), z, step, n);
 
 // Homogeneous iteration is used only to prove the equations of advance.
 // The executable dependent iterator above keeps its known binary offsets.
@@ -124,18 +164,11 @@ computable def bnat_iterate_succ(U < UU0, A : U, f : A -> A, n : BNat, x : A) :
     b_positive(p) => bpositive_iterate_succ(U, A, f, p, x);
   };
 
-computable def BNatFamilyTotal(U < UU0, P : BNat -> U) : U := exists n : BNat. P(n);
-
 computable def bnat_total_step(
   U < UU0, P : BNat -> U, step : (forall n : BNat. P(n) -> P(bnat_succ(n))),
   z : BNatFamilyTotal(U, P)
 ) :
   BNatFamilyTotal(U, P) := (bnat_succ(z.1), step(z.1, z.2));
-
-computable def bnat_total_reindex(U < UU0, P : BNat -> U, a, b : BNat, p : a = b, x : P(a)) :
-  typed(BNatFamilyTotal(U, P), (a, x)) = (b, comp(fun (i : Interval) => P(p @ i), x)) := path i => (
-    p @ i, fill(fun (j : Interval) => P(p @ j), x, i)
-  );
 
 // A path of total values with one index determines a path in that fiber.
 // Setness is used only for the binary index, never for the result family.
@@ -158,46 +191,49 @@ computable def bnat_total_same_index(
 }
 
 computable def bpositive_advance_total(
-  U < UU0, P : BNat -> U, step : (forall n : BNat. P(n) -> P(bnat_succ(n))), p : BPositive,
-  a : BNat, x : P(a)
+  U < UU0, P : BNat -> U, reindex : BNatReindex(U, P),
+  reindex_total : BNatReindexTotal(U, P, reindex),
+  step : (forall n : BNat. P(n) -> P(bnat_succ(n))), p : BPositive, a : BNat, x : P(a)
 ) :
-  typed(BNatFamilyTotal(U, P), (bnat_add(a, b_positive(p)), bpositive_advance(U, P, step, p, a, x))) = bpositive_iterate(
-    U, BNatFamilyTotal(U, P), bnat_total_step(U, P, step), p, (a, x)
-  ) := match p {
+  typed(
+    BNatFamilyTotal(U, P),
+    (bnat_add(a, b_positive(p)), bpositive_advance(U, P, reindex, step, p, a, x))
+  ) = bpositive_iterate(U, BNatFamilyTotal(U, P), bnat_total_step(U, P, step), p, (a, x)) := match p {
     bp_one => sym(
-      bnat_total_reindex(
-        U, P, bnat_succ(a), bnat_add(a, b_positive(bp_one)), bnat_succ_offset(a), step(a, x)
-      )
+      reindex_total(bnat_succ(a), bnat_add(a, b_positive(bp_one)), bnat_succ_offset(a), step(a, x))
     );
     bp_even(q) => trans(
       sym(
-        bnat_total_reindex(
-          U, P, bnat_add(bnat_add(a, b_positive(q)), b_positive(q)),
-          bnat_add(a, b_positive(bp_even(q))), bnat_even_offset(a, q),
+        reindex_total(
+          bnat_add(bnat_add(a, b_positive(q)), b_positive(q)), bnat_add(a, b_positive(bp_even(q))),
+          bnat_even_offset(a, q),
           bpositive_advance(
-            U, P, step, q, bnat_add(a, b_positive(q)), bpositive_advance(U, P, step, q, a, x)
+            U, P, reindex, step, q, bnat_add(a, b_positive(q)),
+            bpositive_advance(U, P, reindex, step, q, a, x)
           )
         )
       ),
       trans(
         bpositive_advance_total(
-          U, P, step, q, bnat_add(a, b_positive(q)), bpositive_advance(U, P, step, q, a, x)
+          U, P, reindex, reindex_total, step, q, bnat_add(a, b_positive(q)),
+          bpositive_advance(U, P, reindex, step, q, a, x)
         ),
         cong(
           bpositive_iterate(U, BNatFamilyTotal(U, P), bnat_total_step(U, P, step), q),
-          bpositive_advance_total(U, P, step, q, a, x)
+          bpositive_advance_total(U, P, reindex, reindex_total, step, q, a, x)
         )
       )
     );
     bp_odd(q) => trans(
       sym(
-        bnat_total_reindex(
-          U, P, bnat_succ(bnat_add(bnat_add(a, b_positive(q)), b_positive(q))),
+        reindex_total(
+          bnat_succ(bnat_add(bnat_add(a, b_positive(q)), b_positive(q))),
           bnat_add(a, b_positive(bp_odd(q))), bnat_odd_offset(a, q),
           step(
             bnat_add(bnat_add(a, b_positive(q)), b_positive(q)),
             bpositive_advance(
-              U, P, step, q, bnat_add(a, b_positive(q)), bpositive_advance(U, P, step, q, a, x)
+              U, P, reindex, step, q, bnat_add(a, b_positive(q)),
+              bpositive_advance(U, P, reindex, step, q, a, x)
             )
           )
         )
@@ -206,26 +242,60 @@ computable def bpositive_advance_total(
         bnat_total_step(U, P, step),
         trans(
           bpositive_advance_total(
-            U, P, step, q, bnat_add(a, b_positive(q)), bpositive_advance(U, P, step, q, a, x)
+            U, P, reindex, reindex_total, step, q, bnat_add(a, b_positive(q)),
+            bpositive_advance(U, P, reindex, step, q, a, x)
           ),
           cong(
             bpositive_iterate(U, BNatFamilyTotal(U, P), bnat_total_step(U, P, step), q),
-            bpositive_advance_total(U, P, step, q, a, x)
+            bpositive_advance_total(U, P, reindex, reindex_total, step, q, a, x)
           )
         )
       )
     );
   };
 
+computable def bnat_peano_reindexed_total(
+  U < UU0, P : BNat -> U, reindex : BNatReindex(U, P),
+  reindex_total : BNatReindexTotal(U, P, reindex), z : P(b_zero),
+  step : (forall n : BNat. P(n) -> P(bnat_succ(n))), n : BNat
+) :
+  typed(BNatFamilyTotal(U, P), (n, bnat_peano_reindexed(U, P, reindex, z, step, n))) = bnat_iterate(
+    U, BNatFamilyTotal(U, P), bnat_total_step(U, P, step), n, (b_zero, z)
+  ) := match n {
+    b_zero => refl(typed(BNatFamilyTotal(U, P), (b_zero, z)));
+    b_positive(p) => bpositive_advance_total(U, P, reindex, reindex_total, step, p, b_zero, z);
+  };
+
+computable def bnat_peano_reindexed_succ(
+  U < UU0, P : BNat -> U, reindex : BNatReindex(U, P),
+  reindex_total : BNatReindexTotal(U, P, reindex), z : P(b_zero),
+  step : (forall n : BNat. P(n) -> P(bnat_succ(n))), n : BNat
+) :
+  bnat_peano_reindexed(U, P, reindex, z, step, bnat_succ(n)) = step(
+    n, bnat_peano_reindexed(U, P, reindex, z, step, n)
+  ) := bnat_total_same_index(
+    U, P, bnat_succ(n), bnat_peano_reindexed(U, P, reindex, z, step, bnat_succ(n)),
+    step(n, bnat_peano_reindexed(U, P, reindex, z, step, n)),
+    trans(
+      bnat_peano_reindexed_total(U, P, reindex, reindex_total, z, step, bnat_succ(n)),
+      trans(
+        bnat_iterate_succ(U, BNatFamilyTotal(U, P), bnat_total_step(U, P, step), n, (b_zero, z)),
+        cong(
+          bnat_total_step(U, P, step),
+          sym(bnat_peano_reindexed_total(U, P, reindex, reindex_total, z, step, n))
+        )
+      )
+    )
+  );
+
 computable def bnat_peano_total(
   U < UU0, P : BNat -> U, z : P(b_zero), step : (forall n : BNat. P(n) -> P(bnat_succ(n))), n : BNat
 ) :
   typed(BNatFamilyTotal(U, P), (n, bnat_peano(U, P, z, step, n))) = bnat_iterate(
     U, BNatFamilyTotal(U, P), bnat_total_step(U, P, step), n, (b_zero, z)
-  ) := match n {
-    b_zero => refl(typed(BNatFamilyTotal(U, P), (b_zero, z)));
-    b_positive(p) => bpositive_advance_total(U, P, step, p, b_zero, z);
-  };
+  ) := bnat_peano_reindexed_total(
+    U, P, bnat_equal_reindex(U, P), bnat_equal_reindex_total(U, P), z, step, n
+  );
 
 // Zero and the bit clauses compute directly. The successor equation is a
 // checked path, valid for arbitrary dependent P in every finite universe.
@@ -237,14 +307,6 @@ computable def bnat_peano_zero(
 computable def bnat_peano_succ(
   U < UU0, P : BNat -> U, z : P(b_zero), step : (forall n : BNat. P(n) -> P(bnat_succ(n))), n : BNat
 ) :
-  bnat_peano(U, P, z, step, bnat_succ(n)) = step(n, bnat_peano(U, P, z, step, n)) := bnat_total_same_index(
-    U, P, bnat_succ(n), bnat_peano(U, P, z, step, bnat_succ(n)),
-    step(n, bnat_peano(U, P, z, step, n)),
-    trans(
-      bnat_peano_total(U, P, z, step, bnat_succ(n)),
-      trans(
-        bnat_iterate_succ(U, BNatFamilyTotal(U, P), bnat_total_step(U, P, step), n, (b_zero, z)),
-        cong(bnat_total_step(U, P, step), sym(bnat_peano_total(U, P, z, step, n)))
-      )
-    )
+  bnat_peano(U, P, z, step, bnat_succ(n)) = step(n, bnat_peano(U, P, z, step, n)) := bnat_peano_reindexed_succ(
+    U, P, bnat_equal_reindex(U, P), bnat_equal_reindex_total(U, P), z, step, n
   );

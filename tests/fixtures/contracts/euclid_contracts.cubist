@@ -32,6 +32,16 @@ evaluate euclid(4).1 expecting 5;
 # test(euclid.witness_5)
 evaluate euclid(5).1 expecting 11;
 
+// 7! + 1 = 71 * 71 and 8! + 1 = 61 * 661: the search passes 70 and 60
+// candidates. The kernel's queries stopped at their syntax depth guard
+// (K344) there while the strong recursion transported each result and the
+// search grew its distance proof at each candidate
+// (docs/reports/transport-free-recursion.md).
+# test(euclid.witness_7)
+evaluate euclid(7).1 expecting 71;
+# test(euclid.witness_8)
+evaluate euclid(8).1 expecting 61;
+
 // The folded normal form (!!_) computes each witness's data in full and
 // keeps its certificates named (docs/roadmaps/historical/folded-normal-forms.md).
 # test(euclid.normalize_3)

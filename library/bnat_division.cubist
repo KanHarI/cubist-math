@@ -83,13 +83,6 @@ computable def bordering_odd_even_lt(
     b_greater => absurd(smaller);
   };
 
-computable def bordering_lt_odd_even(order : BOrdering, smaller : BOrderingLt(order)) :
-  BOrderingLt(bnat_odd_even_order(order)) := match order {
-    b_less => tt;
-    b_equal => absurd(smaller);
-    b_greater => absurd(smaller);
-  };
-
 computable def bordering_even_odd_le(
   order : BOrdering, below : BOrderingLe(bnat_even_odd_order(order))
 ) :
@@ -354,12 +347,6 @@ computable def bnat_twice_lt(r : BNat, d : BPositive) :
   bnat_lt(r, b_positive(d)) -> bnat_lt(bnat_twice(r), bnat_twice(b_positive(d))) := match r {
     b_zero => fun (smaller : Unit) => tt;
     b_positive(p) => fun (smaller : BOrderingLt(bpositive_compare(p, d))) => smaller;
-  };
-
-computable def bnat_twice_succ_lt(r : BNat, d : BPositive) :
-  bnat_lt(r, b_positive(d)) -> bnat_lt(bnat_twice_succ(r), bnat_twice(b_positive(d))) := match r {
-    b_zero => fun (smaller : Unit) => tt;
-    b_positive(p) => bordering_lt_odd_even(bpositive_compare(p, d));
   };
 
 computable def bpositive_divmod_correct(n, d : BPositive) :
