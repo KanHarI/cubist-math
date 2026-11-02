@@ -3,7 +3,8 @@
 // types with Pascal's rule, and finite choice with fibered counting. None
 // uses an assumption; the truncated ones use the library's Trunc. Small
 // instances of the counts compute: an element's number, and the element
-// with a given number.
+// with a given number. The truncated results' witnesses are read in
+// cubist-tests/counting_witnesses.cubist.
 // Authority: docs/roadmaps/archive-retirement.md#counting-in-the-library
 import finite_choice;
 import binomial_types;
@@ -103,17 +104,32 @@ evaluate equiv_inverse(U0, Fin(3) and Fin(4), Fin(12), fin_product(3, 4), (7, tt
 evaluate equiv_inverse(U0, Fin(3) and Fin(4), Fin(12), fin_product(3, 4), (7, tt)).2.1 expecting 3;
 
 // 2^3 functions from Fin(3) to Fin(2): a function's number reads its
-// values as binary digits, the value at 0 first.
+// values as binary digits, the value at 0 first. The digits of 3 are 011
+// and the function 1, 0, 0 is 100, 4: neither reads the same reversed.
+computable def first_only(x : Fin(3)) : Fin(2) := match x.1 {
+    b_zero => (1, tt);
+    b_positive(p) => (0, tt);
+  };
+
 # test(counting.power)
 evaluate power(2, 3) expecting 8;
 # test(counting.constant_function)
 evaluate fin_functions(3, 2).1(fun (x : Fin(3)) => typed(Fin(2), (1, tt))).1 expecting 7;
-# test(counting.function_five)
-evaluate equiv_inverse(U0, Fin(3) -> Fin(2), Fin(8), fin_functions(3, 2), (5, tt))((0, tt)).1 expecting 1;
-# test(counting.function_five_middle)
-evaluate equiv_inverse(U0, Fin(3) -> Fin(2), Fin(8), fin_functions(3, 2), (5, tt))((1, tt)).1 expecting 0;
-# test(counting.function_five_last)
-evaluate equiv_inverse(U0, Fin(3) -> Fin(2), Fin(8), fin_functions(3, 2), (5, tt))((2, tt)).1 expecting 1;
+# test(counting.first_only_function)
+evaluate fin_functions(3, 2).1(first_only).1 expecting 4;
+# test(counting.function_three_first)
+evaluate equiv_inverse(U0, Fin(3) -> Fin(2), Fin(8), fin_functions(3, 2), (3, tt))((0, tt)).1 expecting 0;
+# test(counting.function_three_middle)
+evaluate equiv_inverse(U0, Fin(3) -> Fin(2), Fin(8), fin_functions(3, 2), (3, tt))((1, tt)).1 expecting 1;
+# test(counting.function_three_last)
+evaluate equiv_inverse(U0, Fin(3) -> Fin(2), Fin(8), fin_functions(3, 2), (3, tt))((2, tt)).1 expecting 1;
+
+// Ranking a function costs a division a digit, never the count: the
+// constant functions on Fin(7) and on Fin(20) are numbers 0 and 2^20 - 1.
+# test(counting.seven_inputs)
+evaluate fin_functions(7, 2).1(fun (x : Fin(7)) => typed(Fin(2), (0, tt))).1 expecting 0;
+# test(counting.twenty_inputs)
+evaluate fin_functions(20, 2).1(fun (x : Fin(20)) => typed(Fin(2), (1, tt))).1 expecting 1048575;
 
 // 3! permutations of Fin(3): a permutation's number is the top element's
 // image times 2!, plus the number of the rest, so the identity is the last.

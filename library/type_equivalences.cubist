@@ -701,3 +701,36 @@ computable def sum_unit_restrict_fixed(
   typed(B or Unit, left(sum_unit_restrict(U, A, B, f, g, gf, a))) = f(left(a)) := sum_unit_restrict_fixed_at(
     U, A, B, f, g, gf, fixed, a, f(left(a)), refl(f(left(a)))
   );
+
+// Pairs over Y, reindexed along an equivalence from X: (x, b) goes to
+// (e(x), b), and a pair over y goes back over the center of y's fiber, its
+// second component carried along the center's path. The contraction of the
+// fiber over e(x) brings a pair there and back to itself.
+computable def sigma_reindex_back(
+  U < UU0, X, Y : U, e : ContrEquiv(U, X, Y), B : Y -> U, v : exists y : Y. B(y)
+) :
+  exists x : X. B(e.1(x)) := (e.2(v.1).1.1, comp(fun (i : Interval) => B(e.2(v.1).1.2 @ i), v.2));
+
+computable def sigma_reindex_retraction(
+  U < UU0, X, Y : U, e : ContrEquiv(U, X, Y), B : Y -> U, u : exists x : X. B(e.1(x))
+) :
+  sigma_reindex_back(U, X, Y, e, B, (e.1(u.1), u.2)) = u {
+  let contraction := e.2(e.1(u.1)).2((u.1, refl(e.1(u.1))));
+  let middle : exists x : X. B(e.1(x)) := (u.1, comp(fun (i : Interval) => B(e.1(u.1)), u.2));
+  let there : sigma_reindex_back(U, X, Y, e, B, (e.1(u.1), u.2)) = middle :=
+    path t => ((contraction @ t).1, comp(fun (i : Interval) => B((contraction @ t).2 @ i), u.2));
+  let back : middle = u := path k => (
+    u.1, comp(fun (i : Interval) => B(e.1(u.1)), u.2, face(k, 1, fun (i : Interval) => u.2))
+  );
+  exact trans(there, back);
+}
+
+computable def sigma_reindex(U < UU0, X, Y : U, e : ContrEquiv(U, X, Y), B : Y -> U) :
+  ContrEquiv(U, exists x : X. B(e.1(x)), exists y : Y. B(y)) := inverse_equiv(
+    U, exists x : X. B(e.1(x)), exists y : Y. B(y),
+    fun (u : exists x : X. B(e.1(x))) => (e.1(u.1), u.2),
+    fun (v : exists y : Y. B(y)) => sigma_reindex_back(U, X, Y, e, B, v),
+    fun (v : exists y : Y. B(y)) => path i => (
+      e.2(v.1).1.2 @ ~i, fill(fun (j : Interval) => B(e.2(v.1).1.2 @ j), v.2, ~i)
+    ), fun (u : exists x : X. B(e.1(x))) => sigma_reindex_retraction(U, X, Y, e, B, u)
+  );

@@ -133,6 +133,7 @@ workbench's Kernel graph.
 | [`box_notation`](box_notation.cubist) | The box notation for compositions: `compose j in A from b { on i = 0 => …; }` and `fill … at k`, faces as formulas, printing as boxes, and a face that is no formula. |
 | [`square_constructions`](square_constructions.cubist) | `library/squares.cubist`: squares with named edges, their transposes and flips, naturality, double composition and its filler, and horizontal and vertical composition, each by conversion. |
 | [`truncation_readout`](truncation_readout.cubist) | `print(witness(t))`: the witness a closed truncation holds, read under maps, squash endpoints and transport along a path of types, with its type and certificate; values that are no truncation. |
+| [`counting_witnesses`](counting_witnesses.cubist) | The truncated counting results compute: the witnesses of `finite_choice`'s chosen section and of `fibered_cardinality`'s mere enumeration, read with `print(witness(t))` and projected to numbers. |
 | [`computability_unfolding`](computability_unfolding.cubist) | Evaluation unfolds every definition and ignores unfolding hints. |
 | [`induction_printed`](induction_printed.cubist) | How an eliminator prints, for `tests/induction.test.mjs`: as the induction that builds it, with `__U` for an erased universe, and the printed source written back. |
 | [`ergonomics_rewrite_obligations`](ergonomics_rewrite_obligations.cubist) | `rw` at an occurrence, in reverse and on either side, and the refusals of a missing occurrence and a dependent position. |

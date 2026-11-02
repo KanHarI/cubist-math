@@ -1,9 +1,12 @@
 // Finite choice and fibered counting, with no choice axiom. A finite
-// product of merely inhabited types is merely inhabited: by Peano recursion
-// on the size, a family over Fin(n + 1) is one over Fin(n) and one more
-// type, and a mere element of each combines into a mere function. So a type
-// fibered over an n-element base with m-element fibers has n * m elements:
-// finite choice merely enumerates every fiber at once.
+// product of merely inhabited types is merely inhabited: a mere section of
+// a family over the elements of Fin(n) below k, and a mere element at k,
+// combine into a mere section below k + 1. The count k is unary and
+// structural, so no section is carried along a path of sizes, and the
+// chosen section computes. So a type fibered over an n-element base with
+// m-element fibers has n * m elements: finite choice merely enumerates every
+// fiber at once, over Fin(n), and the pairs are reindexed along the base's
+// enumeration.
 import finite_arithmetic;
 import nat;
 use nat;
@@ -23,28 +26,6 @@ computable def finite_choice_is_prop(X : U0) : IsProp(U1, FiniteChoice(X)) := pi
   )
 );
 
-// An empty type has the empty section.
-computable def finite_choice_empty(X : U0, empty_x : X -> Void) :
-  FiniteChoice(X) := fun (P : X -> U0, inhabited : forall x : X. Trunc(U0, P(x))) => merely(
-    U0, forall x : X. P(x), fun (x : X) => absurd(empty_x(x))
-  );
-
-// A section over X or Unit is one over X and an element over the point.
-computable def finite_choice_point(X : U0, below : FiniteChoice(X)) :
-  FiniteChoice(X or Unit) := fun (
-    P : (X or Unit) -> U0, inhabited : forall x : X or Unit. Trunc(U0, P(x))
-  ) => mere_eliminate(
-    U0, U0, P(right(tt)), Trunc(U0, forall x : X or Unit. P(x)),
-    mere_is_prop(U0, forall x : X or Unit. P(x)),
-    fun (top : P(right(tt))) => mere_map(
-      U0, U0, forall x : X. P(left(x)), forall x : X or Unit. P(x),
-      fun (rest : forall x : X. P(left(x))) => fun (x : X or Unit) => match x as z return P(z) {
-        left a => rest(a);
-        right u => comp(fun (i : Interval) => P(right(unit_is_prop(tt, u) @ i)), top);
-      }, below(fun (x : X) => P(left(x)), fun (x : X) => inhabited(left(x)))
-    ), inhabited(right(tt))
-  );
-
 // Finite choice passes along equivalences.
 computable def finite_choice_equiv(X, Y : U0, e : ContrEquiv(U0, X, Y), choice_x : FiniteChoice(X)) :
   FiniteChoice(Y) := fun (P : Y -> U0, inhabited : forall y : Y. Trunc(U0, P(y))) => mere_map(
@@ -55,17 +36,78 @@ computable def finite_choice_equiv(X, Y : U0, e : ContrEquiv(U0, X, Y), choice_x
     ), choice_x(fun (x : X) => P(e.1(x)), fun (x : X) => inhabited(e.1(x)))
   );
 
-computable def fin_choice_succ(n : Nat, below : FiniteChoice(Fin(n))) :
-  FiniteChoice(Fin(succ(n))) := finite_choice_equiv(
-    Fin(n) or Unit, Fin(succ(n)), fin_succ_equiv(n), finite_choice_point(Fin(n), below)
+// A mere section of P over the elements of Fin(N) below t.
+computable def ChoiceBelow(N : Nat, P : Fin(N) -> U0, t : Nat) :
+  U0 := Trunc(U0, forall x : Fin(N). x.1 < t -> P(x));
+
+// Below t + 1: below t, or t itself, where the element at t is carried to x
+// along their equal numbers; or t is no element, and nothing is t.
+computable def choice_below_top(
+  N : Nat, P : Fin(N) -> U0, t : Nat, rest : forall x : Fin(N). x.1 < t -> P(x), inside : t < N,
+  v : P((t, inside)), x : Fin(N), smaller : x.1 < succ(t)
+) :
+  P(x) := match bnat_lt_succ_cases(x.1, t, smaller) return P(x) {
+    left below => rest(x, below);
+    right same => comp(fun (i : Interval) => P(fin_path(N, (t, inside), x, sym(same)) @ i), v);
+  };
+
+computable def choice_below_none(
+  N : Nat, P : Fin(N) -> U0, t : Nat, rest : forall x : Fin(N). x.1 < t -> P(x), outside : (t < N)
+  -> Void, x : Fin(N), smaller : x.1 < succ(t)
+) :
+  P(x) := match bnat_lt_succ_cases(x.1, t, smaller) return P(x) {
+    left below => rest(x, below);
+    right same => absurd(outside(comp(fun (i : Interval) => (same @ i) < N, x.2)));
+  };
+
+computable def choice_below_step(
+  N : Nat, P : Fin(N) -> U0, inhabited : forall x : Fin(N). Trunc(U0, P(x)), t : Nat,
+  below : ChoiceBelow(N, P, t), d : Decidable(U0, t < N)
+) :
+  ChoiceBelow(N, P, succ(t)) := match d return ChoiceBelow(N, P, succ(t)) {
+    left inside => mere_eliminate(
+      U0, U0, P((t, inside)), ChoiceBelow(N, P, succ(t)),
+      mere_is_prop(U0, forall x : Fin(N). x.1 < succ(t) -> P(x)),
+      fun (v : P((t, inside))) => mere_map(
+        U0, U0, forall x : Fin(N). x.1 < t -> P(x), forall x : Fin(N). x.1 < succ(t) -> P(x),
+        fun (rest : forall x : Fin(N). x.1 < t -> P(x)) => fun (x : Fin(N), smaller : x.1 < succ(t)) => choice_below_top(
+          N, P, t, rest, inside, v, x, smaller
+        ), below
+      ), inhabited((t, inside))
+    );
+    right outside => mere_map(
+      U0, U0, forall x : Fin(N). x.1 < t -> P(x), forall x : Fin(N). x.1 < succ(t) -> P(x),
+      fun (rest : forall x : Fin(N). x.1 < t -> P(x)) => fun (x : Fin(N), smaller : x.1 < succ(t)) => choice_below_none(
+        N, P, t, rest, outside, x, smaller
+      ), below
+    );
+  };
+
+// By structural recursion on a unary count k, below its binary value.
+computable def choice_below(
+  N : Nat, P : Fin(N) -> U0, inhabited : forall x : Fin(N). Trunc(U0, P(x)), k : UNat
+) :
+  ChoiceBelow(N, P, bnat_of_unat(k)) := match k {
+    unat::zero => merely(
+      U0, forall x : Fin(N). x.1 < 0 -> P(x),
+      fun (x : Fin(N), smaller : x.1 < 0) => absurd(bnat_lt_zero(x.1, smaller))
+    );
+    unat::succ(j) => choice_below_step(
+      N, P, inhabited, bnat_of_unat(j), choice_below(N, P, inhabited, j),
+      bnat_lt_decide(bnat_of_unat(j), N)
+    );
+  };
+
+// Finite choice for Fin(n): below n, n's unary count, every element.
+computable def fin_choice(n : Nat) :
+  FiniteChoice(Fin(n)) := fun (P : Fin(n) -> U0, inhabited : forall x : Fin(n). Trunc(U0, P(x))) => mere_map(
+    U0, U0, forall x : Fin(n). x.1 < bnat_of_unat(bnat_to_unat(n)) -> P(x), forall x : Fin(n). P(x),
+    fun (s : forall x : Fin(n). x.1 < bnat_of_unat(bnat_to_unat(n)) -> P(x)) => fun (x : Fin(n)) => s(
+      x, comp(fun (i : Interval) => x.1 < (bnat_roundtrip(n) @ ~i), x.2)
+    ), choice_below(n, P, inhabited, bnat_to_unat(n))
   );
 
-// Finite choice for Fin(n), and so for every type with a finite cardinality.
-computable def fin_choice(n : Nat) : FiniteChoice(Fin(n)) := nat_peano(
-  U1, fun (k : Nat) => FiniteChoice(Fin(k)), finite_choice_empty(Fin(0), fin_zero_empty),
-  fin_choice_succ, n
-);
-
+// And so for every type with a finite cardinality.
 computable def finite_choice(A : U0, n : Nat, count : HasCardinality(A, n)) :
   FiniteChoice(A) := mere_eliminate(
     U0, U1, ContrEquiv(U0, Fin(n), A), FiniteChoice(A), finite_choice_is_prop(A),
@@ -82,16 +124,21 @@ computable def fibered_cardinality(
     U0, U0, ContrEquiv(U0, Fin(n), A), HasCardinality(exists a : A. B(a), n * m),
     has_cardinality_is_prop(exists a : A. B(a), n * m),
     fun (e : ContrEquiv(U0, Fin(n), A)) => mere_map(
-      U0, U0, forall a : A. ContrEquiv(U0, Fin(m), B(a)),
+      U0, U0, forall i : Fin(n). ContrEquiv(U0, Fin(m), B(e.1(i))),
       ContrEquiv(U0, Fin(n * m), exists a : A. B(a)),
-      fun (fibers : forall a : A. ContrEquiv(U0, Fin(m), B(a))) => equiv_compose(
+      fun (fibers : forall i : Fin(n). ContrEquiv(U0, Fin(m), B(e.1(i)))) => equiv_compose(
         U0, Fin(n * m), Fin(n) and Fin(m), exists a : A. B(a),
         equiv_symm(U0, Fin(n) and Fin(m), Fin(n * m), fin_product(n, m)),
         equiv_compose(
-          U0, Fin(n) and Fin(m), A and Fin(m), exists a : A. B(a),
-          product_equiv(U0, Fin(n), Fin(m), A, Fin(m), e, id_contr_equiv(U0, Fin(m))),
-          sigma_fiberwise(U0, A, fun (a : A) => Fin(m), B, fibers)
+          U0, Fin(n) and Fin(m), exists i : Fin(n). B(e.1(i)), exists a : A. B(a),
+          sigma_fiberwise(
+            U0, Fin(n), fun (i : Fin(n)) => Fin(m), fun (i : Fin(n)) => B(e.1(i)), fibers
+          ), sigma_reindex(U0, Fin(n), A, e, B)
         )
-      ), finite_choice(A, n, count_a, fun (a : A) => ContrEquiv(U0, Fin(m), B(a)), count_b)
+      ),
+      fin_choice(
+        n, fun (i : Fin(n)) => ContrEquiv(U0, Fin(m), B(e.1(i))),
+        fun (i : Fin(n)) => count_b(e.1(i))
+      )
     ), count_a
   );

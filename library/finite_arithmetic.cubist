@@ -1,88 +1,146 @@
-// Sums and products of finite types. Fin(a) or Fin(b) is equivalent to
-// Fin(a + b), with the second summand's j at a + j; Fin(a) and Fin(b) is
-// equivalent to Fin(a * b), with the pair (i, j) at i * b + j. Both by
-// Peano recursion, adding one top element at a time; so finite types are
-// closed under sums and products, with the sizes adding and multiplying.
+// Sums and products of finite types, by arithmetic on the numbers of their
+// elements. Fin(a) or Fin(b) is equivalent to Fin(a + b), with the second
+// summand's j at a + j, and k at or above a back at k - a; Fin(a) and
+// Fin(b) is equivalent to Fin(a * b), with the pair (i, j) at i * b + j,
+// and k back at its quotient and remainder by b. No map recurses on a
+// size, so finite types are closed under sums and products, with the sizes
+// adding and multiplying, at the cost of a few binary operations.
 import finite_cardinality;
+import bnat_division;
 import nat;
 use nat;
 
-computable def FinSum(a, b : Nat) : U0 := ContrEquiv(U0, Fin(a) or Fin(b), Fin(a + b));
+computable def fin_sum_in(a, b : Nat, x : Fin(a) or Fin(b)) :
+  Fin(a + b) := match x return Fin(a + b) {
+    left i => (i.1, bnat_lt_add_bound(i.1, a, b, i.2));
+    right j => (a + j.1, bnat_add_lt_left(a, j.1, b, j.2));
+  };
 
-computable def fin_sum_zero(a : Nat) : FinSum(a, 0) := equiv_compose(
-  U0, Fin(a) or Fin(0), Fin(a), Fin(a + 0), sum_empty_right(U0, Fin(a), Fin(0), fin_zero_empty),
-  fin_cast(a, a + 0, sym(nat_add_zero(a)))
-);
-
-// Fin(a) or Fin(b + 1), as (Fin(a) or Fin(b)) with one more point, the
-// top element a + b.
-computable def fin_sum_succ(a, b : Nat, previous : FinSum(a, b)) : FinSum(a, succ(b)) {
-  let split := sum_equiv(
-    U0, Fin(a), Fin(succ(b)), Fin(a), Fin(b) or Unit, id_contr_equiv(U0, Fin(a)),
-    equiv_symm(U0, Fin(b) or Unit, Fin(succ(b)), fin_succ_equiv(b))
-  );
-  let regroup := equiv_symm(
-    U0, (Fin(a) or Fin(b)) or Unit, Fin(a) or (Fin(b) or Unit),
-    sum_associativity(U0, Fin(a), Fin(b), Unit)
-  );
-  let inner :=
-    sum_equiv(U0, Fin(a) or Fin(b), Unit, Fin(a + b), Unit, previous, id_contr_equiv(U0, Unit));
-  exact equiv_compose(
-    U0, Fin(a) or Fin(succ(b)), Fin(a) or (Fin(b) or Unit), Fin(a + succ(b)), split,
-    equiv_compose(
-      U0, Fin(a) or (Fin(b) or Unit), (Fin(a) or Fin(b)) or Unit, Fin(a + succ(b)), regroup,
-      equiv_compose(
-        U0, (Fin(a) or Fin(b)) or Unit, Fin(a + b) or Unit, Fin(a + succ(b)), inner,
-        equiv_compose(
-          U0, Fin(a + b) or Unit, Fin(succ(a + b)), Fin(a + succ(b)), fin_succ_equiv(a + b),
-          fin_cast(succ(a + b), a + succ(b), bnat_succ_add(a, b))
-        )
-      )
+// At or above a, the number less a is below b.
+computable def fin_sum_rest_bound(a, b : Nat, k : Fin(a + b), not_below : (k.1 < a) -> Void) :
+  bnat_sub(k.1, a) < b := bnat_lt_add_cancel(
+    a, bnat_sub(k.1, a), b,
+    comp(
+      fun (i : Interval) => (bnat_add_sub(k.1, a, bnat_le_of_not_lt(k.1, a, not_below)) @ ~i) < a + b,
+      k.2
     )
   );
-}
 
-computable def fin_sum(a, b : Nat) : ContrEquiv(U0, Fin(a) or Fin(b), Fin(a + b)) := nat_peano(
-  U0, FinSum(a), fin_sum_zero(a), fin_sum_succ(a), b
-);
+// The decision is an argument, so that the laws below can take its two
+// cases.
+computable def fin_sum_out_by(a, b : Nat, k : Fin(a + b), d : Decidable(U0, k.1 < a)) :
+  Fin(a) or Fin(b) := match d return (Fin(a) or Fin(b)) {
+    left below => left((k.1, below));
+    right not_below => right((bnat_sub(k.1, a), fin_sum_rest_bound(a, b, k, not_below)));
+  };
 
-computable def FinProduct(b, a : Nat) : U0 := ContrEquiv(U0, Fin(a) and Fin(b), Fin(a * b));
+computable def fin_sum_out(a, b : Nat, k : Fin(a + b)) :
+  Fin(a) or Fin(b) := fin_sum_out_by(a, b, k, bnat_lt_decide(k.1, a));
 
-computable def fin_product_zero(b : Nat) : FinProduct(b, 0) := empty_equiv(
-  U0, Fin(0) and Fin(b), Fin(0 * b), fun (p : Fin(0) and Fin(b)) => fin_zero_empty(p.1),
-  fun (x : Fin(0 * b)) => fin_zero_empty(
-    fin_cast(0 * b, 0, trans(nat_mul_comm(0, b), nat_mul_zero(b))).1(x)
-  )
-);
+computable def fin_sum_in_out(a, b : Nat, k : Fin(a + b), d : Decidable(U0, k.1 < a)) :
+  fin_sum_in(a, b, fin_sum_out_by(a, b, k, d)) = k := match d as c return (
+    fin_sum_in(a, b, fin_sum_out_by(a, b, k, c)) = k
+  ) {
+    left below => fin_path(a + b, fin_sum_in(a, b, left((k.1, below))), k, refl(k.1));
+    right not_below => fin_path(
+      a + b, fin_sum_in(a, b, right((bnat_sub(k.1, a), fin_sum_rest_bound(a, b, k, not_below)))), k,
+      bnat_add_sub(k.1, a, bnat_le_of_not_lt(k.1, a, not_below))
+    );
+  };
 
-// Fin(a + 1) and Fin(b): the pairs below a, then the row of a, after them.
-computable def fin_product_succ(b, a : Nat, previous : FinProduct(b, a)) : FinProduct(b, succ(a)) {
-  let split := product_equiv(
-    U0, Fin(succ(a)), Fin(b), Fin(a) or Unit, Fin(b),
-    equiv_symm(U0, Fin(a) or Unit, Fin(succ(a)), fin_succ_equiv(a)), id_contr_equiv(U0, Fin(b))
-  );
-  let rows := sum_equiv(
-    U0, Fin(a) and Fin(b), Unit and Fin(b), Fin(a * b), Fin(b), previous, unit_product(U0, Fin(b))
-  );
-  exact equiv_compose(
-    U0, Fin(succ(a)) and Fin(b), (Fin(a) or Unit) and Fin(b), Fin(succ(a) * b), split,
-    equiv_compose(
-      U0, (Fin(a) or Unit) and Fin(b), (Fin(a) and Fin(b)) or (Unit and Fin(b)), Fin(succ(a) * b),
-      product_sum_distribute(U0, Fin(a), Unit, Fin(b)),
-      equiv_compose(
-        U0, (Fin(a) and Fin(b)) or (Unit and Fin(b)), Fin(a * b) or Fin(b), Fin(succ(a) * b), rows,
-        equiv_compose(
-          U0, Fin(a * b) or Fin(b), Fin(a * b + b), Fin(succ(a) * b), fin_sum(a * b, b),
-          fin_cast(a * b + b, succ(a) * b, sym(nat_succ_mul(a, b)))
+computable def fin_sum_out_left(a, b : Nat, i : Fin(a), d : Decidable(U0, i.1 < a)) :
+  fin_sum_out_by(a, b, fin_sum_in(a, b, left(i)), d) = left(i) := match d as c return (
+    fin_sum_out_by(a, b, fin_sum_in(a, b, left(i)), c) = typed(Fin(a) or Fin(b), left(i))
+  ) {
+    left below => cong(
+      fun (z : Fin(a)) => typed(Fin(a) or Fin(b), left(z)), fin_path(a, (i.1, below), i, refl(i.1))
+    );
+    right not_below => absurd(not_below(i.2));
+  };
+
+computable def fin_sum_out_right(a, b : Nat, j : Fin(b), d : Decidable(U0, a + j.1 < a)) :
+  fin_sum_out_by(a, b, fin_sum_in(a, b, right(j)), d) = right(j) := match d as c return (
+    fin_sum_out_by(a, b, fin_sum_in(a, b, right(j)), c) = typed(Fin(a) or Fin(b), right(j))
+  ) {
+    left below => absurd(bnat_lt_le_absurd(a + j.1, a, below, bnat_le_add_self(a, j.1)));
+    right not_below => cong(
+      fun (z : Fin(b)) => typed(Fin(a) or Fin(b), right(z)),
+      fin_path(
+        b, (bnat_sub(a + j.1, a), fin_sum_rest_bound(a, b, fin_sum_in(a, b, right(j)), not_below)),
+        j,
+        nat_add_cancel(
+          a, bnat_sub(a + j.1, a), j.1, bnat_add_sub(a + j.1, a, bnat_le_add_self(a, j.1))
         )
       )
+    );
+  };
+
+computable def fin_sum(a, b : Nat) : ContrEquiv(U0, Fin(a) or Fin(b), Fin(a + b)) := inverse_equiv(
+  U0, Fin(a) or Fin(b), Fin(a + b), fun (x : Fin(a) or Fin(b)) => fin_sum_in(a, b, x),
+  fun (k : Fin(a + b)) => fin_sum_out(a, b, k),
+  fun (k : Fin(a + b)) => fin_sum_in_out(a, b, k, bnat_lt_decide(k.1, a)),
+  fun (x : Fin(a) or Fin(b)) => match x as z return (fin_sum_out(a, b, fin_sum_in(a, b, z)) = z) {
+    left i => fin_sum_out_left(a, b, i, bnat_lt_decide(i.1, a));
+    right j => fin_sum_out_right(a, b, j, bnat_lt_decide(a + j.1, a));
+  }
+);
+
+computable def fin_product_in(a, b : Nat, p : Fin(a) and Fin(b)) :
+  Fin(a * b) := (p.1.1 * b + p.2.1, bnat_mul_add_lt(p.1.1, a, p.2.1, b, p.1.2, p.2.2));
+
+// By a positive b: the quotient and the remainder of division by b.
+computable def fin_product_out(a : Nat, d : BPositive, k : Fin(a * b_positive(d))) :
+  Fin(a)
+  and Fin(b_positive(d)) := (
+    (
+      bnat_divmod(k.1, d).1,
+      bnat_quotient_below(
+        bnat_divmod(k.1, d).1, b_positive(d), bnat_divmod(k.1, d).2, a,
+        comp(fun (i : Interval) => (bnat_divmod_correct(k.1, d).1 @ ~i) < a * b_positive(d), k.2)
+      )
+    ), bnat_divmod(k.1, d).2,
+    bnat_lt_by_comparison(bnat_divmod(k.1, d).2, b_positive(d), bnat_divmod_correct(k.1, d).2)
+  );
+
+computable def fin_product_positive(a : Nat, d : BPositive) :
+  ContrEquiv(U0, Fin(a) and Fin(b_positive(d)), Fin(a * b_positive(d))) := inverse_equiv(
+    U0, Fin(a) and Fin(b_positive(d)), Fin(a * b_positive(d)),
+    fun (p : Fin(a) and Fin(b_positive(d))) => fin_product_in(a, b_positive(d), p),
+    fun (k : Fin(a * b_positive(d))) => fin_product_out(a, d, k),
+    fun (k : Fin(a * b_positive(d))) => fin_path(
+      a * b_positive(d), fin_product_in(a, b_positive(d), fin_product_out(a, d, k)), k,
+      bnat_divmod_correct(k.1, d).1
+    ),
+    fun (p : Fin(a) and Fin(b_positive(d))) => path i => (
+      fin_path(
+        a, fin_product_out(a, d, fin_product_in(a, b_positive(d), p)).1, p.1,
+        bnat_division_unique(
+          b_positive(d), bnat_divmod(p.1.1 * b_positive(d) + p.2.1, d).1,
+          bnat_divmod(p.1.1 * b_positive(d) + p.2.1, d).2, p.1.1, p.2.1,
+          bnat_divmod_correct(p.1.1 * b_positive(d) + p.2.1, d).2, p.2.2,
+          bnat_divmod_correct(p.1.1 * b_positive(d) + p.2.1, d).1
+        ).1
+      ) @ i,
+      fin_path(
+        b_positive(d), fin_product_out(a, d, fin_product_in(a, b_positive(d), p)).2, p.2,
+        bnat_division_unique(
+          b_positive(d), bnat_divmod(p.1.1 * b_positive(d) + p.2.1, d).1,
+          bnat_divmod(p.1.1 * b_positive(d) + p.2.1, d).2, p.1.1, p.2.1,
+          bnat_divmod_correct(p.1.1 * b_positive(d) + p.2.1, d).2, p.2.2,
+          bnat_divmod_correct(p.1.1 * b_positive(d) + p.2.1, d).1
+        ).2
+      ) @ i
     )
   );
-}
 
-computable def fin_product(a, b : Nat) : ContrEquiv(U0, Fin(a) and Fin(b), Fin(a * b)) := nat_peano(
-  U0, FinProduct(b), fin_product_zero(b), fin_product_succ(b), a
-);
+// With b zero both sides are empty.
+computable def fin_product(a, b : Nat) : ContrEquiv(U0, Fin(a) and Fin(b), Fin(a * b)) := match b {
+    b_zero => empty_equiv(
+      U0, Fin(a) and Fin(0), Fin(a * 0), fun (p : Fin(a) and Fin(0)) => fin_zero_empty(p.2),
+      fun (k : Fin(a * 0)) => fin_zero_empty(fin_cast(a * 0, 0, nat_mul_zero(a)).1(k))
+    );
+    b_positive(d) => fin_product_positive(a, d);
+  };
 
 // The sizes of finite types add under sums and multiply under products.
 computable def sum_cardinality(
