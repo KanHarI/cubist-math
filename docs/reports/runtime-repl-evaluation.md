@@ -202,11 +202,11 @@ entry's start.
 
 | Workload | Kernel's queries | Runtime | Runtime steps | Cells allocated | Retained objects / heap | Median entry ms (runtime / kernel) | Max RSS MiB (runtime / kernel) |
 | --- | --- | --- | ---: | ---: | --- | --- | --- |
-| `euclid(3)` | value, 150,918 ticks, 38,736 nodes | same value | 247,542 | 145,770 | 18,962 / 1.8 MiB | 53 / 29 | 144 / 146 |
-| `euclid(4).1` | K344 after 655,030 ticks | `5` | 469,175 | 267,045 | 52,493 / 4.0 MiB | 66 / 108 | 147 / 161 |
-| `euclid(4)` | K344 after 652,129 ticks | `(5, (3, <path>, <fun>), tt)` | 1,385,819 | 771,843 | 104,930 / 7.6 MiB | 162 / 187 | 170 / 157 |
-| `euclid(5).1` | K344 after 887,726 ticks | `11` | 28,187,952 | 15,566,553 | 3,382,822 / 229.2 MiB | 3,281 / 154 | 606 / 165 |
-| `euclid(6).1` | K336 after 465,336 ticks | E488 at 20M cells | — | 20,000,000 | — / 268.0 MiB | 1,837 / 84 | 510 / 158 |
+| `euclid(3)`, the archive's unary Euclid | value, 150,918 ticks, 38,736 nodes | same value | 247,542 | 145,770 | 18,962 / 1.8 MiB | 53 / 29 | 144 / 146 |
+| `euclid(4).1`, the archive's unary Euclid | K344 after 655,030 ticks | `5` | 469,175 | 267,045 | 52,493 / 4.0 MiB | 66 / 108 | 147 / 161 |
+| `euclid(4)`, the archive's unary Euclid | K344 after 652,129 ticks | `(5, (3, <path>, <fun>), tt)` | 1,385,819 | 771,843 | 104,930 / 7.6 MiB | 162 / 187 | 170 / 157 |
+| `euclid(5).1`, the archive's unary Euclid | K344 after 887,726 ticks | `11` | 28,187,952 | 15,566,553 | 3,382,822 / 229.2 MiB | 3,281 / 154 | 606 / 165 |
+| `euclid(6).1`, the archive's unary Euclid | K336 after 465,336 ticks | E488 at 20M cells | — | 20,000,000 | — / 268.0 MiB | 1,837 / 84 | 510 / 158 |
 | `count_into(2 * 255, 0)` | K344 after 44,646 ticks | `510` | 67,835 | 38,927 | 10,247 / 1.3 MiB | 67 / 23 | 127 / 121 |
 | `(2 * 255, 2 * 255)` | value, 16,645 ticks | same value | 63,698 | 37,172 | 9,250 / 1.6 MiB | 118 / 67 | 133 / 135 |
 | `doubling(8)` | value, 8,918 ticks | same value | 15,143 | 8,572 | 1,869 / 0.1 MiB | 50 / 18 | 119 / 121 |
@@ -375,11 +375,11 @@ the runtime's path pays the kernel's walk too.
 
 | Workload | Kernel's queries | Runtime | Runtime steps | Cells allocated | Copied nodes / definitions | Retained objects / heap | Median entry ms (runtime / kernel) | Max RSS MiB (runtime / kernel) |
 | --- | --- | --- | ---: | ---: | --- | --- | --- | --- |
-| `euclid(3)` | value, 150,918 ticks | same value | 237,172 | 132,529 | 289 / 10 | 18,962 / 1.1 MiB | 16 / 13 | 143 / 147 |
-| `euclid(4).1` | K344 after 655,030 ticks | `5` | 458,724 | 253,593 | 245 / 9 | 52,493 / 3.3 MiB | 17 / 64 | 146 / 161 |
-| `euclid(4)` | K344 after 652,129 ticks | `(5, (3, <path>, <fun>), tt)` | 1,375,459 | 758,632 | 296 / 10 | 104,930 / 6.9 MiB | 74 / 53 | 174 / 161 |
-| `euclid(5).1` | K344 after 887,726 ticks | `11` | 28,177,499 | 15,553,101 | 246 / 9 | 3,382,822 / 228.5 MiB | 617 / 87 | 608 / 166 |
-| `euclid(6).1` | K336 after 465,336 ticks | E488 at 20M cells | — | 20,000,000 | 206 | — / 269.2 MiB | 839 / 52 | 566 / 161 |
+| `euclid(3)`, the archive's unary Euclid | value, 150,918 ticks | same value | 237,172 | 132,529 | 289 / 10 | 18,962 / 1.1 MiB | 16 / 13 | 143 / 147 |
+| `euclid(4).1`, the archive's unary Euclid | K344 after 655,030 ticks | `5` | 458,724 | 253,593 | 245 / 9 | 52,493 / 3.3 MiB | 17 / 64 | 146 / 161 |
+| `euclid(4)`, the archive's unary Euclid | K344 after 652,129 ticks | `(5, (3, <path>, <fun>), tt)` | 1,375,459 | 758,632 | 296 / 10 | 104,930 / 6.9 MiB | 74 / 53 | 174 / 161 |
+| `euclid(5).1`, the archive's unary Euclid | K344 after 887,726 ticks | `11` | 28,177,499 | 15,553,101 | 246 / 9 | 3,382,822 / 228.5 MiB | 617 / 87 | 608 / 166 |
+| `euclid(6).1`, the archive's unary Euclid | K336 after 465,336 ticks | E488 at 20M cells | — | 20,000,000 | 206 | — / 269.2 MiB | 839 / 52 | 566 / 161 |
 | `count_into(2 * 255, 0)` | K344 after 44,646 ticks | `510` | 67,172 | 38,837 | 317 / 3 | 10,247 / 1.5 MiB | 27 / 8 | 127 / 120 |
 | `(2 * 255, 2 * 255)` | value, 16,645 ticks | same value | 63,080 | 37,107 | 297 / 2 | 9,250 / 1.6 MiB | 37 / 33 | 134 / 135 |
 | `doubling(8)` | value, 8,918 ticks | same value | 15,038 | 8,517 | 43 / 2 | 1,869 / 0.1 MiB | 12 / 10 | 118 / 119 |
@@ -907,47 +907,95 @@ JavaScript.
   The evaluation baseline measures the kernel's value forms.
 
 `tests/runtime-evaluation.test.mjs` became `tests/value-forms.test.mjs`: every
-value form it compared, now the kernel's alone, with the outcomes below. The
+value form it compared, now the kernel's alone, with the outcomes below.
+Merging #346, the transport-free recursion, dropped its runtime tests (no
+fallback on the library's recursions, the runtime's step bound on
+`fib(22)`, the query reading Euclid's prime bit by bit) and the probe's
+new workloads, and moved its kernel checks to `tests/value-forms.test.mjs`:
+the value forms of Euclid, factorial, the searches and the Fibonacci,
+`euclid(7).1` as 71, the searches' limits (`least_divisor(44521, tt).1`
+211, `least_divisor(63001, tt).1` K344), least elements and Peano
+recursion past their old depth, and the million-tick bounds on `fib(25)`,
+`fun_fib(22, tt)` and `fun_fib(25, tt)`. Its contracts and Cubist tests
+are unchanged. The
 kernel-fault test and the static-site test inject their value-form fault in
 the kernel queries of the value form's walk (`valueForm`), where they had
 injected it in the runtime's reads.
 
 ### What changed in observable behaviour
 
-Against main `d875dd08` with the runtime, on this branch:
+Against main with the runtime, at `cedbd0dc` (#346's transport-free
+recursion merged), on this branch merged with it:
 
 | Value form | With the runtime | Now | Why |
 | --- | --- | --- | --- |
 | `count_into(2 * 255, 0)` (the reference's example, `tests/value-forms.test.mjs`, the static-site REPL scenario) | `510` | `K344` | The kernel's weak-head query substitutes the total into each call, past 512 levels; the runtime kept it as a value |
-| `count_into(100 * 100 * 100, 0)` (the static-site scenario, replaced by `count_into(2 * 254, 0)`, 508) | `E488` | `K344` | The same depth, reached before any budget |
+| `least_divisor(63001, tt).1`, 251 * 251 (the baseline's `least-divisor-251-squared`) | `251` | `K344` | The 250 candidates' minimality certificate passes the kernel's syntax depth, in the value form as in the normal form |
+| `fun_fib(22, tt)` and `fun_fib(25, tt)` (the strong recursion contracts' function-valued Fibonacci, printed) | `E488` | `17711`, `75025` | The kernel's queries share the applications; the runtime recomputed them ([#346's gap](transport-free-recursion.md#sharing)) |
+| `count_into(100 * 100 * 100, 0)` (the old static-site scenario, replaced by `count_into(2 * 254, 0)`, 508) | `E488` | `K344` | The same depth, reached before any budget |
+| `least_divisor(1000003, tt).1` and `euclid(11).1` | `E488` | `K344` | A thousand candidates and more: the runtime's allocation budget, the kernel's syntax depth |
 | `relayed-calls-24`, `g24(tt)` | `E488` | `tt` | The kernel's cache shares the call two applications make by its syntax; the runtime shared within one application |
-| The probe's list parity over 200,000 cells | `E488` | `K336` | The kernel's recursion guard on nested eliminators |
+| The old probe's list parity over 200,000 cells | `E488` | `K336` | The kernel's recursion guard on nested eliminators |
 
 Every other value form that the runtime computed was the kernel's, as the
 runtime's differential tests asserted, and is unchanged: compared on the
-same sources with main, the 197 constructs of the demand marks corpus, every
-evaluated term of the 11 contract files that evaluate, printed in place of
-its directive, the two docs examples with evaluations, and the evaluation
-baseline's 21 value-form workloads as REPL entries, 355 outcomes in all, are
-identical. The `cubist-tests` modules' inlined outputs and the reference's
-`// Output:` comments pass unchanged, but for the reference's `count_into`
-example, which now shows 508 beside the K344 stop and a binary product past
-the depth. The corpus, contracts and examples took 86.2 s here against
-83.6 s with the runtime.
+same sources with main `cedbd0dc`, the 197 constructs of the demand marks
+corpus, every evaluated term of the 12 contract files that evaluate,
+printed in place of its directive, the two docs examples with evaluations,
+and the evaluation baseline's 23 value-form workloads as REPL entries,
+364 outcomes in all, are identical but for the three of the table (two
+`fun_fib` prints and `least-divisor-251-squared`). The same comparison
+with main `d875dd08`, before #346, found 355 outcomes identical. The
+`cubist-tests` modules' inlined outputs and the reference's `// Output:`
+comments pass unchanged, but for the reference's `count_into` example,
+which now shows 508 beside the K344 stop and a binary product past the
+depth. The corpus, contracts and examples took 93.7 s here against 123.4 s
+with the runtime, whose stops at its budget each cost half a second.
 
-The evaluation baseline is recorded at version 11
-(`tests/fixtures/evaluation-baseline.json`, at `81d8d9af`). No workload's
-outcome moves: all 45 texts, hashes and normal-form digests are version
-10's, and every workload is deterministic over five samples. The runtime
-phase and its counters are gone. The workloads whose value forms fell back,
-the Euclid, factorial, transport and winding entries, keep the kernel's
-work exactly and no longer pay the runtime's walk first: `euclid-3` falls
-from 9.3 to 7.1 ms cold, `euclid-4` from 12.0 to 9.1. Those the runtime
-computed now count the kernel's head queries in the demand phase, and on
-this machine run faster as well: `divides-3-6` 1,801 query steps (its
-literals') become 6,634 and 10.2 ms 7.3, `multiply-2-255` 0 become 17,148
-and 24.3 ms 21.7, `multiply-12-12` 0 become 4,922 and 10.6 ms 8.3. The
-`cubist-tests` driver trace and the search-fuel baseline do not move.
+**Speed since #346.** The user's reason for the removal held on main
+`d875dd08`: every recursive value form of the library fell back from the
+runtime to the kernel's queries. Since #346, merged the same day, the
+runtime computed them without falling back, and on the library's large
+products much faster than the kernel's queries, which now compute them
+alone (REPL entries, one run each on this machine):
+
+| Value form | With the runtime | Kernel's queries |
+| --- | --- | --- |
+| `factorial(40)` | 23 ms | 272 ms |
+| `factorial(60)` | 50 ms | 4,473 ms |
+| `factorial(100)` (shown to the depth of 512) | 173 ms | 107 s |
+| `least_divisor(44521, tt).1`, 211 | 165 ms | 394 ms |
+| `least_element(…240…).1` | 78 ms | 274 ms |
+| `count(300)`, Peano | 28 ms | 99 ms |
+| `euclid(7).1`, 71 | 46 ms | 100 ms |
+| `fib(25)` | 6 ms | 14 ms |
+
+The factorial's cost is the kernel's lazy multiplication of a large lazily
+computed right operand, which #346's report records as an open point
+([transport-free recursion](transport-free-recursion.md#workarounds-and-open-points)).
+
+The evaluation baseline is recorded at version 12
+(`tests/fixtures/evaluation-baseline.json`) on the merged tree. One outcome
+moves: `least-divisor-251-squared`'s value form, which the runtime showed
+as 251, stops with K344, its demand phase counting the failed query's
+work, as the normal form's twin does in its normalization. The other 48
+texts, hashes and normal-form digests are version 11's, and every workload
+is deterministic over five samples. The runtime phase and its counters are
+gone. The value forms the runtime computed count the kernel's head queries
+in the demand phase: `euclid-3` 954 query steps (its literal's) become
+31,550, `euclid-5-prime` 955 become 197,480, `euclid-7-prime` 955 become
+1,922,061 and `factorial-5-print` 953 become 22,446; the workloads whose
+value forms the runtime did not compute, `euclid-4-pattern`, the expected
+value, the transport and the winding numbers, keep the kernel's work
+exactly. On this machine the small value forms run as fast or faster
+without the runtime's snapshot (`euclid-3` 12.6 to 7.4 ms cold), and the
+long searches slower (`euclid-7-prime` 65 to 122 ms). The `cubist-tests`
+driver trace and the search-fuel baseline do not move.
+
+Before #346 was merged, on main `d875dd08`, the same removal recorded
+version 11 of the baseline with no outcome moving: every recursive value
+form then fell back from the runtime, so the kernel's work was already
+what the baseline recorded.
 
 ### Bringing it back
 

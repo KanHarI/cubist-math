@@ -266,12 +266,12 @@ evaluate typed(Glue(Unit, face_when(0, Unit, id_contr_equiv(U0, Unit))), glue(tt
 });
 
 test("an ignored component whose weak head fails does not fail the pattern", async t => {
-  // The prime of euclid(7) is the least divisor of 7! + 1 = 71 * 71, and the
-  // search's 70 candidates make its weak head too deep to compute (K344):
-  // any query of the ignored part fails the evaluation.
+  // The least divisor of 251 * 251 takes the search through 250 candidates,
+  // whose minimality certificate makes its weak head too deep to compute
+  // (K344): any query of the ignored part fails the evaluation.
   const { result } = await checkProgram(t, `import euclid;
 use nat;
-def value : Nat and Nat := (1, euclid(7).1);
+def value : Nat and Nat := (1, least_divisor(63001, tt).1);
 evaluate value expecting (1, _);
 evaluate value expecting (!_, _);
 evaluate value expecting (_, !_);
@@ -376,11 +376,11 @@ def grow(n : UNat) : Tree := match n {
   zero => leaf;
   succ(k) => node(grow(k), nat.(0), grow(k));
 };
-def far : (Tree and Tree) and Nat := ((grow(10), grow(9)), euclid(nat.(7)).1);
-print(evaluate(node(grow(12), euclid(nat.(7)).1, leaf)));
+def far : (Tree and Tree) and Nat := ((grow(10), grow(9)), least_divisor(nat.(63001), tt).1);
+print(evaluate(node(grow(12), least_divisor(nat.(63001), tt).1, leaf)));
 print(evaluate(far));`, { module });
-  // euclid(7)'s prime has a weak head too deep for the kernel to build
-  // (K344), and neither print reaches it.
+  // The least divisor of 251 * 251 has a weak head too deep for the kernel
+  // to build (K344), and neither print reaches it.
   assert.deepEqual(result.gaps.map(gap => gap.reason), []);
   assert.equal(result.prints.length, 2);
 });

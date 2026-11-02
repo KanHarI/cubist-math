@@ -2,6 +2,7 @@ import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import createCubical from "../web/dist/cubical.mjs";
 import { parse } from "../web/cubist/parser.mjs";
@@ -192,17 +193,68 @@ print(evaluate(count_into(2 * 255, 0)));
   assert.deepEqual(outcomes(result), ["508", "K344: Native prototype syntax depth exceeds 512."]);
 });
 
-// The library Euclid (library/euclid.cubist) computes by NUM1's strong
-// recursion; the certificate's function is shown as such. 7! + 1 = 71 * 71
-// takes the search past the kernel's syntax depth guard.
-test("the library Euclid's value forms", async t => {
+// A branching strong recursion: the Fibonacci of
+// tests/fixtures/contracts/strong_recursion_contracts.cubist, which asks
+// for the values at the predecessor and at its predecessor.
+const fibonacci = readFileSync(new URL("./fixtures/contracts/strong_recursion_contracts.cubist", import.meta.url), "utf8")
+  .split("\n").filter(line => !/^(#|import |use )/.test(line)).join("\n").replace(/\nevaluate[^;]*;/g, "");
+
+// The library's Euclid (library/euclid.cubist), its least divisor search,
+// factorial, the least element search and the Fibonacci compute by nat's
+// strong recursion, which reads each smaller value without a transport
+// (library/bnat_recursion.cubist, docs/reports/transport-free-recursion.md);
+// the certificate's function is shown as such. 7! + 1 = 71 * 71 takes the
+// search through 70 candidates, which passed the kernel's syntax depth guard
+// while the recursion transported each result.
+test("the library Euclid's, factorial's and the searches' value forms", async t => {
   const texts = await printed(t, `import euclid;
+import least_elements;
 use nat;
-${each(["euclid(3)", "euclid(4).1", "euclid(4)", "euclid(5).1", "euclid(6).1", "factorial(5)"])}
+${fibonacci}
+${each(["euclid(3)", "euclid(4).1", "euclid(4)", "euclid(5).1", "euclid(6).1", "factorial(5)", "factorial(40)",
+    "least_divisor(121, tt)", "least_element(fun (n : Nat) => 5 <= n, fun (n : Nat) => bnat_le_decide(5, n), 100, tt)", "fib(22)",
+    "euclid(7).1"])}
 `);
-  assert.deepEqual(texts, ["(7, (tt, <fun>), tt)", "5", "(5, (tt, <fun>), tt)", "11", "7", "120"]);
-  const { result } = await checkProgram(t, "import euclid;\nuse nat;\nprint(evaluate(euclid(7).1));", { module });
-  assert.deepEqual(outcomes(result), ["K344: Native prototype syntax depth exceeds 512."]);
+  assert.deepEqual(texts, ["(7, (tt, <fun>), tt)", "5", "(5, (tt, <fun>), tt)", "11", "7", "120",
+    "815915283247897734345611269596115894272000000000", "(11, tt, (11, <path>), <fun>)", "(5, tt, <fun>)", "17711", "71"]);
+});
+
+// The searches' limits on the kernel's queries: the least divisor of
+// 211 * 211 computes through 210 candidates, and at 251 * 251 the 250
+// candidates' minimality certificate is past the syntax depth guard. Least
+// elements and Peano recursion go past 63 and 300 steps, which their
+// transports took past the guard before.
+test("the searches and Peano recursion past their old depth, and the divisor search's limit", async t => {
+  const { result } = await checkProgram(t, `import euclid;
+import least_elements;
+use nat;
+def count(n : Nat) : Nat := nat_peano(U0, fun (m : Nat) => Nat, 0, fun (m, c : Nat) => succ(c), n);
+print(evaluate(least_divisor(44521, tt).1));
+print(evaluate(least_divisor(63001, tt).1));
+print(evaluate(least_element(fun (n : Nat) => 240 <= n, fun (n : Nat) => bnat_le_decide(240, n), 1000000, tt).1));
+print(evaluate(count(300)));
+`, { module });
+  assert.deepEqual(outcomes(result), ["211", "K344: Native prototype syntax depth exceeds 512.", "240", "300"]);
+});
+
+// The values below each n hold every smaller value once, so overlapping
+// calls share them in the kernel's queries. Main computed fib(25) in
+// 197,821 ticks; a recursion that rebuilt each smaller value took
+// 64,203,550. At a function-valued family the applications are shared too:
+// main took 236,446 ticks for fun_fib(22, tt).
+test("a branching strong recursion shares its smaller values", async t => {
+  const program = new CubicalProgram(module, sourceReader(), { collectReferences: false });
+  t.after(() => program.dispose());
+  const session = new ReplSession(program);
+  const prepared = await session.run(`import euclid;\nuse nat;\n${fibonacci}`);
+  assert.deepEqual(prepared.filter(result => result.kind === "error").map(result => result.text), []);
+  for (const [entry, value] of [["fib(25)", "75025"], ["fun_fib(22, tt)", "17711"], ["fun_fib(25, tt)", "75025"]]) {
+    const before = program.kernel.work().querySteps;
+    const [answer] = await session.run(`evaluate ${entry};`);
+    assert.equal(answer.text, value, entry);
+    const ticks = Number(program.kernel.work().querySteps - before);
+    assert.ok(ticks < 1000000, `the kernel's queries took ${ticks} ticks for ${entry}`);
+  }
 });
 
 test("a call written twice, or relayed through another function, is computed once", async t => {
@@ -218,14 +270,14 @@ print(evaluate(typed(UNat and UNat, (2 * 255, 2 * 255))));
   assert.deepEqual(outcomes(again), ["tt"]);
 });
 
-// factorial(40) over binary Nat takes the kernel's queries seconds.
+// factorial(60) over binary Nat takes the kernel's queries seconds.
 test("the declaration's time limit bounds a value form's queries", async t => {
   const program = new CubicalProgram(module, sourceReader(), { collectReferences: false });
   t.after(() => program.dispose());
   const session = new ReplSession(program);
   assert.ok((await session.run("import nat; use nat;")).every(result => result.kind !== "error"));
   program.kernel.setDeadline(150);
-  const [answer] = await session.run("evaluate factorial(40);");
+  const [answer] = await session.run("evaluate factorial(60);");
   program.kernel.setDeadline();
   assert.equal(answer.text, "E629: Declaration time limit exceeded.");
 });

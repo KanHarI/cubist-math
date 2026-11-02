@@ -54,6 +54,76 @@ computable def bnat_lt_succ_cases(m, n : BNat, smaller : bnat_lt(m, bnat_succ(n)
     };
   };
 
+// Decrease evidence on the bits: each comparison computes to a less-than,
+// so each law holds by matching on the bits, with no transport. An odd and
+// an even numeral compare as their halves do, the low bit breaking a tie.
+computable def bordering_lt_odd_even(order : BOrdering, smaller : BOrderingLt(order)) :
+  BOrderingLt(bnat_odd_even_order(order)) := match order {
+    b_less => tt;
+    b_equal => absurd(smaller);
+    b_greater => absurd(smaller);
+  };
+
+computable def bordering_equal_even_odd(order : BOrdering, same : BOrderingEqual(order)) :
+  BOrderingLt(bnat_even_odd_order(order)) := match order {
+    b_less => absurd(same);
+    b_equal => tt;
+    b_greater => absurd(same);
+  };
+
+computable def bnat_twice_succ_lt(r : BNat, d : BPositive) :
+  bnat_lt(r, b_positive(d)) -> bnat_lt(bnat_twice_succ(r), bnat_twice(b_positive(d))) := match r {
+    b_zero => fun (smaller : Unit) => tt;
+    b_positive(p) => bordering_lt_odd_even(bpositive_compare(p, d));
+  };
+
+computable def bpositive_lt_succ(p : BPositive) :
+  BOrderingLt(bpositive_compare(p, bpositive_succ(p))) := match p {
+    bp_one => tt;
+    bp_even(q) => bordering_equal_even_odd(bpositive_compare(q, q), bpositive_equal_refl(q));
+    bp_odd(q) => bordering_lt_odd_even(
+      bpositive_compare(q, bpositive_succ(q)), bpositive_lt_succ(q)
+    );
+  };
+
+computable def bnat_lt_succ(n : BNat) : bnat_lt(n, bnat_succ(n)) := match n {
+    b_zero => tt;
+    b_positive(p) => bpositive_lt_succ(p);
+  };
+
+computable def bpositive_pred_lt(p : BPositive) :
+  bnat_lt(bpositive_pred(p), b_positive(p)) := match p {
+    bp_one => tt;
+    bp_even(q) => bnat_twice_succ_lt(bpositive_pred(q), q, bpositive_pred_lt(q));
+    bp_odd(q) => bordering_equal_even_odd(bpositive_compare(q, q), bpositive_equal_refl(q));
+  };
+
+// Below succ(n), whatever is below m is below n. The positive decision
+// returns the bits' own witness; unary order only refutes the other branch.
+computable def bnat_lt_below_succ_impossible(
+  k, m, n : BNat, less : bnat_lt(k, m), smaller : bnat_lt(m, bnat_succ(n)), not_less : bnat_lt(k, n)
+  -> Void
+) :
+  Void {
+  let uk := comp(fun (i : Interval) => bnat_lt_correct(k, m) @ i, less);
+  let um := comp(fun (i : Interval) => bnat_lt_correct(m, bnat_succ(n)) @ i, smaller);
+  let um_succ := comp(fun (i : Interval) => isLt(bnat_to_unat(m), bnat_decode_succ(n) @ i), um);
+  exact not_less(
+    comp(
+      fun (i : Interval) => bnat_lt_correct(k, n) @ ~i,
+      unat_le_trans(succ(bnat_to_unat(k)), bnat_to_unat(m), bnat_to_unat(n), uk, um_succ)
+    )
+  );
+}
+
+computable def bnat_lt_below_succ(
+  k, m, n : BNat, less : bnat_lt(k, m), smaller : bnat_lt(m, bnat_succ(n))
+) :
+  bnat_lt(k, n) := match bnat_lt_decide(k, n) return bnat_lt(k, n) {
+    left yes => yes;
+    right no => absurd(bnat_lt_below_succ_impossible(k, m, n, less, smaller, no));
+  };
+
 computable def BNatBelow(U < UU0, P : BNat -> U, n : BNat) :
   U := forall m : BNat. bnat_lt(m, n) -> P(m);
 
@@ -62,28 +132,95 @@ computable def bnat_below_zero(U < UU0, P : BNat -> U) :
     bnat_lt_zero(m, smaller)
   );
 
-computable def bnat_below_case(
-  U < UU0, P : BNat -> U, step : (forall n : BNat. BNatBelow(U, P, n) -> P(n)), n : BNat,
-  below : BNatBelow(U, P, n), m : BNat, split : bnat_lt(m, n) or (m = n)
+// The values below succ(n), from those below n and the value at n: a
+// point below n is read from below, and n itself is the value, cast along
+// the bits' equality, which transports nothing. Both decisions read one
+// comparison of the bits, the same call in the extension's scope, so it is
+// computed once; unary order only refutes their impossible combination.
+computable def bnat_below_read(
+  U < UU0, P : BNat -> U, n : BNat, below : BNatBelow(U, P, n), value : P(n), m : BNat,
+  smaller : bnat_lt(m, bnat_succ(n)), less : Decidable(U0, bnat_lt(m, n)),
+  same : Decidable(U0, bnat_equal(m, n))
 ) :
-  P(m) := match split return P(m) {
-    left smaller => below(m, smaller);
-    right same => comp(fun (i : Interval) => P(same @ ~i), step(n, below));
+  P(m) := match less return P(m) {
+    left below_n => below(m, below_n);
+    right not_less => match same return P(m) {
+      left equal => bnat_equal_cast(U, P, n, m, bnat_equal_symmetric(m, n, equal), value);
+      right different => absurd(
+        bnat_lt_succ_impossible(
+          m, n, smaller, not_less, fun (p : m = n) => different(bnat_path_equal(m, n, p))
+        )
+      );
+    };
   };
 
+computable def bnat_below_extend(
+  U < UU0, P : BNat -> U, n : BNat, below : BNatBelow(U, P, n), value : P(n)
+) :
+  BNatBelow(U, P, bnat_succ(n)) := fun (m : BNat, smaller : bnat_lt(m, bnat_succ(n))) => bnat_below_read(
+    U, P, n, below, value, m, smaller, bordering_lt_decide(bnat_compare(m, n)),
+    bordering_equal_decide(bnat_compare(m, n))
+  );
+
+// The step's value at n is computed once, as the extension's argument, and
+// every later read at n returns it: overlapping recursive calls share it.
 computable def bnat_below_step(
   U < UU0, P : BNat -> U, step : (forall n : BNat. BNatBelow(U, P, n) -> P(n)), n : BNat,
   below : BNatBelow(U, P, n)
 ) :
-  BNatBelow(U, P, bnat_succ(n)) := fun (m : BNat, smaller : bnat_lt(m, bnat_succ(n))) => bnat_below_case(
-    U, P, step, n, below, m, bnat_lt_succ_cases(m, n, smaller)
-  );
+  BNatBelow(U, P, bnat_succ(n)) := bnat_below_extend(U, P, n, below, step(n, below));
 
+// Order evidence for an equal bound, decided on the bits; the path only
+// refutes the other branch.
+computable def bnat_lt_bound(m, a, b : BNat, smaller : bnat_lt(m, a), same : a = b) :
+  bnat_lt(m, b) := match bnat_lt_decide(m, b) return bnat_lt(m, b) {
+    left yes => yes;
+    right no => absurd(no(comp(fun (i : Interval) => bnat_lt(m, same @ i), smaller)));
+  };
+
+// Below x, below x + y, decided on the bits; unary order only refutes.
+computable def bnat_lt_add_right_impossible(
+  j, x, y : BNat, smaller : bnat_lt(j, x), not_less : bnat_lt(j, bnat_add(x, y)) -> Void
+) :
+  Void {
+  let uj := comp(fun (i : Interval) => bnat_lt_correct(j, x) @ i, smaller);
+  let wide := unat_le_trans(
+    succ(bnat_to_unat(j)), bnat_to_unat(x), add(bnat_to_unat(y), bnat_to_unat(x)), uj,
+    unat_le_add(bnat_to_unat(y), bnat_to_unat(x))
+  );
+  let sum := comp(
+    fun (i : Interval) => le(
+      succ(bnat_to_unat(j)),
+      trans(unat_add_comm(bnat_to_unat(y), bnat_to_unat(x)), sym(bnat_decode_add(x, y))) @ i
+    ), wide
+  );
+  exact not_less(comp(fun (i : Interval) => bnat_lt_correct(j, bnat_add(x, y)) @ ~i, sum));
+}
+
+computable def bnat_lt_add_right(j, x, y : BNat, smaller : bnat_lt(j, x)) :
+  bnat_lt(j, bnat_add(x, y)) := match bnat_lt_decide(j, bnat_add(x, y)) return bnat_lt(
+    j, bnat_add(x, y)
+  ) {
+    left yes => yes;
+    right no => absurd(bnat_lt_add_right_impossible(j, x, y, smaller, no));
+  };
+
+// The values below an equal bound: a point's evidence is moved to the old
+// bound, decided on the bits when it is demanded. Nothing is transported.
+computable def bnat_below_reindex(U < UU0, P : BNat -> U) :
+  BNatReindex(U, BNatBelow(U, P)) := fun (a, b : BNat, same : a = b, below : BNatBelow(U, P, a)) => fun (
+    m : BNat, smaller : bnat_lt(m, b)
+  ) => below(m, bnat_lt_bound(m, b, a, smaller, sym(same)));
+
+// The values below n, by bnat_peano's advance over binary offsets, each
+// step extending the values below with the step's value, and each offset
+// reindexed by its evidence.
 computable def bnat_below(
   U < UU0, P : BNat -> U, step : (forall n : BNat. BNatBelow(U, P, n) -> P(n)), n : BNat
 ) :
-  BNatBelow(U, P, n) := bnat_peano(
-    U, BNatBelow(U, P), bnat_below_zero(U, P), bnat_below_step(U, P, step), n
+  BNatBelow(U, P, n) := bnat_peano_reindexed(
+    U, BNatBelow(U, P), bnat_below_reindex(U, P), bnat_below_zero(U, P),
+    bnat_below_step(U, P, step), n
   );
 
 computable def bnat_strong_recursion(
@@ -91,33 +228,258 @@ computable def bnat_strong_recursion(
 ) :
   P(n) := step(n, bnat_below(U, P, step, n));
 
-computable def bnat_below_succ(
+// The recursion's equation at one value.
+computable def BNatRecursionEquation(
   U < UU0, P : BNat -> U, step : (forall n : BNat. BNatBelow(U, P, n) -> P(n)), n : BNat
 ) :
-  bnat_below(U, P, step, bnat_succ(n)) = bnat_below_step(U, P, step, n, bnat_below(U, P, step, n)) := bnat_peano_succ(
-    U, BNatBelow(U, P), bnat_below_zero(U, P), bnat_below_step(U, P, step), n
+  U := bnat_strong_recursion(U, P, step, n) = step(
+    n, fun (m : BNat, smaller : bnat_lt(m, n)) => bnat_strong_recursion(U, P, step, m)
   );
 
-computable def bnat_below_case_coherent(
-  U < UU0, P : BNat -> U, step : (forall n : BNat. BNatBelow(U, P, n) -> P(n)), n, m : BNat,
-  split : bnat_lt(m, n) or (m = n),
-  ih : (
-    forall k : BNat. forall smaller : bnat_lt(k, n).
-    bnat_below(U, P, step, n)(k, smaller) = bnat_strong_recursion(U, P, step, k)
-  )
+// Values below n are coherent when each is the recursion's.
+computable def BNatBelowCoherent(
+  U < UU0, P : BNat -> U, step : (forall n : BNat. BNatBelow(U, P, n) -> P(n)), n : BNat,
+  below : BNatBelow(U, P, n)
 ) :
-  bnat_below_case(U, P, step, n, bnat_below(U, P, step, n), m, split) = bnat_strong_recursion(
+  U := forall m : BNat. forall smaller : bnat_lt(m, n).
+  below(m, smaller) = bnat_strong_recursion(U, P, step, m);
+
+computable def bnat_below_step_value(
+  U < UU0, P : BNat -> U, step : (forall n : BNat. BNatBelow(U, P, n) -> P(n)), n : BNat,
+  below : BNatBelow(U, P, n), coherent : BNatBelowCoherent(U, P, step, n, below)
+) :
+  step(n, below) = step(
+    n, fun (m : BNat, smaller : bnat_lt(m, n)) => bnat_strong_recursion(U, P, step, m)
+  ) := path i => step(n, fun (m : BNat, smaller : bnat_lt(m, n)) => coherent(m, smaller) @ i);
+
+computable def bnat_below_read_coherent(
+  U < UU0, P : BNat -> U, step : (forall n : BNat. BNatBelow(U, P, n) -> P(n)), n : BNat,
+  below : BNatBelow(U, P, n), coherent : BNatBelowCoherent(U, P, step, n, below),
+  equation : BNatRecursionEquation(U, P, step, n), m : BNat, smaller : bnat_lt(m, bnat_succ(n)),
+  less : Decidable(U0, bnat_lt(m, n)), same : Decidable(U0, bnat_equal(m, n))
+) :
+  bnat_below_read(U, P, n, below, step(n, below), m, smaller, less, same) = bnat_strong_recursion(
     U, P, step, m
   ) {
-  match split {
-    left(smaller) => {
-      exact ih(m, smaller);
+  match less {
+    left(below_n) => {
+      exact coherent(m, below_n);
     }
-    right(same) => {
-      exact apd(fun (k : BNat) => bnat_strong_recursion(U, P, step, k), n, m, sym(same));
+    right(not_less) => {
+      match same {
+        left(equal) => {
+          exact trans(
+            cong(
+              fun (value : P(n)) => bnat_equal_cast(
+                U, P, n, m, bnat_equal_symmetric(m, n, equal), value
+              ), trans(bnat_below_step_value(U, P, step, n, below, coherent), sym(equation))
+            ),
+            bnat_equal_cast_apply(
+              U, P, fun (k : BNat) => bnat_strong_recursion(U, P, step, k), n, m,
+              bnat_equal_symmetric(m, n, equal)
+            )
+          );
+        }
+        right(different) => {
+          exact absurd(
+            bnat_lt_succ_impossible(
+              m, n, smaller, not_less, fun (p : m = n) => different(bnat_path_equal(m, n, p))
+            )
+          );
+        }
+      }
     }
   }
 }
+
+// A step keeps the values coherent, given the equation at its bound.
+computable def bnat_below_step_coherent(
+  U < UU0, P : BNat -> U, step : (forall n : BNat. BNatBelow(U, P, n) -> P(n)), n : BNat,
+  below : BNatBelow(U, P, n), coherent : BNatBelowCoherent(U, P, step, n, below),
+  equation : BNatRecursionEquation(U, P, step, n)
+) :
+  BNatBelowCoherent(U, P, step, bnat_succ(n), bnat_below_step(U, P, step, n, below)) := fun (
+    m : BNat, smaller : bnat_lt(m, bnat_succ(n))
+  ) => bnat_below_read_coherent(
+    U, P, step, n, below, coherent, equation, m, smaller, bordering_lt_decide(bnat_compare(m, n)),
+    bordering_equal_decide(bnat_compare(m, n))
+  );
+
+computable def bnat_below_reindex_coherent(
+  U < UU0, P : BNat -> U, step : (forall n : BNat. BNatBelow(U, P, n) -> P(n)), a, b : BNat,
+  same : a = b, below : BNatBelow(U, P, a), coherent : BNatBelowCoherent(U, P, step, a, below)
+) :
+  BNatBelowCoherent(U, P, step, b, bnat_below_reindex(U, P)(a, b, same, below)) := fun (
+    m : BNat, smaller : bnat_lt(m, b)
+  ) => coherent(m, bnat_lt_bound(m, b, a, smaller, sym(same)));
+
+// The advance keeps the values coherent, given the equation below its
+// final bound; its offsets' order is decided on the bits.
+computable def bpositive_below_advance_coherent(
+  U < UU0, P : BNat -> U, step : (forall n : BNat. BNatBelow(U, P, n) -> P(n)), p : BPositive,
+  a : BNat, below : BNatBelow(U, P, a), coherent : BNatBelowCoherent(U, P, step, a, below),
+  equations : (
+    forall j : BNat. bnat_lt(j, bnat_add(a, b_positive(p))) -> BNatRecursionEquation(U, P, step, j)
+  )
+) :
+  BNatBelowCoherent(
+    U, P, step, bnat_add(a, b_positive(p)),
+    bpositive_advance(
+      U, BNatBelow(U, P), bnat_below_reindex(U, P), bnat_below_step(U, P, step), p, a, below
+    )
+  ) := match p {
+    bp_one => bnat_below_reindex_coherent(
+      U, P, step, bnat_succ(a), bnat_add(a, b_positive(bp_one)), bnat_succ_offset(a),
+      bnat_below_step(U, P, step, a, below),
+      bnat_below_step_coherent(
+        U, P, step, a, below, coherent,
+        equations(
+          a,
+          bnat_lt_bound(
+            a, bnat_succ(a), bnat_add(a, b_positive(bp_one)), bnat_lt_succ(a), bnat_succ_offset(a)
+          )
+        )
+      )
+    );
+    bp_even(q) => bnat_below_reindex_coherent(
+      U, P, step, bnat_add(bnat_add(a, b_positive(q)), b_positive(q)),
+      bnat_add(a, b_positive(bp_even(q))), bnat_even_offset(a, q),
+      bpositive_advance(
+        U, BNatBelow(U, P), bnat_below_reindex(U, P), bnat_below_step(U, P, step), q,
+        bnat_add(a, b_positive(q)),
+        bpositive_advance(
+          U, BNatBelow(U, P), bnat_below_reindex(U, P), bnat_below_step(U, P, step), q, a, below
+        )
+      ),
+      bpositive_below_advance_coherent(
+        U, P, step, q, bnat_add(a, b_positive(q)),
+        bpositive_advance(
+          U, BNatBelow(U, P), bnat_below_reindex(U, P), bnat_below_step(U, P, step), q, a, below
+        ),
+        bpositive_below_advance_coherent(
+          U, P, step, q, a, below, coherent,
+          fun (j : BNat, smaller : bnat_lt(j, bnat_add(a, b_positive(q)))) => equations(
+            j,
+            bnat_lt_bound(
+              j, bnat_add(bnat_add(a, b_positive(q)), b_positive(q)),
+              bnat_add(a, b_positive(bp_even(q))),
+              bnat_lt_add_right(j, bnat_add(a, b_positive(q)), b_positive(q), smaller),
+              bnat_even_offset(a, q)
+            )
+          )
+        ),
+        fun (j : BNat, smaller : bnat_lt(j, bnat_add(bnat_add(a, b_positive(q)), b_positive(q)))) => equations(
+          j,
+          bnat_lt_bound(
+            j, bnat_add(bnat_add(a, b_positive(q)), b_positive(q)),
+            bnat_add(a, b_positive(bp_even(q))), smaller, bnat_even_offset(a, q)
+          )
+        )
+      )
+    );
+    bp_odd(q) => bnat_below_reindex_coherent(
+      U, P, step, bnat_succ(bnat_add(bnat_add(a, b_positive(q)), b_positive(q))),
+      bnat_add(a, b_positive(bp_odd(q))), bnat_odd_offset(a, q),
+      bnat_below_step(
+        U, P, step, bnat_add(bnat_add(a, b_positive(q)), b_positive(q)),
+        bpositive_advance(
+          U, BNatBelow(U, P), bnat_below_reindex(U, P), bnat_below_step(U, P, step), q,
+          bnat_add(a, b_positive(q)),
+          bpositive_advance(
+            U, BNatBelow(U, P), bnat_below_reindex(U, P), bnat_below_step(U, P, step), q, a, below
+          )
+        )
+      ),
+      bnat_below_step_coherent(
+        U, P, step, bnat_add(bnat_add(a, b_positive(q)), b_positive(q)),
+        bpositive_advance(
+          U, BNatBelow(U, P), bnat_below_reindex(U, P), bnat_below_step(U, P, step), q,
+          bnat_add(a, b_positive(q)),
+          bpositive_advance(
+            U, BNatBelow(U, P), bnat_below_reindex(U, P), bnat_below_step(U, P, step), q, a, below
+          )
+        ),
+        bpositive_below_advance_coherent(
+          U, P, step, q, bnat_add(a, b_positive(q)),
+          bpositive_advance(
+            U, BNatBelow(U, P), bnat_below_reindex(U, P), bnat_below_step(U, P, step), q, a, below
+          ),
+          bpositive_below_advance_coherent(
+            U, P, step, q, a, below, coherent,
+            fun (j : BNat, smaller : bnat_lt(j, bnat_add(a, b_positive(q)))) => equations(
+              j,
+              bnat_lt_bound(
+                j,
+                bnat_add(bnat_add(bnat_add(a, b_positive(q)), b_positive(q)), b_positive(bp_one)),
+                bnat_add(a, b_positive(bp_odd(q))),
+                bnat_lt_add_right(
+                  j, bnat_add(bnat_add(a, b_positive(q)), b_positive(q)), b_positive(bp_one),
+                  bnat_lt_add_right(j, bnat_add(a, b_positive(q)), b_positive(q), smaller)
+                ),
+                trans(
+                  sym(bnat_succ_offset(bnat_add(bnat_add(a, b_positive(q)), b_positive(q)))),
+                  bnat_odd_offset(a, q)
+                )
+              )
+            )
+          ),
+          fun (j : BNat, smaller : bnat_lt(j, bnat_add(bnat_add(a, b_positive(q)), b_positive(q)))) => equations(
+            j,
+            bnat_lt_bound(
+              j, bnat_add(bnat_add(bnat_add(a, b_positive(q)), b_positive(q)), b_positive(bp_one)),
+              bnat_add(a, b_positive(bp_odd(q))),
+              bnat_lt_add_right(
+                j, bnat_add(bnat_add(a, b_positive(q)), b_positive(q)), b_positive(bp_one), smaller
+              ),
+              trans(
+                sym(bnat_succ_offset(bnat_add(bnat_add(a, b_positive(q)), b_positive(q)))),
+                bnat_odd_offset(a, q)
+              )
+            )
+          )
+        ),
+        equations(
+          bnat_add(bnat_add(a, b_positive(q)), b_positive(q)),
+          bnat_lt_bound(
+            bnat_add(bnat_add(a, b_positive(q)), b_positive(q)),
+            bnat_succ(bnat_add(bnat_add(a, b_positive(q)), b_positive(q))),
+            bnat_add(a, b_positive(bp_odd(q))),
+            bnat_lt_succ(bnat_add(bnat_add(a, b_positive(q)), b_positive(q))), bnat_odd_offset(a, q)
+          )
+        )
+      )
+    );
+  };
+
+// The values below each n are coherent, by the strong recursion itself as
+// induction: the equation below n comes from the coherence below it.
+computable def BNatBelowInvariant(
+  U < UU0, P : BNat -> U, step : (forall n : BNat. BNatBelow(U, P, n) -> P(n)), n : BNat
+) :
+  U := BNatBelowCoherent(U, P, step, n, bnat_below(U, P, step, n));
+
+computable def bnat_recursion_equation_of_invariant(
+  U < UU0, P : BNat -> U, step : (forall n : BNat. BNatBelow(U, P, n) -> P(n)), n : BNat,
+  invariant : BNatBelowInvariant(U, P, step, n)
+) :
+  BNatRecursionEquation(U, P, step, n) := path i => step(
+    n, fun (m : BNat, smaller : bnat_lt(m, n)) => invariant(m, smaller) @ i
+  );
+
+computable def bnat_below_invariant_step(
+  U < UU0, P : BNat -> U, step : (forall n : BNat. BNatBelow(U, P, n) -> P(n)), n : BNat,
+  below : BNatBelow(U, BNatBelowInvariant(U, P, step), n)
+) :
+  BNatBelowInvariant(U, P, step, n) := match n {
+    b_zero => fun (m : BNat, smaller : bnat_lt(m, b_zero)) => absurd(bnat_lt_zero(m, smaller));
+    b_positive(p) => bpositive_below_advance_coherent(
+      U, P, step, p, b_zero, bnat_below_zero(U, P),
+      fun (m : BNat, smaller : bnat_lt(m, b_zero)) => absurd(bnat_lt_zero(m, smaller)),
+      fun (j : BNat, smaller : bnat_lt(j, b_positive(p))) => bnat_recursion_equation_of_invariant(
+        U, P, step, j, below(j, smaller)
+      )
+    );
+  };
 
 // Coherence is proved for arbitrary dependent families. No proof
 // irrelevance assumption is made about P or the result of the step.
@@ -125,19 +487,8 @@ computable def bnat_below_coherent(
   U < UU0, P : BNat -> U, step : (forall n : BNat. BNatBelow(U, P, n) -> P(n)), n : BNat
 ) :
   forall m : BNat. forall smaller : bnat_lt(m, n).
-  bnat_below(U, P, step, n)(m, smaller) = bnat_strong_recursion(U, P, step, m) := bnat_peano(
-    U, fun (n : BNat) => forall m : BNat. forall smaller : bnat_lt(m, n).
-    bnat_below(U, P, step, n)(m, smaller) = bnat_strong_recursion(U, P, step, m),
-    fun (m : BNat, smaller : bnat_lt(m, b_zero)) => absurd(bnat_lt_zero(m, smaller)),
-    fun (
-      n : BNat, ih : forall m : BNat. forall smaller : bnat_lt(m, n).
-      bnat_below(U, P, step, n)(m, smaller) = bnat_strong_recursion(U, P, step, m)
-    ) => fun (m : BNat, smaller : bnat_lt(m, bnat_succ(n))) => trans(
-      cong(
-        fun (below : BNatBelow(U, P, bnat_succ(n))) => below(m, smaller),
-        bnat_below_succ(U, P, step, n)
-      ), bnat_below_case_coherent(U, P, step, n, m, bnat_lt_succ_cases(m, n, smaller), ih)
-    ), n
+  bnat_below(U, P, step, n)(m, smaller) = bnat_strong_recursion(U, P, step, m) := bnat_strong_recursion(
+    U, BNatBelowInvariant(U, P, step), bnat_below_invariant_step(U, P, step), n
   );
 
 computable def bnat_strong_recursion_equation(
@@ -156,19 +507,6 @@ computable def bnat_lt_from_decoding(m, n : BNat, p : isLt(bnat_to_unat(m), bnat
     left yes => yes;
     right no => absurd(no(comp(fun (i : Interval) => bnat_lt_correct(m, n) @ ~i, p)));
   };
-
-computable def bnat_lt_succ(n : BNat) : bnat_lt(n, bnat_succ(n)) := bnat_lt_from_decoding(
-  n, bnat_succ(n),
-  comp(
-    fun (i : Interval) => isLt(bnat_to_unat(n), bnat_decode_succ(n) @ ~i),
-    unat_le_refl(bnat_to_unat(n))
-  )
-);
-
-computable def bpositive_pred_lt(p : BPositive) : bnat_lt(bpositive_pred(p), b_positive(p)) := comp(
-  fun (i : Interval) => bnat_lt(bpositive_pred(p), bpositive_succ_pred(p) @ i),
-  bnat_lt_succ(bpositive_pred(p))
-);
 
 computable def bnat_factorial_step(n : BNat, below : BNatBelow(U0, fun (m : BNat) => BNat, n)) :
   BNat := match n {

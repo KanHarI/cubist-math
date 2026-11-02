@@ -72,7 +72,10 @@ lands.
   weak head asked of the kernel, and the runtime goes on. Today the whole
   walk restarts. Since [#326](https://github.com/KanHarI/cubist-math/pull/326)
   the library Euclid's value forms fall back at NUM1's transports for every
-  input measured but 0, so this matters most. Readback could also give
+  input measured but 0, so this matters most. (Since 2026-11-01 they do
+  not: the recursion computes no transport, and they computed in the
+  runtime with no fallback until its removal the same day;
+  [report](../../reports/transport-free-recursion.md).) Readback could also give
   printed `!!` normal forms partly computed by the runtime (W3, if W1's
   folded tests pass and measurement shows a gain); M3 shows none, since
   the kernel computes again the data a certificate holds, and W3 is not

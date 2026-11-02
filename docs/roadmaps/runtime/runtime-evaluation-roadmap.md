@@ -194,7 +194,7 @@ samples agree on them. Times are medians on that machine, not portable
 targets. To repeat this historical behavior, use an isolated checkout of
 `b5a261c8` (or the pre-EVAL1 `fc0362d3`) and rebuild there with `make wasm`.
 Running these commands on the current sources measures the current record
-instead, version 11 since 2026-11-01, whose Euclid workloads are the
+instead, version 12 since 2026-11-01, whose Euclid workloads are the
 library's ([EVAL7](#eval7-reduce-the-algorithms-work)) and whose value forms
 are the kernel's queries' again, the runtime removed
 ([removal](#removal-of-the-runtime-evaluator-2026-11-01)):
@@ -614,6 +614,21 @@ proposition-valued restriction on the result family. Unary comparison
 evidence is used only to refute impossible negative decisions.
 
 Binary factorial uses that recursor and has checked zero/successor laws.
+
+**Transport-free recursion (2026-11-01).** Both recursions now compute
+without a transport, their statements unchanged
+([report](../../reports/transport-free-recursion.md)): the advance moves
+each value along its offset's path by a reindexing, which the Peano
+eliminator does with a cast that recurses on the bits and the strong
+recursion's callbacks with their evidence, decided on the bits; a
+callback reads the step's value at an equal index through that cast. The
+values below each bound hold every smaller value once, so a branching
+recursion shares its calls. The library's Euclid, factorial and least elements computed their
+value forms in the runtime with no fallback, until the runtime's removal
+the same day ([removal](#removal-of-the-runtime-evaluator-2026-11-01)), and the kernel's queries
+compute `euclid(7).1`, searches of 210 candidates and least elements of
+240, where K344 stopped them at 70, 30 and 64.
+
 [binary_recursion.cubist](../../../cubist-tests/binary_recursion.cubist)
 computes `0! = 1`, `5! = 120`, a data-carrying dependent witness, and digit
 counts whose recursive call halves the input. It refuses a callback at its
@@ -1326,12 +1341,16 @@ translator's runtime path and its records, the elaborator's query, the
 kernel class's handle tokens, the bridge's handle generation, the
 diagnostics only they raised (E487–E490 and E667, retired), typed readback
 W1 with its oracle, and the runtime's tests and probes are deleted. The
-outcomes that moved are the runtime's alone: `count_into(2 * 255, 0)`
-stops with K344 where it showed 510, and three stops at the runtime's
-allocation budget (E488) are now the kernel's answer, `tt`, or its guards,
-K344 and K336. Every other value form, compared with main on the demand
-marks corpus, the contracts, the docs examples and the baseline, is
-unchanged.
+outcomes that moved are the runtime's alone: `count_into(2 * 255, 0)` and
+the least divisor of 251 * 251 stop with K344 where it showed 510 and
+251, and its stops at its allocation budget (E488) are now the kernel's
+answers, as `fun_fib(22, tt)`'s 17711, or its guards, K344 and K336.
+Every other value form, compared with main on the demand marks corpus,
+the contracts, the docs examples and the baseline, is unchanged. Since the
+transport-free recursion (#346, merged the same day) the runtime computed
+the library's recursive value forms without falling back, and on large
+products much faster than the kernel's queries, which keep them now:
+`factorial(60)`'s value form takes about 4.5 s where it took 50 ms.
 
 **Where it is kept:** branch `archive/js-runtime` at
 `d875dd08b198e79e9fbb692935c4e6bd712324f5`, main after #345, with the REPL

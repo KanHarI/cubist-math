@@ -62,8 +62,9 @@ test("each workload's outcome, normalizations and comparisons are the recorded o
 });
 
 // The value form is computed by the kernel's head queries, the weak heads it
-// demands. The library Euclid's argument is a binary literal, which
-// elaboration normalizes once.
+// demands. The library's Euclid computes by nat's strong recursion, which
+// computes no transport (docs/reports/transport-free-recursion.md). Its
+// argument is a binary literal, which elaboration normalizes once.
 test("REPL evaluation and print show the value form, normalizing only the literal", async () => {
   const repl = await cold("euclid-3"), print = await cold("euclid-3-print"), normal = await cold("euclid-3-normal");
   assert.equal(repl.outcome.sha256, print.outcome.sha256);
@@ -103,10 +104,10 @@ test("REPL evaluation of !!!e normalizes once without self-comparison and agrees
 });
 
 test("the depth failures are reproduced, with the work done before them", async () => {
-  // 7! + 1 = 71 * 71: the least divisor search's 70 candidates pass the
-  // kernel's syntax depth guard, in the normal form and in the weak heads
-  // the value form asks.
-  const normal = await cold("euclid-7-prime-normal"), shown = await cold("euclid-7-prime");
+  // 251 * 251: the least divisor search's 250 candidates build a minimality
+  // certificate past the kernel's syntax depth guard, in the normal form and
+  // in the weak heads the value form asks.
+  const normal = await cold("least-divisor-251-squared-normal"), shown = await cold("least-divisor-251-squared");
   for (const [run, phase] of [[normal, "normalize"], [shown, "demand"]]) {
     assert.equal(run.outcome.code, "K344", phase);
     assert.equal(run.phases[phase].failures, 1, phase);
@@ -114,9 +115,12 @@ test("the depth failures are reproduced, with the work done before them", async 
     assert.equal(run.phases.compare, undefined, `${phase} fails before any comparison`);
   }
   // Below that depth the kernel's queries compute the library's values that
-  // the archive's unary Euclid could not: its K344 began at euclid(4).
+  // the archive's unary Euclid could not, its K344 beginning at euclid(4),
+  // and, since the recursion computes no transport, euclid(7)'s prime,
+  // whose 70 candidates passed the guard before.
   for (const [id, value] of [["euclid-4", "(5, (tt, <fun>), tt)"], ["euclid-4-prime", "5"], ["euclid-4-prime-print", "5"],
-    ["euclid-5-prime", "11"], ["euclid-4-pattern", "(5, <unevaluated>)"], ["euclid-5-prime-normal", "11"]]) {
+    ["euclid-5-prime", "11"], ["euclid-4-pattern", "(5, <unevaluated>)"], ["euclid-5-prime-normal", "11"],
+    ["euclid-7-prime", "71"], ["euclid-7-prime-normal", "71"]]) {
     const run = await cold(id);
     assert.equal(run.outcome.text, value, id);
     assert.equal(run.outcome.status, "value", id);

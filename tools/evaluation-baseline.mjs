@@ -69,16 +69,30 @@ export const fixture = new URL("tests/fixtures/evaluation-baseline.json", root);
 // version 9 (tests/fixtures/evaluation-baseline.json at main 27c0cc38). The
 // unary arithmetic workloads import unat alone; their entries are
 // unchanged.
-// Version 11 computes REPL and print value forms by the kernel's head
-// queries again: the JavaScript runtime evaluator of versions 8 to 10 was
+// Version 11 computes the library's strong and Peano recursion without
+// transports, and decides the divisor search's next distance on the bits
+// (docs/reports/transport-free-recursion.md): the Euclid and factorial
+// workloads' value forms run in the runtime with no fallback, euclid(7)'s
+// prime computes on both paths, and the depth failure is the least divisor
+// of 251 * 251, whose 250 candidates' minimality certificate passes the
+// kernel's syntax depth guard. The Fibonacci of the strong recursion
+// contracts records that a branching recursion shares its smaller values.
+// Version 10's record is at main d875dd08.
+// Version 12 computes REPL and print value forms by the kernel's head
+// queries again: the JavaScript runtime evaluator of versions 8 to 11 was
 // removed on 2026-11-01 (docs/reports/runtime-repl-evaluation.md#removal),
-// and with it the runtime phase and its counters. No outcome moves: every
-// value form a workload shows was the kernel's queries' too. The kernel's
-// head queries of the value forms the runtime computed are now counted, in
-// the demand phase.
-export const version = 11;
+// and with it the runtime phase and its counters. The kernel's head queries
+// of the value forms the runtime computed are counted in the demand phase.
+// One outcome moves: the least divisor of 251 * 251, which the runtime
+// showed, stops at the kernel's syntax depth guard in its value form too.
+// Version 11's record is at main cedbd0dc.
+export const version = 12;
 
 const euclid = "import euclid; use nat;", unary = "import unat; use unat;", circle = "import circle; use unat;";
+// The strong recursion contracts' Fibonacci, which branches: its two calls
+// share the values below them.
+const fibonacci = [euclid, ...readFileSync(new URL("tests/fixtures/contracts/strong_recursion_contracts.cubist", root), "utf8")
+  .split("\n").filter(line => !/^(#|import |use |evaluate )/.test(line))].join("\n");
 // The library's Euclid construction and its prerequisites stay fixed for
 // evaluator comparisons (library/euclid.cubist, prime_numbers.cubist,
 // divisibility.cubist): a change to their algorithm starts a new version.
@@ -99,9 +113,16 @@ const fixed = [
   { id: "euclid-4-prime", setup: euclid, entry: "evaluate euclid(4).1;" },
   { id: "euclid-4-prime-print", setup: euclid, entry: "print(evaluate(euclid(4).1));" },
   { id: "euclid-5-prime", setup: euclid, entry: "evaluate euclid(5).1;" },
-  // 7! + 1 = 71 * 71: the search's 70 candidates pass the kernel's syntax
-  // depth guard, as NUM1's strong recursion alone does at that depth.
+  // 7! + 1 = 71 * 71: the search's 70 candidates, past the kernel's syntax
+  // depth guard until version 11.
   { id: "euclid-7-prime", setup: euclid, entry: "evaluate euclid(7).1;" },
+  // 251 * 251: the search's 250 candidates. The kernel's queries meet the
+  // syntax depth guard in the minimality certificate the search builds, in
+  // the value form and the normal form alike (the runtime, until version 12,
+  // showed the value form).
+  { id: "least-divisor-251-squared", setup: euclid, entry: "evaluate least_divisor(63001, tt).1;" },
+  // A branching strong recursion, at the predecessor and its predecessor.
+  { id: "fibonacci-25", setup: fibonacci, entry: "evaluate fib(25);" },
   // Factorial, the construction's growth factor.
   { id: "factorial-4", setup: euclid, entry: "evaluate factorial(4);" },
   { id: "factorial-5-print", setup: euclid, entry: "print(evaluate(factorial(5)));" },

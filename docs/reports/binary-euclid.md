@@ -143,7 +143,11 @@ strong recursion transport along offset paths (`bpositive_advance`,
 library value form falls back to the kernel's queries after about 65,000
 runtime steps and a snapshot of about 16,140 nodes, whatever `n`. The
 kernel's queries then compute every library value form measured but
-`euclid(7)`, where the archive's stop from `euclid(4).1` on.
+`euclid(7)`, where the archive's stop from `euclid(4).1` on. (Since
+2026-11-01 neither recursion computes a transport, and the runtime
+computed every library value form measured:
+[transport-free recursion](transport-free-recursion.md). The runtime was
+removed the same day: [removal](runtime-repl-evaluation.md#removal).)
 
 **A depth limit, met by NUM1's strong recursion alone.** `7! + 1 = 71 * 71`
 takes 70 candidates, and the kernel's queries stop with K344 at the syntax
@@ -176,7 +180,10 @@ compute; `descend(0, 1000)` stops with K336. In `bnat_below_case`, the call
 at the predecessor returns under a transport,
 `comp(fun (i : Interval) => P(same @ ~i), step(n, below))`, so each level
 presumably nests one more. Lifting the limit is NUM1's or the evaluator's
-work (EVAL4's explicit stack), not the search's.
+work (EVAL4's explicit stack), not the search's. (The search's distance
+proof, threaded through each candidate, grew too; since 2026-11-01 both
+are gone and the kernel's queries compute `euclid(7).1`:
+[transport-free recursion](transport-free-recursion.md).)
 
 **The search's own certificate is a function, normalized under its
 binders.** `!!euclid(n)` keeps it named, but `!!least_divisor(m, …)`

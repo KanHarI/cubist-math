@@ -41,6 +41,11 @@ evaluate least_element(at_least(0), at_least_decide(0), 7, tt).1 expecting 0;
 evaluate least_element(square_at_least(50), square_at_least_decide(50), 10, tt).1 expecting 8;
 # test(least_elements.far_witness)
 evaluate least_element(at_least(60), at_least_decide(60), 1000000, tt).1 expecting 60;
+// Past 63 candidates, where the kernel's queries stopped at their syntax
+// depth guard (K344) while Peano recursion transported along its binary
+// offsets (docs/reports/transport-free-recursion.md).
+# test(least_elements.far_least)
+evaluate least_element(at_least(200), at_least_decide(200), 1000000, tt).1 expecting 200;
 
 // The certificate: P holds at the least element, and the minimality
 // certificate is a function, observed by its weak head.

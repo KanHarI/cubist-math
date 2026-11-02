@@ -81,6 +81,138 @@ computable def bnat_decide(a, b : BNat) :
     right no => right(fun (p : a = b) => no(bnat_path_equal(a, b, p)));
   };
 
+// Equal bits from a path, decided on the bits: the path only refutes.
+computable def bnat_equal_decided(a, b : BNat, p : a = b) :
+  bnat_equal(a, b) := match bordering_equal_decide(bnat_compare(a, b)) return bnat_equal(a, b) {
+    left e => e;
+    right no => absurd(no(bnat_path_equal(a, b, p)));
+  };
+
+// Equal bits the other way round, decided on the bits.
+computable def bnat_equal_symmetric(a, b : BNat, e : bnat_equal(a, b)) :
+  bnat_equal(b, a) := bnat_equal_decided(b, a, sym(bnat_equal_path(a, b, e)));
+
+// Equal bits as a cast in any family. It recurses on the bits of both
+// numbers until they are one numeral and then returns the value as it is,
+// so reading a value at an equal index transports nothing. The evidence
+// only refutes the branches where the bits differ.
+computable def bpositive_equal_cast(
+  U < UU0, Q : BPositive -> U, a, b : BPositive, e : BOrderingEqual(bpositive_compare(a, b)),
+  x : Q(a)
+) :
+  Q(b) := match a {
+    bp_one => match b {
+      bp_one => x;
+      bp_even(q) => absurd(e);
+      bp_odd(q) => absurd(e);
+    };
+    bp_even(p) => match b {
+      bp_one => absurd(e);
+      bp_even(q) => bpositive_equal_cast(U, fun (r : BPositive) => Q(bp_even(r)), p, q, e, x);
+      bp_odd(q) => absurd(bnat_even_odd_not_equal(bpositive_compare(p, q), e));
+    };
+    bp_odd(p) => match b {
+      bp_one => absurd(e);
+      bp_even(q) => absurd(bnat_odd_even_not_equal(bpositive_compare(p, q), e));
+      bp_odd(q) => bpositive_equal_cast(U, fun (r : BPositive) => Q(bp_odd(r)), p, q, e, x);
+    };
+  };
+
+computable def bnat_equal_cast(U < UU0, Q : BNat -> U, a, b : BNat, e : bnat_equal(a, b), x : Q(a)) :
+  Q(b) := match a, b {
+    b_zero, b_zero => x;
+    b_zero, b_positive(q) => absurd(e);
+    b_positive(p), b_zero => absurd(e);
+    b_positive(p),
+    b_positive(q) => bpositive_equal_cast(U, fun (r : BPositive) => Q(b_positive(r)), p, q, e, x);
+  };
+
+// The cast agrees with the path between the numbers: as a path of total
+// values, and on a dependent function's values.
+computable def bpositive_equal_cast_total(
+  U < UU0, Q : BPositive -> U, a, b : BPositive, e : BOrderingEqual(bpositive_compare(a, b)),
+  x : Q(a)
+) :
+  typed(exists r : BPositive. Q(r), (a, x)) = (b, bpositive_equal_cast(U, Q, a, b, e, x)) := match a {
+    bp_one => match b {
+      bp_one => refl(typed(exists r : BPositive. Q(r), (bp_one, x)));
+      bp_even(q) => absurd(e);
+      bp_odd(q) => absurd(e);
+    };
+    bp_even(p) => match b {
+      bp_one => absurd(e);
+      bp_even(q) => cong(
+        fun (z : exists r : BPositive. Q(bp_even(r))) => typed(
+          exists r : BPositive. Q(r), (bp_even(z.1), z.2)
+        ), bpositive_equal_cast_total(U, fun (r : BPositive) => Q(bp_even(r)), p, q, e, x)
+      );
+      bp_odd(q) => absurd(bnat_even_odd_not_equal(bpositive_compare(p, q), e));
+    };
+    bp_odd(p) => match b {
+      bp_one => absurd(e);
+      bp_even(q) => absurd(bnat_odd_even_not_equal(bpositive_compare(p, q), e));
+      bp_odd(q) => cong(
+        fun (z : exists r : BPositive. Q(bp_odd(r))) => typed(
+          exists r : BPositive. Q(r), (bp_odd(z.1), z.2)
+        ), bpositive_equal_cast_total(U, fun (r : BPositive) => Q(bp_odd(r)), p, q, e, x)
+      );
+    };
+  };
+
+computable def bnat_equal_cast_total(
+  U < UU0, Q : BNat -> U, a, b : BNat, e : bnat_equal(a, b), x : Q(a)
+) :
+  typed(exists n : BNat. Q(n), (a, x)) = (b, bnat_equal_cast(U, Q, a, b, e, x)) := match a, b {
+    b_zero, b_zero => refl(typed(exists n : BNat. Q(n), (b_zero, x)));
+    b_zero, b_positive(q) => absurd(e);
+    b_positive(p), b_zero => absurd(e);
+    b_positive(p),
+    b_positive(q) => cong(
+      fun (z : exists r : BPositive. Q(b_positive(r))) => typed(
+        exists n : BNat. Q(n), (b_positive(z.1), z.2)
+      ), bpositive_equal_cast_total(U, fun (r : BPositive) => Q(b_positive(r)), p, q, e, x)
+    );
+  };
+
+computable def bpositive_equal_cast_apply(
+  U < UU0, Q : BPositive -> U, f : (forall r : BPositive. Q(r)), a, b : BPositive,
+  e : BOrderingEqual(bpositive_compare(a, b))
+) :
+  bpositive_equal_cast(U, Q, a, b, e, f(a)) = f(b) := match a {
+    bp_one => match b {
+      bp_one => refl(f(bp_one));
+      bp_even(q) => absurd(e);
+      bp_odd(q) => absurd(e);
+    };
+    bp_even(p) => match b {
+      bp_one => absurd(e);
+      bp_even(q) => bpositive_equal_cast_apply(
+        U, fun (r : BPositive) => Q(bp_even(r)), fun (r : BPositive) => f(bp_even(r)), p, q, e
+      );
+      bp_odd(q) => absurd(bnat_even_odd_not_equal(bpositive_compare(p, q), e));
+    };
+    bp_odd(p) => match b {
+      bp_one => absurd(e);
+      bp_even(q) => absurd(bnat_odd_even_not_equal(bpositive_compare(p, q), e));
+      bp_odd(q) => bpositive_equal_cast_apply(
+        U, fun (r : BPositive) => Q(bp_odd(r)), fun (r : BPositive) => f(bp_odd(r)), p, q, e
+      );
+    };
+  };
+
+computable def bnat_equal_cast_apply(
+  U < UU0, Q : BNat -> U, f : (forall n : BNat. Q(n)), a, b : BNat, e : bnat_equal(a, b)
+) :
+  bnat_equal_cast(U, Q, a, b, e, f(a)) = f(b) := match a, b {
+    b_zero, b_zero => refl(f(b_zero));
+    b_zero, b_positive(q) => absurd(e);
+    b_positive(p), b_zero => absurd(e);
+    b_positive(p),
+    b_positive(q) => bpositive_equal_cast_apply(
+      U, fun (r : BPositive) => Q(b_positive(r)), fun (r : BPositive) => f(b_positive(r)), p, q, e
+    );
+  };
+
 // Setness uses only the bitwise decision. Quotient computations can force
 // this proof without building a unary value of the represented magnitude.
 computable def bnat_is_set : IsSet(U0, BNat) := hedberg(U0, BNat, bnat_decide);
