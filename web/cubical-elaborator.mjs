@@ -394,7 +394,7 @@ export class NativeCubicalElaborator {
     const scope = this.refused(() => this.scopeOf(context, dimensions));
     let raw, type;
     try { raw = this.syntax.encode(term, dimensions, scope); type = expected && this.syntax.encode(expected, dimensions, scope); }
-    catch (error) { if (!error.unbound) throw error; this.refused(() => { throw error; }); }
+    catch (error) { throw error.unbound ? this.refusal(error) : error; }
     const judgement = this.refused(() => this.instructed(graph, () => type ? driver.checkIn(raw, type, scope) : driver.derive(raw, scope)));
     const renamings = [];
     for (const [symbol, entry] of scope) {
@@ -409,10 +409,11 @@ export class NativeCubicalElaborator {
   // Anything else is the instruction kernel's refusal.
   refused(derivation) {
     try { return derivation(); }
-    catch (error) {
-      if (error instanceof KernelError && speculativeFailure(error.kind)) throw error;
-      throw Object.assign(new KernelError(`Instruction kernel: ${error.message}`, error.kind ?? "other"), { mismatch: error.mismatch });
-    }
+    catch (error) { throw this.refusal(error); }
+  }
+  refusal(error) {
+    if (error instanceof KernelError && speculativeFailure(error.kind)) return error;
+    return Object.assign(new KernelError(`Instruction kernel: ${error.message}`, error.kind ?? "other"), { mismatch: error.mismatch });
   }
   // The scope of a context, the assumptions and then `local`'s
   // [name, type] pairs (context): made before any syntax in it is encoded,
