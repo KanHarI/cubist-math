@@ -122,8 +122,11 @@ NT1–NT5). That covers:
 - the binary and radix numerals (NT4).
 
 20 modules have left the archive: `euclid` (NT2) and, on 2026-10-30, the
-other 19 (NT5). Whether the counting results of the same catalog area are
-included is open.
+other 19 (NT5). The counting results of the same catalog area joined them
+by the user's decision of 2026-11-01 (NT6): rebuilt in the library on
+2026-11-02; the archive keeps the unary copies its linear algebra and
+Galois theory use until R3 decides those areas, and four counting modules
+are deleted.
 
 **Governing requirement.** Computability is expressible and preserved.
 Every applicable release extends the canonicity fixture; results with no
@@ -900,7 +903,7 @@ specific slices scheduled below; they are not blanket language release gates:
 
 | Retained IDs | Deferred work |
 | --- | --- |
-| B3.1–B3.6 | Foundations beyond the library's, finite counting, order, homotopy types and groups; the integers' order (the reals roadmap's R1) is B3 work |
+| B3.1–B3.6 | Foundations beyond the library's, order, homotopy types and groups; finite counting was rebuilt on 2026-11-02 (NT6); the integers' order (the reals roadmap's R1) is B3 work |
 | B4.1–B4.4 | Linear algebra, polynomials and Galois; the rationals' order and canonical form (R1) and the ordered-field interface (R2) are B4 work |
 | B5.1–B5.2 | Cauchy/Dedekind reals and analysis: the reals roadmap's R3 and R4, with the [dependencies corrected on 2026-09-28](mathematics/reals-roadmap.md#dependencies-and-acceptance) |
 | B5.3 | Full `initial CwF` development and interpreter; L5.1 instead requires a smaller H3 fixture first |
@@ -1115,6 +1118,13 @@ Each step lands in focused PRs under the review rule above.
          `radix_*`; their consumers moved to the library or to
          self-contained sources, one unused import removed from
          `finite_cardinalities`, and the catalog's module table updated.
+      6. NT6: the counting results, by the user's decision of 2026-11-01.
+         **Done** on 2026-11-02: uniqueness of finite cardinality, counting
+         functions and permutations, Rijke's binomial types with Pascal's
+         rule, and finite choice with fibered counting rebuilt in the
+         library; the archive keeps, unchanged, the unary pieces its
+         linear algebra, Galois theory and S3 use, until R3 decides those
+         areas, and deletes the binomial modules and unused declarations.
 
       This depends only on NUM1 and can proceed alongside 3 and 4.
 3. **Alongside the runtime phase: K2.5's `axiom` definitions**, the
@@ -1268,8 +1278,8 @@ scheduled packages from advancing.
    - then B8, the default `Z`/`Q`, #289's runtime in the REPLs, typed
      readback and EVAL7;
    - all of the archive's number theory moves to the library and leaves the
-     archive (NT1–NT5, with EVAL7 as NT2); whether counting is included is
-     open;
+     archive (NT1–NT5, with EVAL7 as NT2); counting is included, by the
+     user's decision of 2026-11-01 (NT6, done on 2026-11-02);
    - K2.5's `axiom` steps 1–4 run alongside;
    - simplicial ST0 and ST2 follow the phase, ahead of the categorical
      progression.

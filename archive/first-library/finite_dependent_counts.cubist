@@ -1,3 +1,7 @@
+// Finite choice and fibered counts over this archive's unary Fin, kept for
+// its embedding counts until R3 decides the Galois area. The library's
+// finite_choice rebuilds them
+// (docs/roadmaps/archive-retirement.md#counting-in-the-library).
 import unat;
 import finite_cardinalities;
 import function_counting;

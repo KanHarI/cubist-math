@@ -1,3 +1,7 @@
+// Cardinalities over this archive's unary Fin, kept for its linear algebra
+// and Galois theory until R3 decides those areas. The library's
+// finite_cardinality rebuilds them
+// (docs/roadmaps/archive-retirement.md#counting-in-the-library).
 import unat;
 import finite_cancellation;
 import surjections;

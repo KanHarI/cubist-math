@@ -82,29 +82,27 @@ def nonzero_nat_successor(n : UNat, nonzero : (n = 0) -> Void) : exists k : UNat
   (nonzero);
 }
 
-def positive_product_zero(k, q : UNat, same : multiply_count(succ(k), q) = 0) : q = 0 {
-  exact induction q as r return (multiply_count(succ(k), r) = 0) -> (r = 0) {
-    zero => fun (equal : multiply_count(succ(k), 0) = 0) => refl(0);
-    succ previous => fun (equal : multiply_count(succ(k), succ(r)) = 0) => absurd(
-      unat_zero_ne_succ(
-        add_count(k, multiply_count(succ(k), r)), trans(sym(equal), unat_mul_succ(succ(k), r))
-      )
+def positive_product_zero(k, q : UNat, same : mul(succ(k), q) = 0) : q = 0 {
+  exact induction q as r return (mul(succ(k), r) = 0) -> (r = 0) {
+    zero => fun (equal : mul(succ(k), 0) = 0) => refl(0);
+    succ previous => fun (equal : mul(succ(k), succ(r)) = 0) => absurd(
+      unat_zero_ne_succ(add_count(k, mul(succ(k), r)), trans(sym(equal), unat_mul_succ(succ(k), r)))
     );
   }
   (same);
 }
 
-def positive_product_unit(k, m : UNat, same : multiply_count(succ(k), m) = succ(k)) : m = 1 {
-  exact induction m as q return (multiply_count(succ(k), q) = succ(k)) -> (q = 1) {
-    zero => fun (equal : multiply_count(succ(k), 0) = succ(k)) => absurd(
+def positive_product_unit(k, m : UNat, same : mul(succ(k), m) = succ(k)) : m = 1 {
+  exact induction m as q return (mul(succ(k), q) = succ(k)) -> (q = 1) {
+    zero => fun (equal : mul(succ(k), 0) = succ(k)) => absurd(
       unat_zero_ne_succ(k, trans(sym(unat_mul_zero(succ(k))), equal))
     );
-    succ previous => fun (equal : multiply_count(succ(k), succ(q)) = succ(k)) => cong(
+    succ previous => fun (equal : mul(succ(k), succ(q)) = succ(k)) => cong(
       succ,
       positive_product_zero(
         k, q,
         unat_add_cancel(
-          succ(k), multiply_count(succ(k), q), 0,
+          succ(k), mul(succ(k), q), 0,
           trans(sym(unat_mul_succ(succ(k), q)), trans(equal, sym(unat_add_zero(succ(k)))))
         )
       )

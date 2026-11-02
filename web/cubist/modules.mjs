@@ -194,14 +194,10 @@ export const archiveModules = [
   "finite_decisions",
   "finite",
   "function_counting",
-  "binomial",
   "finite_cancellation",
   "bijection_equality",
   "permutations",
   "truncation",
-  "binomial_types",
-  "binomial_pascal",
-  "binomial_counting",
   "paths_",
   "groups",
   "group_universes",
@@ -361,8 +357,8 @@ export const archiveModules = [
 // archive module of the same name. The first, nat, is the natural numbers,
 // which a module imports to use them.
 export const libraryModules = ["nat", "unat", "bnat", "bnat_equality", "bnat_notation", "bnat_unary", "bnat_arithmetic", "bnat_order", "semirings", "unat_models", "bnat_semiring", "bnat_models", "bnat_transport", "bnat_peano", "bnat_recursion", "bnat_order_laws", "bnat_division", "divisibility", "prime_numbers", "euclid", "least_elements", "unat_least_elements", "radix_numerals", "radix_operations", "radix_conversion", "radix_factorials", "classical_axioms", "universe_automorphisms", "hlevels",
-  "h1_truncation", "h1_classical", "contractible_maps", "univalence", "universe_smallness", "propositions",
-  "finite_sets", "binary", "powersets", "continuum_hypothesis", "continuum_classical", "continuum_axioms", "lists", "lexemes", "quotients", "algebra", "ring_numerals", "ordered_algebra", "differences", "binary_integers", "integers", "fractions", "binary_rationals", "rationals", "squares"];
+  "h1_truncation", "h1_classical", "contractible_maps", "type_equivalences", "univalence", "universe_smallness", "propositions",
+  "finite_sets", "finite_cardinality", "finite_arithmetic", "finite_functions", "finite_permutations", "finite_choice", "binary", "powersets", "binomial_types", "continuum_hypothesis", "continuum_classical", "continuum_axioms", "lists", "lexemes", "quotients", "algebra", "ring_numerals", "ordered_algebra", "differences", "binary_integers", "integers", "fractions", "binary_rationals", "rationals", "squares"];
 
 // The Cubist sources the test suite checks (cubist-tests/), each a module the
 // workspace opens as proof.html?proof=NAME. tests/module-resolution.test.mjs
@@ -381,7 +377,7 @@ export const cubistTestModules = [
   "inductive_no_marker", "inductive_path_lambda", "inductive_projections", "inductive_trunc_minus_one",
   "inductive_inspection", "inductive_inspection_names", "inductive_generated_names",
   "inductive_printed_forms", "inductive_assumptions", "inductive_one_parameter_name", "computability",
-  "computability_evaluation", "evaluate_patterns", "truncation_readout", "box_notation", "square_constructions", "computability_unfolding", "induction_printed",
+  "computability_evaluation", "evaluate_patterns", "truncation_readout", "counting_witnesses", "box_notation", "square_constructions", "computability_unfolding", "induction_printed",
   "ergonomics_rewrite_obligations", "ergonomics_simp_rejections", "ergonomics_simpa_reconstruction",
   "ergonomics_type_transport_rejections", "ergonomics_simp_child_order",
   "ergonomics_simp_incompatible_candidate", "ergonomics_grouped_binder_shadowing",

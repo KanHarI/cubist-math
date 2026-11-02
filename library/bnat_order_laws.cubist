@@ -294,3 +294,112 @@ computable def bnat_add_lt(a, b, c, d : BNat, ab : bnat_lt(a, b), cd : bnat_lt(c
       )
     )
   );
+
+// A sum is at least its first summand, and above what its first summand is
+// above.
+computable def bnat_le_add_self(a, b : BNat) : bnat_le(a, bnat_add(a, b)) := bnat_le_from_decoding(
+  a, bnat_add(a, b),
+  comp(
+    fun (i : Interval) => bnat_to_unat(a) <= (bnat_decode_add(a, b) @ ~i),
+    unat_le_add_right(bnat_to_unat(a), bnat_to_unat(b))
+  )
+);
+
+computable def bnat_lt_add_bound(i, a, b : BNat, smaller : bnat_lt(i, a)) :
+  bnat_lt(i, bnat_add(a, b)) := bnat_lt_from_decoding(
+    i, bnat_add(a, b),
+    comp(
+      fun (t : Interval) => bnat_to_unat(i) < (bnat_decode_add(a, b) @ ~t),
+      unat_le_trans(
+        succ(bnat_to_unat(i)), bnat_to_unat(a), bnat_to_unat(a) + bnat_to_unat(b),
+        bnat_lt_decode(i, a, smaller), unat_le_add_right(bnat_to_unat(a), bnat_to_unat(b))
+      )
+    )
+  );
+
+// Adding on the left keeps strict order: k + a < k + b.
+computable def bnat_add_lt_left(k, a, b : BNat, smaller : bnat_lt(a, b)) :
+  bnat_lt(bnat_add(k, a), bnat_add(k, b)) := bnat_lt_from_decoding(
+    bnat_add(k, a), bnat_add(k, b),
+    comp(
+      fun (t : Interval) => (bnat_decode_add(k, a) @ ~t) < (bnat_decode_add(k, b) @ ~t),
+      comp(
+        fun (t : Interval) => (unat_add_succ(bnat_to_unat(k), bnat_to_unat(a)) @ t) <= bnat_to_unat(
+          k
+        ) + bnat_to_unat(b),
+        unat_le_add(
+          bnat_to_unat(k), bnat_to_unat(k), succ(bnat_to_unat(a)), bnat_to_unat(b),
+          unat_le_refl(bnat_to_unat(k)), bnat_lt_decode(a, b, smaller)
+        )
+      )
+    )
+  );
+
+// Division's bounds: a value q * b + r below a * b has q below a, and
+// i * b + j is below a * b for i below a and j below b.
+computable def unat_quotient_below(q, b, r, a : UNat, smaller : q * b + r < a * b) :
+  q < a := match unat_le_total(a, q) return (q < a) {
+    left above => absurd(
+      unat_lt_le_absurd(
+        q * b + r, a * b, smaller,
+        unat_le_trans(
+          a * b, q * b, q * b + r, unat_le_mul(a, q, b, b, above, unat_le_refl(b)),
+          unat_le_add_right(q * b, r)
+        )
+      )
+    );
+    right below => below;
+  };
+
+computable def unat_mul_add_lt(i, a, j, b : UNat, ia : i < a, jb : j < b) :
+  i * b + j < a * b := comp(
+    fun (t : Interval) => (unat_add_succ(i * b, j) @ t) <= a * b,
+    unat_le_trans(
+      i * b + succ(j), i * b + b, a * b,
+      unat_le_add(i * b, i * b, succ(j), b, unat_le_refl(i * b), jb),
+      comp(
+        fun (t : Interval) => (unat_add_comm(b, i * b) @ t) <= a * b,
+        unat_le_mul(succ(i), a, b, b, ia, unat_le_refl(b))
+      )
+    )
+  );
+
+computable def bnat_decode_mul_add(q, b, r : BNat) :
+  bnat_to_unat(bnat_add(bnat_mul(q, b), r)) = bnat_to_unat(q) * bnat_to_unat(b) + bnat_to_unat(r) := trans(
+    bnat_decode_add(bnat_mul(q, b), r),
+    cong(fun (x : UNat) => x + bnat_to_unat(r), bnat_decode_mul(q, b))
+  );
+
+computable def bnat_quotient_below(
+  q, b, r, a : BNat, smaller : bnat_lt(bnat_add(bnat_mul(q, b), r), bnat_mul(a, b))
+) :
+  bnat_lt(q, a) := bnat_lt_from_decoding(
+    q, a,
+    unat_quotient_below(
+      bnat_to_unat(q), bnat_to_unat(b), bnat_to_unat(r), bnat_to_unat(a),
+      comp(
+        fun (t : Interval) => (bnat_decode_mul_add(q, b, r) @ t) < (bnat_decode_mul(a, b) @ t),
+        bnat_lt_decode(bnat_add(bnat_mul(q, b), r), bnat_mul(a, b), smaller)
+      )
+    )
+  );
+
+computable def bnat_mul_add_lt(i, a, j, b : BNat, ia : bnat_lt(i, a), jb : bnat_lt(j, b)) :
+  bnat_lt(bnat_add(bnat_mul(i, b), j), bnat_mul(a, b)) := bnat_lt_from_decoding(
+    bnat_add(bnat_mul(i, b), j), bnat_mul(a, b),
+    comp(
+      fun (t : Interval) => (bnat_decode_mul_add(i, b, j) @ ~t) < (bnat_decode_mul(a, b) @ ~t),
+      unat_mul_add_lt(
+        bnat_to_unat(i), bnat_to_unat(a), bnat_to_unat(j), bnat_to_unat(b),
+        bnat_lt_decode(i, a, ia), bnat_lt_decode(j, b, jb)
+      )
+    )
+  );
+
+// The comparison's own evidence that a is below b, from any: a bound built
+// this way holds no proof term, and for closed numbers it is tt.
+computable def bnat_lt_by_comparison(a, b : BNat, smaller : bnat_lt(a, b)) :
+  bnat_lt(a, b) := match bnat_lt_decide(a, b) return bnat_lt(a, b) {
+    left yes => yes;
+    right no => absurd(no(smaller));
+  };

@@ -145,15 +145,11 @@ def curry_linear_iso(K : AlgebraicField, I, J : U0, V : VectorSpace(K)) :
 }
 
 def coordinate_product_iso(K : AlgebraicField, n, m : UNat) :
-  LinearIso(
-    K, CoordinateSpace(K, multiply_count(n, m)), FunctionSpace(K, Fin(n), CoordinateSpace(K, m))
-  ) {
+  LinearIso(K, CoordinateSpace(K, mul(n, m)), FunctionSpace(K, Fin(n), CoordinateSpace(K, m))) {
   exact linear_iso_compose(
-    K, CoordinateSpace(K, multiply_count(n, m)),
-    FunctionSpace(K, Fin(n) and Fin(m), ScalarSpace(K)),
+    K, CoordinateSpace(K, mul(n, m)), FunctionSpace(K, Fin(n) and Fin(m), ScalarSpace(K)),
     FunctionSpace(K, Fin(n), CoordinateSpace(K, m)),
-    reindex_linear_iso(
-      K, Fin(multiply_count(n, m)), Fin(n) and Fin(m), ScalarSpace(K), fin_product(n, m)
-    ), curry_linear_iso(K, Fin(n), Fin(m), ScalarSpace(K))
+    reindex_linear_iso(K, Fin(mul(n, m)), Fin(n) and Fin(m), ScalarSpace(K), fin_product(n, m)),
+    curry_linear_iso(K, Fin(n), Fin(m), ScalarSpace(K))
   );
 }

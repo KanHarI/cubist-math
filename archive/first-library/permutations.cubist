@@ -1,3 +1,8 @@
+// Permutations of this archive's unary Fin, kept for S3's six elements
+// (non_normal_subgroup) until R3 decides the Groups area. The library's
+// finite_permutations counts self-equivalences; the archive's counts of
+// its equivalence type were deleted on 2026-11-02
+// (docs/roadmaps/archive-retirement.md#counting-in-the-library).
 import unat;
 import finite_cancellation;
 import bijection_equality;
@@ -199,22 +204,4 @@ def finite_permutation_count(n : UNat) :=
 
 def three_permutations : Bijection(Permutations(3), Fin(6)) {
   exact finite_permutation_count(3);
-}
-
-// Count the library's full equivalence type, including its coherence field.
-def finite_equivalence_count(k : UNat) :
-  Bijection(Equiv(U0, Fin(k), Fin(k)), Fin(factorial_count(k))) {
-  exact compose_bijection(
-    Equiv(U0, Fin(k), Fin(k)), Permutations(k), Fin(factorial_count(k)),
-    equivalences_are_bijections(Fin(k), Fin(k), fin_is_set(k), fin_is_set(k)),
-    finite_permutation_count(k)
-  );
-}
-
-def finite_permutation_equivalence(k : UNat) :
-  Equiv(U0, Equiv(U0, Fin(k), Fin(k)), Fin(factorial_count(k))) {
-  exact bijection_equiv(
-    Equiv(U0, Fin(k), Fin(k)), Fin(factorial_count(k)), fin_is_set(factorial_count(k)),
-    finite_equivalence_count(k)
-  );
 }

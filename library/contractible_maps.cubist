@@ -146,3 +146,50 @@ computable def inverse_equiv(
   ret : (forall a : A. g(f(a)) = a)
 ) :
   ContrEquiv(U, A, B) := (f, inverse_contractible_map(U, A, B, f, g, sec, ret));
+
+// The inverse of an equivalence is an equivalence, with the inverse laws
+// exchanged.
+computable def equiv_symm(U < UU0, A, B : U, e : ContrEquiv(U, A, B)) :
+  ContrEquiv(U, B, A) := inverse_equiv(
+    U, B, A, fun (y : B) => equiv_inverse(U, A, B, e, y), e.1,
+    fun (x : A) => equiv_inverse_retraction(U, A, B, e, x),
+    fun (y : B) => equiv_inverse_section(U, A, B, e, y)
+  );
+
+// Equivalences compose: first e, then d. The inverse is the composite of
+// the inverses, in the other order.
+computable def equiv_compose(U < UU0, A, B, C : U, e : ContrEquiv(U, A, B), d : ContrEquiv(U, B, C)) :
+  ContrEquiv(U, A, C) := inverse_equiv(
+    U, A, C, fun (x : A) => d.1(e.1(x)),
+    fun (z : C) => equiv_inverse(U, A, B, e, equiv_inverse(U, B, C, d, z)),
+    fun (z : C) => trans(
+      cong(d.1, equiv_inverse_section(U, A, B, e, equiv_inverse(U, B, C, d, z))),
+      equiv_inverse_section(U, B, C, d, z)
+    ),
+    fun (x : A) => trans(
+      cong(
+        fun (y : B) => equiv_inverse(U, A, B, e, y), equiv_inverse_retraction(U, B, C, d, e.1(x))
+      ), equiv_inverse_retraction(U, A, B, e, x)
+    )
+  );
+
+// Equivalences with the same function at every point are equal: a function's
+// fibers are contractible in at most one way.
+computable def equiv_path(
+  U < UU0, A, B : U, e, d : ContrEquiv(U, A, B), same : forall x : A. e.1(x) = d.1(x)
+) :
+  e = d := subtype_injective(
+    U, A -> B, fun (f : A -> B) => IsContrMap(U, A, B, f),
+    fun (f : A -> B) => pi_is_prop(
+      U, B, fun (y : B) => IsContr(U, Fiber(U, A, B, f, y)),
+      fun (y : B) => is_contr_is_prop(U, Fiber(U, A, B, f, y))
+    ), e, d, path i => fun (x : A) => same(x) @ i
+  );
+
+// Propositions that imply each other are equivalent.
+computable def prop_equiv(
+  U < UU0, P, Q : U, prop_p : IsProp(U, P), prop_q : IsProp(U, Q), f : P -> Q, g : Q -> P
+) :
+  ContrEquiv(U, P, Q) := inverse_equiv(
+    U, P, Q, f, g, fun (q : Q) => prop_q(f(g(q)), q), fun (p : P) => prop_p(g(f(p)), p)
+  );

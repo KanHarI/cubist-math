@@ -1,0 +1,176 @@
+// Sums and products of finite types, by arithmetic on the numbers of their
+// elements. Fin(a) or Fin(b) is equivalent to Fin(a + b), with the second
+// summand's j at a + j, and k at or above a back at k - a; Fin(a) and
+// Fin(b) is equivalent to Fin(a * b), with the pair (i, j) at i * b + j,
+// and k back at its quotient and remainder by b. No map recurses on a
+// size, so finite types are closed under sums and products, with the sizes
+// adding and multiplying, at the cost of a few binary operations.
+import finite_cardinality;
+import bnat_division;
+import nat;
+use nat;
+
+computable def fin_sum_in(a, b : Nat, x : Fin(a) or Fin(b)) :
+  Fin(a + b) := match x return Fin(a + b) {
+    left i => (i.1, bnat_lt_add_bound(i.1, a, b, i.2));
+    right j => (a + j.1, bnat_add_lt_left(a, j.1, b, j.2));
+  };
+
+// At or above a, the number less a is below b.
+computable def fin_sum_rest_bound(a, b : Nat, k : Fin(a + b), not_below : (k.1 < a) -> Void) :
+  bnat_sub(k.1, a) < b := bnat_lt_add_cancel(
+    a, bnat_sub(k.1, a), b,
+    comp(
+      fun (i : Interval) => (bnat_add_sub(k.1, a, bnat_le_of_not_lt(k.1, a, not_below)) @ ~i) < a + b,
+      k.2
+    )
+  );
+
+// The decision is an argument, so that the laws below can take its two
+// cases.
+computable def fin_sum_out_by(a, b : Nat, k : Fin(a + b), d : Decidable(U0, k.1 < a)) :
+  Fin(a) or Fin(b) := match d return (Fin(a) or Fin(b)) {
+    left below => left((k.1, below));
+    right not_below => right((bnat_sub(k.1, a), fin_sum_rest_bound(a, b, k, not_below)));
+  };
+
+computable def fin_sum_out(a, b : Nat, k : Fin(a + b)) :
+  Fin(a) or Fin(b) := fin_sum_out_by(a, b, k, bnat_lt_decide(k.1, a));
+
+computable def fin_sum_in_out(a, b : Nat, k : Fin(a + b), d : Decidable(U0, k.1 < a)) :
+  fin_sum_in(a, b, fin_sum_out_by(a, b, k, d)) = k := match d as c return (
+    fin_sum_in(a, b, fin_sum_out_by(a, b, k, c)) = k
+  ) {
+    left below => fin_path(a + b, fin_sum_in(a, b, left((k.1, below))), k, refl(k.1));
+    right not_below => fin_path(
+      a + b, fin_sum_in(a, b, right((bnat_sub(k.1, a), fin_sum_rest_bound(a, b, k, not_below)))), k,
+      bnat_add_sub(k.1, a, bnat_le_of_not_lt(k.1, a, not_below))
+    );
+  };
+
+computable def fin_sum_out_left(a, b : Nat, i : Fin(a), d : Decidable(U0, i.1 < a)) :
+  fin_sum_out_by(a, b, fin_sum_in(a, b, left(i)), d) = left(i) := match d as c return (
+    fin_sum_out_by(a, b, fin_sum_in(a, b, left(i)), c) = typed(Fin(a) or Fin(b), left(i))
+  ) {
+    left below => cong(
+      fun (z : Fin(a)) => typed(Fin(a) or Fin(b), left(z)), fin_path(a, (i.1, below), i, refl(i.1))
+    );
+    right not_below => absurd(not_below(i.2));
+  };
+
+computable def fin_sum_out_right(a, b : Nat, j : Fin(b), d : Decidable(U0, a + j.1 < a)) :
+  fin_sum_out_by(a, b, fin_sum_in(a, b, right(j)), d) = right(j) := match d as c return (
+    fin_sum_out_by(a, b, fin_sum_in(a, b, right(j)), c) = typed(Fin(a) or Fin(b), right(j))
+  ) {
+    left below => absurd(bnat_lt_le_absurd(a + j.1, a, below, bnat_le_add_self(a, j.1)));
+    right not_below => cong(
+      fun (z : Fin(b)) => typed(Fin(a) or Fin(b), right(z)),
+      fin_path(
+        b, (bnat_sub(a + j.1, a), fin_sum_rest_bound(a, b, fin_sum_in(a, b, right(j)), not_below)),
+        j,
+        nat_add_cancel(
+          a, bnat_sub(a + j.1, a), j.1, bnat_add_sub(a + j.1, a, bnat_le_add_self(a, j.1))
+        )
+      )
+    );
+  };
+
+computable def fin_sum(a, b : Nat) : ContrEquiv(U0, Fin(a) or Fin(b), Fin(a + b)) := inverse_equiv(
+  U0, Fin(a) or Fin(b), Fin(a + b), fun (x : Fin(a) or Fin(b)) => fin_sum_in(a, b, x),
+  fun (k : Fin(a + b)) => fin_sum_out(a, b, k),
+  fun (k : Fin(a + b)) => fin_sum_in_out(a, b, k, bnat_lt_decide(k.1, a)),
+  fun (x : Fin(a) or Fin(b)) => match x as z return (fin_sum_out(a, b, fin_sum_in(a, b, z)) = z) {
+    left i => fin_sum_out_left(a, b, i, bnat_lt_decide(i.1, a));
+    right j => fin_sum_out_right(a, b, j, bnat_lt_decide(a + j.1, a));
+  }
+);
+
+computable def fin_product_in(a, b : Nat, p : Fin(a) and Fin(b)) :
+  Fin(a * b) := (p.1.1 * b + p.2.1, bnat_mul_add_lt(p.1.1, a, p.2.1, b, p.1.2, p.2.2));
+
+// By a positive b: the quotient and the remainder of division by b.
+computable def fin_product_out(a : Nat, d : BPositive, k : Fin(a * b_positive(d))) :
+  Fin(a)
+  and Fin(b_positive(d)) := (
+    (
+      bnat_divmod(k.1, d).1,
+      bnat_quotient_below(
+        bnat_divmod(k.1, d).1, b_positive(d), bnat_divmod(k.1, d).2, a,
+        comp(fun (i : Interval) => (bnat_divmod_correct(k.1, d).1 @ ~i) < a * b_positive(d), k.2)
+      )
+    ), bnat_divmod(k.1, d).2,
+    bnat_lt_by_comparison(bnat_divmod(k.1, d).2, b_positive(d), bnat_divmod_correct(k.1, d).2)
+  );
+
+computable def fin_product_positive(a : Nat, d : BPositive) :
+  ContrEquiv(U0, Fin(a) and Fin(b_positive(d)), Fin(a * b_positive(d))) := inverse_equiv(
+    U0, Fin(a) and Fin(b_positive(d)), Fin(a * b_positive(d)),
+    fun (p : Fin(a) and Fin(b_positive(d))) => fin_product_in(a, b_positive(d), p),
+    fun (k : Fin(a * b_positive(d))) => fin_product_out(a, d, k),
+    fun (k : Fin(a * b_positive(d))) => fin_path(
+      a * b_positive(d), fin_product_in(a, b_positive(d), fin_product_out(a, d, k)), k,
+      bnat_divmod_correct(k.1, d).1
+    ),
+    fun (p : Fin(a) and Fin(b_positive(d))) => path i => (
+      fin_path(
+        a, fin_product_out(a, d, fin_product_in(a, b_positive(d), p)).1, p.1,
+        bnat_division_unique(
+          b_positive(d), bnat_divmod(p.1.1 * b_positive(d) + p.2.1, d).1,
+          bnat_divmod(p.1.1 * b_positive(d) + p.2.1, d).2, p.1.1, p.2.1,
+          bnat_divmod_correct(p.1.1 * b_positive(d) + p.2.1, d).2, p.2.2,
+          bnat_divmod_correct(p.1.1 * b_positive(d) + p.2.1, d).1
+        ).1
+      ) @ i,
+      fin_path(
+        b_positive(d), fin_product_out(a, d, fin_product_in(a, b_positive(d), p)).2, p.2,
+        bnat_division_unique(
+          b_positive(d), bnat_divmod(p.1.1 * b_positive(d) + p.2.1, d).1,
+          bnat_divmod(p.1.1 * b_positive(d) + p.2.1, d).2, p.1.1, p.2.1,
+          bnat_divmod_correct(p.1.1 * b_positive(d) + p.2.1, d).2, p.2.2,
+          bnat_divmod_correct(p.1.1 * b_positive(d) + p.2.1, d).1
+        ).2
+      ) @ i
+    )
+  );
+
+// With b zero both sides are empty.
+computable def fin_product(a, b : Nat) : ContrEquiv(U0, Fin(a) and Fin(b), Fin(a * b)) := match b {
+    b_zero => empty_equiv(
+      U0, Fin(a) and Fin(0), Fin(a * 0), fun (p : Fin(a) and Fin(0)) => fin_zero_empty(p.2),
+      fun (k : Fin(a * 0)) => fin_zero_empty(fin_cast(a * 0, 0, nat_mul_zero(a)).1(k))
+    );
+    b_positive(d) => fin_product_positive(a, d);
+  };
+
+// The sizes of finite types add under sums and multiply under products.
+computable def sum_cardinality(
+  A, B : U0, a, b : Nat, count_a : HasCardinality(A, a), count_b : HasCardinality(B, b)
+) :
+  HasCardinality(A or B, a + b) := mere_eliminate(
+    U0, U0, ContrEquiv(U0, Fin(a), A), HasCardinality(A or B, a + b),
+    has_cardinality_is_prop(A or B, a + b),
+    fun (e : ContrEquiv(U0, Fin(a), A)) => mere_map(
+      U0, U0, ContrEquiv(U0, Fin(b), B), ContrEquiv(U0, Fin(a + b), A or B),
+      fun (d : ContrEquiv(U0, Fin(b), B)) => equiv_compose(
+        U0, Fin(a + b), Fin(a) or Fin(b), A or B,
+        equiv_symm(U0, Fin(a) or Fin(b), Fin(a + b), fin_sum(a, b)),
+        sum_equiv(U0, Fin(a), Fin(b), A, B, e, d)
+      ), count_b
+    ), count_a
+  );
+
+computable def product_cardinality(
+  A, B : U0, a, b : Nat, count_a : HasCardinality(A, a), count_b : HasCardinality(B, b)
+) :
+  HasCardinality(A and B, a * b) := mere_eliminate(
+    U0, U0, ContrEquiv(U0, Fin(a), A), HasCardinality(A and B, a * b),
+    has_cardinality_is_prop(A and B, a * b),
+    fun (e : ContrEquiv(U0, Fin(a), A)) => mere_map(
+      U0, U0, ContrEquiv(U0, Fin(b), B), ContrEquiv(U0, Fin(a * b), A and B),
+      fun (d : ContrEquiv(U0, Fin(b), B)) => equiv_compose(
+        U0, Fin(a * b), Fin(a) and Fin(b), A and B,
+        equiv_symm(U0, Fin(a) and Fin(b), Fin(a * b), fin_product(a, b)),
+        product_equiv(U0, Fin(a), Fin(b), A, B, e, d)
+      ), count_b
+    ), count_a
+  );
