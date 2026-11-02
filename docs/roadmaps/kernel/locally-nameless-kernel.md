@@ -1016,15 +1016,17 @@ actually changes.
 | `web/cubical-assembly.mjs`, `web/cubical-graph-view.mjs` | 12 | 6 | node labels; the views encode a context's types with `kernel.symbol(entry.name)`, which must use the judgement's own handles or a scope made first (section 5.3) |
 | `web/translator/elaboration.mjs` | 1 | 0 | its scope's `nf` passes the scope's context to the elaborator's `nf`, which today takes none (section 5.3) |
 | `web/translator/proof-rewrite.mjs` | 8 `nf` calls | 2 synthetic variables | `simplificationRule`'s `simp_level` and `simp_parameter` become entries of a temporary scope (section 5.3) |
-| `web/translator/arguments.mjs` | 3 `nf` calls | 3 placeholder sites | `ArgumentSolver`'s placeholders and the unifier's `under` name become entries of a temporary scope (section 5.3) |
+| `web/translator/arguments.mjs` | 3 `nf` calls | 3 placeholder sites | `ArgumentSolver`'s placeholders, the unifier's `under` name and the binders `reduceScopeCandidate` walks into become entries of a temporary scope (section 5.3) |
+| `web/translator/inductive.mjs` | 6 `nf` calls | 1 peeling site | `resolveInductive` binds the Π binders it strips before asking about their bodies (section 5.3) |
 
 Fourteen modules (thirteen in `web/` and one tool): about 430 kernel or
 graph calls and about 170 variable, binder or symbol lines, 223 and 66 of
-them in the instruction driver, and three translator modules besides
-(`elaboration.mjs`, `proof-rewrite.mjs`, `arguments.mjs`). The other
-translator modules (`web/translator/evaluation.mjs`, `translate.mjs`,
-`match.mjs`, `hlevel.mjs`, `inductive.mjs`) bind their own variables into
-their scopes before asking about them, ask for heads and spines and read signature shapes
+them in the instruction driver, and four translator modules besides
+(`elaboration.mjs`, `proof-rewrite.mjs`, `arguments.mjs`, `inductive.mjs`).
+The other translator modules (`web/translator/evaluation.mjs`,
+`translate.mjs`, `match.mjs`, `hlevel.mjs`) bind their own variables into
+their scopes before asking about them (Appendix A classifies every site),
+ask for heads and spines and read signature shapes
 (constructor counts, dimensions, the squash flag), and whose `"Var"` or
 `"Pi"` are the translator's own syntax; `web/cubical-transaction.mjs`
 (checkpoints and relocation); `web/cubical-reduction.mjs` (decodes through
@@ -1109,15 +1111,31 @@ changes:
     as stuck, the outcome the unifier already has for an undecided
     comparison, and no type is invented for it.
 
-  These are the sites found by a grep of the `nf` callers (about 80 calls
-  in fifteen modules of `web/` and `web/translator/`) for variables made
-  fresh and substituted into a body without a `bind` into the scope; the
-  others bind theirs (`hlevel.mjs`'s premises, `motives.mjs`'s
-  hypotheses, `inductive.mjs`'s constructor arguments, `match.mjs`). The
-  grep can miss a site, so PR 1 makes the rule an assertion: on ABI 3,
-  encoding against a scope throws on a free variable that is neither bound
-  by an enclosing binder nor in the scope, and the full suite run then lists
-  every site that still encodes before it binds.
+- Binders a caller peels or walks into without binding them:
+  - `resolveInductive` in `web/translator/inductive.mjs` strips an
+    expected type's Π binders (`scope.nf(type.body)`) to find the instance a
+    constructor builds, without binding their variables. With
+    `inductive I(A : U0) { c(x : Unit); }`, `def Ix(x : Unit) : U0 := I(Unit);`
+    and `def f : forall x : Unit. Ix(x) := c;`, the query on `Ix(x)` needs
+    `x`. Each peeled binder is bound into a temporary scope at its domain
+    before the next query.
+  - `reduceScopeCandidate` in `web/translator/arguments.mjs` walks a
+    scope-blocked candidate's syntax and asks `nf` of its parts, entering
+    term-binder bodies with the scope unchanged (only dimension binders
+    extend it). With `take_value{{B : U0}}(f : Unit -> B)` applied to
+    `function_(u : Unit) : forall v : Unit. Ignore2(v, u)`, where `Ignore2`
+    returns `Unit`, it asks about `Ignore2(v, u)` with the candidate-local
+    `v` unbound; main accepts the call. The walk binds each term binder it
+    enters at its domain, and its memo, keyed today by the dimension
+    context, is keyed by that scope as well.
+
+  Appendix A classifies every head-query site of `web/` and
+  `web/translator/` by where each free variable of the term it asks about
+  comes from and which scope provides it, so the list above is complete by
+  construction rather than by search. PR 1 also makes the rule an
+  assertion: on ABI 3, encoding against a scope throws on a free variable
+  that is neither bound by an enclosing binder nor in the scope, and the
+  full suite run reports any site the classification got wrong.
 
 The encoding cache (`this.encoded`, keyed today by the term object and the
 dimension context, `encode(term, dimensions, key)`) must key by everything
@@ -1169,19 +1187,53 @@ other: that is incompleteness, a check that fails, never unsoundness, since
 every judgement is still checked by the kernel.
 
 The same holds for every other name, since the kernel keeps none (decided
-2026-11-02). Definitions: the driver's `kernel.definitions` already maps a
-name to its `CC_DEFREF` (read by `encode`, relocated at commit by
-`web/cubical-transaction.mjs`), and an inverse map replaces
-`definition(reference).name` for `decode` and the views; the refusal of a
-second definition of one name is the driver's, which the program already
-reports as a duplicate (`gaps` in `web/cubical-program.mjs`), and since
-Define is stateful, defining one judgement under two names makes two
-definitions, as today. Signatures: `kernel.signatures`, the driver's record
-of each declaration's sort, parameter and constructor names, replaces the
-symbols `cc_kernel_signature` reported. Numbers for names: `symbol` and
-`symbolName` in `web/cubical-kernel.mjs` keep their map but allocate from a
-counter of the driver's own instead of `cb_fresh_symbol`, since no kernel
-name can meet them any more.
+2026-11-02). Each map that replaces a kernel symbol is keyed by the
+kernel's identity for the thing named, never by a handle that merely
+refers to it, and follows the kernel's lifecycle for that identity:
+
+- **Definitions.** The driver's `kernel.definitions` maps a name to a
+  `CC_DEFREF` handle (read by `encode`, relocated at commit by
+  `CubicalDeclarationTransaction.finish` in `web/cubical-transaction.mjs`,
+  its new keys deleted at rollback). Its inverse, for `decode` and the
+  views, cannot be keyed by that handle: with `CC_SHARE_SYNTAX` off two
+  distinct `CC_DEFREF` nodes refer to one definition, a commit relocates
+  handles, and a rollback lets their numbers be reused (a review reproduced
+  all three on WebAssembly), so a handle-keyed inverse would lose a name or
+  give a discarded declaration's name to another definition. The inverse is
+  keyed by the definition's index in the kernel's table, the `CC_DEFREF`
+  payload: a commit keeps every index (it relocates `value` and `type`,
+  never the table), and a rollback truncates the table to the checkpoint,
+  so the inverse joins the transaction's `sizes`, whose new keys a rollback
+  deletes. The refusal of a second definition of one name is the driver's,
+  which the program already reports as a duplicate (`gaps` in
+  `web/cubical-program.mjs`); since Define is stateful, defining one
+  judgement under two names makes two definitions, as today.
+- **Signatures.** `kernel.signatures` maps a declaration's name to its
+  record (index, constructor names); it is already in the transaction's
+  `sizes`, and signature indices survive a commit and are freed by a
+  rollback, as its comment there says. Decoding a `CC_SORT`, `CC_CON` or
+  `CC_ELIM` reads the name today through the kernel's sort symbol
+  (`signatureRecord` in `web/cubical-syntax.mjs`); it reads an inverse keyed
+  by the signature index, the node's payload, kept in `sizes` like the
+  forward map.
+- **Entries.** The map from a name and a type handle to an entry, and the
+  entry-to-name map the decoder reads, belong to the instruction driver,
+  which `finish` drops at every commit and rollback (`kernel.instructionDriver
+  = null`), the same moments the kernel truncates the entries; the
+  decoder's caches are reset then too (`checker.syntax.reset()`). Within one
+  driver no handle moves, so keying by the type's handle is sound; with
+  `CC_SHARE_SYNTAX` off, alpha-equal types may be two handles, which only
+  misses a reuse (incompleteness, above).
+- **Variant names.** `variantNames` and `freshNames`, the `x'1` counters
+  of `entry`, live on the kernel object across declarations, and
+  `variantNames` is keyed by the type's handle, which a commit relocates
+  and a rollback frees. Once entries carry no names they are display only;
+  they move into the driver with the entry map, or are keyed by the type's
+  decoded syntax.
+- **Numbers for names.** `symbol` and `symbolName` in `web/cubical-kernel.mjs`
+  map names to numbers and back, with no handle involved; they allocate
+  from a counter of the driver's own instead of `cb_fresh_symbol`, since no
+  kernel name can meet them any more.
 
 **Binder names in displays.** The kernel's normal forms no longer carry the
 source's binder names (today `decode` reads them with `symbolName`, and
@@ -1298,10 +1350,15 @@ Each PR is verified locally first, opened as a draft, and keeps
    with its context and every caller of `nf` sorted into "fails on an
    ill-formed context" or "derives its context earlier", `differ`,
    signature admission, the views), with the encoding cache keyed by the
-   scope; the temporary typed scopes of the translator's synthetic
-   variables (`simplificationRule` in `web/translator/proof-rewrite.mjs`,
-   `ArgumentSolver` and the unifier's `under` in
-   `web/translator/arguments.mjs`); the assertion that encoding against a
+   scope; the temporary typed scopes of rows 4 to 6 of Appendix A (the
+   synthetic variables of `simplificationRule` in
+   `web/translator/proof-rewrite.mjs`, `ArgumentSolver`'s placeholders, the
+   unifier's `under` and `reduceScopeCandidate`'s binders in
+   `web/translator/arguments.mjs`, and the binders `resolveInductive` peels
+   in `web/translator/inductive.mjs`); `differ` taking its scope's context;
+   the inverse maps keyed by definition and signature index and kept in the
+   transaction's `sizes`, and the variant names moved off the kernel object
+   (section 5.3); the assertion that encoding against a
    scope throws on a variable neither bound nor in the scope, run over the
    full suite to find any site the grep missed; and the driver's own map
    from name and type to entry, giving each new entry a new symbol so that
@@ -1459,6 +1516,18 @@ Each PR is verified locally first, opened as a draft, and keeps
   free variable has no entry in the scope fails in the driver; `ck_make`
   refuses a `CC_CONTEXT` naming no live entry; an `nf` query whose context
   cannot be derived fails rather than answer.
+- **Binders walked or peeled by a caller** (section 5.3): the call
+  `take_value{{B : U0}}(f : Unit -> B)` applied to
+  `function_(u : Unit) : forall v : Unit. Ignore2(v, u)`, with `Ignore2`
+  returning `Unit`, is accepted, as on main; so is
+  `inductive I(A : U0) { c(x : Unit); }`, `def Ix(x : Unit) : U0 := I(Unit);`,
+  `def f : forall x : Unit. Ix(x) := c;`.
+- **Names keyed by identity** (section 5.3): with `CC_SHARE_SYNTAX` off, two
+  distinct `CC_DEFREF` handles for one definition decode to its name; a
+  committed definition keeps its name after relocation; a definition made
+  in a rolled-back declaration leaves no name behind, and the next
+  declaration's definition at the reused index decodes to its own name; the
+  same for a signature's name at a reused signature index.
 - **Names in the driver** (section 5.3): binding one name twice at one type
   in disjoint scopes reuses the entry, and a derivation repeated under it is
   answered from the memo; `λ (x : A). λ (x : A). x` derives with two
@@ -1537,3 +1606,34 @@ Risks that remain:
   would certify a false judgement rather than fail; section 7.1's
   adversarial and replay tests, and a review that targets them, are the
   guard.
+
+## Appendix A. Every head-query site, classified
+
+Every call in `web/` and `web/translator/` (main `a933a0bf`, leaving out
+`web/cubical-runtime.mjs`) that reaches a kernel query on syntax: the
+elaborator's `nf` (encodes, then `cc_kernel_whnf`), its `differ` (encodes,
+then the driver's guide), `derivedHead` and `normalForm` (handles an
+instruction derived), and the driver's own `graph.head`. Derivations
+(`infer`, `check`, `attempt`, `verify`) are not listed: they already refuse
+a free variable outside their context today (`deriveNode` throws "Unbound
+variable"), so scope first only reorders them. Each row says where the free
+variables of the asked term come from and which scope provides them after
+the change. Lines are main's.
+
+| Where the free variables come from | Scope that provides them | Sites |
+| --- | --- | --- |
+| 1. The asking scope's context: the term is the type of a term just derived there (`nf(infer(t).type)`, `nf(inferred(t).type)`) | the asking scope; the derivation made its entries first | `contextual-session.mjs:294`; `cubical-assumptions.mjs:28`, `:40` (after `inner.bind`); `cubical-elaborator.mjs:197`; `translator/elaboration.mjs:294`; `translator/builtins.mjs:79`, `:179`, `:199`, `:266`, `:276` (two), `:287` (two), `:299`, `:307`; `translator/evaluation.mjs:148`; `translator/inductive.mjs:155`, `:324`, `:361`; `translator/proof-rewrite.mjs:41`, `:62`, `:169`, `:180`; `translator/hlevel.mjs:462`; `translator/tactics.mjs:240`; `translator/proof-goals.mjs:115`, `:116`, `:131`; `translator/match.mjs:169`, `:296`, `:703`, `:712`; `translator/theories.mjs:171`; `translator/translate.mjs:1329`, `:1341` (two), `:1481`, `:1491`, `:1789`, `:1813`, `:1836`, `:1975`, `:1992`, `:2185` |
+| 2. The asking scope's context, or binders the caller bound with `bind` before asking: the term is an expected type, a goal's target, an annotation or a value checked in that scope | the asking scope, through `bind` where the caller binds | `contextual-session.mjs:349`; `cubical-assumptions.mjs:43`; `translator/builtins.mjs:166`, `:244`; `translator/evaluation.mjs:114`, `:291`, `:320` (a constructor's type instantiated at closed decoded parts), `:343`; `translator/inductive.mjs:335`; `translator/proof-rewrite.mjs:43` (a level constant, no variable), `:190`; `translator/hlevel.mjs:174`, `:332`; `translator/tactics.mjs:113`, `:154`, `:194`; `translator/proof-goals.mjs:37`, `:132`; `translator/match.mjs:573`, `:589`, `:595` (`goalType` and `build` bind each Π first); `translator/translate.mjs:1234`, `:1393`, `:1405`, `:1472`, `:1489`, `:1590` (each λ binder bound before the next query), `:1611`, `:1621`, `:1630`, `:1751`, `:1758`, `:1889` |
+| 3. Dimension variables only: a path type's family under its dimension, or a family read at an endpoint | the dimension context, as today (`bindDimension`); no term variable is involved | `translator/tactics.mjs:216`; `translator/inductive.mjs:342` |
+| 4. Binders the caller peels or walks without binding | a temporary scope binding each at its domain (section 5.3) | `translator/inductive.mjs:338` (`resolveInductive`); `translator/arguments.mjs:630` (`reduceScopeCandidate`); `translator/arguments.mjs:427` (`unfolded` under the unifier's `under`) |
+| 5. Synthetic variables of a rule | a temporary scope: `simp_level` a level entry, each `simp_parameter` a term entry at its binder's domain (section 5.3) | `translator/proof-rewrite.mjs:69`, `:76` |
+| 6. Placeholders of a call | a temporary scope: universe placeholders level entries, the others term entries at `slot.domain`, in order (section 5.3) | `translator/arguments.mjs:111`, and the placeholders that `:427` and `:630` meet |
+| 7. None encoded: a handle an instruction derived, or its head and data parts | none needed: it refers to existing entries | `cubical-elaborator.mjs:675` (`derivedHead`); `translator/translate.mjs:450`, `:559`; `translator/evaluation.mjs:220`, `:267`, `:286` (`at.head`, which is `derivedHead`); `normalForm`'s `normalize` and `normalizeFolded` |
+| 8. Subterms of a judgement's term read under its binders, with loose indices | none: `cc_kernel_whnf` opens them with `CC_OPENED` (section 5.1) | `cubical-instruction-driver.mjs:1194` (`headOf`, through `graph.head`, in the guide) |
+| 9. Two terms compared by the guide (`differ`) | the asking scope, as for `nf`: `differ` takes the scope's context instead of assuming closed terms | `cubical-elaborator.mjs:518`; `translator/evaluation.mjs:98` (through `scope.differ`) |
+
+`cubical-elaborator.mjs:507` is `nf`'s own call of `kernel.head`, which
+the rows above describe through their callers. Rows 4 to 6 are the sites
+that change behavior; rows 1, 2 and 9 change only in that the scope is
+made before encoding; rows 3, 7 and 8 are unaffected. A site added later
+falls under PR 1's assertion.
