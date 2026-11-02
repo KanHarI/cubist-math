@@ -63,9 +63,12 @@ function session(t) {
   kernel.setExtensions({ h1: true });
   const syntax = new CubicalSyntax(kernel), driver = new InstructionDriver(kernel);
   const admit = spec => admitSignature(kernel, spec, { syntax, driver });
-  const context = assumptions => assumptions.map(([name, type]) => [kernel.symbol(name), syntax.encode(type)]);
-  const check = (term, type, assumptions = []) =>
-    driver.check(syntax.encode(term), syntax.encode(type), context(assumptions));
+  // The assumptions' scope first, then the syntax against it.
+  const check = (term, type, assumptions = []) => {
+    const scope = driver.scopeOf(assumptions.map(([name, type]) => [kernel.symbol(name), type]), 0n,
+      (type, scope) => syntax.encode(type, new Map(), scope));
+    return driver.checkIn(syntax.encode(term, new Map(), scope), syntax.encode(type, new Map(), scope), scope);
+  };
   // The step rules of the judgements a check derives.
   const steps = (...args) => {
     const before = driver.graph.count;
@@ -194,7 +197,9 @@ test("an eliminator computes on constructors, by Iota steps the search takes", t
   // The guide: distinct constructors differ, and equal computations agree.
   // A constructor is not a rigid head: against a lambda it is eta's to
   // decide, and here the lambda's weak head is the constructor itself.
-  const e = term => syntax.encode(term);
+  // f's scope first, and the syntax against it.
+  const scope = driver.extendScope(driver.emptyScope(0n), driver.kernel.symbol("f"), syntax.encode(pi("n", N, N)));
+  const e = term => syntax.encode(term, new Map(), scope);
   assert.equal(driver.equal(e(zero), e(numeral(1)), null, null), false);
   assert.equal(driver.equal(e(numeral(1)), e(app(v("f"), zero)), null, null), false);
   assert.equal(driver.equal(e(app(double, numeral(1))), e(numeral(2)), null, null), true);
@@ -312,9 +317,10 @@ test("an instance derives in a context whose variables share the signature's lev
   // first for a renamed U, is a type of the caller's, and then U is.
   for (const name of ["U'1", "U"]) {
     const driver = new InstructionDriver(kernel), listU = sort("List", [v(name)]);
-    const context = [[kernel.symbol(name), syntax.encode(U(0))]];
-    assert.ok(driver.check(syntax.encode(con(listU, 0)), syntax.encode(listU), context));
-    assert.ok(driver.check(syntax.encode(app(con(listU, 1), v("u"), con(listU, 0))), syntax.encode(listU),
-      [...context, [kernel.symbol("u"), syntax.encode(v(name))]]));
+    const scope = driver.extendScope(driver.emptyScope(0n), kernel.symbol(name), syntax.encode(U(0)));
+    const encode = (term, at = scope) => syntax.encode(term, new Map(), at);
+    assert.ok(driver.checkIn(encode(con(listU, 0)), encode(listU), scope));
+    const inner = driver.extendScope(scope, kernel.symbol("u"), encode(v(name)));
+    assert.ok(driver.checkIn(encode(app(con(listU, 1), v("u"), con(listU, 0)), inner), encode(listU, inner), inner));
   }
 });

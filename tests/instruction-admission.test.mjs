@@ -35,25 +35,26 @@ test("every definition is admitted by Define, and only admitted definitions can 
 test("a tactic's check is derived as it runs, and fails at the tactic", async t => {
   const program = new CubicalProgram(await createCubical(), reader);
   t.after(() => program.dispose());
-  const check = InstructionDriver.prototype.check;
+  // Every check, the elaborator's in a scope and an admission's, is checkIn.
+  const check = InstructionDriver.prototype.checkIn;
   const issued = [];
-  InstructionDriver.prototype.check = function (expression, type, context) {
+  InstructionDriver.prototype.checkIn = function (expression, type, scope) {
     issued.push(this.kernel.node(expression).kind);
-    return check.call(this, expression, type, context);
+    return check.call(this, expression, type, scope);
   };
   try { await program.check(source, "admission_two"); }
-  finally { InstructionDriver.prototype.check = check; }
+  finally { InstructionDriver.prototype.checkIn = check; }
   // let's value, refl(2), is derived when let is elaborated; the
   // definitions are admitted after.
   assert.ok(issued.includes("PLam"), issued.join(", "));
   // An instruction failure in let's check is that statement's error.
-  InstructionDriver.prototype.check = function (expression, type, context) {
+  InstructionDriver.prototype.checkIn = function (expression, type, scope) {
     if (this.kernel.node(expression).kind === "PLam") throw new Error("No rule for this yet.");
-    return check.call(this, expression, type, context);
+    return check.call(this, expression, type, scope);
   };
   let result;
   try { result = await new CubicalProgram(await createCubical(), reader).check(source, "admission_two"); }
-  finally { InstructionDriver.prototype.check = check; }
+  finally { InstructionDriver.prototype.checkIn = check; }
   const failed = result.outputs.find(output => output.name === "two_is_two");
   assert.equal(failed.verified, false);
   // Reported at let, not at the declaration.

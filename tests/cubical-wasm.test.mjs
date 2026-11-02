@@ -208,10 +208,10 @@ test("open cubes check dependent contexts and preserve dimension names across de
   assert.deepEqual(checked.type.arg, I.variable("i"));
   assert.equal(elaborate(k, checked.term, checked.type, context, dimensions).type.tag, "PApp");
   assert.throws(() => elaborate(k, T.variable("x"), atI, context), /Unbound cubical dimension/);
-  const rawContext = context.map(([name, type]) => [k.symbol(name), syntax.encode(type, dimensions)]);
   // A judgement's context records each dimension it needs, whatever mask the driver was given.
   const driver = new InstructionDriver(k);
-  const judgement = driver.graph.judgement(driver.check(syntax.encode(T.variable("x")), syntax.encode(atI, dimensions), rawContext, 1n));
+  const scope = driver.scopeOf(context.map(([name, type]) => [k.symbol(name), type]), 1n, (type, at) => syntax.encode(type, dimensions, at));
+  const judgement = driver.graph.judgement(driver.checkIn(syntax.encode(T.variable("x"), new Map(), scope), syntax.encode(atI, dimensions, scope), scope));
   assert.ok(judgement.context.some(entry => driver.graph.entry(entry).dimension && driver.graph.entry(entry).symbol === 63));
   assert.throws(() => derive(k, syntax.encode(T.variable("x")), syntax.encode(atI, dimensions)));
   assert.throws(() => elaborate(k, left, null, [], new Map([["i", 0], ["j", 0]])), /distinct/);
@@ -274,11 +274,12 @@ test("a query's growing budget stops at its declared limit and fails as the kern
 });
 
 test("a head the kernel refuses leaves no error behind to refuse the next instruction", t => {
-  const k = session(t), syntax = new CubicalSyntax(k);
+  const k = session(t), checker = new NativeCubicalElaborator(k), syntax = checker.syntax;
   // A path variable applied, with no type to annotate the application: a
   // raw head query refuses it, as unification's may, which treats it as
   // stuck and goes on.
-  const unchecked = syntax.encode(T.at(T.variable("p"), I.zero));
+  const scope = checker.scopeOf(new Map([["p", T.path("j", two, left, right)]]), new Map());
+  const unchecked = syntax.encode(T.at(T.variable("p"), I.zero), new Map(), scope);
   assert.throws(() => k.head(unchecked), /Unchecked path application/);
   assert.equal(k.error(), "");
   assert.ok(derive(k, syntax.encode(left), syntax.encode(two)).expression);
@@ -287,28 +288,30 @@ test("a head the kernel refuses leaves no error behind to refuse the next instru
 test("checked path applications retain annotations through unused dimension contexts", t => {
   const k = session(t), checker = new NativeCubicalElaborator(k), syntax = checker.syntax;
   const context = new Map([["p", T.path("j", two, left, right)]]);
+  // Each term is encoded against its context's scope, in its dimensions.
+  const encode = (term, dimensions) => syntax.encode(term, dimensions, checker.scopeOf(context, dimensions));
   for (const arg of [I.zero, I.variable("i")]) {
     const dimensions = new Map([["unused", 0], ["i", 63]]);
     const checked = checker.checkSyntax(T.at(T.variable("p"), arg), null, context, dimensions);
-    assert.equal(syntax.encode(checked.term, dimensions), checked.expression);
-    assert.doesNotThrow(() => checker.nf(checked.term, dimensions));
+    assert.equal(encode(checked.term, dimensions), checked.expression);
+    assert.doesNotThrow(() => checker.nf(checked.term, context, dimensions));
     // A decode-cache hit in another context must record that round trip too.
     const extended = new Map(dimensions).set("also_unused", 1);
     const again = syntax.decode(checked.expression, extended);
     assert.equal(again, checked.term);
-    assert.equal(syntax.encode(again, extended), checked.expression);
-    assert.doesNotThrow(() => checker.nf(again, extended));
+    assert.equal(encode(again, extended), checked.expression);
+    assert.doesNotThrow(() => checker.nf(again, context, extended));
     // Moving a visible coordinate still requires rebuilding the application.
     if (arg === I.zero) continue;
     const moved = new Map([["unused", 0], ["i", 2]]);
-    assert.notEqual(syntax.encode(again, moved), checked.expression);
-    assert.deepEqual(syntax.decode(syntax.encode(again, moved), moved), again);
+    assert.notEqual(encode(again, moved), checked.expression);
+    assert.deepEqual(syntax.decode(encode(again, moved), moved), again);
     // Inspection can omit a free index and use its fallback spelling for
     // another slot. That is not the checked node's original context.
     const incomplete = new Map([["d63", 0]]);
     const shown = syntax.decode(checked.expression, incomplete);
     assert.deepEqual(shown.arg, I.variable("d63"));
-    assert.notEqual(syntax.encode(shown, incomplete), checked.expression);
+    assert.notEqual(encode(shown, incomplete), checked.expression);
   }
 });
 
@@ -444,7 +447,8 @@ test("G0: the module's ABI version is checked, and a universe carries its level 
 
 test("G0: level entries and level quantification through the instruction wrapper and the codec", t => {
   const k = session(t), syntax = new CubicalSyntax(k), g = new InstructionGraph(k);
-  const x = g.level("x"), ux = g.universe(syntax.encodeLevel({ tag: "Var", name: "x" }));
+  // The level entry first, and its variable's syntax in its scope.
+  const x = g.level("x"), ux = g.universe(syntax.encodeLevel({ tag: "Var", name: "x" }, new Map([[k.symbol("x"), x]])));
   assert.throws(() => g.variable(x), /not a term/);
   // λ (x < ω). U(x) : Π (x < ω). U(x + 1), and its instance at 2 is U(2) : U(3).
   const family = g.levelLambda(x, ux);

@@ -492,7 +492,8 @@ test("G0: the driver's level normal forms agree with the kernel's on random leve
   t.after(() => kernel.dispose());
   const syntax = new CubicalSyntax(kernel), g = new InstructionGraph(kernel);
   const names = ["x", "y", "z"];
-  names.forEach(name => g.level(name));
+  // The level entries first, and the levels' syntax in their scope.
+  const scope = new Map(names.map(name => [kernel.symbol(name), g.level(name)]));
   let seed = 7;
   const roll = bound => (seed = (seed * 1103515245 + 12345) % 2147483648) % bound;
   const random = depth => {
@@ -507,7 +508,7 @@ test("G0: the driver's level normal forms agree with the kernel's on random leve
     && a.offsets.size === b.offsets.size && [...a.offsets].every(([key, offset]) => b.offsets.get(key) === offset);
   let equal = 0;
   for (let i = 0; i < 400; i++) {
-    const a = syntax.encodeLevel(random(3)), b = syntax.encodeLevel(i % 3 ? random(3) : random(1));
+    const a = syntax.encodeLevel(random(3), scope), b = syntax.encodeLevel(i % 3 ? random(3) : random(1), scope);
     // The kernel's universes at equal levels are one term.
     const kernelSays = g.judgement(g.universe(a)).term === g.judgement(g.universe(b)).term;
     assert.equal(same(levelNormal(read, a), levelNormal(read, b)), kernelSays);
@@ -519,10 +520,14 @@ test("G0: the driver's level normal forms agree with the kernel's on random leve
 test("the driver's guide compares weak heads: equal, different, or unknown", async t => {
   const kernel = new CubicalKernel(await createCubical());
   t.after(() => kernel.dispose());
-  const syntax = new CubicalSyntax(kernel), driver = new InstructionDriver(kernel), e = term => syntax.encode(term);
+  const syntax = new CubicalSyntax(kernel), driver = new InstructionDriver(kernel);
   const guide = (x, y) => driver.guide(x, y, null, null, { left: 400 });
   const unit = { tag: "Unit" }, point = { tag: "Point" }, bool = { tag: "Sum", left: unit, right: unit };
   const zero = { tag: "Inl", as: bool, value: point }, one = { tag: "Inr", as: bool, value: point };
+  // The variables' scope first, then the syntax against it.
+  const scope = driver.contextScope([["x", bool], ["y", bool], ["f", { tag: "Pi", name: "b", domain: bool, body: bool }],
+    ["p", { tag: "Path", dim: "i", family: bool, left: zero, right: one }]].map(([name, type]) => [kernel.symbol(name), syntax.encode(type)]), 0n);
+  const e = term => syntax.encode(term, new Map(), scope);
   const wrap = { tag: "Lam", name: "n", domain: unit, body: { tag: "Inr", as: bool, value: { tag: "Var", name: "n" } } };
   // Equal after computing heads; different constructors or neutral terms.
   assert.equal(guide(e({ tag: "App", fn: wrap, arg: point }), e(one)), true);
@@ -546,11 +551,13 @@ test("a derivation in one context is not reused in another that types a variable
   t.after(() => kernel.dispose());
   const syntax = new CubicalSyntax(kernel), driver = new InstructionDriver(kernel), graph = driver.graph;
   const x = { tag: "Var", name: "x" }, unit = { tag: "Unit" }, bool = { tag: "Sum", left: unit, right: unit };
-  const typeIn = type => syntax.decode(graph.judgement(driver.infer(syntax.encode(x), [[kernel.symbol("x"), syntax.encode(type)]])).type);
+  // The context's scope first, then the variable's syntax against it.
+  const scopeOf = type => driver.extendScope(driver.emptyScope(0n), kernel.symbol("x"), syntax.encode(type));
+  const typeIn = type => syntax.decode(graph.judgement(driver.derive(syntax.encode(x, new Map(), scopeOf(type)), scopeOf(type))).type);
   assert.deepEqual(typeIn(bool), bool);
   // Each context's scope is its own memo key, including its assumptions.
   assert.deepEqual(typeIn(unit), unit);
-  assert.throws(() => driver.check(syntax.encode(x), syntax.encode(bool), [[kernel.symbol("x"), syntax.encode(unit)]]),
+  assert.throws(() => driver.checkIn(syntax.encode(x, new Map(), scopeOf(unit)), syntax.encode(bool), scopeOf(unit)),
     /Type mismatch/);
 });
 

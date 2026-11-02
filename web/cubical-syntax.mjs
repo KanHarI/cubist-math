@@ -1,6 +1,9 @@
 import { bindDimensions } from "./translator/dimension-slots.mjs";
 import { dimensionContextKey } from "./translator/syntax-graph.mjs";
-import { binderName, pushName, variableName } from "./cubical-variables.mjs";
+import { freeNames, isTerm } from "./translator/core.mjs";
+import { binderName, binderTerm, pushName, resolveVariable, variableName, variableTerm } from "./cubical-variables.mjs";
+// The scope of no context: what is encoded against it is closed.
+export const EMPTY_SCOPE = Object.freeze(new Map());
 // Lossless syntax transport between named cubical ASTs and C arena handles.
 // This layer never decides typing or equality. Every checked result comes
 // from CubicalKernel.check; shared input objects retain shared arena nodes.
@@ -56,10 +59,11 @@ class NodeCache {
   get(key) { return this.recent.get(key) ?? this.settled.get(key); }
   has(key) { return this.recent.has(key) || this.settled.has(key); }
   set(key, value, id = key) { (id < this.kernel.settled ? this.settled : this.recent).set(key, value); return this; }
-  // A node by a term and its dimensions' key, for encode.
+  // A node by a term and its key, for encode. An encoding against a scope
+  // is kept for the declaration only, as its scope is.
   node(term, key) { return this.recent.get(term)?.get(key) ?? this.settled.get(term)?.get(key); }
-  setNode(term, key, id) {
-    const tier = id < this.kernel.settled ? this.settled : this.recent;
+  setNode(term, key, id, scoped = false) {
+    const tier = id < this.kernel.settled && !scoped ? this.settled : this.recent;
     if (!tier.has(term)) tier.set(term, new Map());
     tier.get(term).set(key, id);
   }
@@ -72,10 +76,17 @@ export class CubicalSyntax {
     this.free = new NodeCache(kernel);
     // Each term's head normal form, by its node (cubical-elaborator.mjs).
     this.heads = new NodeCache(kernel);
+    // The scopes and the chains of binders open encodings are kept by.
+    this.scopeNumbers = new WeakMap(); this.scopes = 0; this.chains = new Map();
+    // A decoded term with free variables, by its node: encoded again as that
+    // node, so that a checked term keeps what its syntax omits (a path
+    // application's annotation), in any scope whose entries and binders are
+    // its free variables. On ABI 3 its node does not depend on the scope.
+    this.roundTrips = new NodeCache(kernel, true);
   }
   // Handles made since a checkpoint move when it is committed or rolled
   // back: what was read of them is dropped then.
-  reset() { for (const cache of [this.encoded, this.decoded, this.free, this.heads]) cache.drop(); }
+  reset() { for (const cache of [this.encoded, this.roundTrips, this.decoded, this.free, this.heads]) cache.drop(); }
   // The dimensions free in a node, as a bit mask (freeDimensionMask).
   freeDimensions(id) { return freeDimensionMask(this.kernel, id, this.free); }
   formula(value, sort, dimensions) {
@@ -94,33 +105,56 @@ export class CubicalSyntax {
     Object.freeze(value);
     return this.kernel.formula(sort, clauses);
   }
-  // `key` is the dimensions' context key: the same for each part encoded
-  // in the same dimensions, so computed once for them.
-  encode(term, dimensions = new Map(), key = dimensionContextKey(dimensions)) {
+  // A term as kernel syntax, against `scope`: the driver's map from the
+  // symbols of a context's variables to their entries, made before the term
+  // is encoded (scope first; InstructionDriver.scopeOf). A variable must be
+  // bound by a binder of the term around it or be an entry of the scope
+  // (web/cubical-variables.mjs, variableTerm). `dimensions` names the
+  // interval dimensions in scope.
+  encode(term, dimensions = new Map(), scope = EMPTY_SCOPE) {
+    return this.encodeAt(term, dimensions, dimensionContextKey(dimensions), scope, null);
+  }
+  // `key` is the dimensions' context key, the same for each part encoded in
+  // the same dimensions, so computed once for them; `binders` the chain of
+  // the term's own binders around the part. A part with no free variable
+  // encodes alike in every scope and under any binders, and is kept by its
+  // dimensions alone, from one declaration to the next; an open one is kept
+  // by its scope and its binders too, for the declaration.
+  encodeAt(term, dimensions, key, scope, binders) {
     if (!term || typeof term !== "object") throw new TypeError("Expected cubical syntax.");
-    const cached = this.encoded.node(term, key);
+    const open = !this.closed(term), at = open ? `${key}|${this.scopeNumber(scope)}|${binders?.id ?? 0}` : key;
+    const cached = this.encoded.node(term, at);
     if (cached) return cached;
-    const k = this.kernel, child = t => this.encode(t, dimensions, key);
+    const k = this.kernel, decoded = open && this.roundTrips.node(term, key);
+    if (decoded) {
+      for (const name of freeNames(term)) resolveVariable(k, name, this.binds(binders, name), scope);
+      return decoded;
+    }
+    const child = t => this.encodeAt(t, dimensions, key, scope, binders);
     const node = (payload = 0, ...children) => k.term(term.tag, payload, ...children);
+    const level = l => this.encodeLevel(l, scope, binders);
+    // A binder's body, under one more binder of the term's own.
+    const body = t => this.encodeAt(t, dimensions, key, scope, this.binder(term.name, binders));
     let result;
     switch (term.tag) {
       case "DefRef":
         result = k.definitions.get(term.name);
         if (!result) throw new Error(`Unknown checked cubical definition: ${term.name}`);
         break;
-      case "U": result = node(0, this.encodeLevel(term.level)); break;
-      case "Var": result = node(k.symbol(term.name)); break;
+      case "U": result = node(0, level(term.level)); break;
+      case "Var": result = variableTerm(k, term.name, this.binds(binders, term.name), scope); break;
       case "Unit": case "Point": case "Void": result = node(); break;
       case "Pi": case "Lam": case "Sigma":
-        result = node(k.symbol(term.name), child(term.domain), child(term.body)); break;
+        result = binderTerm(k, term.tag, term.name, child(term.domain), body(term.body)); break;
       case "App": result = node(0, child(term.fn), child(term.arg)); break;
       case "Pair": result = node(0, child(term.as), child(term.first), child(term.second)); break;
       case "Fst": case "Snd": result = node(0, child(term.pair)); break;
       case "Path": case "PLam": case "Comp": case "HComp": case "Trans": {
-        const { dim, inner } = bindDimensions(term, dimensions);
-        const family = this.encode(term.family, term.tag === "HComp" ? dimensions : inner);
+        const { dim, inner } = bindDimensions(term, dimensions), innerKey = dimensionContextKey(inner);
+        const within = t => this.encodeAt(t, inner, innerKey, scope, binders);
+        const family = term.tag === "HComp" ? child(term.family) : within(term.family);
         if (term.tag === "Path") result = node(dim, family, child(term.left), child(term.right));
-        else if (term.tag === "PLam") result = node(dim, family, this.encode(term.body, inner));
+        else if (term.tag === "PLam") result = node(dim, family, within(term.body));
         else if (term.tag === "Trans") {
           const base = child(term.base);
           const descriptor = k.term("Tube", this.formula(term.face, "face", dimensions), base, 0);
@@ -128,7 +162,7 @@ export class CubicalSyntax {
         } else {
           let tubes = 0;
           for (const part of [...term.system].reverse())
-            tubes = k.term("Tube", this.formula(part.face, "face", dimensions), this.encode(part.term, inner), tubes);
+            tubes = k.term("Tube", this.formula(part.face, "face", dimensions), within(part.term), tubes);
           result = node(dim, family, tubes, child(term.base));
         }
         break;
@@ -154,8 +188,8 @@ export class CubicalSyntax {
       case "Unglue": result = node(0, child(term.as), child(term.value)); break;
       // Level quantification (G0): Π (x < ω). B, λ (x < ω). t and f {ℓ}. The
       // bound is always ω, LBound(1), in this version.
-      case "LPi": case "LLam": result = node(k.symbol(term.name), k.term("LBound", 1), child(term.body)); break;
-      case "LApp": result = node(0, child(term.fn), this.encodeLevel(term.level)); break;
+      case "LPi": case "LLam": result = binderTerm(k, term.tag, term.name, k.term("LBound", 1), body(term.body)); break;
+      case "LApp": result = node(0, child(term.fn), level(term.level)); break;
       // A universe variable's bound, as the type of its context entry.
       case "LBound": result = node(term.tier ?? 1); break;
       // Declared types (H1): an instance S{ls}(as) of an admitted signature,
@@ -163,8 +197,7 @@ export class CubicalSyntax {
       // constructor number `index` of an instance; an eliminator with its
       // motive and one clause per constructor, the squash's included.
       case "Sort":
-        result = node(this.signatureIndex(term.signature), this.list(term.parameters ?? [], child),
-          this.list(term.levels ?? [], level => this.encodeLevel(level)));
+        result = node(this.signatureIndex(term.signature), this.list(term.parameters ?? [], child), this.list(term.levels ?? [], level));
         break;
       case "Con":
         if (!Number.isInteger(term.index) || term.index < 0) throw new Error("A constructor needs its number.");
@@ -175,13 +208,32 @@ export class CubicalSyntax {
         break;
       default: throw new Error(`Unsupported cubical syntax: ${term.tag}`);
     }
-    this.encoded.setNode(term, key, result);
+    this.encoded.setNode(term, at, result, open);
     // Cache keys are immutable syntax, so a later mutation cannot accidentally
     // display new text while reusing the earlier checked term.
     if (term.system) { term.system.forEach(Object.freeze); Object.freeze(term.system); }
     for (const items of [term.parameters, term.levels, term.clauses]) if (Array.isArray(items)) Object.freeze(items);
     Object.freeze(term);
     return result;
+  }
+  // A scope's number, for the encoding cache's keys: a scope is made once
+  // and never changes (InstructionDriver.extendScope).
+  scopeNumber(scope) {
+    let number = this.scopeNumbers.get(scope);
+    if (number === undefined) this.scopeNumbers.set(scope, number = ++this.scopes);
+    return number;
+  }
+  // The chain of binders around a part with one more, innermost: one object
+  // for each chain, so that its id keys the encoding cache.
+  binder(name, next) {
+    const key = `${next?.id ?? 0} ${name}`;
+    let chain = this.chains.get(key);
+    if (!chain) this.chains.set(key, chain = { name, next, id: this.chains.size + 1 });
+    return chain;
+  }
+  binds(binders, name) {
+    for (let binder = binders; binder; binder = binder.next) if (binder.name === name) return true;
+    return false;
   }
   // The kernel's List cells for a sequence, in order.
   list(items, encode) {
@@ -209,8 +261,9 @@ export class CubicalSyntax {
     return record;
   }
   // A universe's level (web/cubical-levels.mjs): a number is a tier-0
-  // constant. The kernel takes it to normal form; this only encodes it.
-  encodeLevel(level) {
+  // constant. The kernel takes it to normal form; this only encodes it. Its
+  // variables are bound by the term's level binders or entries of `scope`.
+  encodeLevel(level, scope = EMPTY_SCOPE, binders = null) {
     const k = this.kernel;
     if (typeof level === "number") {
       if (!Number.isInteger(level) || level < 0 || level > 0xffff) throw new Error(`Invalid universe level: ${level}`);
@@ -221,9 +274,9 @@ export class CubicalSyntax {
         if (![level.tier, level.value].every(n => Number.isInteger(n) && n >= 0 && n <= 0xffff))
           throw new Error("Invalid universe level constant.");
         return k.term("LConst", level.tier * 0x10000 + level.value);
-      case "LSucc": return k.term("LSucc", level.count, this.encodeLevel(level.level));
-      case "LMax": return k.term("LMax", 0, this.encodeLevel(level.left), this.encodeLevel(level.right));
-      case "Var": return k.term("Var", k.symbol(level.name));
+      case "LSucc": return k.term("LSucc", level.count, this.encodeLevel(level.level, scope, binders));
+      case "LMax": return k.term("LMax", 0, this.encodeLevel(level.left, scope, binders), this.encodeLevel(level.right, scope, binders));
+      case "Var": return variableTerm(k, level.name, this.binds(binders, level.name), scope);
       default: throw new Error("Expected a universe level.");
     }
   }
@@ -267,7 +320,7 @@ export class CubicalSyntax {
     const cacheKey = dimensions.size ? JSON.stringify([id,dimensionContextKey(dimensions)]) : id;
     if (this.decoded.has(cacheKey)) {
       const result = this.decoded.get(cacheKey);
-      if (completeContext) this.encoded.setNode(result, encodingKey, id);
+      if (completeContext) (this.closed(result) ? this.encoded : this.roundTrips).setNode(result, encodingKey, id);
       return result;
     }
     const node = this.kernel.node(id), { kind: tag, payload, children: c } = node;
@@ -357,14 +410,17 @@ export class CubicalSyntax {
       }
     };
     freeze(result);
-    this.encoded.setNode(result, dimensionContextKey(dimensions), id);
+    const encoded = this.closed(result) ? this.encoded : this.roundTrips;
+    encoded.setNode(result, dimensionContextKey(dimensions), id);
     // Encoding uses the caller's full context. Decoding ignores unused
     // dimensions for sharing, but must also preserve the checked node in
     // that original context, including when a later decode hits the cache.
     // An inspection context can omit indices and use fallback names; those
     // names need not encode back to the original slots. New binder contexts
     // likewise still require derivation before head queries.
-    if (completeContext) this.encoded.setNode(result, encodingKey, id);
+    if (completeContext) encoded.setNode(result, encodingKey, id);
     this.decoded.set(cacheKey, result, id);
     return result;
-  }}
+  }
+  // Whether syntax has no free variable, and so encodes alike in every scope.
+  closed(term) { return !isTerm(term) || !freeNames(term).size; }}

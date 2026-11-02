@@ -160,12 +160,14 @@ async function splitSides(t, policy) {
   const A = { tag: "Var", name: "A" }, x = { tag: "Var", name: "x" };
   const at0 = name => [[`${name}:0`]];
   const dimensions = new Map([["i", 2], ["j", 3]]);
-  const context = [[kernel.symbol("A"), syntax.encode({ tag: "U", level: 0 })], [kernel.symbol("x"), syntax.encode(A)]];
+  // The context's scope first, then the syntax against it.
+  const scope = driver.scopeOf([[kernel.symbol("A"), { tag: "U", level: 0 }], [kernel.symbol("x"), A]], 0b1100n,
+    (type, at) => syntax.encode(type, dimensions, at));
   const line = { tag: "PLam", dim: "k", family: A, body: { tag: "Comp", dim: "z", family: A, system: [{ face: at0("k"), term: x }], base: x } };
   const meet = [["i:1", "j:1"]];
   const left = { tag: "PApp", path: line, arg: meet };
   const right = { tag: "Comp", dim: "z", family: A, system: [{ face: at0("i"), term: x }, { face: at0("j"), term: x }], base: x };
-  const focus = term => driver.focus(graph.refl(driver.infer(syntax.encode(term, dimensions), context, 0b1100n)), "other");
+  const focus = term => driver.focus(graph.refl(driver.derive(syntax.encode(term, dimensions, scope), scope)), "other");
   return { kernel, driver, a: focus(left), b: focus(right) };
 }
 

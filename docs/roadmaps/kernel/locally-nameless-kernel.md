@@ -1,7 +1,12 @@
 # Variables by role: a locally nameless kernel
 
-Proposal of 2026-11-02, against main `a933a0bf`. Design only: nothing here is
-implemented. Every statement about current behavior names the C function
+Proposal of 2026-11-02, against main `a933a0bf`. PR 1 of section 7 is
+implemented, on ABI 3: `web/cubical-variables.mjs` reads and builds binders
+and variables and names the driver's entries, definitions and signatures
+are named by index, and every term is encoded against the scope of its
+context, made first ([Appendix A](#appendix-a-every-site-that-queries-or-encodes-syntax-classified)
+records what its assertion found). The kernel's part is design only. Every
+statement about current behavior names the C function
 that enforces it; the counts in [section 1.7](#17-what-the-names-cost-measured)
 and [section 6](#6-performance-expectations) come from a temporary
 instrumented build of main, not committed.
@@ -1120,7 +1125,13 @@ changes:
   - If a synthetic variable ever had no known type, the honest option is not
     to ask the kernel about a term that mentions it: the query is reported
     as stuck, the outcome the unifier already has for an undecided
-    comparison, and no type is invented for it.
+    comparison, and no type is invented for it. The same holds where its
+    type is no type in the scope it is asked in, which PR 1 found (Appendix
+    A): while a constraint is pending, a type of the unifier's can mix a
+    placeholder's level with the level it is to be solved by, so the scope
+    of its `under` names cannot be derived; the query fails, the unifier
+    reports the constraint stuck, and the scope's failure is kept for the
+    driver's life, so it is not derived again.
 
 - A diagnostic comparison: `levelWithin` in `web/cubical-elaborator.mjs`
   encodes two frontend levels with `encodeLevel` and no scope, to compare
@@ -1182,6 +1193,18 @@ everywhere, then the full key. The decoder's cache (`this.decoded`, keyed
 by node and free dimensions) has the mirror condition: a node with
 `loose == 0` decodes the same under any name stack, and a node with loose
 indices is keyed by the names its loose indices take.
+
+The decoder also stores what it decodes for the encoder, so that a decoded
+object encodes back to its own node: a checked path application's
+annotation, which its syntax does not carry, survives the round trip
+(`tests/cubical-wasm.test.mjs` checks it). A decoded object with a free
+variable cannot be stored under a scope it was not decoded in. PR 1 keeps
+such objects apart, by node and dimension context (`roundTrips` in
+`web/cubical-syntax.mjs`), and encodes one back to its node only after
+resolving each of its free variables against the binders and the scope it
+is encoded in, which is sound on ABI 3, where its node does not depend on
+the scope. PR 3's decoder names `CC_CONTEXT` through a scope, and stores the
+object under that scope instead.
 
 The order needs no kernel change and is adopted first, on ABI 3, in PR 1,
 with symbols still standing for the entries; PR 3 then changes only what a
@@ -1617,8 +1640,12 @@ Each PR is verified locally first, opened as a draft, and keeps
   same for a signature's name at a reused signature index.
 - **Names in the driver** (section 5.3): binding one name twice at one type
   in disjoint scopes reuses the entry, and a derivation repeated under it is
-  answered from the memo; `λ (x : A). λ (x : A). x` derives with two
-  entries, the inner `x` the inner binder's; two `cc_instr_extend` calls at
+  answered from the memo; `λ (x : A). λ (x : A). x` derives with the inner
+  `x` the inner binder's, and a binder whose scope already holds the entry
+  made for its name and type gets another (the inner binder of this term
+  derives in its narrowed scope, which leaves the outer entry out, so there
+  one entry serves both, as `tests/driver-names.test.mjs` finds on ABI 3);
+  two `cc_instr_extend` calls at
   one type give two entries; two Defines of one closed judgement give two
   definitions with distinct references; `cc_kernel_definition` and the
   Lookup judgement report no symbol, and a definition's name, a
@@ -1741,3 +1768,39 @@ directly):
 | a diagnostic comparison of two levels (`levelWithin`, called from `translator/inductive.mjs:199`) | the declaration's universe parameters | none: compared on the frontend's level syntax, not encoded (section 5.3) | `cubical-elaborator.mjs:167` |
 | a view's roots and context (the kernel assembly) | the view's context | the judgement's own handles where the view has them (`checked.typeHandle`), otherwise the view's context's scope, made first | `cubical-assembly.mjs:28`, `:30`, `:38` |
 | a view's context (the graph view) | the view's context | the view's context's scope, made first | `cubical-graph-view.mjs:16` |
+
+**What PR 1's assertion found.** With every site above encoding against its
+scope, the encoder refusing a variable that is neither bound in the term nor
+an entry of the scope (`resolveVariable` in `web/cubical-variables.mjs`, with
+the driver's message, "Unbound variable x."), a temporary log of each
+refusal was run over `npm test`, the library's 61 import closures and the
+archive audit (`tools/audit-cubical.mjs --all`), and one of each scope that
+could not be made over the closures and the audit, on 2026-11-02:
+
+- **No site beyond the tables.** Every refusal was a derivation of a term
+  with a variable outside its context, which `deriveNode` refused with the
+  same message before (tests that assert the refusal, and the translator
+  tests' ill-scoped terms), a raw instruction test encoding an open term
+  without its scope, now given one, or `tests/scope-first.test.mjs`'s own.
+  No head query, comparison, admission or view encoded an unbound variable.
+- **`nf`'s callers.** Rows 1, 2, 3, 5 and 9 ask in contexts whose types were
+  checked before they were bound (`Scope.bind` binds a checked type; a
+  rule's domains are its checked type's), and row 4's peeled and walked
+  binders are bound at their own domains: none of them asked in a context
+  that could not be derived, so each is a caller that "derives its context
+  earlier". Row 6 is the one exception, below.
+- **The unifier's `under` names, rows 4 and 6.** While a constraint is
+  pending, the solver's terms can mix a placeholder's level with the level
+  it is to be solved by, so the domain at which `under` binds its fresh
+  name is no type in the solver's scope (in `algebra`'s homomorphisms, a
+  `Magma.M` at a caller's level applied to a variable bound at a
+  placeholder's). Such a query's scope cannot be derived: 247 times in the
+  `semirings` closure and 3,911 times over the 61 closures, which share
+  their imports, every time in `unfolded` under `under`, and never in the
+  archive audit. The query fails,
+  `unfolded` reports the constraint stuck, as for any head it cannot
+  compute, and the driver keeps the scope's failure (`extendScope`), so the
+  scope is not derived again. Every verdict of the suite, the library and
+  the archive is unchanged. Binding the name on each side at that side's
+  domain was tried and fails the same way, since the mixing is within one
+  side's term.

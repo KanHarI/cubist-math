@@ -63,17 +63,22 @@ export function simplificationRule(scope, term, reverse = false, witnesses = [],
   if (type.tag === "Path") return equalityRule(scope, term, reverse);
   // A universe-generic rule (G0 §4.3) has one level, a pattern variable
   // matched only where the matched side has it bare: U or f(U).
-  let level = null;
+  // The rule's level and parameters are variables of a scope of its own, for
+  // the queries that open its binders: the level a level entry, each
+  // parameter an entry at its binder's domain, over the ones before it.
+  let level = null, at = scope;
   if (type.tag === "LPi") {
     level = scope.fresh("simp_level");
-    type = scope.nf(T.levelApply(T.levelLambda(type.name, type.body), T.variable(level)));
+    at = at.withVariable(level, T.bound).scope;
+    type = at.nf(T.levelApply(T.levelLambda(type.name, type.body), T.variable(level)));
   }
   const parameters = [],domains=[];
   while (type.tag === "Pi") {
     const marker = scope.fresh("simp_parameter");
     parameters.push(marker);
     domains.push(type.domain);
-    type = scope.nf(T.app(T.lam(type.name,type.domain,type.body),T.variable(marker)));
+    at = at.withVariable(marker, type.domain).scope;
+    type = at.nf(T.app(T.lam(type.name,type.domain,type.body),T.variable(marker)));
     if (parameters.length > 16) throw Error("Simplification rule has too many parameters.");
   }
   // These are pattern parameters, not assumptions in scope. Recognition is

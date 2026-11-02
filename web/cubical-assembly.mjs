@@ -24,11 +24,14 @@ export const opcodeName = kind => "CC_" + ({ GlueSystem: "GLUE_SYSTEM", GlueTerm
 
 export function kernelAssembly(program, view, checked, { limit = 400, expanded = [], focus = [] } = {}) {
   const kernel = program.kernel, syntax = program.checker.syntax, dimensions = new Map(view.dimensions ?? []);
+  // The view's context's scope first, and its terms' syntax against it.
+  const scope = program.checker.scopeOf(new Map(view.context.map(entry => [entry.name, entry.type])), dimensions);
+  const encode = term => syntax.encode(term, dimensions, scope);
   const roots = [
     { label: "Expression", handle: checked.expression },
-    { label: "Checked type", handle: syntax.encode(view.type, dimensions) },
+    { label: "Checked type", handle: encode(view.type) },
   ];
-  const inferredType = checked.typeHandle ?? syntax.encode(checked.type, dimensions);
+  const inferredType = checked.typeHandle ?? encode(checked.type);
   if (inferredType !== roots[1].handle) roots.push({ label: "Inferred type", handle: inferredType });
   // A symbol is shown by its label, and its kernel name too where that
   // differs: but an assumption's kernel name is internal (names.mjs,
@@ -36,7 +39,7 @@ export function kernelAssembly(program, view, checked, { limit = 400, expanded =
   const named = (label, name) => isAssumptionName(name) ? label ?? name : label && label !== name ? `${label} (${name})` : name;
   const context = view.context.map(entry => ({ name: entry.name, label: entry.label ?? entry.name,
     shown: named(entry.label ?? entry.name, entry.name),
-    symbol: kernel.symbol(entry.name), handle: syntax.encode(entry.type, dimensions) }));
+    symbol: kernel.symbol(entry.name), handle: encode(entry.type) }));
   const queue = [...focus, ...roots.map(root => root.handle), ...context.map(entry => entry.handle)];
   const seen = new Set(), nodes = [], formulas = new Map(), expand = new Set(expanded);
   for (let index = 0; index < queue.length && nodes.length < limit; index++) {

@@ -17,6 +17,9 @@ import { LEVEL, binders as TERM_BINDERS, levelBinders as LEVEL_BINDERS, boundSym
   openBinder, referenceSymbol, sameReference } from "./cubical-variables.mjs";
 
 const unsupported = kind => new Error(`${kind} is not in instruction mode yet.`);
+// An error thrown again: its own copy, which a caller that describes it
+// changes without changing the one kept.
+const copied = error => Object.assign(Object.create(Object.getPrototypeOf(error)), error, { message: error.message });
 // Whether child i of a node is under its dimension binder (the payload).
 const dimensionBound = (kind, i) => kind === "PLam" || ((kind === "Path" || kind === "Trans") && i === 0) ||
   (kind === "Comp" && i < 2) || (kind === "HComp" && i === 1);
@@ -211,7 +214,8 @@ export class InstructionDriver {
     this.heads = new Map();
     this.guideCalls = 0;
     this.alphaMemo = new Map();
-    this.contextScopes = new Map();
+    this.emptyScopes = new Map();
+    this.extensions = new WeakMap();
     this.chainIds = new WeakMap();
     this.chainNumbers = new Map();
     this.freeDims = new Map();
@@ -221,31 +225,59 @@ export class InstructionDriver {
   }
 
   // The judgement `expression : type` for a checked term and its type, in a
-  // context of [symbol, type] assumptions, each over the ones before it.
-  // `dimensions` is the mask of the interval dimensions the terms may use.
+  // context of [symbol, type] assumptions, each over the ones before it, or
+  // in a scope made first (scopeOf). `dimensions` is the mask of the
+  // interval dimensions the terms may use.
   check(expression, type, context = [], dimensions = 0n) {
-    const scope = this.contextScope(context, dimensions);
+    return this.checkIn(expression, type, this.contextScope(context, dimensions));
+  }
+  checkIn(expression, type, scope) {
     return this.convertTo(this.derive(expression, scope), this.asType(this.derive(type, scope)));
   }
   // The judgement for a term alone, at the type its derivation gives it.
   infer(expression, context = [], dimensions = 0n) {
     return this.derive(expression, this.contextScope(context, dimensions));
   }
-  // A context's scope: each assumption bound at its type, derived in order;
-  // the same context gives the same scope.
-  contextScope(context, dimensions) {
-    const key = `${dimensions}|${context.map(([symbol, type]) => `${symbol}:${type}`).join(",")}`;
-    if (!this.contextScopes.has(key)) {
-      // A new scope for each assumption: a scope is a memo key for the
-      // derivations made in it (scopeKey), so it never changes once used.
-      let scope = new Map([[LIVE, dimensions]]);
-      for (const [symbol, assumption] of context)
+  // A context's scope: each assumption bound at its type, derived in order,
+  // with `encode(type, scope)` the type's syntax against the scope of the
+  // assumptions before it. So the scope is made before any syntax in it is
+  // encoded (section 5.3 of the locally nameless design); each scope is made
+  // once (extendScope), and the same context gives the same scope.
+  scopeOf(context, dimensions, encode) {
+    let scope = this.emptyScope(dimensions);
+    for (const [symbol, type] of context) scope = this.extendScope(scope, symbol, encode(type, scope));
+    return scope;
+  }
+  // A context's scope, each assumption's type given as syntax already.
+  contextScope(context, dimensions) { return this.scopeOf(context, dimensions, type => type); }
+  // The scope of no variable, with the dimensions of a mask live, and a
+  // scope with one assumption more: a new scope for each, made once, since a
+  // scope is a memo key for the derivations made in it (scopeKey) and so
+  // never changes once used.
+  emptyScope(dimensions) {
+    if (!this.emptyScopes.has(dimensions)) this.emptyScopes.set(dimensions, new Map([[LIVE, dimensions]]));
+    return this.emptyScopes.get(dimensions);
+  }
+  // An assumption whose type is no type there fails each time it is asked
+  // for, as the search that refused it would again; running out of time or
+  // steps is no answer, and is not kept.
+  extendScope(scope, symbol, type) {
+    let extensions = this.extensions.get(scope);
+    if (!extensions) this.extensions.set(scope, extensions = new Map());
+    const key = `${symbol}:${type}`;
+    if (!extensions.has(key)) {
+      try {
         // A universe variable (G0) is a level entry, typed by its bound.
-        scope = new Map(scope).set(symbol, this.node(assumption).kind === "LBound" ? this.levelEntry(symbol, scope)
-          : this.bind(symbol, this.asType(this.derive(assumption, scope)), scope));
-      this.contextScopes.set(key, scope);
+        extensions.set(key, new Map(scope).set(symbol, this.node(type).kind === "LBound" ? this.levelEntry(symbol, scope)
+          : this.bind(symbol, this.asType(this.derive(type, scope)), scope)));
+      } catch (error) {
+        if (!isResourceLimit(error?.kind)) extensions.set(key, { refused: copied(error) });
+        throw error;
+      }
     }
-    return this.contextScopes.get(key);
+    const extended = extensions.get(key);
+    if (extended.refused) throw copied(extended.refused);
+    return extended;
   }
 
   // The kernel keeps its reads for the declaration (CubicalKernel.node).

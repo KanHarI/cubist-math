@@ -332,14 +332,18 @@ export function resolveInductive(translator, node, value, args, scope, expected)
         + (value.dims ? `apply it at a point where ${inductive.source}(…) is expected, as in typed(${inductive.source}(…), `
           + `${value.source}${value.arity ? "(…)" : ""} @ i).`
           : `write typed(${inductive.source}(…), ${value.source}${value.arity ? "(…)" : ""}).`)));
-      let type = scope.nf(expected);
+      // Each Π binder peeled off is bound at its domain, in a scope of the
+      // query's own, before its body is asked about.
+      let type = scope.nf(expected), at = scope;
       for (let missing = value.arity - (args?.length ?? 0); missing > 0; missing--) {
         if (type.tag !== "Pi") break;
-        type = scope.nf(type.body);
+        const {scope: inner, variable} = at.withVariable(type.name, type.domain);
+        at = inner;
+        type = at.nf(variable === type.name ? type.body : substituteTerm(type.body, type.name, T.variable(variable)));
       }
       // The instance does not vary along the constructor's dimensions: each
       // path's family is read at an endpoint, where it names no dimension.
-      for (let d = 0; d < value.dims && type.tag === "Path"; d++) type = scope.nf(substituteDimension(type.family, type.dim, I.zero));
+      for (let d = 0; d < value.dims && type.tag === "Path"; d++) type = at.nf(substituteDimension(type.family, type.dim, I.zero));
       if (type.tag !== "Sort" || type.signature !== inductive.binding)
         throw locate(Error(`${value.source} builds ${inductive.source}(…), but ${shown(type)} is expected here.`));
       instance = type;

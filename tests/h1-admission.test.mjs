@@ -66,7 +66,7 @@ test("a truncation gets the generated squash, and an erased parameter stays out 
   const { kernel, syntax, g } = session(t);
   kernel.setExtensions({ h1: true });
   // Trunc(U < UU0, A : U) : prop { point(a : A); }
-  const x = g.level("x"), ux = g.universe(syntax.encodeLevel({ tag: "Var", name: "x" }));
+  const x = g.level("x"), scope = new Map([[kernel.symbol("x"), x]]), ux = g.universe(syntax.encodeLevel({ tag: "Var", name: "x" }, scope));
   const a = g.extend(ux, "A");
   const former = g.levelPi(x, g.pi(a, ux));
   let trunc = g.signatureBegin(former, 1, "Trunc");
@@ -80,7 +80,7 @@ test("a truncation gets the generated squash, and an erased parameter stays out 
   const squash = info.constructors[1];
   assert.deepEqual([squash.generated, squash.positions, squash.dimensions], [true, 2, 1]);
   // Holder(U < UU0, A : U) : next(U) { hold(B : U); }, with U proposed erased.
-  const next = g.universe(syntax.encodeLevel({ tag: "LSucc", count: 1, level: { tag: "Var", name: "x" } }));
+  const next = g.universe(syntax.encodeLevel({ tag: "LSucc", count: 1, level: { tag: "Var", name: "x" } }, scope));
   const holder = g.signatureBegin(g.levelPi(x, g.pi(a, next)), 0, "Holder");
   const h = g.extend(next, "Holder"), b = g.extend(ux, "B");
   assert.throws(() => g.signatureConstructor(holder, g.pi(b, g.variable(h)), "hold"), /erased universe parameter/);
@@ -101,7 +101,7 @@ test("instances of admitted signatures give their constructors", t => {
   assert.equal(g.judgement(one).type, g.judgement(n).term);
   assert.throws(() => g.construct(n, 2), /no such constructor/);
   // Trunc(U < UU0, A : U) : prop { point(a : A); } at UNat: in progress, then complete.
-  const x = g.level("x"), ux = g.universe(syntax.encodeLevel({ tag: "Var", name: "x" }));
+  const x = g.level("x"), scope = new Map([[kernel.symbol("x"), x]]), ux = g.universe(syntax.encodeLevel({ tag: "Var", name: "x" }, scope));
   const a = g.extend(ux, "A");
   let trunc = g.signatureBegin(g.levelPi(x, g.pi(a, ux)), 1, "Trunc");
   const ts = g.extend(ux, "Trunc");
@@ -114,8 +114,8 @@ test("instances of admitted signatures give their constructors", t => {
   assert.equal(g.judgement(truncNat).type, g.judgement(u0).term);
   assert.equal(g.judgement(g.apply(g.construct(truncNat, 0), g.point())).type, g.judgement(truncNat).term);
   // Pointed(U < UU0) : next(U) { pt(X : U, x : X); }: its level is recorded.
-  const y = g.level("y"), uy = g.universe(syntax.encodeLevel({ tag: "Var", name: "y" }));
-  const next = g.universe(syntax.encodeLevel({ tag: "LSucc", count: 1, level: { tag: "Var", name: "y" } }));
+  const y = g.level("y"), atY = new Map([[kernel.symbol("y"), y]]), uy = g.universe(syntax.encodeLevel({ tag: "Var", name: "y" }, atY));
+  const next = g.universe(syntax.encodeLevel({ tag: "LSucc", count: 1, level: { tag: "Var", name: "y" } }, atY));
   let pointed = g.signatureBegin(g.levelPi(y, next), 0, "Pointed", 1);
   const ps = g.extend(next, "Pointed"), carrier = g.extend(uy, "X");
   pointed = g.signatureConstructor(pointed, g.pi(carrier, g.pi(g.extend(g.variable(carrier), "element"), g.variable(ps))), "pt");

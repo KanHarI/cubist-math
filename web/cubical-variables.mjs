@@ -75,6 +75,25 @@ export function freshBinder(graph, node, rebuild = body => body) {
   return kernel.term(node.kind, fresh, node.children[0], rebuild(graph.rename(node.children[1], false, boundSymbol(node), fresh)));
 }
 
+// Raw syntax as the encoder builds it from named syntax
+// (web/cubical-syntax.mjs), against a scope: the driver's map from the
+// symbols of a context's variables to their entries, made first (scope
+// first, section 5.3). A variable is bound by one of the term's own binders
+// around it, or is an entry of the scope; any other is refused, as the
+// kernel's syntax will refer to a context variable only as an entry that
+// exists. On ABI 3 both are Var(symbol), the name's, and a binder's payload
+// is its name's symbol.
+export function resolveVariable(kernel, name, bound, scope) {
+  const symbol = kernel.symbol(name);
+  if (!bound && typeof scope.get(symbol) !== "number") throw unboundVariable(name);
+  return symbol;
+}
+export const variableTerm = (kernel, name, bound, scope) => kernel.term("Var", resolveVariable(kernel, name, bound, scope));
+export const binderTerm = (kernel, kind, name, ...children) => kernel.term(kind, kernel.symbol(name), ...children);
+// The driver's own message for a variable no entry stands for, marked so
+// that a derivation refuses it as deriving the variable did.
+const unboundVariable = name => Object.assign(new Error(`Unbound variable ${name}.`), { unbound: name });
+
 // The name a decoder shows a binder's variable by, and pushes on its stack.
 export const binderName = (kernel, node) => kernel.symbolName(boundSymbol(node));
 // The name a decoder shows a variable by, with `names` the binders around

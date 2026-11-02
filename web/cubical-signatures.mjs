@@ -46,7 +46,8 @@ export function admitSignature(kernel, spec, { syntax = new CubicalSyntax(kernel
   if (kernel.signatures.has(spec.name)) throw new Error(`The declared type ${spec.name} already exists.`);
   const g = driver.graph, levels = spec.levels ?? [], parameters = spec.parameters ?? [];
   if (levels.length > 24 || parameters.length > 64) throw Object.assign(new Error("A signature has too many parameters."), { kind: "resource" });
-  // Level entries first, then each parameter bound at its derived type.
+  // Level entries first, then each parameter bound at its derived type: each
+  // type is encoded against the scope of the entries before it.
   let scope = new Map([["dims", 0n]]);
   const levelEntries = levels.map(({ name }) => {
     const entry = driver.levelEntry(kernel.symbol(name), scope);
@@ -54,11 +55,11 @@ export function admitSignature(kernel, spec, { syntax = new CubicalSyntax(kernel
     return entry;
   });
   const parameterEntries = parameters.map(({ name, type }) => {
-    const entry = driver.bind(kernel.symbol(name), driver.asType(driver.derive(syntax.encode(type), scope)), scope);
+    const entry = driver.bind(kernel.symbol(name), driver.asType(driver.derive(syntax.encode(type, new Map(), scope), scope)), scope);
     scope = new Map(scope).set(kernel.symbol(name), entry);
     return entry;
   });
-  const universe = g.universe(syntax.encodeLevel(spec.level ?? 0));
+  const universe = g.universe(syntax.encodeLevel(spec.level ?? 0, scope));
   let former = universe;
   for (const entry of [...parameterEntries].reverse()) former = g.pi(entry, former);
   for (const entry of [...levelEntries].reverse()) former = g.levelPi(entry, former);
@@ -72,7 +73,7 @@ export function admitSignature(kernel, spec, { syntax = new CubicalSyntax(kernel
     // A constructor's type lives in the sort's universe; one derived lower
     // is lifted to it. A refusal names the constructor.
     try {
-      const derived = driver.convertTo(driver.derive(syntax.encode(type), scope), universe);
+      const derived = driver.convertTo(driver.derive(syntax.encode(type, new Map(), scope), scope), universe);
       const entry = driver.bind(kernel.symbol(name), derived, scope);
       signature = signatureConstructor(g, signature, derived, entry);
       scope = new Map(scope).set(kernel.symbol(name), entry);

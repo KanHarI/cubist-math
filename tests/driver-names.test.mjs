@@ -69,7 +69,10 @@ test("a type equal up to a dimension's name binds the same entry", async t => {
   const typed = dimension => driver.asType(driver.derive(at(dimension), new Map([["dims", 0n]])));
   const entries = [0, 1].map(dimension => driver.bind(kernel.symbol("x"), typed(dimension)));
   assert.equal(entries[0], entries[1]);
-  const [left, right] = [0, 1].map(dimension => g.refl(driver.infer(checker.syntax.encode(x), [[kernel.symbol("x"), at(dimension)]])));
+  const [left, right] = [0, 1].map(dimension => {
+    const scope = driver.contextScope([[kernel.symbol("x"), at(dimension)]], 0n);
+    return g.refl(driver.derive(checker.syntax.encode(x, new Map(), scope), scope));
+  });
   assert.ok(g.transitivity(left, right));
 });
 
