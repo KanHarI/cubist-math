@@ -1,3 +1,7 @@
+// Swaps and cancellation over this archive's unary Fin, kept for its linear
+// algebra, Galois theory and S3 until R3 decides those areas. The library's
+// finite_cardinality rebuilds the uniqueness of finite cardinality
+// (docs/roadmaps/archive-retirement.md#counting-in-the-library).
 import unat;
 import finite;
 use unat;

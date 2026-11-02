@@ -1,0 +1,267 @@
+// Counting permutations: a k-element type has k! self-equivalences, as an
+// equivalence of ContrEquiv(Fin(k), Fin(k)) with Fin(k!), for nat's
+// factorial. A self-equivalence of A or Unit, for A with decidable
+// equality, is the image of the point and a self-equivalence of A: the
+// transposition of the image with the point makes the point fixed, and the
+// equivalence then restricts to A (type_equivalences' sum_unit_cancel).
+import finite_arithmetic;
+import nat;
+use nat;
+
+// The transposition of c with the point, in A or Unit. The decision is an
+// argument, so that the laws below can take its two cases.
+computable def transpose_by(A : U0, a, b : A, d : Decidable(U0, a = b)) :
+  A or Unit := match d return (A or Unit) {
+    left same => right(tt);
+    right different => left(b);
+  };
+
+computable def transpose(
+  A : U0, decide : forall a, b : A. Decidable(U0, a = b), c : A or Unit, x : A or Unit
+) :
+  A or Unit := match c return (A or Unit) {
+    left a => match x return (A or Unit) {
+      left b => transpose_by(A, a, b, decide(a, b));
+      right u => left(a);
+    };
+    right u => x;
+  };
+
+computable def transpose_by_same(A : U0, a, b : A, d : Decidable(U0, a = b), same : a = b) :
+  transpose_by(A, a, b, d) = right(tt) := match d as c return (
+    transpose_by(A, a, b, c) = typed(A or Unit, right(tt))
+  ) {
+    left yes => refl(typed(A or Unit, right(tt)));
+    right different => absurd(different(same));
+  };
+
+computable def transpose_by_different(
+  A : U0, a, b : A, d : Decidable(U0, a = b), different : (a = b) -> Void
+) :
+  transpose_by(A, a, b, d) = left(b) := match d as c return (
+    transpose_by(A, a, b, c) = typed(A or Unit, left(b))
+  ) {
+    left same => absurd(different(same));
+    right unequal => refl(typed(A or Unit, left(b)));
+  };
+
+// The transposition sends the point to c, and c to the point.
+computable def transpose_point(
+  A : U0, decide : forall a, b : A. Decidable(U0, a = b), c : A or Unit
+) :
+  transpose(A, decide, c, right(tt)) = c := match c as z return (
+    transpose(A, decide, z, right(tt)) = z
+  ) {
+    left a => refl(typed(A or Unit, left(a)));
+    right u => cong(fun (t : Unit) => typed(A or Unit, right(t)), unit_is_prop(tt, u));
+  };
+
+computable def transpose_self(A : U0, decide : forall a, b : A. Decidable(U0, a = b), c : A or Unit) :
+  transpose(A, decide, c, c) = right(tt) := match c as z return (
+    transpose(A, decide, z, z) = typed(A or Unit, right(tt))
+  ) {
+    left a => transpose_by_same(A, a, a, decide(a, a), refl(a));
+    right u => cong(fun (t : Unit) => typed(A or Unit, right(t)), unit_is_prop(u, tt));
+  };
+
+// A transposition is its own inverse.
+computable def transpose_left_twice(
+  A : U0, decide : forall a, b : A. Decidable(U0, a = b), a : A, x : A or Unit
+) :
+  transpose(A, decide, left(a), transpose(A, decide, left(a), x)) = x := match x as w return (
+    transpose(A, decide, left(a), transpose(A, decide, left(a), w)) = w
+  ) {
+    left b => match decide(a, b) as d return (
+      transpose(A, decide, left(a), transpose_by(A, a, b, d)) = typed(A or Unit, left(b))
+    ) {
+      left same => cong(fun (t : A) => typed(A or Unit, left(t)), same);
+      right different => transpose_by_different(A, a, b, decide(a, b), different);
+    };
+    right u => trans(
+      transpose_by_same(A, a, a, decide(a, a), refl(a)),
+      cong(fun (t : Unit) => typed(A or Unit, right(t)), unit_is_prop(tt, u))
+    );
+  };
+
+computable def transpose_twice(
+  A : U0, decide : forall a, b : A. Decidable(U0, a = b), c, x : A or Unit
+) :
+  transpose(A, decide, c, transpose(A, decide, c, x)) = x := match c as z return (
+    transpose(A, decide, z, transpose(A, decide, z, x)) = x
+  ) {
+    left a => transpose_left_twice(A, decide, a, x);
+    right u => refl(x);
+  };
+
+computable def transposition(A : U0, decide : forall a, b : A. Decidable(U0, a = b), c : A or Unit) :
+  ContrEquiv(U0, A or Unit, A or Unit) := inverse_equiv(
+    U0, A or Unit, A or Unit, fun (x : A or Unit) => transpose(A, decide, c, x),
+    fun (x : A or Unit) => transpose(A, decide, c, x),
+    fun (x : A or Unit) => transpose_twice(A, decide, c, x),
+    fun (x : A or Unit) => transpose_twice(A, decide, c, x)
+  );
+
+// A self-equivalence of A or Unit, followed by the transposition of the
+// point's image, fixes the point; its restriction is the rest.
+computable def fix_point(
+  A : U0, decide : forall a, b : A. Decidable(U0, a = b), e : ContrEquiv(U0, A or Unit, A or Unit)
+) :
+  ContrEquiv(U0, A or Unit, A or Unit) := equiv_compose(
+    U0, A or Unit, A or Unit, A or Unit, e, transposition(A, decide, e.1(right(tt)))
+  );
+
+computable def permutation_split(
+  A : U0, decide : forall a, b : A. Decidable(U0, a = b), e : ContrEquiv(U0, A or Unit, A or Unit)
+) :
+  (A or Unit)
+  and ContrEquiv(U0, A, A) := (e.1(right(tt)), sum_unit_cancel(U0, A, A, fix_point(A, decide, e)));
+
+computable def permutation_join(
+  A : U0, decide : forall a, b : A. Decidable(U0, a = b), p : (A or Unit) and ContrEquiv(U0, A, A)
+) :
+  ContrEquiv(U0, A or Unit, A or Unit) := equiv_compose(
+    U0, A or Unit, A or Unit, A or Unit,
+    sum_equiv(U0, A, Unit, A, Unit, p.2, id_contr_equiv(U0, Unit)), transposition(A, decide, p.1)
+  );
+
+// The rest, with the point added, is the equivalence that fixes the point.
+computable def fix_point_restriction(
+  A : U0, decide : forall a, b : A. Decidable(U0, a = b), e : ContrEquiv(U0, A or Unit, A or Unit),
+  x : A or Unit
+) :
+  sum_map(
+    U0, A, Unit, A, Unit, sum_unit_cancel(U0, A, A, fix_point(A, decide, e)).1, fun (u : Unit) => u,
+    x
+  ) = fix_point(A, decide, e).1(x) := match x as w return (
+    sum_map(
+      U0, A, Unit, A, Unit, sum_unit_cancel(U0, A, A, fix_point(A, decide, e)).1,
+      fun (u : Unit) => u, w
+    ) = fix_point(A, decide, e).1(w)
+  ) {
+    left a => sum_unit_restrict_fixed(
+      U0, A, A, fix_point(A, decide, e).1,
+      fun (y : A or Unit) => equiv_inverse(U0, A or Unit, A or Unit, fix_point(A, decide, e), y),
+      fun (z : A or Unit) => equiv_inverse_retraction(
+        U0, A or Unit, A or Unit, fix_point(A, decide, e), z
+      ), transpose_self(A, decide, e.1(right(tt))), a
+    );
+    right u => trans(
+      cong(fun (t : Unit) => typed(A or Unit, right(t)), unit_is_prop(u, tt)),
+      trans(
+        sym(transpose_self(A, decide, e.1(right(tt)))),
+        cong(fun (t : Unit) => fix_point(A, decide, e).1(right(t)), unit_is_prop(tt, u))
+      )
+    );
+  };
+
+computable def permutation_join_split(
+  A : U0, decide : forall a, b : A. Decidable(U0, a = b), e : ContrEquiv(U0, A or Unit, A or Unit)
+) :
+  permutation_join(A, decide, permutation_split(A, decide, e)) = e := equiv_path(
+    U0, A or Unit, A or Unit, permutation_join(A, decide, permutation_split(A, decide, e)), e,
+    fun (x : A or Unit) => trans(
+      cong(
+        fun (y : A or Unit) => transpose(A, decide, e.1(right(tt)), y),
+        fix_point_restriction(A, decide, e, x)
+      ), transpose_twice(A, decide, e.1(right(tt)), e.1(x))
+    )
+  );
+
+computable def permutation_split_join(
+  A : U0, decide : forall a, b : A. Decidable(U0, a = b), p : (A or Unit) and ContrEquiv(U0, A, A)
+) :
+  permutation_split(A, decide, permutation_join(A, decide, p)) = p {
+  let joined := permutation_join(A, decide, p);
+  let image : joined.1(right(tt)) = p.1 := transpose_point(A, decide, p.1);
+  let plain := sum_equiv(U0, A, Unit, A, Unit, p.2, id_contr_equiv(U0, Unit));
+  let fixed : fix_point(A, decide, joined) = plain := equiv_path(
+    U0, A or Unit, A or Unit, fix_point(A, decide, joined), plain,
+    fun (x : A or Unit) => trans(
+      cong(fun (c : A or Unit) => transpose(A, decide, c, joined.1(x)), image),
+      transpose_twice(A, decide, p.1, plain.1(x))
+    )
+  );
+  let rest : sum_unit_cancel(U0, A, A, fix_point(A, decide, joined)) = p.2 := trans(
+    cong(fun (h : ContrEquiv(U0, A or Unit, A or Unit)) => sum_unit_cancel(U0, A, A, h), fixed),
+    equiv_path(U0, A, A, sum_unit_cancel(U0, A, A, plain), p.2, fun (a : A) => refl(p.2.1(a)))
+  );
+  exact path i => (image @ i, rest @ i);
+}
+
+// A self-equivalence of A or Unit is the image of the point and a
+// self-equivalence of A.
+computable def permutation_successor(A : U0, decide : forall a, b : A. Decidable(U0, a = b)) :
+  ContrEquiv(U0, ContrEquiv(U0, A or Unit, A or Unit), (A or Unit) and ContrEquiv(U0, A, A)) := inverse_equiv(
+    U0, ContrEquiv(U0, A or Unit, A or Unit), (A or Unit) and ContrEquiv(U0, A, A),
+    fun (e : ContrEquiv(U0, A or Unit, A or Unit)) => permutation_split(A, decide, e),
+    fun (p : (A or Unit) and ContrEquiv(U0, A, A)) => permutation_join(A, decide, p),
+    fun (p : (A or Unit) and ContrEquiv(U0, A, A)) => permutation_split_join(A, decide, p),
+    fun (e : ContrEquiv(U0, A or Unit, A or Unit)) => permutation_join_split(A, decide, e)
+  );
+
+computable def FinPermutations(k : Nat) :
+  U0 := ContrEquiv(U0, ContrEquiv(U0, Fin(k), Fin(k)), Fin(factorial(k)));
+
+// The empty type has one self-equivalence.
+computable def fin_permutations_zero : FinPermutations(0) := equiv_compose(
+  U0, ContrEquiv(U0, Fin(0), Fin(0)), Unit, Fin(factorial(0)),
+  inverse_equiv(
+    U0, ContrEquiv(U0, Fin(0), Fin(0)), Unit, fun (e : ContrEquiv(U0, Fin(0), Fin(0))) => tt,
+    fun (u : Unit) => id_contr_equiv(U0, Fin(0)), fun (u : Unit) => unit_is_prop(tt, u),
+    fun (e : ContrEquiv(U0, Fin(0), Fin(0))) => equiv_path(
+      U0, Fin(0), Fin(0), id_contr_equiv(U0, Fin(0)), e,
+      fun (x : Fin(0)) => absurd(fin_zero_empty(x))
+    )
+  ),
+  equiv_compose(
+    U0, Unit, Fin(1), Fin(factorial(0)), fin_one, fin_cast(1, factorial(0), sym(nat_factorial_zero))
+  )
+);
+
+// A self-equivalence of Fin(k + 1) is the image of the top element and a
+// self-equivalence of Fin(k).
+computable def fin_permutations_succ(k : Nat, previous : FinPermutations(k)) :
+  FinPermutations(succ(k)) {
+  let top := fin_succ_equiv(k);
+  let below := equiv_symm(U0, Fin(k) or Unit, Fin(succ(k)), top);
+  exact equiv_compose(
+    U0, ContrEquiv(U0, Fin(succ(k)), Fin(succ(k))), ContrEquiv(U0, Fin(k) or Unit, Fin(k) or Unit),
+    Fin(factorial(succ(k))),
+    equiv_equiv(U0, Fin(succ(k)), Fin(k) or Unit, Fin(succ(k)), Fin(k) or Unit, below, below),
+    equiv_compose(
+      U0, ContrEquiv(U0, Fin(k) or Unit, Fin(k) or Unit), (Fin(k) or Unit)
+      and ContrEquiv(U0, Fin(k), Fin(k)), Fin(factorial(succ(k))),
+      permutation_successor(Fin(k), fun (a, b : Fin(k)) => fin_decide(k, a, b)),
+      equiv_compose(
+        U0, (Fin(k) or Unit) and ContrEquiv(U0, Fin(k), Fin(k)), Fin(succ(k)) and Fin(factorial(k)),
+        Fin(factorial(succ(k))),
+        product_equiv(
+          U0, Fin(k) or Unit, ContrEquiv(U0, Fin(k), Fin(k)), Fin(succ(k)), Fin(factorial(k)), top,
+          previous
+        ),
+        equiv_compose(
+          U0, Fin(succ(k)) and Fin(factorial(k)), Fin(succ(k) * factorial(k)),
+          Fin(factorial(succ(k))), fin_product(succ(k), factorial(k)),
+          fin_cast(succ(k) * factorial(k), factorial(succ(k)), sym(nat_factorial_succ(k)))
+        )
+      )
+    )
+  );
+}
+
+// There are k! self-equivalences of Fin(k).
+computable def fin_permutations(k : Nat) :
+  ContrEquiv(U0, ContrEquiv(U0, Fin(k), Fin(k)), Fin(factorial(k))) := nat_peano(
+    U0, FinPermutations, fin_permutations_zero, fin_permutations_succ, k
+  );
+
+// So a k-element type has k! self-equivalences.
+computable def permutation_cardinality(A : U0, k : Nat, count : HasCardinality(A, k)) :
+  HasCardinality(ContrEquiv(U0, A, A), factorial(k)) := mere_map(
+    U0, U0, ContrEquiv(U0, Fin(k), A), ContrEquiv(U0, Fin(factorial(k)), ContrEquiv(U0, A, A)),
+    fun (e : ContrEquiv(U0, Fin(k), A)) => equiv_compose(
+      U0, Fin(factorial(k)), ContrEquiv(U0, Fin(k), Fin(k)), ContrEquiv(U0, A, A),
+      equiv_symm(U0, ContrEquiv(U0, Fin(k), Fin(k)), Fin(factorial(k)), fin_permutations(k)),
+      equiv_equiv(U0, Fin(k), A, Fin(k), A, e, e)
+    ), count
+  );

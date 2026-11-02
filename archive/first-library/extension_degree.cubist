@@ -70,11 +70,11 @@ def field_tower_basis_triangle(
   lower : FiniteBasis(K, field_vector_space(K, L, e), m),
   upper : FiniteBasis(L, field_vector_space(L, M, d), n)
 ) :
-  FiniteBasis(K, field_vector_space(K, M, c), multiply_count(n, m)) {
+  FiniteBasis(K, field_vector_space(K, M, c), mul(n, m)) {
   exact transport field_tower_basis(K, L, M, e, d, m, n, lower, upper) along triangle in (
     (
       fun (embedding : FieldEmbedding(K, M)) => FiniteBasis(
-        K, field_vector_space(K, M, embedding), multiply_count(n, m)
+        K, field_vector_space(K, M, embedding), mul(n, m)
       )
     )
   );
@@ -88,20 +88,19 @@ def extension_degree_tower(
   lower : ExtensionDegree(K, embedding_as_extension(K, L, e), m),
   upper : ExtensionDegree(L, embedding_as_extension(L, M, d), n)
 ) :
-  ExtensionDegree(K, embedding_as_extension(K, M, c), multiply_count(n, m)) {
+  ExtensionDegree(K, embedding_as_extension(K, M, c), mul(n, m)) {
   let Lower := field_vector_space(K, L, e);
   let Upper := field_vector_space(L, M, d);
   let Whole := field_vector_space(K, M, c);
-  let Result := HasDimension(K, Whole, multiply_count(n, m));
+  let Result := HasDimension(K, Whole, mul(n, m));
   exact mere_eliminate(
-    FiniteBasis(K, Lower, m), Result, has_dimension_prop(K, Whole, multiply_count(n, m)),
+    FiniteBasis(K, Lower, m), Result, has_dimension_prop(K, Whole, mul(n, m)),
     (
       fun (b : FiniteBasis(K, Lower, m)) => mere_eliminate(
-        FiniteBasis(L, Upper, n), Result, has_dimension_prop(K, Whole, multiply_count(n, m)),
+        FiniteBasis(L, Upper, n), Result, has_dimension_prop(K, Whole, mul(n, m)),
         (
           fun (a : FiniteBasis(L, Upper, n)) => basis_has_dimension(
-            K, Whole, multiply_count(n, m),
-            field_tower_basis_triangle(K, L, M, e, d, c, triangle, m, n, b, a)
+            K, Whole, mul(n, m), field_tower_basis_triangle(K, L, M, e, d, c, triangle, m, n, b, a)
           )
         ), upper
       )
@@ -119,7 +118,7 @@ def finite_extension_tower(
   let m := extension_degree(K, embedding_as_extension(K, L, e), lower);
   let n := extension_degree(L, embedding_as_extension(L, M, d), upper);
   exact (
-    multiply_count(n, m),
+    mul(n, m),
     extension_degree_tower(
       K, L, M, e, d, c, triangle, m, n,
       extension_degree_specification(K, embedding_as_extension(K, L, e), lower),
@@ -137,7 +136,7 @@ def tower_law(
   upper : FiniteExtension(L, embedding_as_extension(L, M, d)),
   whole : FiniteExtension(K, embedding_as_extension(K, M, c))
 ) :
-  extension_degree(K, embedding_as_extension(K, M, c), whole) = multiply_count(
+  extension_degree(K, embedding_as_extension(K, M, c), whole) = mul(
     extension_degree(L, embedding_as_extension(L, M, d), upper),
     extension_degree(K, embedding_as_extension(K, L, e), lower)
   ) {
@@ -145,7 +144,7 @@ def tower_law(
   let n := extension_degree(L, embedding_as_extension(L, M, d), upper);
   exact extension_degree_unique(
     K, embedding_as_extension(K, M, c), extension_degree(K, embedding_as_extension(K, M, c), whole),
-    multiply_count(n, m), extension_degree_specification(K, embedding_as_extension(K, M, c), whole),
+    mul(n, m), extension_degree_specification(K, embedding_as_extension(K, M, c), whole),
     extension_degree_tower(
       K, L, M, e, d, c, triangle, m, n,
       extension_degree_specification(K, embedding_as_extension(K, L, e), lower),

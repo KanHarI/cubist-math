@@ -104,10 +104,8 @@ def field_tower_basis(
   lower : FiniteBasis(K, field_vector_space(K, L, e), m),
   upper : FiniteBasis(L, field_vector_space(L, M, d), n)
 ) :
-  FiniteBasis(
-    K, field_vector_space(K, M, field_embedding_compose(K, L, M, e, d)), multiply_count(n, m)
-  ) {
-  let Coordinates := CoordinateSpace(K, multiply_count(n, m));
+  FiniteBasis(K, field_vector_space(K, M, field_embedding_compose(K, L, M, e, d)), mul(n, m)) {
+  let Coordinates := CoordinateSpace(K, mul(n, m));
   let Nested := FunctionSpace(K, Fin(n), CoordinateSpace(K, m));
   let OverL := FunctionSpace(K, Fin(n), field_vector_space(K, L, e));
   let RestrictedCoordinates := RestrictScalars(K, L, e, CoordinateSpace(L, n));

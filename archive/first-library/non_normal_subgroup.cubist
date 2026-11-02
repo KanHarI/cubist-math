@@ -49,7 +49,5 @@ def s3_point_stabilizer_not_normal : IsNormal(S3, S3PointStabilizer) -> Void {
 
 // This permutation group has six elements; its finiteness is witnessed.
 def s3_has_six_elements : Bijection(group_carrier(S3), Fin(6)) {
-  exact with unfolding [Permutations] {
-    three_permutations
-  };
+  exact three_permutations;
 }

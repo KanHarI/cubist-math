@@ -9,3 +9,16 @@ computable def fin_is_set(n : Nat) : IsSet(U0, Fin(n)) := subtype_has_level(
 );
 
 hlevel_rule fin_is_set;
+
+// Elements of Fin(n) are equal when their numbers are: the bound is a
+// proposition.
+computable def fin_path(n : Nat, x, y : Fin(n), same : x.1 = y.1) : x = y := subtype_injective(
+  U0, Nat, fun (k : Nat) => k < n, fun (k : Nat) => bnat_lt_is_prop(k, n), x, y, same
+);
+
+// Equality of Fin(n) is decided by the numbers' equality.
+computable def fin_decide(n : Nat, x, y : Fin(n)) :
+  Decidable(U0, x = y) := match nat_decide(x.1, y.1) return Decidable(U0, x = y) {
+    left same => left(fin_path(n, x, y, same));
+    right different => right(fun (p : x = y) => different(cong(fun (z : Fin(n)) => z.1, p)));
+  };

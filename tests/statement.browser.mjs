@@ -49,7 +49,7 @@ await browserTest(async ({ browser, base }) => {
   assert.doesNotMatch(await page.locator("#kernel-axioms").textContent(), /Choice/);
   await page.goto(`${base}/proof.html?proof=extension_degree&name=tower_law`);
   await page.waitForFunction(() => document.querySelector("#inspect-name")?.textContent === "tower_law");
-  assert.match(await page.locator("#inspect-type").textContent(), /extension_degree.*multiply_count/);
+  assert.match(await page.locator("#inspect-type").textContent(), /extension_degree.*mul\(extension_degree/);
   assert.equal(await page.locator("#diagnostic").isVisible(), false);
   assert.doesNotMatch(await page.locator("#kernel-axioms").textContent(), /Choice/);
   await page.screenshot({ path: "/tmp/cubist-tower-law.png" });

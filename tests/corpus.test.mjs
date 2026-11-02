@@ -43,8 +43,14 @@ test("the complete canonical .cubist corpus checks with the sole native kernel",
   // laws, the library's unat_least_elements (13) and polynomial_degree's
   // classical_least; and NT5 deleted the archive's binary and radix
   // numerals, natural_minimum and primes' last 3 (331), with the library's
-  // lexemes (8) and lists (7), which only binary_naturals imported.
+  // lexemes (8) and lists (7), which only binary_naturals imported; and the
+  // counting results' move to the library (2026-11-02) deleted the
+  // archive's binomial, binomial_types, binomial_pascal and binomial_counting
+  // (80), function_counting's function counts (6) and permutations' counts
+  // of the equivalence type (2), moved binomial_types' 30 decidable-subtype
+  // definitions into finite_decidable_subtypes, and removed embedding_counts'
+  // count_multiply_comm.
   assert.deepEqual(report.importErrors, []);
-  assert.equal(report.declarations.length, 3527, "The corpus must not silently lose modules.");
+  assert.equal(report.declarations.length, 3468, "The corpus must not silently lose modules.");
   t.diagnostic(JSON.stringify(report.counts));
 });

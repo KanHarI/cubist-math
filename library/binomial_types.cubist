@@ -1,0 +1,470 @@
+// Rijke's binomial types: Binomial(A, B), the decidable subsets of A whose
+// selected elements are merely equivalent to B. Pascal's rule holds as an
+// equivalence of types, for all A and B: a subset of A or Unit with B or
+// Unit elements either selects the point, and has B elements of A, or not,
+// and has B or Unit elements of A. So for finite types the binomial type of
+// Fin(n) and Fin(k) has choose(n, k) elements, nat's binomial coefficient.
+import finite_arithmetic;
+import powersets;
+import nat;
+use nat;
+
+// The elements a decidable subset selects.
+computable def Selected(A : U0, p : DecidablePowerSet(U0, A)) : U0 := exists a : A. p(a) = True;
+
+computable def Binomial(A, B : U0) :
+  U0 := exists p : DecidablePowerSet(U0, A). Trunc(U0, ContrEquiv(U0, B, Selected(A, p)));
+
+computable def selected_is_prop(A : U0, p : DecidablePowerSet(U0, A), a : A) :
+  IsProp(U0, p(a) = True) := fin_is_set(2, p(a), True);
+
+computable def binomial_family_is_prop(A, B : U0, p : DecidablePowerSet(U0, A)) :
+  IsProp(U0, Trunc(U0, ContrEquiv(U0, B, Selected(A, p)))) := mere_is_prop(
+    U0, ContrEquiv(U0, B, Selected(A, p))
+  );
+
+// Pairs over Binary, in a family of propositions, are pairs over True or
+// over False.
+computable def binary_sigma_out(
+  R : Binary -> U0, b : Binary, c : (b = True) or (b = False), r : R(b)
+) :
+  R(True) or R(False) := match c return (R(True) or R(False)) {
+    left is_true => left(comp(fun (i : Interval) => R(is_true @ i), r));
+    right is_false => right(comp(fun (i : Interval) => R(is_false @ i), r));
+  };
+
+computable def binary_sigma_in(R : Binary -> U0, y : R(True) or R(False)) :
+  exists b : Binary. R(b) := match y return (exists b : Binary. R(b)) {
+    left r => (True, r);
+    right r => (False, r);
+  };
+
+computable def binary_sigma_first(
+  R : Binary -> U0, b : Binary, c : (b = True) or (b = False), r : R(b)
+) :
+  binary_sigma_in(R, binary_sigma_out(R, b, c, r)).1 = b := match c as z return (
+    binary_sigma_in(R, binary_sigma_out(R, b, z, r)).1 = b
+  ) {
+    left is_true => sym(is_true);
+    right is_false => sym(is_false);
+  };
+
+computable def binary_sigma_true(
+  R : Binary -> U0, prop_r : forall b : Binary. IsProp(U0, R(b)), r : R(True), c : (True = True)
+  or (True = False)
+) :
+  binary_sigma_out(R, True, c, r) = left(r) := match c as z return (
+    binary_sigma_out(R, True, z, r) = typed(R(True) or R(False), left(r))
+  ) {
+    left is_true => cong(
+      fun (s : R(True)) => typed(R(True) or R(False), left(s)),
+      prop_r(True, comp(fun (i : Interval) => R(is_true @ i), r), r)
+    );
+    right is_false => absurd(false_ne_true(sym(is_false)));
+  };
+
+computable def binary_sigma_false(
+  R : Binary -> U0, prop_r : forall b : Binary. IsProp(U0, R(b)), r : R(False), c : (False = True)
+  or (False = False)
+) :
+  binary_sigma_out(R, False, c, r) = right(r) := match c as z return (
+    binary_sigma_out(R, False, z, r) = typed(R(True) or R(False), right(r))
+  ) {
+    left is_true => absurd(false_ne_true(is_true));
+    right is_false => cong(
+      fun (s : R(False)) => typed(R(True) or R(False), right(s)),
+      prop_r(False, comp(fun (i : Interval) => R(is_false @ i), r), r)
+    );
+  };
+
+computable def binary_sigma(R : Binary -> U0, prop_r : forall b : Binary. IsProp(U0, R(b))) :
+  ContrEquiv(U0, exists b : Binary. R(b), R(True) or R(False)) := inverse_equiv(
+    U0, exists b : Binary. R(b), R(True) or R(False),
+    fun (u : exists b : Binary. R(b)) => binary_sigma_out(R, u.1, binary_cases(u.1), u.2),
+    fun (y : R(True) or R(False)) => binary_sigma_in(R, y),
+    fun (y : R(True) or R(False)) => match y as z return (
+      binary_sigma_out(
+        R, binary_sigma_in(R, z).1, binary_cases(binary_sigma_in(R, z).1), binary_sigma_in(R, z).2
+      ) = z
+    ) {
+      left r => binary_sigma_true(R, prop_r, r, binary_cases(True));
+      right r => binary_sigma_false(R, prop_r, r, binary_cases(False));
+    },
+    fun (u : exists b : Binary. R(b)) => subtype_injective(
+      U0, Binary, R, prop_r, binary_sigma_in(R, binary_sigma_out(R, u.1, binary_cases(u.1), u.2)),
+      u, binary_sigma_first(R, u.1, binary_cases(u.1), u.2)
+    )
+  );
+
+// The subset of A or Unit that is q on A and selects the point when b is
+// True.
+computable def subset_join(A : U0, q : DecidablePowerSet(U0, A), b : Binary) :
+  DecidablePowerSet(U0, A or Unit) := fun (x : A or Unit) => sum_unit_function(
+    U0, A, Binary, q, b, x
+  );
+
+computable def selected_join(A : U0, q : DecidablePowerSet(U0, A), b : Binary) :
+  ContrEquiv(U0, Selected(A or Unit, subset_join(A, q, b)), Selected(A, q) or (Unit and (b = True))) := sigma_sum(
+    U0, A, Unit, fun (x : A or Unit) => subset_join(A, q, b, x) = True
+  );
+
+// Where the point is selected, it is one more selected element; where it
+// is not, the selected elements are those of A.
+computable def selected_join_true(A : U0, q : DecidablePowerSet(U0, A)) :
+  ContrEquiv(U0, Selected(A or Unit, subset_join(A, q, True)), Selected(A, q) or Unit) := equiv_compose(
+    U0, Selected(A or Unit, subset_join(A, q, True)), Selected(A, q) or (Unit and (True = True)),
+    Selected(A, q) or Unit, selected_join(A, q, True),
+    sum_equiv(
+      U0, Selected(A, q), Unit and (True = True), Selected(A, q), Unit,
+      id_contr_equiv(U0, Selected(A, q)),
+      prop_equiv(
+        U0, Unit and (True = True), Unit,
+        product_has_level(U0, unat.(0), Unit, True = True, unit_is_prop, fin_is_set(2, True, True)),
+        unit_is_prop, fun (s : Unit and (True = True)) => tt, fun (u : Unit) => (tt, refl(True))
+      )
+    )
+  );
+
+computable def selected_join_false(A : U0, q : DecidablePowerSet(U0, A)) :
+  ContrEquiv(U0, Selected(A or Unit, subset_join(A, q, False)), Selected(A, q)) := equiv_compose(
+    U0, Selected(A or Unit, subset_join(A, q, False)), Selected(A, q) or (Unit and (False = True)),
+    Selected(A, q), selected_join(A, q, False),
+    sum_empty_right(
+      U0, Selected(A, q), Unit and (False = True),
+      fun (s : Unit and (False = True)) => false_ne_true(s.2)
+    )
+  );
+
+// Being merely equivalent to Selected(A, q) or Unit, for B or Unit, is
+// being merely equivalent to Selected(A, q), for B: cancel the point.
+computable def binomial_point_selected(A, B : U0, q : DecidablePowerSet(U0, A)) :
+  ContrEquiv(
+    U0, Trunc(U0, ContrEquiv(U0, B or Unit, Selected(A or Unit, subset_join(A, q, True)))),
+    Trunc(U0, ContrEquiv(U0, B, Selected(A, q)))
+  ) := prop_equiv(
+    U0, Trunc(U0, ContrEquiv(U0, B or Unit, Selected(A or Unit, subset_join(A, q, True)))),
+    Trunc(U0, ContrEquiv(U0, B, Selected(A, q))),
+    mere_is_prop(U0, ContrEquiv(U0, B or Unit, Selected(A or Unit, subset_join(A, q, True)))),
+    mere_is_prop(U0, ContrEquiv(U0, B, Selected(A, q))),
+    fun (h : Trunc(U0, ContrEquiv(U0, B or Unit, Selected(A or Unit, subset_join(A, q, True))))) => mere_map(
+      U0, U0, ContrEquiv(U0, B or Unit, Selected(A or Unit, subset_join(A, q, True))),
+      ContrEquiv(U0, B, Selected(A, q)),
+      fun (e : ContrEquiv(U0, B or Unit, Selected(A or Unit, subset_join(A, q, True)))) => sum_unit_cancel(
+        U0, B, Selected(A, q),
+        equiv_compose(
+          U0, B or Unit, Selected(A or Unit, subset_join(A, q, True)), Selected(A, q) or Unit, e,
+          selected_join_true(A, q)
+        )
+      ), h
+    ),
+    fun (h : Trunc(U0, ContrEquiv(U0, B, Selected(A, q)))) => mere_map(
+      U0, U0, ContrEquiv(U0, B, Selected(A, q)),
+      ContrEquiv(U0, B or Unit, Selected(A or Unit, subset_join(A, q, True))),
+      fun (d : ContrEquiv(U0, B, Selected(A, q))) => equiv_compose(
+        U0, B or Unit, Selected(A, q) or Unit, Selected(A or Unit, subset_join(A, q, True)),
+        sum_equiv(U0, B, Unit, Selected(A, q), Unit, d, id_contr_equiv(U0, Unit)),
+        equiv_symm(
+          U0, Selected(A or Unit, subset_join(A, q, True)), Selected(A, q) or Unit,
+          selected_join_true(A, q)
+        )
+      ), h
+    )
+  );
+
+computable def binomial_point_omitted(A, B : U0, q : DecidablePowerSet(U0, A)) :
+  ContrEquiv(
+    U0, Trunc(U0, ContrEquiv(U0, B or Unit, Selected(A or Unit, subset_join(A, q, False)))),
+    Trunc(U0, ContrEquiv(U0, B or Unit, Selected(A, q)))
+  ) := prop_equiv(
+    U0, Trunc(U0, ContrEquiv(U0, B or Unit, Selected(A or Unit, subset_join(A, q, False)))),
+    Trunc(U0, ContrEquiv(U0, B or Unit, Selected(A, q))),
+    mere_is_prop(U0, ContrEquiv(U0, B or Unit, Selected(A or Unit, subset_join(A, q, False)))),
+    mere_is_prop(U0, ContrEquiv(U0, B or Unit, Selected(A, q))),
+    fun (h : Trunc(U0, ContrEquiv(U0, B or Unit, Selected(A or Unit, subset_join(A, q, False))))) => mere_map(
+      U0, U0, ContrEquiv(U0, B or Unit, Selected(A or Unit, subset_join(A, q, False))),
+      ContrEquiv(U0, B or Unit, Selected(A, q)),
+      fun (e : ContrEquiv(U0, B or Unit, Selected(A or Unit, subset_join(A, q, False)))) => equiv_compose(
+        U0, B or Unit, Selected(A or Unit, subset_join(A, q, False)), Selected(A, q), e,
+        selected_join_false(A, q)
+      ), h
+    ),
+    fun (h : Trunc(U0, ContrEquiv(U0, B or Unit, Selected(A, q)))) => mere_map(
+      U0, U0, ContrEquiv(U0, B or Unit, Selected(A, q)),
+      ContrEquiv(U0, B or Unit, Selected(A or Unit, subset_join(A, q, False))),
+      fun (d : ContrEquiv(U0, B or Unit, Selected(A, q))) => equiv_compose(
+        U0, B or Unit, Selected(A, q), Selected(A or Unit, subset_join(A, q, False)), d,
+        equiv_symm(
+          U0, Selected(A or Unit, subset_join(A, q, False)), Selected(A, q),
+          selected_join_false(A, q)
+        )
+      ), h
+    )
+  );
+
+// Pascal's rule: the subsets of A or Unit with B or Unit elements are those
+// that select the point, with B elements of A, and those that do not, with
+// B or Unit elements of A.
+computable def pascal(A, B : U0) :
+  ContrEquiv(U0, Binomial(A or Unit, B or Unit), Binomial(A, B) or Binomial(A, B or Unit)) {
+  let Q := fun (p : DecidablePowerSet(U0, A or Unit)) => Trunc(
+    U0, ContrEquiv(U0, B or Unit, Selected(A or Unit, p))
+  );
+  let R := fun (q : DecidablePowerSet(U0, A), b : Binary) => Q(subset_join(A, q, b));
+  let reindex := equiv_symm(
+    U0, exists x : DecidablePowerSet(U0, A) and Binary. R(x.1, x.2), Binomial(A or Unit, B or Unit),
+    subtype_reindex(
+      U0, DecidablePowerSet(U0, A) and Binary, DecidablePowerSet(U0, A or Unit),
+      sum_unit_functions(U0, A, Binary), Q,
+      fun (p : DecidablePowerSet(U0, A or Unit)) => binomial_family_is_prop(A or Unit, B or Unit, p)
+    )
+  );
+  let curry := sigma_product(
+    U0, DecidablePowerSet(U0, A), Binary,
+    fun (x : DecidablePowerSet(U0, A) and Binary) => R(x.1, x.2)
+  );
+  let cases := sigma_fiberwise(
+    U0, DecidablePowerSet(U0, A), fun (q : DecidablePowerSet(U0, A)) => exists b : Binary. R(q, b),
+    fun (q : DecidablePowerSet(U0, A)) => Trunc(U0, ContrEquiv(U0, B, Selected(A, q)))
+    or Trunc(U0, ContrEquiv(U0, B or Unit, Selected(A, q))),
+    fun (q : DecidablePowerSet(U0, A)) => equiv_compose(
+      U0, exists b : Binary. R(q, b), R(q, True) or R(q, False),
+      Trunc(U0, ContrEquiv(U0, B, Selected(A, q)))
+      or Trunc(U0, ContrEquiv(U0, B or Unit, Selected(A, q))),
+      binary_sigma(
+        fun (b : Binary) => R(q, b),
+        fun (b : Binary) => binomial_family_is_prop(A or Unit, B or Unit, subset_join(A, q, b))
+      ),
+      sum_equiv(
+        U0, R(q, True), R(q, False), Trunc(U0, ContrEquiv(U0, B, Selected(A, q))),
+        Trunc(U0, ContrEquiv(U0, B or Unit, Selected(A, q))), binomial_point_selected(A, B, q),
+        binomial_point_omitted(A, B, q)
+      )
+    )
+  );
+  exact equiv_compose(
+    U0, Binomial(A or Unit, B or Unit), exists x : DecidablePowerSet(U0, A) and Binary. R(x.1, x.2),
+    Binomial(A, B) or Binomial(A, B or Unit), reindex,
+    equiv_compose(
+      U0, exists x : DecidablePowerSet(U0, A) and Binary. R(x.1, x.2),
+      exists q : DecidablePowerSet(U0, A). exists b : Binary. R(q, b), Binomial(A, B)
+      or Binomial(A, B or Unit), curry,
+      equiv_compose(
+        U0, exists q : DecidablePowerSet(U0, A). exists b : Binary. R(q, b),
+        exists q : DecidablePowerSet(U0, A). Trunc(U0, ContrEquiv(U0, B, Selected(A, q)))
+        or Trunc(U0, ContrEquiv(U0, B or Unit, Selected(A, q))), Binomial(A, B)
+        or Binomial(A, B or Unit), cases,
+        sigma_sum_distribute(
+          U0, DecidablePowerSet(U0, A),
+          fun (q : DecidablePowerSet(U0, A)) => Trunc(U0, ContrEquiv(U0, B, Selected(A, q))),
+          fun (q : DecidablePowerSet(U0, A)) => Trunc(U0, ContrEquiv(U0, B or Unit, Selected(A, q)))
+        )
+      )
+    )
+  );
+}
+
+// Binomial types of equivalent types are equivalent: a subset is carried
+// along the equivalence of the ambient types, and so are its elements.
+computable def binomial_equiv(A, C, B, D : U0, e : ContrEquiv(U0, A, C), d : ContrEquiv(U0, B, D)) :
+  ContrEquiv(U0, Binomial(A, B), Binomial(C, D)) {
+  let pull := function_domain_equiv(U0, A, C, Binary, e);
+  let carry := fun (p : DecidablePowerSet(U0, C)) => subtype_reindex(
+    U0, A, C, e, fun (c : C) => p(c) = True, fun (c : C) => selected_is_prop(C, p, c)
+  );
+  exact equiv_compose(
+    U0, Binomial(A, B), exists p : DecidablePowerSet(U0, C).
+    Trunc(U0, ContrEquiv(U0, B, Selected(A, fun (a : A) => p(e.1(a))))), Binomial(C, D),
+    equiv_symm(
+      U0, exists p : DecidablePowerSet(U0, C).
+      Trunc(U0, ContrEquiv(U0, B, Selected(A, fun (a : A) => p(e.1(a))))), Binomial(A, B),
+      subtype_reindex(
+        U0, DecidablePowerSet(U0, C), DecidablePowerSet(U0, A), pull,
+        fun (p : DecidablePowerSet(U0, A)) => Trunc(U0, ContrEquiv(U0, B, Selected(A, p))),
+        fun (p : DecidablePowerSet(U0, A)) => binomial_family_is_prop(A, B, p)
+      )
+    ),
+    sigma_fiberwise(
+      U0, DecidablePowerSet(U0, C),
+      fun (p : DecidablePowerSet(U0, C)) => Trunc(
+        U0, ContrEquiv(U0, B, Selected(A, fun (a : A) => p(e.1(a))))
+      ), fun (p : DecidablePowerSet(U0, C)) => Trunc(U0, ContrEquiv(U0, D, Selected(C, p))),
+      fun (p : DecidablePowerSet(U0, C)) => prop_equiv(
+        U0, Trunc(U0, ContrEquiv(U0, B, Selected(A, fun (a : A) => p(e.1(a))))),
+        Trunc(U0, ContrEquiv(U0, D, Selected(C, p))),
+        mere_is_prop(U0, ContrEquiv(U0, B, Selected(A, fun (a : A) => p(e.1(a))))),
+        mere_is_prop(U0, ContrEquiv(U0, D, Selected(C, p))),
+        fun (h : Trunc(U0, ContrEquiv(U0, B, Selected(A, fun (a : A) => p(e.1(a)))))) => mere_map(
+          U0, U0, ContrEquiv(U0, B, Selected(A, fun (a : A) => p(e.1(a)))),
+          ContrEquiv(U0, D, Selected(C, p)),
+          fun (f : ContrEquiv(U0, B, Selected(A, fun (a : A) => p(e.1(a))))) => equiv_compose(
+            U0, D, B, Selected(C, p), equiv_symm(U0, B, D, d),
+            equiv_compose(U0, B, Selected(A, fun (a : A) => p(e.1(a))), Selected(C, p), f, carry(p))
+          ), h
+        ),
+        fun (h : Trunc(U0, ContrEquiv(U0, D, Selected(C, p)))) => mere_map(
+          U0, U0, ContrEquiv(U0, D, Selected(C, p)),
+          ContrEquiv(U0, B, Selected(A, fun (a : A) => p(e.1(a)))),
+          fun (g : ContrEquiv(U0, D, Selected(C, p))) => equiv_compose(
+            U0, B, D, Selected(A, fun (a : A) => p(e.1(a))), d,
+            equiv_compose(
+              U0, D, Selected(C, p), Selected(A, fun (a : A) => p(e.1(a))), g,
+              equiv_symm(U0, Selected(A, fun (a : A) => p(e.1(a))), Selected(C, p), carry(p))
+            )
+          ), h
+        )
+      )
+    )
+  );
+}
+
+// With B empty, the one subset is the empty one.
+computable def empty_subset(A : U0) : DecidablePowerSet(U0, A) := fun (a : A) => False;
+
+computable def binomial_empty_center(A, B : U0, empty_b : B -> Void) : Binomial(A, B) := (
+  empty_subset(A),
+  merely(
+    U0, ContrEquiv(U0, B, Selected(A, empty_subset(A))),
+    empty_equiv(
+      U0, B, Selected(A, empty_subset(A)), empty_b,
+      fun (s : Selected(A, empty_subset(A))) => false_ne_true(s.2)
+    )
+  )
+);
+
+computable def binomial_empty_unique(A, B : U0, empty_b : B -> Void, x : Binomial(A, B)) :
+  binomial_empty_center(A, B, empty_b) = x := subtype_injective(
+    U0, DecidablePowerSet(U0, A),
+    fun (p : DecidablePowerSet(U0, A)) => Trunc(U0, ContrEquiv(U0, B, Selected(A, p))),
+    fun (p : DecidablePowerSet(U0, A)) => binomial_family_is_prop(A, B, p),
+    binomial_empty_center(A, B, empty_b), x,
+    path i => fun (a : A) => match binary_cases(x.1(a)) return (False = x.1(a)) {
+      left is_true => absurd(
+        mere_eliminate(
+          U0, U0, ContrEquiv(U0, B, Selected(A, x.1)), Void, void_is_prop,
+          fun (e : ContrEquiv(U0, B, Selected(A, x.1))) => empty_b(
+            equiv_inverse(U0, B, Selected(A, x.1), e, (a, is_true))
+          ), x.2
+        )
+      );
+      right is_false => sym(is_false);
+    }
+    @ i
+  );
+
+computable def binomial_empty(A, B : U0, empty_b : B -> Void) :
+  ContrEquiv(U0, Binomial(A, B), Unit) := inverse_equiv(
+    U0, Binomial(A, B), Unit, fun (x : Binomial(A, B)) => tt,
+    fun (u : Unit) => binomial_empty_center(A, B, empty_b), fun (u : Unit) => unit_is_prop(tt, u),
+    fun (x : Binomial(A, B)) => binomial_empty_unique(A, B, empty_b, x)
+  );
+
+// With A empty and B inhabited, there is no subset.
+computable def binomial_none(A, B : U0, empty_a : A -> Void, b : B, x : Binomial(A, B)) :
+  Void := mere_eliminate(
+    U0, U0, ContrEquiv(U0, B, Selected(A, x.1)), Void, void_is_prop,
+    fun (e : ContrEquiv(U0, B, Selected(A, x.1))) => empty_a(e.1(b).1), x.2
+  );
+
+// The binomial type of Fin(n) and Fin(k) has choose(n, k) elements.
+computable def FinBinomials(n : Nat) :
+  U0 := forall k : Nat. ContrEquiv(U0, Binomial(Fin(n), Fin(k)), Fin(choose(n, k)));
+
+computable def fin_binomials_zero : FinBinomials(0) := fun (k : Nat) => nat_peano(
+  U0, fun (j : Nat) => ContrEquiv(U0, Binomial(Fin(0), Fin(j)), Fin(choose(0, j))),
+  equiv_compose(
+    U0, Binomial(Fin(0), Fin(0)), Unit, Fin(1), binomial_empty(Fin(0), Fin(0), fin_zero_empty),
+    fin_one
+  ),
+  fun (j : Nat, previous : ContrEquiv(U0, Binomial(Fin(0), Fin(j)), Fin(choose(0, j)))) => empty_equiv(
+    U0, Binomial(Fin(0), Fin(succ(j))), Fin(choose(0, succ(j))),
+    fun (x : Binomial(Fin(0), Fin(succ(j)))) => binomial_none(
+      Fin(0), Fin(succ(j)), fin_zero_empty, fin_top(j), x
+    ),
+    fun (y : Fin(choose(0, succ(j)))) => fin_zero_empty(
+      fin_cast(choose(0, succ(j)), 0, nat_choose_zero_succ(j)).1(y)
+    )
+  ), k
+);
+
+computable def fin_binomials_step(n : Nat, previous : FinBinomials(n), j : Nat) :
+  ContrEquiv(U0, Binomial(Fin(succ(n)), Fin(succ(j))), Fin(choose(succ(n), succ(j)))) {
+  let ambient := equiv_symm(U0, Fin(n) or Unit, Fin(succ(n)), fin_succ_equiv(n));
+  let size := equiv_symm(U0, Fin(j) or Unit, Fin(succ(j)), fin_succ_equiv(j));
+  exact equiv_compose(
+    U0, Binomial(Fin(succ(n)), Fin(succ(j))), Binomial(Fin(n) or Unit, Fin(j) or Unit),
+    Fin(choose(succ(n), succ(j))),
+    binomial_equiv(Fin(succ(n)), Fin(n) or Unit, Fin(succ(j)), Fin(j) or Unit, ambient, size),
+    equiv_compose(
+      U0, Binomial(Fin(n) or Unit, Fin(j) or Unit), Binomial(Fin(n), Fin(j))
+      or Binomial(Fin(n), Fin(j) or Unit), Fin(choose(succ(n), succ(j))), pascal(Fin(n), Fin(j)),
+      equiv_compose(
+        U0, Binomial(Fin(n), Fin(j)) or Binomial(Fin(n), Fin(j) or Unit), Binomial(Fin(n), Fin(j))
+        or Binomial(Fin(n), Fin(succ(j))), Fin(choose(succ(n), succ(j))),
+        sum_equiv(
+          U0, Binomial(Fin(n), Fin(j)), Binomial(Fin(n), Fin(j) or Unit), Binomial(Fin(n), Fin(j)),
+          Binomial(Fin(n), Fin(succ(j))), id_contr_equiv(U0, Binomial(Fin(n), Fin(j))),
+          binomial_equiv(
+            Fin(n), Fin(n), Fin(j) or Unit, Fin(succ(j)), id_contr_equiv(U0, Fin(n)),
+            fin_succ_equiv(j)
+          )
+        ),
+        equiv_compose(
+          U0, Binomial(Fin(n), Fin(j)) or Binomial(Fin(n), Fin(succ(j))), Fin(choose(n, j))
+          or Fin(choose(n, succ(j))), Fin(choose(succ(n), succ(j))),
+          sum_equiv(
+            U0, Binomial(Fin(n), Fin(j)), Binomial(Fin(n), Fin(succ(j))), Fin(choose(n, j)),
+            Fin(choose(n, succ(j))), previous(j), previous(succ(j))
+          ),
+          equiv_compose(
+            U0, Fin(choose(n, j)) or Fin(choose(n, succ(j))),
+            Fin(choose(n, j) + choose(n, succ(j))), Fin(choose(succ(n), succ(j))),
+            fin_sum(choose(n, j), choose(n, succ(j))),
+            fin_cast(
+              choose(n, j) + choose(n, succ(j)), choose(succ(n), succ(j)),
+              sym(nat_choose_succ_succ(n, j))
+            )
+          )
+        )
+      )
+    )
+  );
+}
+
+computable def fin_binomials_succ(n : Nat, previous : FinBinomials(n)) :
+  FinBinomials(succ(n)) := fun (k : Nat) => nat_peano(
+    U0, fun (j : Nat) => ContrEquiv(U0, Binomial(Fin(succ(n)), Fin(j)), Fin(choose(succ(n), j))),
+    equiv_compose(
+      U0, Binomial(Fin(succ(n)), Fin(0)), Unit, Fin(choose(succ(n), 0)),
+      binomial_empty(Fin(succ(n)), Fin(0), fin_zero_empty),
+      equiv_compose(
+        U0, Unit, Fin(1), Fin(choose(succ(n), 0)), fin_one,
+        fin_cast(1, choose(succ(n), 0), sym(nat_choose_succ_zero(n)))
+      )
+    ),
+    fun (j : Nat, unused : ContrEquiv(U0, Binomial(Fin(succ(n)), Fin(j)), Fin(choose(succ(n), j)))) => fin_binomials_step(
+      n, previous, j
+    ), k
+  );
+
+computable def fin_binomials(n, k : Nat) :
+  ContrEquiv(U0, Binomial(Fin(n), Fin(k)), Fin(choose(n, k))) := nat_peano(
+    U0, FinBinomials, fin_binomials_zero, fin_binomials_succ, n, k
+  );
+
+// So the binomial type of an n-element type and a k-element type has
+// choose(n, k) elements.
+computable def binomial_cardinality(
+  A, B : U0, n, k : Nat, count_a : HasCardinality(A, n), count_b : HasCardinality(B, k)
+) :
+  HasCardinality(Binomial(A, B), choose(n, k)) := mere_eliminate(
+    U0, U0, ContrEquiv(U0, Fin(n), A), HasCardinality(Binomial(A, B), choose(n, k)),
+    has_cardinality_is_prop(Binomial(A, B), choose(n, k)),
+    fun (e : ContrEquiv(U0, Fin(n), A)) => mere_map(
+      U0, U0, ContrEquiv(U0, Fin(k), B), ContrEquiv(U0, Fin(choose(n, k)), Binomial(A, B)),
+      fun (d : ContrEquiv(U0, Fin(k), B)) => equiv_compose(
+        U0, Fin(choose(n, k)), Binomial(Fin(n), Fin(k)), Binomial(A, B),
+        equiv_symm(U0, Binomial(Fin(n), Fin(k)), Fin(choose(n, k)), fin_binomials(n, k)),
+        binomial_equiv(Fin(n), A, Fin(k), B, e, d)
+      ), count_b
+    ), count_a
+  );
