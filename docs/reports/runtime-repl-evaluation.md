@@ -975,7 +975,7 @@ computed right operand, which #346's report records as an open point
 ([transport-free recursion](transport-free-recursion.md#workarounds-and-open-points)).
 
 The evaluation baseline is recorded at version 12
-(`tests/fixtures/evaluation-baseline.json`) on the merged tree. One outcome
+(`tests/fixtures/evaluation-baseline.json`, at the merge `da56e69d`). One outcome
 moves: `least-divisor-251-squared`'s value form, which the runtime showed
 as 251, stops with K344, its demand phase counting the failed query's
 work, as the normal form's twin does in its normalization. The other 48
@@ -988,8 +988,9 @@ in the demand phase: `euclid-3` 954 query steps (its literal's) become
 value forms the runtime did not compute, `euclid-4-pattern`, the expected
 value, the transport and the winding numbers, keep the kernel's work
 exactly. On this machine the small value forms run as fast or faster
-without the runtime's snapshot (`euclid-3` 12.6 to 7.4 ms cold), and the
-long searches slower (`euclid-7-prime` 65 to 122 ms). The `cubist-tests`
+without the runtime's snapshot (`euclid-3` 12.6 to 7.6 ms cold), and the
+long searches slower (`euclid-7-prime` 65 to 109 ms, `least-divisor-251-squared`
+215 to 483 ms to its stop). The `cubist-tests`
 driver trace and the search-fuel baseline do not move.
 
 Before #346 was merged, on main `d875dd08`, the same removal recorded
