@@ -63,7 +63,7 @@ rerun those reviews.
 | Proof ergonomics | Rewriting, simplification, `let`, holes, inference, implicit parameters, cubical shorthand, two h-level solver slices, evaluation patterns/readout, box notation and squares | Folded path rules, constructor descent, induction tooling, broader dependent rewriting, solver and square-migration remainders |
 | Theories | L2.4 and all six L2.4c slices: models, families/relations, inheritance, `Hom`/`Iso`, `use` and qualified operators; inherited operations and laws implemented by a child theory (#268); the algebra lattice with ordered-ring and ordered-field interfaces (#267) | Morphism opt-ins, general proposition laws, implicit operation arguments, checked initial/free capabilities, structure identity |
 | Notation | L2.10a–e and i–k: named notation, operands, literals, printing, reversal, explicit selection and partial inverse | Shadowing/inspection/printing details; deferred large numerals and `decide`; proposed general notation rules |
-| Evaluation/numbers | EVAL0 harness; EVAL1 one-pass REPL evaluation (#266); EVAL2 full-normalization cache (#269); a first internal EVAL3/EVAL4 query for ordinary data, used by no checker or page yet (#289); EVAL5's observation contract: demand marks `!`/`!!` in patterns and printing (#303–#306), then `!!` the folded and `!!!` the full normal form (#307, #309, #310); explicit-evidence directives `evaluate nonempty/empty … by …` (#284). NUM0/NUM1 and public `Nat` as binary `BNat` (#272–#278); NUM2's binary integers (#279–#281) and the binary-rational API, released on folded normal forms (#283); public `Z`/`Q` as `BInt`/`BQ`, with binary ring numerals and casts, on the same gate | EVAL3/EVAL4 integration; EVAL5's typed readback; EVAL6–EVAL8. NUM2's full-normal-form targets for the rational inverses. The [debugging plan](runtime/rational-normalization-debug-plan.md)'s remaining phases, from B3 on (B8 is done) |
+| Evaluation/numbers | EVAL0 harness; EVAL1 one-pass REPL evaluation (#266); EVAL2 full-normalization cache (#269); a first internal EVAL3/EVAL4 query for ordinary data (#289), which computed the REPLs' value forms from #320 until its removal on 2026-11-01 (kept on branch `archive/js-runtime`); EVAL5's observation contract: demand marks `!`/`!!` in patterns and printing (#303–#306), then `!!` the folded and `!!!` the full normal form (#307, #309, #310); explicit-evidence directives `evaluate nonempty/empty … by …` (#284). NUM0/NUM1 and public `Nat` as binary `BNat` (#272–#278); NUM2's binary integers (#279–#281) and the binary-rational API, released on folded normal forms (#283); public `Z`/`Q` as `BInt`/`BQ`, with binary ring numerals and casts, on the same gate | EVAL3/EVAL4 integration; EVAL5's typed readback; EVAL6–EVAL8. NUM2's full-normal-form targets for the rational inverses. The [debugging plan](runtime/rational-normalization-debug-plan.md)'s remaining phases, from B3 on (B8 is done) |
 | Library/reference | Forty-three self-contained foundation modules, including the universe-smallness proofs, binary naturals, integers and rationals, ordered algebra, the continuum-hypothesis statements (#295), in `continuum_axioms` their optional assumptions, and excluded middle from the decidable one; checked reference, explorer and quick reference; kernel chapters 14–17 (#301) | Higher-constructor chapter, classical-assumption consolidation and later mathematical coverage |
 | Computation notation | Prerequisites: inference, matching, core theories and set-indexed theory families | N0–N5: checked interfaces, monadic `do` and arrows; design only |
 | [Simplicial types](hott/simplicial-types.md) | Design only; arrow spelling agreed | ST0–ST6: preservation and model, shared ordinary arrow syntax, directed shapes/extensions, synthetic categories, coherent diagrams and higher algebra |
@@ -176,11 +176,12 @@ and `module::name` references as continuing contracts.
   the attribution of the rational full-normalization cluster; D1 and B8 done.
 - [Typed readback](runtime/typed-readback.md): EVAL5's readback of runtime
   values into kernel terms, decided on 2026-10-28 with every
-  recommendation accepted (D1–D6). W1, readback and its oracle tests, is
-  implemented; W2, the per-node fallback, is held (2026-10-30): slower in
-  wall time, so the whole-walk restart stays. W4's EVAL8 record for W1
-  and the restart is [written](../reports/typed-readback-eval8.md)
-  (2026-11-01).
+  recommendation accepted (D1–D6). W1, readback and its oracle tests, was
+  implemented, and W4's EVAL8 record for it
+  [written](../reports/typed-readback-eval8.md) (2026-11-01); W2, the
+  per-node fallback, was held (2026-10-30). Removed with the runtime on
+  2026-11-01: W1 is kept on branch `archive/js-runtime`, W2 on branch
+  `typed-readback-w2`.
 
 EVAL5's observation contract, the
 [evaluation demand marks](historical/evaluation-demand-marks.md) (DM0–DM6,
