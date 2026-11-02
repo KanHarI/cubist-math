@@ -56,7 +56,8 @@ offsets builds the extensions up to the bound. Two transports were on
 that path, and both are gone.
 
 - **The value at `n`, read at `m`.** A read at `m < succ(n)`
-  (`bnat_below_read`) compares `m` with `n` once, on the bits: below `n`
+  (`bnat_below_read`) compares `m` with `n` once, on the bits, both
+  decisions reading the same call in the extension's scope: below `n`
   it delegates to the values below `n`, and at `n` it returns the step's
   value, which was retyped from `P(n)` to `P(m)` by
   `comp(fun i => P(same @ ~i), …)` (`bnat_below_case`) and is now read
@@ -138,23 +139,39 @@ step asks for the values at the predecessor and at its predecessor
 
 | `fib(n)` | Main: runtime | Main: kernel's queries | The course of values | Now: runtime | Now: kernel's queries |
 | --- | --- | --- | --- | --- | --- |
-| 22 | fallback after 5,964 steps | 171,135 ticks | E488 in the runtime; 14,810,142 ticks | 203,420 steps, 16 ms | 184,472 ticks |
-| 25 | fallback after 6,084 steps | 197,821 ticks | E488; 64,203,550 ticks | 238,987 steps, 21 ms | 211,118 ticks |
+| 22 | fallback after 5,964 steps | 171,135 ticks | E488 in the runtime; 14,810,142 ticks | 175,614 steps, 18 ms | 180,616 ticks |
+| 25 | fallback after 6,084 steps | 197,821 ticks | E488; 64,203,550 ticks | 206,261 steps, 20 ms | 207,479 ticks |
 | 40, expected `102334155` | the kernel's | 485,034 ticks | K347, the arena exhausted, after 211,237,733 ticks | the kernel's | 428,441 ticks |
 
 Now each smaller value is computed once and shared, in the runtime, where
 it is the extension's argument cell, and in the kernel's queries, where it
 is one term that every read returns. The course of values cost the linear
 recursions less, since it compared nothing: `euclid(5).1` took 105,313
-ticks on the kernel's queries against 198,313 now, `factorial(40)`
-6,138,059 against 7,589,076. A read now compares the point with its bound
+ticks on the kernel's queries against 197,480 now, `factorial(40)`
+6,138,059 against 7,587,408. A read now compares the point with its bound
 and casts the value on the bits, a few operations a level whose cost grows
-with the bound's bits.
+with the bound's bits. Codex's second review found the read comparing
+twice, once inside `bnat_lt_decide` and once for equality; both decisions
+now read one call, which cut `fib(25)` in the runtime from 238,987 steps
+to 206,261.
+
+**A known gap: function-valued recursions in the runtime.** At a family of
+functions, `Unit -> Nat` in `fun_fib` of the same contracts, whose step
+applies both smaller values to its unit, the kernel's queries share the
+applications as they share the values: `fun_fib(22, tt)` takes 185,189
+ticks and `fun_fib(25, tt)` 212,766, where main took 233,806 and 276,808.
+The runtime shares a returned function but not its repeated applications,
+which it computes again at every call, and stops at its allocation budget
+(E488) at 22, where main's runtime fell back to the kernel's queries at a
+composition. The runtime is not changed for this, since it is to be
+removed (decided on 2026-11-01); until then its path regresses on
+higher-order branching recursion. The contracts check both on the kernel's
+queries, and the branching test bounds them to a million ticks there.
 
 ## After
 
 `node tools/runtime-repl-probe.mjs`, each sample in a process of its own,
-on this branch at `e34cf46a` with a clean tree and on `d875dd08`'s library
+on this branch at `6bcab2b3` with a clean tree and on `d875dd08`'s library
 modules in the same tree, Node 24.13.0, macOS arm64 (Apple M3 Pro),
 runtime SHA-256 prefix `0ca9a938c16da1a5`, one run each. The machine was
 shared with other heavy jobs, so the times are single loaded samples, not
@@ -162,25 +179,26 @@ speed claims.
 
 | Workload | Main: runtime | Main: kernel's queries | Now: runtime | Now: kernel's queries |
 | --- | --- | --- | --- | --- |
-| `euclid(3)` | fallback after 4,687 steps, 9 ms | 26,944 ticks, 9 ms | 41,614 steps, 11 ms | 31,726 ticks, 7 ms |
-| `euclid(4).1` | fallback after 4,943 steps, 12 ms | 57,053 ticks, 11 ms | 73,913 steps, 12 ms | 71,540 ticks, 9 ms |
-| `euclid(4)` | fallback after 4,938 steps, 12 ms | 61,786 ticks, 9 ms | 76,823 steps, 14 ms | 73,434 ticks, 19 ms |
-| `euclid(5).1` | fallback after 5,184 steps, 19 ms | 160,432 ticks, 15 ms | 216,057 steps, 20 ms | 198,313 ticks, 19 ms |
-| `euclid(6).1` | fallback after 5,425 steps, 16 ms | 133,848 ticks, 13 ms | 173,329 steps, 18 ms | 167,332 ticks, 15 ms |
-| `euclid(10).1` | fallback after 4,939 steps, 33 ms | 423,409 ticks, 27 ms | 531,058 steps, 32 ms | 519,923 ticks, 36 ms |
-| `euclid(7).1` | K344 | K344 after 634,130 ticks | 2,617,533 steps, 74 ms | 1,935,443 ticks, 120 ms |
-| `euclid(3).1 expecting 7` | the kernel's | 25,278 ticks, 10 ms | the kernel's | 31,594 ticks, 9 ms |
-| `euclid(5).1 expecting 11` | the kernel's | 162,533 ticks, 16 ms | the kernel's | 200,559 ticks, 19 ms |
-| `!!euclid(5)` | the kernel's | 319,743 ticks, 26 ms | the kernel's | 298,779 ticks, 26 ms |
-| `factorial(40)` | fallback after 4,459 steps, 1,200 ms | 38,346,979 ticks, 1,193 ms | 951,525 steps, 41 ms | 7,589,076 ticks, 277 ms |
-| `least_divisor(44521, tt).1`, 210 candidates | K344 | K344 after 690,421 ticks | 10,695,566 steps, 188 ms | 6,867,452 ticks, 437 ms |
-| `least_divisor(63001, tt).1`, 250 candidates | K344 | K344 after 679,609 ticks | 12,825,717 steps, 223 ms | K344 after 7,588,973 ticks |
-| `least_element(…, 1000000, tt).1`, least 240 | K344 | K344 after 214,535 ticks | 5,458,094 steps, 109 ms | 5,267,427 ticks, 274 ms |
-| a Peano count of 300 | K336 | K336 after 27,343 ticks | 1,653,757 steps, 42 ms | 1,928,519 ticks, 172 ms |
-| `fib(25)` | fallback after 6,084 steps, 21 ms | 197,821 ticks, 20 ms | 238,987 steps, 21 ms | 211,118 ticks, 17 ms |
+| `euclid(3)` | fallback after 4,687 steps, 9 ms | 26,944 ticks, 9 ms | 39,173 steps, 10 ms | 31,550 ticks, 7 ms |
+| `euclid(4).1` | fallback after 4,943 steps, 12 ms | 57,053 ticks, 11 ms | 70,144 steps, 12 ms | 71,099 ticks, 10 ms |
+| `euclid(4)` | fallback after 4,938 steps, 12 ms | 61,786 ticks, 9 ms | 73,054 steps, 12 ms | 73,262 ticks, 10 ms |
+| `euclid(5).1` | fallback after 5,184 steps, 19 ms | 160,432 ticks, 15 ms | 204,894 steps, 19 ms | 197,480 ticks, 16 ms |
+| `euclid(6).1` | fallback after 5,425 steps, 16 ms | 133,848 ticks, 13 ms | 163,973 steps, 14 ms | 166,728 ticks, 14 ms |
+| `euclid(10).1` | fallback after 4,939 steps, 33 ms | 423,409 ticks, 27 ms | 501,328 steps, 31 ms | 515,818 ticks, 33 ms |
+| `euclid(7).1` | K344 | K344 after 634,130 ticks | 2,496,192 steps, 63 ms | 1,922,061 ticks, 106 ms |
+| `euclid(3).1 expecting 7` | the kernel's | 25,278 ticks, 10 ms | the kernel's | 31,287 ticks, 8 ms |
+| `euclid(5).1 expecting 11` | the kernel's | 162,533 ticks, 16 ms | the kernel's | 199,738 ticks, 18 ms |
+| `!!euclid(5)` | the kernel's | 319,743 ticks, 26 ms | the kernel's | 297,340 ticks, 24 ms |
+| `factorial(40)` | fallback after 4,459 steps, 1,200 ms | 38,346,979 ticks, 1,193 ms | 922,461 steps, 38 ms | 7,587,408 ticks, 277 ms |
+| `least_divisor(44521, tt).1`, 210 candidates | K344 | K344 after 690,421 ticks | 10,265,232 steps, 180 ms | 6,864,057 ticks, 411 ms |
+| `least_divisor(63001, tt).1`, 250 candidates | K344 | K344 after 679,609 ticks | 12,313,023 steps, 212 ms | K344 after 7,532,601 ticks |
+| `least_element(…, 1000000, tt).1`, least 240 | K344 | K344 after 214,535 ticks | 4,853,490 steps, 99 ms | 5,301,721 ticks, 267 ms |
+| a Peano count of 300 | K336 | K336 after 27,343 ticks | 1,653,757 steps, 48 ms | 1,917,669 ticks, 104 ms |
+| `fib(25)` | fallback after 6,084 steps, 21 ms | 197,821 ticks, 20 ms | 206,261 steps, 20 ms | 207,479 ticks, 17 ms |
 
 No value form of `factorial`, `least_divisor`, `euclid`, `least_element`,
-`nat_peano`, the Fibonacci or a dependent strong recursion falls back:
+`nat_peano`, the Fibonacci or a dependent strong recursion falls back
+(the function-valued Fibonacci aside, [above](#sharing)):
 every one measured computes in the runtime, and the evaluation baseline,
 the runtime and demand-mark tests and the probe's workloads agree. Of the
 source contracts' value forms, the only fallbacks left are the univalence
@@ -188,7 +206,7 @@ path's compositions in `radix_contracts`, which are transports by design,
 and `divides_decide(0, 0)`, at a path abstraction's η, which the recursion
 does not reach. Where main's kernel queries compute, they now take a fifth
 to a third more ticks on the small Euclid and factorial entries (the
-baseline's `factorial(4)` normal form, 18,068 against 13,793), and fewer
+baseline's `factorial(4)` normal form, 17,848 against 13,793), and fewer
 on `!!euclid(5)`; `factorial(40)` takes a fifth of main's.
 
 **The kernel's queries alone**, which value forms would return to without
@@ -200,8 +218,8 @@ the runtime, now compute:
 | `least_divisor` | 28 candidates (`least_divisor(841, tt)`); K344 at 30 (`least_divisor(961, tt)`) | 210 candidates (`least_divisor(44521, tt)`); K344 at 250 |
 | `least_element` | 63; K344 at 64 | 240; K344 at 300 |
 | Peano recursion, a count | 100; K336 at 200 | 300; K336 at 1,000 |
-| `factorial(n)` | 40; K344 at 60 | 60, in 138,487,845 ticks |
-| `!!least_divisor(25, tt)` | K344 | 202,120 ticks |
+| `factorial(n)` | 40; K344 at 60 | 60, in 138,661,876 ticks |
+| `!!least_divisor(25, tt)` | K344 | 201,896 ticks |
 
 Syntax depth, measured over the nodes each kernel normalization allocated,
 grows by about two levels a candidate in the divisor search (165 at 60
@@ -253,8 +271,12 @@ value forms, for the new depth failure and for the Fibonacci.
   arguments would not need it.
 - Sharing costs the linear recursions a comparison and a cast on the bits
   at every level (above, [Sharing](#sharing)): on the kernel's queries,
-  `euclid(5).1` takes 198,313 ticks where main took 160,432, and a
-  descent through 100 levels 552,117 where main took 266,884.
+  `euclid(5).1` takes 197,480 ticks where main took 160,432, and a
+  descent through 100 levels 545,259 where main took 266,884.
+- Function-valued branching recursions stop at the runtime's allocation
+  budget, where main's runtime fell back to the kernel's queries
+  ([Sharing](#sharing)); the kernel's queries compute them, faster than
+  main's.
 - `factorial(n)` on the kernel's path costs about what the product
   `n * ((n - 1) * (…))` of literals costs, 6.5M ticks at 40 and 130M at
   60, against 0.6M and 1.7M for the same product nested the other way:
@@ -272,7 +294,7 @@ value forms, for the new depth failure and for the Fibonacci.
 
 ## Checks
 
-- `npm test` at `7c473173`: all 2,149 tests pass, among them the source
+- `npm test` at `6bcab2b3`: all 2,152 tests pass, among them the source
   contracts, the Cubist tests, the library and corpus checks, the
   evaluation baseline and the driver trace (unchanged).
 - `node tools/audit-cubical.mjs --all`: 353 modules, 3,527 declarations,
@@ -283,11 +305,13 @@ value forms, for the new depth failure and for the Fibonacci.
 - New checks: the runtime test asserts that the value forms of Euclid,
   factorial, the least divisor and least element searches and the
   Fibonacci compute in the runtime with no fallback, and `euclid(7).1`
-  both ways; a branching test bounds `fib(25)` on the kernel's queries to
-  a million ticks and `fib(22)` in the runtime to a million steps, which
-  main passes and the course of values failed; the runtime query test reads
+  both ways; a branching test bounds `fib(25)`, `fun_fib(22, tt)` and
+  `fun_fib(25, tt)` on the kernel's queries to a million ticks each and
+  `fib(22)` in the runtime to a million steps, which main passes and the
+  course of values failed; the runtime query test reads
   Euclid's prime from the runtime bit by bit; the contracts
   `euclid.witness_7`, `euclid.witness_8`, `least_elements.far_least`,
-  `strong_recursion.fibonacci_25` and `strong_recursion.fibonacci_40`, and
+  `strong_recursion.fibonacci_25`, `strong_recursion.fibonacci_40` and the
+  function-valued `strong_recursion.function_fibonacci_22` and `_25`, and
   the Cubist test's Peano count of 300, compute only where the recursion
   builds no growing term and shares its smaller values.
