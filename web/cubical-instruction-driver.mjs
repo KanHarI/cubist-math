@@ -193,6 +193,8 @@ export class InstructionDriver {
     this.scopes = new Map();
     this.scopeKeys = new WeakMap();
     this.scopeEntries = new WeakMap();
+    this.scopeOccupants = new WeakMap();
+    this.bound = new Map();
     this.mentions = new WeakMap();
     this.dimensionedIn = new WeakMap();
     this.pins = new Map();
@@ -380,6 +382,25 @@ export class InstructionDriver {
     if (found) return found;
     return this.graph.level(name, variant ? names.spelling(name, { level: true }) : name);
   }
+  // The variables of a scope a binder could take, by the names a binder
+  // takes them by: each term or level entry's name and its spelling
+  // (EntryNames), mapped to the scope's symbols for the entries.
+  occupants(scope) {
+    let occupants = this.scopeOccupants.get(scope);
+    if (!occupants) {
+      occupants = new Map();
+      const names = this.kernel.entryNames;
+      for (const [symbol, entry] of scope) {
+        if (typeof symbol !== "number") continue;
+        for (const name of new Set([this.kernel.symbol(names.name(entry)), names.symbol(entry)])) {
+          if (!occupants.has(name)) occupants.set(name, []);
+          occupants.get(name).push(symbol);
+        }
+      }
+      this.scopeOccupants.set(scope, occupants);
+    }
+    return occupants;
+  }
   // Whether a scope's variables include an entry.
   holds(scope, entry) {
     if (!scope) return false;
@@ -412,8 +433,11 @@ export class InstructionDriver {
   // binder its entry is replaced and its type's dimensions no longer count,
   // as in the whole scope, which a summary could not undo.
   // A variable bound inside the term is bound by the term's own binders, at
-  // the entry its name and type give it, whatever else is in scope. So the
-  // derivation in the narrowed scope is the one the whole scope would give,
+  // the entry its name and type give it, whatever else is in scope, but
+  // never at an entry the scope holds: so a variable of the scope that a
+  // binder of the term could take, one made for the binder's name, is kept
+  // too (occupants), and the binder takes an entry of its own (bind). Then
+  // the derivation in the narrowed scope is the one the whole scope would give,
   // and as each judgement's context is the union of its premises', it
   // combines with any around it. Faces are rare (onFace's retry), and kept
   // whole. A narrowed scope is made once per content: a memo key, as any
@@ -421,9 +445,16 @@ export class InstructionDriver {
   narrow(handle, scope) {
     const live = liveIn(scope), symbols = this.freeTermSymbols(handle);
     let mentioned = scope.get(MENTIONED) ?? 0n, kept = symbols;
+    const keep = symbol => { if (!kept.has(symbol)) (kept = kept === symbols ? new Set(symbols) : kept).add(symbol); };
     for (const [symbol, dimensions] of this.dimensioned(scope)) {
       if (!this.binds(handle, symbol)) mentioned |= dimensions;
-      else if (!kept.has(symbol)) (kept = kept === symbols ? new Set(symbols) : kept).add(symbol);
+      else keep(symbol);
+    }
+    const occupants = this.occupants(scope);
+    if (occupants.size) {
+      const bound = this.boundSymbols(handle);
+      for (const name of bound.size < occupants.size ? bound : occupants.keys())
+        if (bound.has(name) && occupants.has(name)) occupants.get(name).forEach(keep);
     }
     let entries = "";
     for (const symbol of kept) {
@@ -1638,6 +1669,20 @@ export class InstructionDriver {
           if (!(i === 1 && TERM_BINDERS.has(n.kind) && symbol === boundSymbol(n))) symbols.add(symbol);
     }
     this.freeSymbols.set(term, symbols);
+    return symbols;
+  }
+  // The term and level symbols a syntax DAG binds anywhere in it.
+  boundSymbols(term) {
+    let symbols = this.bound.get(term);
+    if (!symbols) {
+      symbols = new Set();
+      if (term) {
+        const n = this.node(term);
+        if (TERM_BINDERS.has(n.kind)) symbols.add(boundSymbol(n));
+        for (const child of n.children) for (const symbol of this.boundSymbols(child)) symbols.add(symbol);
+      }
+      this.bound.set(term, symbols);
+    }
     return symbols;
   }
   // Whether a syntax DAG binds a term or level symbol anywhere in it.

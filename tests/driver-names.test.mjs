@@ -49,14 +49,41 @@ test("an entry is found again by its name and its type, across drivers, and neve
   assert.notEqual(driver.freshEntry(type, "x"), driver.freshEntry(type, "x"));
 });
 
-test("λ (x : A). λ (x : A). x is the inner binder's variable", async t => {
+// The entries the λ and Π judgements of a derivation discharge, outermost first.
+const discharged = (graph, id) => {
+  const judgement = graph.judgement(id);
+  return [...["lambda", "pi"].includes(judgement.rule) ? [judgement.entry] : [], ...judgement.premises.flatMap(premise => discharged(graph, premise))];
+};
+
+test("λ (x : A). λ (x : A). x binds two entries, the inner x the inner binder's", async t => {
   const program = fresh(t), { kernel, checker } = program, driver = checker.driver;
   const term = lam("x", unit, lam("x", unit, x));
-  const judgement = driver.graph.judgement(driver.infer(checker.syntax.encode(term)));
+  const id = driver.infer(checker.syntax.encode(term)), judgement = driver.graph.judgement(id);
+  // The inner binder's narrowed scope keeps the outer entry, which its own
+  // name could take: it takes another.
+  const [outer, inner] = discharged(driver.graph, id);
+  assert.notEqual(outer, inner);
+  assert.deepEqual([outer, inner].map(entry => kernel.entryNames.name(entry)), ["x", "x"]);
   const second = checker.syntax.encode(lam("a", unit, lam("b", unit, { tag: "Var", name: "b" })));
   const first = checker.syntax.encode(lam("a", unit, lam("b", unit, { tag: "Var", name: "a" })));
   assert.ok(kernel.alphaEqual(judgement.term, second));
   assert.ok(!kernel.alphaEqual(judgement.term, first));
+});
+
+test("a binder never takes an entry its scope holds, even one a later variable depends on", async t => {
+  // λ (x : A). λ (y : B(x)). λ (x : A). y: the innermost binder's scope keeps
+  // y, whose entry depends on the outer x's. Were the inner x to take that
+  // entry, its λ would discharge it while y's still depends on it, which the
+  // kernel refuses, as main's reuse by symbol did.
+  const program = fresh(t), { kernel, checker } = program, driver = checker.driver, syntax = checker.syntax;
+  const A = { tag: "Var", name: "A" }, B = { tag: "Var", name: "B" }, Bx = { tag: "App", fn: B, arg: x }, u0 = { tag: "U", level: 0 };
+  const context = [["A", u0], ["B", { tag: "Pi", name: "_", domain: A, body: u0 }]].map(([name, type]) => [kernel.symbol(name), syntax.encode(type)]);
+  const term = lam("x", A, lam("y", Bx, lam("x", A, { tag: "Var", name: "y" })));
+  const type = { tag: "Pi", name: "x", domain: A, body: { tag: "Pi", name: "y", domain: Bx, body: { tag: "Pi", name: "z", domain: A, body: Bx } } };
+  const id = driver.check(syntax.encode(term), syntax.encode(type), context);
+  const [outer, y, inner] = discharged(driver.graph, id);
+  assert.equal(new Set([outer, y, inner]).size, 3);
+  assert.deepEqual([outer, y, inner].map(entry => kernel.entryNames.name(entry)), ["x", "y", "x"]);
 });
 
 test("a type equal up to a dimension's name binds the same entry", async t => {
