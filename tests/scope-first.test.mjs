@@ -140,3 +140,45 @@ def f : forall x : Unit. Ix(x) := c;
 `, { module });
   assert.deepEqual(verdicts, { I: true, Ix: true, f: true });
 });
+
+test("a call's candidate keeps the dimensions its scope's variables' types mention", async t => {
+  // take(f)(tt) under x : p @ i: take's B would mention f's u, inside
+  // PathP(j => Ignore(u), tt, tt), until the candidate is walked into and
+  // Ignore(u) asked about. The walk enters j, which the candidate does not
+  // place where i is, and keeps i, which x's type mentions.
+  const { verdicts } = await checkProgram(t, `
+def Ignore(u : Unit) : U0 := Unit;
+
+def take{{B : U0}}(g : Unit -> B) : B := g(tt);
+
+def f(u : Unit) : Unit -> PathP(fun (j : Interval) => Ignore(u), tt, tt) := fun (v : Unit) => refl(tt);
+
+def taken(p : Unit = Unit) :
+  PathP(fun (i : Interval) => (p @ i) -> PathP(fun (j : Interval) => Unit, tt, tt),
+    fun (x : Unit) => refl(tt), fun (x : Unit) => refl(tt)) :=
+  path i => fun (x : p @ i) => take(f)(tt);
+`, { module });
+  assert.deepEqual(verdicts, { Ignore: true, take: true, f: true, taken: true });
+});
+
+test("a decoded term encodes back to its node only where all the node mentions is in scope", async t => {
+  // p @ 0 checked where p : Path(j; Unit, x, x) carries that type, which
+  // mentions x, as its annotation; its syntax does not. Where p is a path
+  // between tt and tt and x is not in scope, it is encoded from its syntax,
+  // and a head query does not answer x. So for a dimension only the
+  // annotation mentions: q @ i, in i, where the query has none.
+  const { checker } = fresh(t), syntax = checker.syntax;
+  const path = (left, right) => ({ tag: "Path", dim: "j", family: unit, left, right });
+  const at = { tag: "PApp", path: variable("p"), arg: [] }, qi = { tag: "PApp", path: variable("q"), arg: [["i:1"]] };
+  const answer = (term, context) => { try { return checker.nf(term, context, new Map()); } catch { return null; } };
+  for (const [first, dimensions, second] of [
+    [new Map([["x", unit], ["p", path(variable("x"), variable("x"))]]), new Map(), new Map([["p", path(point, point)]])],
+    [new Map([["q", path(point, point)], ["p", path(qi, qi)]]), new Map([["i", 0]]), new Map([["q", path(point, point)], ["p", path(point, point)]])]
+  ]) {
+    const checked = checker.checkSyntax(at, null, first, dimensions);
+    assert.equal(syntax.encode(checked.term, dimensions, checker.scopeOf(first, dimensions)), checked.expression);
+    assert.notEqual(syntax.encode(checked.term, new Map(), checker.scopeOf(second, new Map())), checked.expression);
+    const asked = answer(checked.term, second);
+    assert.ok(!asked || asked.tag === "Point", "no answer from what only the annotation mentions");
+  }
+});

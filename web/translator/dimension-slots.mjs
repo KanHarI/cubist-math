@@ -73,10 +73,13 @@ export function dimensionNames(term) {
 
 export function freeDimensions(term) { return new Set(dimensionNames(term)); }
 
-export function bindDimensions(term,dimensions=new Map()) {
+// The dimensions inside a dimension binder: the outer ones its parts mention,
+// and those of `kept` (the ones a context's types mention, which stay live
+// for its variables), each at its slot; the binder's own apart from them.
+export function bindDimensions(term,dimensions=new Map(),kept=null) {
   if(!dimensionScope.has(term.tag))throw Error('Expected a dimension binder.');
   const live=boundNames(term),inner=new Map();
-  for(const [name,slot]of dimensions)if(live.has(name))inner.set(name,slot);
+  for(const [name,slot]of dimensions)if(live.has(name)||kept?.has(name)&&name!==term.dim)inner.set(name,slot);
   const occupied=new Set(inner.values());
   let dim=0;
   while(occupied.has(dim))dim++;

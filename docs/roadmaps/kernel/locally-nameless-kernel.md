@@ -1160,7 +1160,14 @@ changes:
     returns `Unit`, it asks about `Ignore2(v, u)` with the candidate-local
     `v` unbound; main accepts the call. The walk binds each term binder it
     enters at its domain, and its memo, keyed today by the dimension
-    context, is keyed by that scope as well.
+    context, is keyed by that scope as well. Entering a dimension binder,
+    it drops the outer dimensions the candidate does not mention, as the
+    codec allocates a binder, but keeps those the scope's variables' types
+    mention: under `fun (x : p @ i) => …` the context still has `x`, whose
+    type needs `i` (a call `take(f)(tt)` there, with `f`'s type
+    `Unit -> PathP(j => Ignore(u), tt, tt)`, is otherwise refused). The
+    binder is placed apart from them, and renamed while it is walked where
+    its name is one of theirs.
 
   Appendix A classifies every head-query site of `web/` and
   `web/translator/`, and every call of `encode` and `encodeLevel`, by where
@@ -1197,14 +1204,22 @@ indices is keyed by the names its loose indices take.
 The decoder also stores what it decodes for the encoder, so that a decoded
 object encodes back to its own node: a checked path application's
 annotation, which its syntax does not carry, survives the round trip
-(`tests/cubical-wasm.test.mjs` checks it). A decoded object with a free
-variable cannot be stored under a scope it was not decoded in. PR 1 keeps
-such objects apart, by node and dimension context (`roundTrips` in
-`web/cubical-syntax.mjs`), and encodes one back to its node only after
-resolving each of its free variables against the binders and the scope it
-is encoded in, which is sound on ABI 3, where its node does not depend on
-the scope. PR 3's decoder names `CC_CONTEXT` through a scope, and stores the
-object under that scope instead.
+(`tests/cubical-wasm.test.mjs` checks it). A decoded object whose node
+mentions a variable cannot be stored under a scope it was not decoded in.
+PR 1 keeps such objects apart, by node and dimension context and for the
+declaration only (`roundTrips` in `web/cubical-syntax.mjs`), and encodes one
+back to its node only where every variable and every dimension the node
+mentions, its annotations' included, is the scope's or bound by the term
+around it; elsewhere it is encoded from its syntax. The node can mention
+what the syntax does not: `p @ 0` checked where `p : Path(j; Unit, x, x)`
+carries that type, `x` included, as its annotation, and its annotation can
+mention a dimension the syntax does not. An object whose syntax mentions no
+variable but whose node does is kept the same way, not with the closed
+ones. What this does not reach on ABI 3 is a variable the node and its
+syntax share that names, where the object is encoded, another entry than
+where it was decoded: the annotation is then the one checked there, which a
+head query trusts, as on main. PR 3's decoder names `CC_CONTEXT` through a
+scope and stores the object under that scope, which makes the check exact.
 
 The order needs no kernel change and is adopted first, on ABI 3, in PR 1,
 with symbols still standing for the entries; PR 3 then changes only what a
