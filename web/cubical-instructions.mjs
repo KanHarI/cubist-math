@@ -105,10 +105,10 @@ export class InstructionGraph {
   // A term entry for `name` at a type judgement. The session's record names
   // it (web/cubical-variables.mjs, EntryNames); on ABI 3 the kernel takes the
   // symbol `spelling` names, the name itself unless the driver chose a
-  // variant.
-  extend(type, name, spelling = name) {
+  // variant; a fresh entry, which no binder of its name takes, is a variant.
+  extend(type, name, spelling = name, fresh = false) {
     const entry = this.issue(EXTEND, type, this.kernel.symbol(spelling));
-    this.kernel.entryNames.record(entry, name, spelling, this.module._cb_judgement(this.kernel.handle, type, 1) >>> 0);
+    this.kernel.entryNames.record(entry, name, spelling, this.module._cb_judgement(this.kernel.handle, type, 1) >>> 0, fresh);
     return entry;
   }
   dimension(index) { return this.issue(DIMENSION, index); }

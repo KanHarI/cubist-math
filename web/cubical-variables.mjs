@@ -189,9 +189,11 @@ export class EntryNames {
     }
   }
   // An entry the kernel made, for `name`, holding the symbol `spelling` names.
-  record(entry, name, spelling, type) {
+  // A fresh entry is found again by its spelling only, as a binder of its
+  // name never takes it.
+  record(entry, name, spelling, type, fresh = false) {
     if (this.records.has(entry)) return;
-    const record = { entry, name, symbol: this.kernel.symbol(spelling), type, keys: [...new Set([name, spelling])] };
+    const record = { entry, name, symbol: this.kernel.symbol(spelling), type, keys: fresh ? [spelling] : [...new Set([name, spelling])] };
     this.records.set(entry, record);
     for (const key of record.keys) {
       if (!this.named.has(key)) this.named.set(key, { groups: [], known: new Map() });

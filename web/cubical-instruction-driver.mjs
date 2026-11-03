@@ -370,7 +370,7 @@ export class InstructionDriver {
       const found = names.find(name, this.statement(type).term, entry => this.holds(scope, entry));
       if (found) return found;
     }
-    return this.graph.extend(type, name, names.spelling(name, { fresh }));
+    return this.graph.extend(type, name, names.spelling(name, { fresh }), fresh);
   }
   // A level entry for a universe variable of `symbol`'s name, in `scope`, as
   // bind finds a term entry. Only a binder, whose body is renamed to its

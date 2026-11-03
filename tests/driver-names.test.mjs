@@ -46,8 +46,11 @@ test("an entry is found again by its name and its type, across drivers, and neve
   assert.equal(kernel.entryNames.name(inner), "x");
   assert.notEqual(kernel.entryNames.spelled(inner), "x", "spelled apart from the live entry");
   // A fresh entry is always new, and the driver never asks the kernel to
-  // reuse one by its symbol: two fresh entries at one type are two.
+  // reuse one by its symbol: two fresh entries at one type are two. A binder
+  // of its name takes none.
   assert.notEqual(driver.freshEntry(type, "x"), driver.freshEntry(type, "x"));
+  const made = driver.freshEntry(type, "w");
+  assert.notEqual(driver.bind(kernel.symbol("w"), type), made);
 });
 
 // The entries the λ and Π judgements of a derivation discharge, outermost first.
