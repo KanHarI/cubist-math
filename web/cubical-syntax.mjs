@@ -1,21 +1,21 @@
 import { bindDimensions } from "./translator/dimension-slots.mjs";
 import { dimensionContextKey } from "./translator/syntax-graph.mjs";
 import { freeNames, isTerm } from "./translator/core.mjs";
-import { binderName, binderTerm, pushName, resolveVariable, variableName, variableTerm } from "./cubical-variables.mjs";
+import { binderName, binderTerm, binders, boundSymbol, pushName, referenceSymbol, variableName, variableTerm } from "./cubical-variables.mjs";
 // The scope of no context: what is encoded against it is closed.
 export const EMPTY_SCOPE = Object.freeze(new Map());
 // Lossless syntax transport between named cubical ASTs and C arena handles.
 // This layer never decides typing or equality. Every checked result comes
 // from CubicalKernel.check; shared input objects retain shared arena nodes.
 // The dimensions free in a node, as a bit mask, memoized in `memo`. A path
-// application's kernel annotation is not counted: neither decoding nor the
-// driver's alpha equality reads it.
-export function freeDimensionMask(kernel, id, memo) {
+// application's kernel annotation is not counted, unless `annotated`:
+// neither decoding nor the driver's alpha equality reads it.
+export function freeDimensionMask(kernel, id, memo, annotated = false) {
   if (!id) return 0n;
   let mask = memo.get(id);
   if (mask !== undefined) return mask;
   const { kind: tag, payload, children: c } = kernel.node(id);
-  const free = child => freeDimensionMask(kernel, child, memo);
+  const free = child => freeDimensionMask(kernel, child, memo, annotated);
   const bound = child => free(child) & ~(1n << BigInt(payload));
   const formula = f => kernel.inspectFormula(f).clauses.reduce((m, [p, n]) => m | p | n, 0n);
   // A list of faces, each with the parts it guards.
@@ -31,7 +31,7 @@ export function freeDimensionMask(kernel, id, memo) {
   switch (tag) {
     case "Path": mask = bound(c[0]) | free(c[1]) | free(c[2]); break;
     case "PLam": mask = bound(c[0]) | bound(c[1]); break;
-    case "PApp": mask = formula(payload) | free(c[0]); break;
+    case "PApp": mask = formula(payload) | free(c[0]) | (annotated ? free(c[1]) : 0n); break;
     case "Trans": mask = bound(c[0]) | formula(kernel.node(c[1]).payload) | free(c[2]); break;
     case "Comp": case "HComp":
       mask = (tag === "HComp" ? free(c[0]) : bound(c[0])) | system(c[1], ([body]) => bound(body)) | free(c[2]); break;
@@ -78,17 +78,26 @@ export class CubicalSyntax {
     this.heads = new NodeCache(kernel);
     // The scopes and the chains of binders open encodings are kept by.
     this.scopeNumbers = new WeakMap(); this.scopes = 0; this.chains = new Map();
-    // A decoded term with free variables, by its node: encoded again as that
-    // node, so that a checked term keeps what its syntax omits (a path
-    // application's annotation), in any scope whose entries and binders are
-    // its free variables. On ABI 3 its node does not depend on the scope.
+    // A decoded term whose node mentions a variable, by that node: encoded
+    // again as the node, so that a checked term keeps what its syntax omits
+    // (a path application's annotation), where every variable the node
+    // mentions, the annotation's included, is the scope's or the term's
+    // own (encodeAt, keep).
     this.roundTrips = new NodeCache(kernel, true);
+    // What each node mentions, its annotations included (references,
+    // annotatedDimensions).
+    this.symbolsIn = new NodeCache(kernel);
+    this.annotatedFree = new NodeCache(kernel);
   }
   // Handles made since a checkpoint move when it is committed or rolled
   // back: what was read of them is dropped then.
-  reset() { for (const cache of [this.encoded, this.roundTrips, this.decoded, this.free, this.heads]) cache.drop(); }
-  // The dimensions free in a node, as a bit mask (freeDimensionMask).
+  reset() {
+    for (const cache of [this.encoded, this.roundTrips, this.decoded, this.free, this.heads, this.symbolsIn, this.annotatedFree]) cache.drop();
+  }
+  // The dimensions free in a node, as a bit mask (freeDimensionMask), and
+  // those with its annotations'.
   freeDimensions(id) { return freeDimensionMask(this.kernel, id, this.free); }
+  annotatedDimensions(id) { return freeDimensionMask(this.kernel, id, this.annotatedFree, true); }
   formula(value, sort, dimensions) {
     const clauses = value.map(clause => {
       let positive = 0n, negative = 0n;
@@ -125,11 +134,14 @@ export class CubicalSyntax {
     const open = !this.closed(term), at = open ? `${key}|${this.scopeNumber(scope)}|${binders?.id ?? 0}` : key;
     const cached = this.encoded.node(term, at);
     if (cached) return cached;
-    const k = this.kernel, decoded = open && this.roundTrips.node(term, key);
-    if (decoded) {
-      for (const name of freeNames(term)) resolveVariable(k, name, this.binds(binders, name), scope);
-      return decoded;
-    }
+    // A decoded object encodes back to its own node only where every
+    // variable the node mentions, those only its annotations mention
+    // included, is bound by the term around it or is an entry of the scope;
+    // elsewhere it is encoded from its syntax, which refuses a variable its
+    // syntax names that is neither.
+    const k = this.kernel, decoded = this.roundTrips.node(term, key);
+    if (decoded && [...this.references(decoded)].every(symbol =>
+      this.binds(binders, k.symbolName(symbol)) || typeof scope.get(symbol) === "number")) return decoded;
     const child = t => this.encodeAt(t, dimensions, key, scope, binders);
     const node = (payload = 0, ...children) => k.term(term.tag, payload, ...children);
     const level = l => this.encodeLevel(l, scope, binders);
@@ -313,14 +325,18 @@ export class CubicalSyntax {
     // around a node do not change its decoding either.
     const free = this.freeDimensions(id);
     const assigned = [...dimensions.values()].reduce((mask, index) => mask | 1n << BigInt(index), 0n);
-    const completeContext = (free & ~assigned) === 0n;
+    // The node is kept for the encoder in this context when the context
+    // names every dimension it mentions, its annotations' too; under the
+    // dimensions its syntax mentions alone only when its annotations
+    // mention no other (keep).
+    const annotated = this.annotatedDimensions(id), completeContext = (annotated & ~assigned) === 0n;
     if ([...dimensions.values()].some(index => !(free & 1n << BigInt(index))))
       dimensions = new Map([...dimensions].filter(([, index]) => free & 1n << BigInt(index)));
     // In no dimension context, as most nodes are, the node alone.
     const cacheKey = dimensions.size ? JSON.stringify([id,dimensionContextKey(dimensions)]) : id;
     if (this.decoded.has(cacheKey)) {
       const result = this.decoded.get(cacheKey);
-      if (completeContext) (this.closed(result) ? this.encoded : this.roundTrips).setNode(result, encodingKey, id);
+      if (completeContext) this.keep(result, id, encodingKey);
       return result;
     }
     const node = this.kernel.node(id), { kind: tag, payload, children: c } = node;
@@ -410,17 +426,40 @@ export class CubicalSyntax {
       }
     };
     freeze(result);
-    const encoded = this.closed(result) ? this.encoded : this.roundTrips;
-    encoded.setNode(result, dimensionContextKey(dimensions), id);
+    if (annotated === free) this.keep(result, id, dimensionContextKey(dimensions));
     // Encoding uses the caller's full context. Decoding ignores unused
     // dimensions for sharing, but must also preserve the checked node in
     // that original context, including when a later decode hits the cache.
     // An inspection context can omit indices and use fallback names; those
     // names need not encode back to the original slots. New binder contexts
     // likewise still require derivation before head queries.
-    if (completeContext) encoded.setNode(result, encodingKey, id);
+    if (completeContext) this.keep(result, id, encodingKey);
     this.decoded.set(cacheKey, result, id);
     return result;
   }
+  // A decoded object kept for the encoder, to encode back to its own node in
+  // the dimension context `key`: with the closed syntax, by its dimensions
+  // alone, when neither it nor its node mentions a variable; otherwise as a
+  // round trip, which the encoder checks against the scope it encodes in,
+  // kept for the declaration only, as its variables' entries are.
+  keep(result, id, key) {
+    if (this.closed(result) && !this.references(id).size) this.encoded.setNode(result, key, id);
+    else this.roundTrips.setNode(result, key, id, true);
+  }
   // Whether syntax has no free variable, and so encodes alike in every scope.
-  closed(term) { return !isTerm(term) || !freeNames(term).size; }}
+  closed(term) { return !isTerm(term) || !freeNames(term).size; }
+  // The term and level symbols a node mentions that no binder in it binds,
+  // its annotations' included: a checked path application's type, which
+  // its syntax omits, may mention a variable the syntax does not.
+  references(id) {
+    let symbols = this.symbolsIn.get(id);
+    if (symbols) return symbols;
+    const node = this.kernel.node(id);
+    symbols = new Set(node.kind === "Var" ? [referenceSymbol(node)] : []);
+    node.children.forEach((child, i) => {
+      if (child) for (const symbol of this.references(child))
+        if (!(i === 1 && binders.has(node.kind) && symbol === boundSymbol(node))) symbols.add(symbol);
+    });
+    this.symbolsIn.set(id, symbols, id);
+    return symbols;
+  }}

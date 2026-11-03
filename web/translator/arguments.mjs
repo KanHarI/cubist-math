@@ -706,11 +706,30 @@ class ArgumentSolver {
 // is bound at its domain as the walk enters its body, so that a head asked
 // there is asked in a context that has it.
 function reduceScopeCandidate(value, blocked, at) {
-  const memo = new WeakMap(), budget = syntaxGraphBudget(), contexts = new WeakMap();
+  const memo = new WeakMap(), budget = syntaxGraphBudget(), contexts = new WeakMap(), mentioned = new WeakMap();
   let count = 0;
   const contextKey = scope => {
     if (!contexts.has(scope.context)) contexts.set(scope.context, ++count);
     return contexts.get(scope.context);
+  };
+  // The dimensions the types of a scope's variables mention: they stay in
+  // scope under a dimension binder of the candidate that does not mention
+  // them, as those variables do, and the binder is named and placed apart.
+  const contextDimensions = scope => {
+    let names = mentioned.get(scope.context);
+    if (!names) {
+      names = new Set();
+      for (const type of scope.context.values()) if (isTerm(type)) for (const name of freeDimensions(type)) names.add(name);
+      mentioned.set(scope.context, names);
+    }
+    return names;
+  };
+  // A dimension binder with its dimension named `name` in the parts it binds.
+  const renamedDimension = (term, name) => {
+    const rename = part => substituteDimension(part, term.dim, I.variable(name)), result = {...term, dim: name};
+    for (const key of dimensionScope.get(term.tag))
+      result[key] = key === "system" ? term.system.map(piece => ({...piece, term: rename(piece.term)})) : rename(term[key]);
+    return result;
   };
   // A binder's body, its variable bound in the scope, apart from a variable
   // the scope has already: walked as the body that names that one, then
@@ -743,9 +762,18 @@ function reduceScopeCandidate(value, blocked, at) {
     }
     if (result === term) {
       // Use the codec's binder allocation, including pruning dead outer
-      // dimensions, when a candidate contains a path or composition family.
+      // dimensions, when a candidate contains a path or composition family;
+      // but the dimensions the scope's variables' types mention stay. A
+      // binder named as one of them is walked renamed, and named back.
       const keys = dimensionScope.get(term.tag);
-      const inner = keys ? scope.with({dimensions: bindDimensions(term, scope.dimensions).inner}) : scope;
+      if (keys && contextDimensions(scope).has(term.dim) && scope.dimensions.has(term.dim)) {
+        const name = scope.fresh(term.dim), renamed = renamedDimension(term, name), walked = reduce(renamed, scope);
+        result = walked === renamed ? term : walked.tag === term.tag && walked.dim === name ? renamedDimension(walked, term.dim) : walked;
+        if (!known) memo.set(term, new Map([[key, result]]));
+        else known.set(key, result);
+        return result;
+      }
+      const inner = keys ? scope.with({dimensions: bindDimensions(term, scope.dimensions, contextDimensions(scope)).inner}) : scope;
       for (const [field, child] of Object.entries(term)) {
         const changed = field === "body" && termBinders.has(term.tag) ? body(term, scope) : reduce(child, keys?.includes(field) ? inner : scope);
         if (changed !== child) {
