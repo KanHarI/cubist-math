@@ -108,7 +108,7 @@ export function elaborateCall(t, n, scope, expected) {
     // arguments' values: those are elaborated first.
     if (type.tag !== "Pi" && type.tag !== "LPi") {
       solver.run(false);
-      type = solver.at.nf(solver.zonk(type));
+      type = solver.scopeOf().nf(solver.asked(type));
     }
     const parameter = parameters?.[index]?.name ?? null;
     const site = node ?? n.fn;
@@ -160,13 +160,19 @@ export function elaborateCall(t, n, scope, expected) {
 // The unknowns of one call and its constraints. Each slot's variable stands
 // for its value: a hole's is found by unification, a written argument's by
 // elaborating it once its parameter's type mentions no unknown. The
-// variables are entries of a scope of the solver's own, `at`, for the head
-// queries about types that mention them: a universe's a level entry, any
-// other at its parameter's domain over the ones before it. The call's
+// unknowns not yet solved are entries of a scope of the solver's own
+// (scopeOf), for the head queries about types that mention them. The call's
 // arguments are elaborated in its own scope.
 class ArgumentSolver {
   constructor(t, scope, slots, called, call) {
-    Object.assign(this, {t, scope, slots, called, call, at: scope});
+    Object.assign(this, {t, scope, slots, called, call});
+    // The changes to the unknowns, their solutions and their bounds, counted,
+    // and the scopes made after the last (scopeOf).
+    this.changes = 0;
+    this.scopes = new WeakMap();
+    // The solved holes whose types have bounded their parameters' types
+    // (typeSolution).
+    this.typed = new Set();
     // Whether the call has a hole or a named argument as written.
     this.written = determinesArguments(call);
     this.byVariable = new Map();
@@ -206,8 +212,62 @@ class ArgumentSolver {
   add(slot) {
     this.slots.push(slot);
     this.byVariable.set(slot.variable, slot);
-    this.at = this.at.withVariable(slot.variable, slot.universe ? T.bound : slot.domain).scope;
     if (slot.universe) this.bounds.set(slot.variable, {lower: [], upper: [], equal: null});
+    this.changes++;
+  }
+  // An unknown solved.
+  settle(variable, value) {
+    this.solution.set(variable, value);
+    this.changes++;
+  }
+  // The level a universe placeholder not yet solved is asked about at: the
+  // one its bounds give it so far, as solveUniverses would solve it now;
+  // null when nothing bounds it yet or the bound is not below ω.
+  askedLevel(variable) {
+    if (!this.byVariable.get(variable)?.universe || this.solution.has(variable)) return null;
+    const level = this.least(this.bounds.get(variable));
+    return level !== null && finiteLevel(level) ? level : null;
+  }
+  // A term as the solver asks about it: zonked, and each universe
+  // placeholder bounded but not yet solved at its asked level. A hole of type
+  // U(V?) solved by a type in U(W) needs V? at least W, which only that
+  // level gives it: with V? left free, the unknowns' types that the
+  // solution enters, as Square(V?, B, …), are ill-typed. The solver's
+  // decisions still read the placeholders, so that every bound counts.
+  asked(term) {
+    term = this.zonk(term);
+    for (const name of freeNames(term)) {
+      const level = this.askedLevel(name);
+      if (level !== null) term = substituteTerm(term, name, level);
+    }
+    return term;
+  }
+  // The scope the solver asks about its terms in: the call's, with each
+  // unknown neither solved nor at an asked level bound at its type as asked
+  // (asked), a universe's as a level entry, and each binder a constraint has
+  // descended under, `chain` (innermost first, {name, domain} or
+  // {dimension}), at its domain as asked. A term is asked about there as it
+  // stands when it is asked, so it mentions no unknown the scope leaves out
+  // and agrees with the types the scope gives the others: a binder bound at
+  // its domain as it stood before a placeholder in it was solved, Magma(V?)
+  // where V? = V, would make Magma.M(V, B) ill-typed. Made again after each
+  // change to the unknowns, their solutions or their bounds.
+  scopeOf(chain = null) {
+    const known = this.scopes.get(chain ?? this);
+    if (known?.changes === this.changes) return known.scope;
+    let scope;
+    if (chain) {
+      const outer = this.scopeOf(chain.next);
+      scope = chain.dimension !== undefined ? outer.bindDimension(chain.dimension)
+        : outer.withVariable(chain.name, this.asked(chain.domain)).scope;
+    } else {
+      scope = this.scope;
+      for (const slot of this.slots)
+        if (slot.variable && !this.solution.has(slot.variable) && this.askedLevel(slot.variable) === null)
+          scope = scope.withVariable(slot.variable, slot.universe ? T.bound : this.asked(slot.domain)).scope;
+    }
+    this.scopes.set(chain ?? this, {changes: this.changes, scope});
+    return scope;
   }
   // A level with each solved universe placeholder replaced, as in zonk.
   zonkLevel(level) {return this.zonk({tag: "U", level}).level;}
@@ -231,7 +291,7 @@ class ArgumentSolver {
       else return "stuck";
       return "done";
     }
-    if (above && !this.levelUnknown(smaller)) this.bounds.get(above.variable).lower.push(smaller);
+    if (above && !this.levelUnknown(smaller)) { this.bounds.get(above.variable).lower.push(smaller); this.changes++; }
     else if (below && !this.levelUnknown(larger)) this.bounds.get(below.variable).upper.push(larger);
     else return "stuck";
     return "done";
@@ -245,28 +305,32 @@ class ArgumentSolver {
   equalLevel(slot, level) {
     const bounds = this.bounds.get(slot.variable);
     bounds.equal ??= level;
-    if (finiteLevel(bounds.equal) && !this.solution.has(slot.variable)) this.solution.set(slot.variable, bounds.equal);
+    if (finiteLevel(bounds.equal) && !this.solution.has(slot.variable)) this.settle(slot.variable, bounds.equal);
   }
   // Solve the universe placeholders that bounds determine: by an equality,
   // or as the largest lower bound. With `last`, also those nothing bounds
   // that the call's type does not mention, as U0. True when one was solved.
   solveUniverses(last = false) {
     let solved = false;
-    for (const [variable, {lower, equal}] of this.bounds) {
+    for (const [variable, bounds] of this.bounds) {
       if (this.solution.has(variable)) continue;
-      let level = equal;
-      if (level === null && lower.length)
-        level = lower.every(bound => typeof bound === "number") ? Math.max(...lower)
-          : lower.reduce((left, right) => ({tag: "LMax", left, right}));
+      let level = this.least(bounds);
       if (level === null && last && !freeNames(this.zonk(this.result ?? T.unit)).has(variable)) level = 0;
       if (level === null) continue;
       const slot = this.byVariable.get(variable);
       if (!finiteLevel(level))
         throw this.scope.unit.locate(Error(`The universe ${slot.parameter ?? "argument"} of ${this.called} would be ${universeText(level)}, which is not below UU0. Give it explicitly.`), slot.node ?? this.call.fn);
-      this.solution.set(variable, level);
+      this.settle(variable, level);
       solved = true;
     }
     return solved;
+  }
+  // The level bounds give a placeholder: its equation, or the largest of its
+  // lower bounds; null when it has neither.
+  least({lower, equal}) {
+    if (equal !== null || !lower.length) return equal;
+    return lower.every(bound => typeof bound === "number") ? Math.max(...lower)
+      : lower.reduce((left, right) => ({tag: "LMax", left, right}));
   }
   // `smaller` has to inhabit what `larger` does: an argument's type and its
   // parameter's, or the call's type and the one expected of it.
@@ -295,7 +359,7 @@ class ArgumentSolver {
           // A generator's checked application validates each argument here
           // before extracting solved values, including fully positional calls.
           // This policy is independent of whether source arguments had labels.
-          try { this.solution.set(slot.variable, this.determined||this.call.checkArguments
+          try { this.settle(slot.variable, this.determined||this.call.checkArguments
             ? this.scope.check(slot.value, domain) : this.scope.infer(slot.value).term); }
           catch (error) {propagateElaborationStop(error); throw this.scope.unit.locate(error, slot.node); }
           progress = true;
@@ -308,16 +372,10 @@ class ArgumentSolver {
           if (inferred) { this.require(inferred, domain, {slot}); progress = true; }
         }
       }
-      // A hole solved at a type that mentions a placeholder bounds it by the
-      // solution's own type, as a written argument's type does.
-      for (const slot of this.slots) {
-        if (slot.kind === "argument" || slot.universe || slot.typed || !this.solution.has(slot.variable)) continue;
-        const domain = this.zonk(slot.domain), value = this.zonk(T.variable(slot.variable));
-        if (!this.unknowns(domain).length || this.unknowns(value).length) continue;
-        slot.typed = true;
-        this.require(this.scope.infer(value).type, domain, {slot});
-        progress = true;
-      }
+      // A hole solved by a term that mentioned unknowns, once it no longer
+      // does (typeSolution).
+      for (const slot of this.slots)
+        if (slot.kind !== "argument" && !slot.universe && this.solution.has(slot.variable) && this.typeSolution(slot)) progress = true;
       if (progress) continue;
       if (complete && this.approximate()) continue;
       // Universes last: once every argument has said what it needs.
@@ -342,7 +400,7 @@ class ArgumentSolver {
     try {
       for (const constraint of this.pending.splice(0)) {
         const saved = this.snapshot();
-        if (this.unify(constraint.smaller, constraint.larger, constraint.origin, "covariant", new Set(), this.at) === "done") {
+        if (this.unify(constraint.smaller, constraint.larger, constraint.origin, "covariant", new Set(), null) === "done") {
           progress = true;
           continue;
         }
@@ -360,7 +418,7 @@ class ArgumentSolver {
       const pending = this.pending.splice(0);
       for (const constraint of pending) {
         const before = this.solution.size;
-        const outcome = this.unify(constraint.smaller, constraint.larger, constraint.origin, "covariant", new Set(), this.at);
+        const outcome = this.unify(constraint.smaller, constraint.larger, constraint.origin, "covariant", new Set(), null);
         if (outcome === "stuck") this.pending.push(constraint);
         // The kernel's check of the argument reports it, unless a hole it
         // leaves open is reported first, with this as the reason.
@@ -384,9 +442,9 @@ class ArgumentSolver {
   }
   // One constraint between two terms: "done", "stuck" (for now) or "clash",
   // when they cannot agree. `polarity` is "covariant" where a larger
-  // universe would also do, `bound` the variables and `at` the scope, with
-  // its dimensions, that the constraint has descended under.
-  unify(left, right, origin, polarity, bound, at, normal = false) {
+  // universe would also do, `bound` the variables and `chain` the binders,
+  // dimensions too, that the constraint has descended under (scopeOf).
+  unify(left, right, origin, polarity, bound, chain, normal = false) {
     left = this.zonk(left); right = this.zonk(right);
     const unknown = [...this.unknowns(left), ...this.unknowns(right)];
     // Only a hole is solved here; an argument's value is waited for.
@@ -394,12 +452,12 @@ class ArgumentSolver {
     const hole = this.flexible(left), other = this.flexible(right);
     if (hole && other && hole === other) return "done";
     // A hole on the smaller side is at most the other; on the larger, at least.
-    if (hole) return this.solve(hole, right, polarity, bound, at, "upper");
-    if (other) return this.solve(other, left, polarity, bound, at, "lower");
+    if (hole) return this.solve(hole, right, polarity, bound, chain, "upper");
+    if (other) return this.solve(other, left, polarity, bound, chain, "lower");
     // An argument's variable stands for a value still to be elaborated.
     if (left.tag === "Var" && this.byVariable.has(left.name) || right.tag === "Var" && this.byVariable.has(right.name)) return "stuck";
     if (left.tag === right.tag && rigid(left, right, normal, this.byVariable)) {
-      const outcome = this.parts(left, right, origin, polarity, bound, at);
+      const outcome = this.parts(left, right, origin, polarity, bound, chain);
       if (outcome !== "clash" || normal) return outcome;
     }
     // One definition applied on both sides, as T.Hom(A, B) or Tagged(U, A).
@@ -408,7 +466,7 @@ class ArgumentSolver {
       // they stand. Unless they agree, nothing they solved is kept, and the
       // unfoldings are compared instead.
       if (this.approximating) {
-        const saved = this.snapshot(), outcome = this.parts(left, right, origin, "invariant", bound, at);
+        const saved = this.snapshot(), outcome = this.parts(left, right, origin, "invariant", bound, chain);
         if (outcome === "done") return outcome;
         this.restore(saved);
       } else {
@@ -416,7 +474,7 @@ class ArgumentSolver {
         // the arguments still open, as Tagged(U, A) := Nat leaves A, the
         // constraint waits: for other constraints to solve the hole, or for
         // approximate() to read it off the arguments.
-        const outcome = this.unfolded(left, right, origin, polarity, bound, at);
+        const outcome = this.unfolded(left, right, origin, polarity, bound, chain);
         const open = [...this.unknowns(this.zonk(left)), ...this.unknowns(this.zonk(right))]
           .some(name => this.byVariable.get(name).kind !== "argument");
         return outcome === "done" && open ? "stuck" : outcome;
@@ -424,40 +482,42 @@ class ArgumentSolver {
     }
     // Different type formers never agree; other heads may, by eta.
     if (normal) return left.tag !== right.tag && CANONICAL.has(left.tag) && CANONICAL.has(right.tag) ? "clash" : "stuck";
-    return this.unfolded(left, right, origin, polarity, bound, at);
+    return this.unfolded(left, right, origin, polarity, bound, chain);
   }
-  // A definition, a redex or a projection: their head normal forms compared.
-  unfolded(left, right, origin, polarity, bound, at) {
+  // A definition, a redex or a projection: their head normal forms compared,
+  // each as solved when it is asked about.
+  unfolded(left, right, origin, polarity, bound, chain) {
     let leftHead, rightHead;
-    try { leftHead = at.nf(left); rightHead = at.nf(right); }
+    try { leftHead = this.scopeOf(chain).nf(this.asked(left)); rightHead = this.scopeOf(chain).nf(this.asked(right)); }
     catch (error) {
       propagateLimit(error);
       return "stuck";
     }
-    return this.unify(leftHead, rightHead, origin, polarity, bound, at, true);
+    return this.unify(leftHead, rightHead, origin, polarity, bound, chain, true);
   }
   // What the solver has found, to return to after a failed attempt.
   snapshot() {
     return { solution: new Map(this.solution), ambiguous: new Map(this.ambiguous), escaping: new Map(this.escaping),
-      clashes: [...this.clashes], bounds: new Map([...this.bounds].map(([variable, bounds]) =>
+      clashes: [...this.clashes], pending: [...this.pending], typed: new Set(this.typed),
+      bounds: new Map([...this.bounds].map(([variable, bounds]) =>
         [variable, { ...bounds, lower: [...bounds.lower], upper: [...bounds.upper] }])) };
   }
-  restore(saved) { Object.assign(this, saved); }
+  restore(saved) { Object.assign(this, saved); this.changes++; }
   // The parts of two terms with the same rigid head.
-  parts(left, right, origin, polarity, bound, at) {
-    const same = (l, r, p = "invariant", b = bound, s = at) => this.unify(l, r, origin, p, b, s);
+  parts(left, right, origin, polarity, bound, chain) {
+    const same = (l, r, p = "invariant", b = bound, c = chain) => this.unify(l, r, origin, p, b, c);
     const all = outcomes => outcomes.includes("clash") ? "clash" : outcomes.includes("stuck") ? "stuck" : "done";
     // Both binders renamed to one fresh name, bound at the left one's domain
-    // for the queries about the bodies.
+    // for the queries about the bodies, as solved when they are asked.
     const under = (l, r, p) => {
-      const name = at.fresh(stem(left.name));
+      const name = this.scopeOf(chain).fresh(stem(left.name));
       return same(substituteTerm(l.body, l.name, T.variable(name)), substituteTerm(r.body, r.name, T.variable(name)),
-        p, new Set(bound).add(name), at.withVariable(name, l.domain).scope);
+        p, new Set(bound).add(name), {name, domain: l.domain, next: chain});
     };
     const dimension = (l, r, key, p) => {
-      const dim = at.fresh("i"), inner = at.bindDimension(dim);
+      const dim = this.scopeOf(chain).fresh("i");
       return same(substituteDimension(l[key], l.dim, I.variable(dim)), substituteDimension(r[key], r.dim, I.variable(dim)),
-        p, new Set(bound).add(dim), inner);
+        p, new Set(bound).add(dim), {dimension: dim, next: chain});
     };
     switch (left.tag) {
       case "Pi": return all([same(left.domain, right.domain), under(left, right, polarity)]);
@@ -494,7 +554,7 @@ class ArgumentSolver {
     }
   }
   // A hole's solution, when it is determined.
-  solve(slot, value, polarity, bound, at, side) {
+  solve(slot, value, polarity, bound, chain, side) {
     value = this.zonk(value);
     const original = value;
     if (this.approximating) {
@@ -506,7 +566,12 @@ class ArgumentSolver {
         || [...freeDimensions(term)].some(dim => dimensions.has(dim));
       if (offending.size || dimensions.size) {
         value = betaReduce(value);
-        if (blocked(value)) value = reduceScopeCandidate(value, blocked, at);
+        if (blocked(value)) {
+          // Its heads are asked about as the solver asks (asked); an unchanged
+          // candidate keeps its placeholders.
+          const asked = this.asked(value), reduced = reduceScopeCandidate(asked, blocked, this.scopeOf(chain));
+          if (reduced !== asked) value = reduced;
+        }
       }
     }
     const names = freeNames(value);
@@ -523,9 +588,27 @@ class ArgumentSolver {
       this.ambiguous.set(slot.variable, bounds);
       if (!bounds[side === "lower" ? "upper" : "lower"].some(other => JSON.stringify(other) === key)) return "stuck";
     }
-    this.solution.set(slot.variable, value);
+    this.settle(slot.variable, value);
     this.ambiguous.delete(slot.variable);
+    this.typeSolution(slot);
     return "done";
+  }
+  // A hole solved at a type that mentions unknowns bounds them by the
+  // solution's own type, as a written argument's type does: at once, so
+  // that the types the solution enters in the solver's scope, as Square(V?,
+  // B, …) once A? : U(V?) is B, are asked about with what it needs, V? at
+  // least B's universe (asked). A solution that mentions unknowns waits
+  // until it does not (run). True when it was typed now.
+  typeSolution(slot) {
+    if (this.typed.has(slot)) return false;
+    const domain = this.zonk(slot.domain), value = this.zonk(T.variable(slot.variable));
+    if (!this.unknowns(domain).length || this.unknowns(value).length) return false;
+    this.typed.add(slot);
+    const constraint = {smaller: this.scope.infer(value).type, larger: domain, origin: {slot}};
+    const outcome = this.unify(constraint.smaller, constraint.larger, constraint.origin, "covariant", new Set(), null);
+    if (outcome === "stuck") this.pending.push(constraint);
+    if (outcome === "clash") this.clashes.push(constraint);
+    return true;
   }
   // Why a constraint failed, in words: its own display, or a part of a
   // message's whose `show` it is given.
@@ -548,7 +631,7 @@ class ArgumentSolver {
   }
   checkSolution(slot, value) {
     const type = this.zonk(slot.domain), result = this.scope.attempt(value, type);
-    if (result.ok) { this.solution.set(slot.variable, result.term); return; }
+    if (result.ok) { this.settle(slot.variable, result.term); return; }
     if (result.failure !== "mismatch") throw result.error;
     const [shown, typeText] = this.t.shownTogether([value, type], this.scope);
     throw this.scope.unit.locate(Error(`The hole for ${this.describe(slot)} of ${this.called} was solved as ${shown}, which does not have its type ${typeText}.`), slot.node ?? this.call.fn);
@@ -563,7 +646,7 @@ class ArgumentSolver {
       const domain = this.zonk(slot.domain);
       if (this.unknowns(domain).length || !hlevelStatement(domain)) continue;
       const proof = this.t.hlevelEvidence(this.scope, domain);
-      if (proof) { this.solution.set(slot.variable, proof); progress = true; }
+      if (proof) { this.settle(slot.variable, proof); progress = true; }
     }
     return progress;
   }

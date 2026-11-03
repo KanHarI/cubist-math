@@ -1115,23 +1115,31 @@ changes:
     call's parameters by a placeholder variable (`unit.names.placeholder`),
     with its domain recorded (`slot.domain`, the head's Π domain at the
     earlier placeholders), and asks `nf` of types and terms that mention
-    them. A universe placeholder is a level entry; any other a term entry at
-    its domain, made in order, so each domain's earlier placeholders are
-    already entries. The unifier's descent under a pair of term binders
-    (`under` in `parts`) renames both bodies' variables to one fresh name
-    and later asks `nf` of parts that mention it (`unfolded`); that name
-    gets an entry at the left binder's domain. Its answers only guide the
-    search: the instructions check whatever it proposes.
+    them. Its scope (`scopeOf`) is made from what it has solved when it
+    asks: each placeholder not yet solved is an entry, a universe's a level
+    entry and any other's at its domain with the solutions substituted, made
+    in order, so each domain's earlier placeholders are already entries; a
+    solved one is substituted wherever it is asked about, and a universe
+    placeholder that a solution bounds below is asked about at the largest
+    of its lower bounds, the least level that solution's type allows (a
+    hole `A? : U(V?)` solved by `B : U(W)`, which a type such as
+    `Square(V?, B, …)` needs; the solver's own decisions still read `V?`).
+    A solution's type bounds the placeholders of its parameter's type as
+    soon as it is made (`typeSolution`). The unifier's descent under a pair
+    of term binders (`under` in `parts`) renames both bodies' variables to
+    one fresh name and later asks `nf` of parts that mention it
+    (`unfolded`); that name gets an entry at the left binder's domain, also
+    with the solutions as they stand when it asks. Its answers only guide
+    the search: the instructions check whatever it proposes.
   - If a synthetic variable ever had no known type, the honest option is not
     to ask the kernel about a term that mentions it: the query is reported
     as stuck, the outcome the unifier already has for an undecided
-    comparison, and no type is invented for it. The same holds where its
-    type is no type in the scope it is asked in, which PR 1 found (Appendix
-    A): while a constraint is pending, a type of the unifier's can mix a
-    placeholder's level with the level it is to be solved by, so the scope
-    of its `under` names cannot be derived; the query fails, the unifier
-    reports the constraint stuck, and the scope's failure is kept for the
-    driver's life, so it is not derived again.
+    comparison, and no type is invented for it. PR 1 found one place where
+    a type was no type in the scope it was asked in (Appendix A): the
+    solver's scope bound its placeholders and `under` names at their types
+    as they stood when they were bound, while the terms it asked about had
+    the later solutions substituted. The scope is now made from the
+    solutions when the solver asks, as above, and none of its queries fails.
 
 - A diagnostic comparison: `levelWithin` in `web/cubical-elaborator.mjs`
   encodes two frontend levels with `encodeLevel` and no scope, to compare
@@ -1813,18 +1821,24 @@ could not be made over the closures and the audit, on 2026-11-02:
   binders are bound at their own domains: none of them asked in a context
   that could not be derived, so each is a caller that "derives its context
   earlier". Row 6 is the one exception, below.
-- **The unifier's `under` names, rows 4 and 6.** While a constraint is
-  pending, the solver's terms can mix a placeholder's level with the level
-  it is to be solved by, so the domain at which `under` binds its fresh
-  name is no type in the solver's scope (in `algebra`'s homomorphisms, a
-  `Magma.M` at a caller's level applied to a variable bound at a
-  placeholder's). Such a query's scope cannot be derived: 247 times in the
-  `semirings` closure and 3,911 times over the 61 closures, which share
-  their imports, every time in `unfolded` under `under`, and never in the
-  archive audit. The query fails,
-  `unfolded` reports the constraint stuck, as for any head it cannot
-  compute, and the driver keeps the scope's failure (`extendScope`), so the
-  scope is not derived again. Every verdict of the suite, the library and
-  the archive is unchanged. Binding the name on each side at that side's
-  domain was tried and fails the same way, since the mixing is within one
-  side's term.
+- **The unifier's `under` names, rows 4 and 6.** The solver's scope first
+  bound each name at its type as it stood when it was bound, while the
+  terms it asked about had the solutions found since substituted. In
+  `algebra`'s parent homomorphisms, comparing `Magma.Hom(U?, V?, A?)` with
+  the expected `Magma.Hom(U, V, …)` unfolded, the domains `Magma(V?)` and
+  `Magma(V)` solve `V?` as `V`; the bodies' fresh name `B` was then bound at
+  `Magma(V?)`, and the next binder's type `Magma.M(U?, A?) -> Magma.M(V, B)`
+  was no type there. Such a query's scope could not be derived: 247 times
+  in the `semirings` closure and 3,911 times over the 61 closures, which
+  share their imports, every time in `unfolded` under `under`, and never in
+  the archive audit; `unfolded` reported the constraint stuck. The solver's
+  scope is now made from its solutions when it asks (`scopeOf`), and with
+  it the type of every placeholder it has not solved, which surfaced the
+  second half: a hole of type `U(V?)` solved by a type in `U(W)` leaves
+  `V?` free until universes are solved last, and a later placeholder's
+  type such as `Square(V?, B, …)` is then no type (138 times in `squares`
+  once the scope reads the solutions). A solution's type now bounds its
+  parameter's placeholders at once (`typeSolution`), and a placeholder
+  bounded below is asked about at its least level. No query's scope fails
+  in the library's closures or the archive, and every verdict is
+  unchanged.

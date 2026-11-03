@@ -140,3 +140,74 @@ def f : forall x : Unit. Ix(x) := c;
 `, { module });
   assert.deepEqual(verdicts, { I: true, Ix: true, f: true });
 });
+
+// The scopes that could not be made while a source was checked, each by its
+// error's message: a query asked in one fails, and the constraint that asked
+// it waits.
+async function failedScopes(t, source) {
+  const failed = [], wrapped = new WeakSet();
+  const { verdicts } = await checkProgram(t, source, { module, options: { onDeclarationStart: (name, declaration, checker) => {
+    if (wrapped.has(checker)) return;
+    wrapped.add(checker);
+    const scopeOf = checker.scopeOf.bind(checker);
+    checker.scopeOf = (...rest) => {
+      try { return scopeOf(...rest); }
+      catch (error) { failed.push(error.message); throw error; }
+    };
+  } } });
+  return { verdicts, failed };
+}
+
+test("the solver asks about a binder's body with the binder at its domain as solved", async t => {
+  // Semigroup.Hom.magma, made for the extension, calls Magma.Hom.make with
+  // its universes and models as holes. Magma.Hom(U?, V?, A?) unfolds to
+  // fun (B : Magma(V?)) => …, and the expected Magma.Hom(U, V, …) to
+  // fun (B : Magma(V)) => …: the domains solve V? as V, and the bodies are
+  // asked about with B at Magma(V). Bound at Magma(V?), as the domain stood
+  // before, B made Magma.M(V, B) in the next binder's type ill-typed.
+  const { verdicts, failed } = await failedScopes(t, `import hlevels;
+
+theory Magma(U < UU0) {
+  M : set U;
+  mul(x, y : M) : M notation x * y;
+}
+
+theory Semigroup(U < UU0) extends Magma {
+  law mul_assoc(x, y, z : M) : (x * y) * z = x * (y * z);
+}
+`);
+  assert.equal(verdicts.Semigroup, true);
+  assert.deepEqual(failed, []);
+});
+
+test("a hole solved by a type bounds its universe before the types it enters are asked about", async t => {
+  // transpose(naturality(f, g, h, p)): naturality's type solves transpose's
+  // A? : U(U?) as B, of the universe U, and its corners and edges, while
+  // only that solution bounds U?. The solver's scope binds transpose's s at
+  // Square(U?, B, …) with U? at least U, as solving it would make it, and
+  // not with U? free, where B is no type in U(U?).
+  const { verdicts, failed } = await failedScopes(t, `
+def Square{{U < UU0, A : U, a00, a01, a10, a11 : A}}(
+  a0_ : a00 = a01, a1_ : a10 = a11, a_0 : a00 = a10, a_1 : a01 = a11
+) :
+  U := PathP(fun (i : Interval) => a_0 @ i = a_1 @ i, a0_, a1_);
+
+def naturality{{U < UU0, A, B : U, x, y : A}}(
+  f, g : A -> B, h : forall a : A. f(a) = g(a), p : x = y
+) :
+  Square(h(x), h(y), cong(f, p), cong(g, p)) := path i => h(p @ i);
+
+def transpose{{
+  U < UU0, A : U, a00, a01, a10, a11 : A, a0_ : a00 = a01, a1_ : a10 = a11, a_0 : a00 = a10,
+  a_1 : a01 = a11
+}}(s : Square(a0_, a1_, a_0, a_1)) :
+  Square(a_0, a_1, a0_, a1_) := path j => path i => s @ i @ j;
+
+def transposed{{U < UU0, A, B : U, x, y : A}}(
+  f, g : A -> B, h : forall a : A. f(a) = g(a), p : x = y
+) :
+  Square(cong(f, p), cong(g, p), h(x), h(y)) := transpose(naturality(f, g, h, p));
+`);
+  assert.deepEqual(verdicts, { Square: true, naturality: true, transpose: true, transposed: true });
+  assert.deepEqual(failed, []);
+});
