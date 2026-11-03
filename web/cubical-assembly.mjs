@@ -3,6 +3,7 @@ import { isAssumptionName } from "./translator/names.mjs";
 // Read the native arena directly. Source names are labels only; they never
 // replace handles, payloads, or constructor operands in this listing.
 import { cubicalKinds } from "./cubical-kernel.mjs";
+import { binderName, termBinders, variableName } from "./cubical-variables.mjs";
 
 export const operandNames = {
   Pi: ["domain", "body"], Lam: ["domain", "body"], Sigma: ["domain", "body"], W: ["domain", "body"],
@@ -44,8 +45,8 @@ export function kernelAssembly(program, view, checked, { limit = 400, expanded =
     const native = kernel.node(id), opcode = cubicalKinds.indexOf(native.kind);
     const node = { id, opcode, mnemonic: opcodeName(native.kind), kind: native.kind, payload: native.payload,
       operands: native.children.map((handle, i) => ({ slot: "abcd"[i], label: operandNames[native.kind]?.[i] ?? "unused", handle })) };
-    if (["Var", "Pi", "Lam", "Sigma"].includes(native.kind)) {
-      const name = kernel.symbolName(native.payload), label = view.symbols[name]?.name;
+    if (native.kind === "Var" || termBinders.has(native.kind)) {
+      const name = native.kind === "Var" ? variableName(kernel, native) : binderName(kernel, native), label = view.symbols[name]?.name;
       node.annotation = `symbol #${native.payload}: ${named(label, name)}`;
     } else if (["Path", "PLam", "Comp", "HComp", "Trans"].includes(native.kind)) node.annotation = `dimension #${native.payload}`;
     else if (native.kind === "U") node.annotation = "universe; its level is operand a";

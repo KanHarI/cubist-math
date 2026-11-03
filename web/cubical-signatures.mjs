@@ -8,6 +8,7 @@
 // result under the declaration's name, for the syntax codec and inspection.
 import { InstructionDriver } from "./cubical-instruction-driver.mjs";
 import { CubicalSyntax } from "./cubical-syntax.mjs";
+import { signatureBegin, signatureConstructor, withEntry } from "./cubical-variables.mjs";
 
 // The modifier the kernel takes: 0 untruncated, n + 2 for trunc(n), for
 // n from -1 up to the kernel's bound, CC_TRUNCATION_MAX.
@@ -36,8 +37,10 @@ export function modifierCode(modifier) {
 //   constructors  [{ name, type, display }], each type over the levels, the
 //                 parameters, the sort's variable and the constructors before
 //                 it; `display` is the name shown, the name by default
-// Returns the registered record: { name, index, constructors, spec }, with
-// the generated squash constructor last when the sort is truncated.
+// Returns the registered record: { name, index, constructors, spec,
+// admission }, with the generated squash constructor last when the sort is
+// truncated, and `admission` the names its entries hold: levels,
+// parameters, the sort and the constructors.
 export function admitSignature(kernel, spec, { syntax = new CubicalSyntax(kernel),
                                               driver = kernel.instructionDriver ??= new InstructionDriver(kernel) } = {}) {
   if (kernel.signatures.has(spec.name)) throw new Error(`The declared type ${spec.name} already exists.`);
@@ -46,13 +49,13 @@ export function admitSignature(kernel, spec, { syntax = new CubicalSyntax(kernel
   // Level entries first, then each parameter bound at its derived type.
   let scope = new Map([["dims", 0n]]);
   const levelEntries = levels.map(({ name }) => {
-    const entry = g.level(name);
-    scope = new Map(scope).set(kernel.symbol(name), entry);
+    const entry = driver.levelEntry(kernel.symbol(name), scope);
+    scope = withEntry(scope, kernel.symbol(name), entry);
     return entry;
   });
   const parameterEntries = parameters.map(({ name, type }) => {
-    const entry = driver.bind(kernel.symbol(name), driver.asType(driver.derive(syntax.encode(type), scope)));
-    scope = new Map(scope).set(kernel.symbol(name), entry);
+    const entry = driver.bind(kernel.symbol(name), driver.asType(driver.derive(syntax.encode(type), scope)), scope);
+    scope = withEntry(scope, kernel.symbol(name), entry);
     return entry;
   });
   const universe = g.universe(syntax.encodeLevel(spec.level ?? 0));
@@ -62,17 +65,18 @@ export function admitSignature(kernel, spec, { syntax = new CubicalSyntax(kernel
   const recorded = levels.reduce((mask, level, j) => mask | (level.recorded ? 1 << j : 0), 0);
   // The sort's entry names it; a variant name when another entry has it.
   const sortSymbol = kernel.symbol(spec.sort ?? spec.name);
-  const sort = driver.bind(sortSymbol, universe);
-  scope = new Map(scope).set(sortSymbol, sort);
-  let signature = g.signatureBegin(former, modifierCode(spec.modifier), g.entry(sort).name, recorded);
+  const sort = driver.bind(sortSymbol, universe, scope), constructorEntries = [];
+  scope = withEntry(scope, sortSymbol, sort);
+  let signature = signatureBegin(g, former, modifierCode(spec.modifier), sort, recorded);
   for (const { name, type, display } of spec.constructors ?? []) {
     // A constructor's type lives in the sort's universe; one derived lower
     // is lifted to it. A refusal names the constructor.
     try {
       const derived = driver.convertTo(driver.derive(syntax.encode(type), scope), universe);
-      const entry = driver.bind(kernel.symbol(name), derived);
-      signature = g.signatureConstructor(signature, derived, g.entry(entry).name);
-      scope = new Map(scope).set(kernel.symbol(name), entry);
+      const entry = driver.bind(kernel.symbol(name), derived, scope);
+      signature = signatureConstructor(g, signature, derived, entry);
+      scope = withEntry(scope, kernel.symbol(name), entry);
+      constructorEntries.push(entry);
     } catch (error) {
       const shown = display ?? name;
       throw Object.assign(error, { message: `Constructor ${shown}: ${error.message}`, constructor: shown });
@@ -81,7 +85,13 @@ export function admitSignature(kernel, spec, { syntax = new CubicalSyntax(kernel
   const index = g.signatureClose(signature);
   const constructors = (spec.constructors ?? []).map(c => c.display ?? c.name);
   if (kernel.signature(index).constructors.length > constructors.length) constructors.push("squash");
-  const record = Object.freeze({ name: spec.name, index, constructors: Object.freeze(constructors), spec });
+  // The names the admission's entries are spelled by, as the stored types
+  // mention them: the kernel keeps them on ABI 3, but they are read here.
+  const spelled = entry => kernel.entryNames.spelled(entry);
+  const admission = Object.freeze({ levels: Object.freeze(levelEntries.map(spelled)), parameters: Object.freeze(parameterEntries.map(spelled)),
+    sort: spelled(sort), constructors: Object.freeze(constructorEntries.map(spelled)) });
+  const record = Object.freeze({ name: spec.name, index, constructors: Object.freeze(constructors), spec, admission });
   kernel.signatures.set(spec.name, record);
+  kernel.signatureRecords.set(index, record);
   return record;
 }

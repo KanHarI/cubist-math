@@ -50,7 +50,7 @@ const fileGroups = [
   // Qualified names, module::name, are about modules, beyond full E3.
   [/^web\/translator\/qualified-names\.mjs$/, "E2"],
   [/^web\/translator\//, "E3"],
-  [/^web\/(cubical-instruction-driver|cubical-syntax|cubical-kernel|cubical-reduction|cubical-elaborator|cubical-instructions|cubical-assumptions|cubical-transaction)\.mjs$/, "E6"],
+  [/^web\/(cubical-instruction-driver|cubical-syntax|cubical-kernel|cubical-reduction|cubical-elaborator|cubical-instructions|cubical-assumptions|cubical-transaction|cubical-variables)\.mjs$/, "E6"],
   [/^(web|cli)\//, "E2"],
   [/^kernel\/src\/(signatures|eliminators|hit_composition)\.c$/, "K1"],
   [/^kernel\/src\/instruction/, "K2"],

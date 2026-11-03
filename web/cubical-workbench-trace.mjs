@@ -1,5 +1,6 @@
 import { boundedSyntaxJson } from "./cubical-json.mjs";
 import { kernelOccurrence } from "./cubical-kernel-step.mjs";
+import { binderName, termBinders, variableName } from "./cubical-variables.mjs";
 
 const clipped = (text, limit) => text.length > limit
   ? { text: text.slice(0, limit), omittedCharacters: text.length - limit }
@@ -87,7 +88,8 @@ export function traceSnapshot(program, state, side, path, limit = 16) {
     const n = kernel.node(handle);
     const node = { handle, kind: n.kind, payload: n.payload, operands: [...n.children] };
     if (n.kind === "DefRef") node.definition = kernel.definition(handle);
-    if (["Var", "Lam", "Pi", "Sigma"].includes(n.kind)) node.name = kernel.symbolName(n.payload);
+    if (n.kind === "Var") node.name = variableName(kernel, n);
+    else if (termBinders.has(n.kind)) node.name = binderName(kernel, n);
     nodes.push(node); pending.push(...n.children.filter(Boolean));
   }
   return { state: state.id, binding: state.selected, judgement: state.checked.judgement,

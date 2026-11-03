@@ -13,11 +13,9 @@ import { InstructionGraph } from "./cubical-instructions.mjs";
 import { KernelError } from "./cubical-kernel.mjs";
 import { freeDimensionMask } from "./cubical-syntax.mjs";
 import { levelNormal } from "./cubical-levels.mjs";
-import { termBinders as TERM_BINDERS } from "./translator/term-shape.mjs";
+import { HIDDEN, LEVEL, binders as TERM_BINDERS, levelBinders as LEVEL_BINDERS, boundSymbol, buildBinder, freshBinder,
+  hiddenIn, levelKey, openBinder, referenceSymbol, sameReference, withEntry } from "./cubical-variables.mjs";
 
-// Binders of a universe variable x < ω (G0): the level entry is found by its
-// symbol, which levels below name.
-const LEVEL_BINDERS = new Set(["LPi", "LLam"]);
 const unsupported = kind => new Error(`${kind} is not in instruction mode yet.`);
 // Whether child i of a node is under its dimension binder (the payload).
 const dimensionBound = (kind, i) => kind === "PLam" || ((kind === "Path" || kind === "Trans") && i === 0) ||
@@ -194,6 +192,9 @@ export class InstructionDriver {
     this.statements = new Map();
     this.scopes = new Map();
     this.scopeKeys = new WeakMap();
+    this.scopeEntries = new WeakMap();
+    this.scopeOccupants = new WeakMap();
+    this.bound = new Map();
     this.mentions = new WeakMap();
     this.dimensionedIn = new WeakMap();
     this.pins = new Map();
@@ -242,8 +243,8 @@ export class InstructionDriver {
       let scope = new Map([[LIVE, dimensions]]);
       for (const [symbol, assumption] of context)
         // A universe variable (G0) is a level entry, typed by its bound.
-        scope = new Map(scope).set(symbol, this.node(assumption).kind === "LBound" ? this.graph.levelEntry(symbol)
-          : this.bind(symbol, this.asType(this.derive(assumption, scope))));
+        scope = withEntry(scope, symbol, this.node(assumption).kind === "LBound" ? this.levelEntry(symbol, scope)
+          : this.bind(symbol, this.asType(this.derive(assumption, scope)), scope));
       this.contextScopes.set(key, scope);
     }
     return this.contextScopes.get(key);
@@ -339,19 +340,6 @@ export class InstructionDriver {
     if (!this.scopeKeys.has(scope)) this.scopeKeys.set(scope, [...scope].map(([symbol, entry]) => `${symbol}:${entry}`).sort().join(","));
     return this.scopeKeys.get(scope);
   }
-  // A binder name no term uses: numbered per kernel, as fresh entries are.
-  freshSymbol(stem) {
-    const counters = this.kernel.freshNames ??= new Map(), suffix = (counters.get(stem) ?? 0) + 1;
-    counters.set(stem, suffix);
-    return this.kernel.symbol(this.variant(stem, suffix));
-  }
-  // A name made up for a binder, remembered with its stem, so that displays
-  // can show the stem again where nothing can tell the two apart.
-  variant(stem, suffix) {
-    const name = `${stem}'${suffix}`;
-    (this.kernel.variantStems ??= new Map()).set(name, stem);
-    return name;
-  }
   // An interval index no judgement among `ids` has in its context, so none of
   // their terms uses it.
   freeDimension(ids) {
@@ -365,37 +353,63 @@ export class InstructionDriver {
     while (used.has(dimension)) dimension++;
     return dimension;
   }
-  // A context entry for a binder: its own name unless another entry of a
-  // different type has it, then a fresh variant. Fresh names are numbered
-  // per kernel, so finding one never searches.
-  bind(symbol, type) { return this.entry(type, this.kernel.symbolName(symbol), false); }
+  // A context entry for a binder of `symbol`'s name at a type judgement, in
+  // `scope`: the entry made for that name at that type, the same handle or
+  // an alpha-equal one, used again (web/cubical-variables.mjs, EntryNames),
+  // since two entries for one variable would make terms that mention it
+  // differ for ever; but never one the scope already holds, which would make
+  // two variables one (section 3.6 of the locally nameless design). A new
+  // entry is spelled as its name unless a live entry holds that spelling,
+  // and as a variant, x'1, otherwise; a fresh entry is always new and a
+  // variant. The kernel never reuses an entry by its symbol for the driver.
+  bind(symbol, type, scope = null) { return this.entry(type, this.kernel.symbolName(symbol), false, scope); }
   freshEntry(type, stem) { return this.entry(type, stem, true); }
-  //
-  // A binder's variant is remembered by its name and type, and used again the
-  // next time the same name is bound at the same type: two variants of one
-  // variable would make terms that mention it differ for ever.
-  entry(type, stem, fresh) {
-    const variants = this.kernel.variantNames ??= new Map();
-    const key = fresh ? null : `${stem}\u0000${this.statement(type).term}`;
+  entry(type, name, fresh, scope = null) {
+    const names = this.kernel.entryNames;
     if (!fresh) {
-      try { return this.graph.extend(type, stem); }
-      catch (error) { if (!/already names/.test(error.message)) throw error; }
-      if (variants.has(key)) {
-        try { return this.graph.extend(type, variants.get(key)); }
-        catch (error) { if (!/already names/.test(error.message)) throw error; variants.delete(key); }
-      }
+      const found = names.find(name, this.statement(type).term, entry => this.holds(scope, entry));
+      if (found) return found;
     }
-    const counters = this.kernel.freshNames ??= new Map();
-    for (let suffix = (counters.get(stem) ?? 0) + 1; ; suffix++) {
-      try {
-        const name = `${stem}'${suffix}`, entry = this.graph.extend(type, name);
-        counters.set(stem, suffix);
-        this.variant(stem, suffix);
-        if (key) variants.set(key, name);
-        return entry;
-      } catch (error) { if (!/already names/.test(error.message)) throw error; }
-    }
+    return this.graph.extend(type, name, names.spelling(name, { fresh }), fresh);
   }
+  // A level entry for a universe variable of `symbol`'s name, in `scope`, as
+  // bind finds a term entry. Only a binder, whose body is renamed to its
+  // entry's spelling (openBinder), takes a variant; elsewhere a level
+  // variable is the entry its own symbol names.
+  levelEntry(symbol, scope = null, variant = false) {
+    const names = this.kernel.entryNames, name = this.kernel.symbolName(symbol);
+    const found = names.find(name, LEVEL, entry => this.holds(scope, entry));
+    if (found) return found;
+    return this.graph.level(name, variant ? names.spelling(name, { level: true }) : name);
+  }
+  // The entries a scope holds, shown or hidden (HIDDEN), by the names a
+  // binder takes them by: each term or level entry's name and its spelling
+  // (EntryNames).
+  occupants(scope) {
+    let occupants = this.scopeOccupants.get(scope);
+    if (!occupants) {
+      occupants = new Map();
+      const names = this.kernel.entryNames;
+      for (const entry of this.entriesOf(scope))
+        for (const name of new Set([this.kernel.symbol(names.name(entry)), names.symbol(entry)])) {
+          if (!occupants.has(name)) occupants.set(name, []);
+          occupants.get(name).push(entry);
+        }
+      this.scopeOccupants.set(scope, occupants);
+    }
+    return occupants;
+  }
+  // The entries a scope holds: its variables', and those it hides.
+  entriesOf(scope) {
+    let entries = this.scopeEntries.get(scope);
+    if (!entries) {
+      entries = new Set(hiddenIn(scope));
+      for (const [symbol, value] of scope) if (typeof symbol === "number") entries.add(value);
+      this.scopeEntries.set(scope, entries);
+    }
+    return entries;
+  }
+  holds(scope, entry) { return !!scope && this.entriesOf(scope).has(entry); }
 
   // A term derived once per scope it reads: the kernel shares repeated
   // instructions, and this skips walking the term again. A derivation reads
@@ -417,12 +431,15 @@ export class InstructionDriver {
   // binder its entry is replaced and its type's dimensions no longer count,
   // as in the whole scope, which a summary could not undo.
   // A variable bound inside the term is bound by the term's own binders, at
-  // the entry its name and type give it, whatever else is in scope. So the
-  // derivation in the narrowed scope is the one the whole scope would give,
-  // and as each judgement's context is the union of its premises', it
-  // combines with any around it. Faces are rare (onFace's retry), and kept
-  // whole. A narrowed scope is made once per content: a memo key, as any
-  // scope is (scopeKey).
+  // the entry its name and type give it, whatever else is in scope, but
+  // never at an entry the scope holds, shown or hidden: so an entry of the
+  // scope that a binder of the term could take, one made for the binder's
+  // name, is hidden in the narrowed scope (occupants, HIDDEN), and the binder
+  // takes an entry of its own (bind). Then the derivation in the narrowed
+  // scope is the one the whole scope would give, and as each judgement's
+  // context is the union of its premises', it combines with any around it.
+  // Faces are rare (onFace's retry), and kept whole. A narrowed scope is made
+  // once per content: a memo key, as any scope is (scopeKey).
   narrow(handle, scope) {
     const live = liveIn(scope), symbols = this.freeTermSymbols(handle);
     let mentioned = scope.get(MENTIONED) ?? 0n, kept = symbols;
@@ -431,17 +448,27 @@ export class InstructionDriver {
       else if (!kept.has(symbol)) (kept = kept === symbols ? new Set(symbols) : kept).add(symbol);
     }
     let entries = "";
+    const shown = new Set();
     for (const symbol of kept) {
       const entry = scope.get(symbol);
-      if (entry !== undefined) entries += `,${symbol}:${entry}`;
+      if (entry !== undefined) { entries += `,${symbol}:${entry}`; shown.add(entry); }
     }
+    const occupants = this.occupants(scope), hidden = new Set();
+    if (occupants.size) {
+      const bound = this.boundSymbols(handle);
+      for (const name of bound.size < occupants.size ? bound : occupants.keys())
+        if (bound.has(name) && occupants.has(name))
+          for (const entry of occupants.get(name)) if (!shown.has(entry)) hidden.add(entry);
+    }
+    const hiddenEntries = [...hidden].sort((a, b) => a - b);
     const faces = facesIn(scope).length ? facesIn(scope) : null;
-    const key = `${live}|${mentioned}|${faces ? String(faces) : ""}|${entries}`;
+    const key = `${live}|${mentioned}|${faces ? String(faces) : ""}|${entries}|${hiddenEntries}`;
     let narrowed = this.narrowed.get(key);
     if (!narrowed) {
       narrowed = new Map([[LIVE, live], [MENTIONED, mentioned]]);
       for (const symbol of kept) if (scope.has(symbol)) narrowed.set(symbol, scope.get(symbol));
       if (faces) narrowed.set(FACE, faces);
+      if (hiddenEntries.length) narrowed.set(HIDDEN, hiddenEntries);
       this.narrowed.set(key, narrowed);
     }
     return narrowed;
@@ -466,40 +493,28 @@ export class InstructionDriver {
     case "Void": return g.void();
     case "DefRef": return g.lookup(handle);
     case "Var": {
-      if (!scope.has(n.payload)) throw new Error(`Unbound variable ${this.kernel.symbolName(n.payload)}.`);
+      const symbol = referenceSymbol(n);
+      if (!scope.has(symbol)) throw new Error(`Unbound variable ${this.kernel.symbolName(symbol)}.`);
       // On a face, a variable whose type mentions its dimensions is at its
       // type there.
-      let variable = g.variable(scope.get(n.payload));
+      let variable = g.variable(scope.get(symbol));
       for (const clause of facesIn(scope))
         if (this.pinned(variable, clause)) variable = g.restrict(variable, this.kernel.formula("face", [clause]));
       return variable;
     }
     case "LPi": case "LLam": {
-      let symbol=n.payload, entry, bodyHandle=b;
-      try { entry=g.levelEntry(symbol); }
-      catch(error) {
-        if(!/already names/.test(error.message))throw error;
-        // A warm session may already use this spelling for a term entry.
-        // Rename the bound level and its occurrences together before replay.
-        const stem=this.kernel.symbolName(symbol);
-        for(let suffix=1;;suffix++) {
-          const fresh=this.kernel.symbol(`${stem}'level${suffix}`);
-          try { entry=g.levelEntry(fresh);symbol=fresh;break; }
-          catch(error) {if(!/already names/.test(error.message))throw error;}
-        }
-        bodyHandle=g.rename(b,false,n.payload,symbol);
-      }
-      const inner = new Map(scope).set(symbol, entry);
-      const body = derive(bodyHandle, inner);
-      return n.kind === "LPi" ? g.levelPi(entry, this.asType(body)) : g.levelLambda(entry, body);
+      // A warm session may already use the binder's spelling for a term
+      // entry: its level entry is then a variant, and its body is opened
+      // with the variant's symbol (openBinder).
+      const entry = this.levelEntry(boundSymbol(n), scope, true), opened = openBinder(g, n, entry, scope);
+      const body = derive(opened.body, opened.scope);
+      return buildBinder(g, n.kind, entry, n.kind === "LPi" ? this.asType(body) : body);
     }
     case "LApp": return g.levelApply(this.shape(this.focus(derive(a), "type"), "LPi"), b);
     case "Pi": case "Sigma": case "Lam": {
-      const entry = this.bind(n.payload, this.asType(derive(a)));
-      const inner = new Map(scope).set(n.payload, entry);
-      if (n.kind === "Lam") return g.lambda(entry, derive(b, inner));
-      const body = this.asType(derive(b, inner));
-      return n.kind === "Pi" ? g.pi(entry, body) : g.sigma(entry, body);
+      const entry = this.bind(boundSymbol(n), this.asType(derive(a)), scope), opened = openBinder(g, n, entry, scope);
+      const body = derive(opened.body, opened.scope);
+      return buildBinder(g, n.kind, entry, n.kind === "Lam" ? body : this.asType(body));
     }
     case "App": {
       // The argument's type and the function's domain agree in place, both
@@ -735,7 +750,7 @@ export class InstructionDriver {
     const levels = [], types = [];
     for (let j = 0; j < info.levels; j++, term = this.node(term).children[1]) {
       if (this.node(term).kind !== "LPi") throw new Error("A signature's former binds its universe parameters first.");
-      levels.push(this.node(term).payload);
+      levels.push(boundSymbol(this.node(term)));
     }
     for (let i = 0; i < info.parameters; i++, term = this.node(term).children[1]) {
       if (this.node(term).kind !== "Pi") throw new Error("A signature's former binds its parameters after its levels.");
@@ -751,11 +766,7 @@ export class InstructionDriver {
     if (!formers.has(index)) {
       const rebuild = term => {
         const n = this.node(term);
-        if (n.kind !== "LPi") return term;
-        // A symbol the kernel allocates now, with no name: no entry has it.
-        const fresh = this.kernel.module._cb_fresh_symbol(this.kernel.handle) >>> 0;
-        if (!fresh) throw new Error("Could not allocate a symbol.");
-        return this.kernel.term("LPi", fresh, n.children[0], rebuild(this.graph.rename(n.children[1], false, n.payload, fresh)));
+        return n.kind !== "LPi" ? term : freshBinder(this.graph, n, rebuild);
       };
       formers.set(index, rebuild(info.former));
     }
@@ -796,7 +807,7 @@ export class InstructionDriver {
       let read = 0;
       types.forEach((type, i) => {
         const { depth, end } = shapeOf(type);
-        if (end.kind !== "U" || this.node(end.children[0]).kind !== "Var" || this.node(end.children[0]).payload !== symbols[j]) return;
+        if (end.kind !== "U" || this.node(end.children[0]).kind !== "Var" || referenceSymbol(this.node(end.children[0])) !== symbols[j]) return;
         let focus = this.focus(derived[i], "type");
         for (let d = 0; d < depth; d++) { this.shape(focus, "Pi"); focus = this.child(focus, 1); }
         this.shape(focus, "U");
@@ -1034,10 +1045,10 @@ export class InstructionDriver {
       const n = this.node(term);
       if ((n.kind === "Comp" && child === 1) || (n.kind === "HComp" && child === 1)) return null;
       if (TERM_BINDERS.has(n.kind) && child === 1) {
-        const entry = LEVEL_BINDERS.has(n.kind) ? this.graph.levelEntry(n.payload)
-          : this.bind(n.payload, this.asType(this.derive(n.children[0], scope)));
-        if (this.graph.entry(entry).symbol !== n.payload) return null;
-        scope = new Map(scope).set(n.payload, entry);
+        const symbol = boundSymbol(n), entry = LEVEL_BINDERS.has(n.kind) ? this.levelEntry(symbol, scope)
+          : this.bind(symbol, this.asType(this.derive(n.children[0], scope)), scope);
+        if (this.kernel.entryNames.symbol(entry) !== symbol) return null;
+        scope = withEntry(scope, symbol, entry);
       }
       if (underBinder[n.kind]?.includes(child)) scope = withLive(scope, n.payload);
       term = n.children[child];
@@ -1208,7 +1219,7 @@ export class InstructionDriver {
       const a = nx.children[i], b = ny.children[i];
       if (!a || !b) { if (a !== b) all = false; continue; }
       let innerTerms = terms, innerDims = dims;
-      if (TERM_BINDERS.has(nx.kind) && i === 1) innerTerms = { left: nx.payload, right: ny.payload, next: terms };
+      if (TERM_BINDERS.has(nx.kind) && i === 1) innerTerms = { left: boundSymbol(nx), right: boundSymbol(ny), next: terms };
       if (dimensionBound(nx.kind, i)) innerDims = { left: nx.payload, right: ny.payload, next: dims };
       // A part past the depth is unknown; the others may still differ.
       let answer = null;
@@ -1454,7 +1465,7 @@ export class InstructionDriver {
     return this.node(term).payload;
   }
   sameHead(x, y, terms, dims) {
-    if (x.kind === "Var") return this.sameName(x.payload, y.payload, terms);
+    if (x.kind === "Var") return sameReference(referenceSymbol(x), referenceSymbol(y), terms);
     if (x.kind === "U") return this.levelsEqual(x.children[0], y.children[0], terms);
     if (x.kind === "LApp") return this.levelsEqual(x.children[1], y.children[1], terms);
     // An instance: its signature, and its recorded levels by normal form.
@@ -1487,21 +1498,16 @@ export class InstructionDriver {
     return true;
   }
   // Two levels are equal when their normal forms are (G0 §2.4), each variable
-  // bound on the way down named by its binder, so that the levels of
-  // λ (x < ω). U(max(x, z)) and λ (y < ω). U(max(z, y)) agree though their
-  // canonical nodes order the variables differently.
+  // keyed by its role (levelKey): one bound on the way down by the depth of
+  // its binder, so that the levels of λ (x < ω). U(max(x, z)) and
+  // λ (y < ω). U(max(z, y)) agree though their canonical nodes order the
+  // variables differently, and an entry by its own reference.
   levelsEqual(x, y, terms) {
     if (x === y && this.unrenamed(terms)) return true;
-    const read = id => this.node(id), a = levelNormal(read, x), b = levelNormal(read, y);
+    const read = id => this.node(id);
+    const a = levelNormal(read, x, node => levelKey(node, terms)), b = levelNormal(read, y, node => levelKey(node, terms, true));
     if (a.tier !== b.tier || a.constant !== b.constant || a.offsets.size !== b.offsets.size) return false;
-    const key = (symbol, right) => {
-      let depth = 0;
-      for (let binding = terms; binding; binding = binding.next, depth++)
-        if ((right ? binding.right : binding.left) === symbol) return `bound ${depth}`;
-      return `free ${symbol}`;
-    };
-    const renamed = new Map([...b.offsets].map(([symbol, offset]) => [key(symbol, true), offset]));
-    return [...a.offsets].every(([symbol, offset]) => renamed.get(key(symbol, false)) === offset);
+    return [...a.offsets].every(([key, offset]) => b.offsets.get(key) === offset);
   }
   // Whether congruence can work: no pair of parts is known to differ. Only
   // asked when a head could be reduced instead; parts under a binder are left
@@ -1530,7 +1536,7 @@ export class InstructionDriver {
         continue;
       }
       let innerTerms = terms, innerDims = dims;
-      if (TERM_BINDERS.has(n.kind) && i === 1) innerTerms = { left: x.payload, right: y.payload, next: terms };
+      if (TERM_BINDERS.has(n.kind) && i === 1) innerTerms = { left: boundSymbol(x), right: boundSymbol(y), next: terms };
       if (dimensionBound(n.kind, i)) innerDims = { left: x.payload, right: y.payload, next: dims };
       if (!this.agree(this.child(a, i), this.child(b, i), innerTerms, innerDims, budget)) return false;
     }
@@ -1643,7 +1649,7 @@ export class InstructionDriver {
     let equal = this.sameHead(nx, ny, terms, dims);
     for (let i = 0; equal && i < this.parts(nx); i++) {
       let innerTerms = terms, innerDims = dims;
-      if (TERM_BINDERS.has(nx.kind) && i === 1) innerTerms = { left: nx.payload, right: ny.payload, next: terms };
+      if (TERM_BINDERS.has(nx.kind) && i === 1) innerTerms = { left: boundSymbol(nx), right: boundSymbol(ny), next: terms };
       if (dimensionBound(nx.kind, i)) innerDims = { left: nx.payload, right: ny.payload, next: dims };
       equal = this.alpha(nx.children[i], ny.children[i], innerTerms, innerDims);
     }
@@ -1658,12 +1664,26 @@ export class InstructionDriver {
     const symbols = new Set();
     if (term) {
       const n = this.node(term);
-      if (n.kind === "Var") symbols.add(n.payload);
+      if (n.kind === "Var") symbols.add(referenceSymbol(n));
       for (let i = 0; i < n.children.length; i++)
         for (const symbol of this.freeTermSymbols(n.children[i]))
-          if (!(i === 1 && TERM_BINDERS.has(n.kind) && symbol === n.payload)) symbols.add(symbol);
+          if (!(i === 1 && TERM_BINDERS.has(n.kind) && symbol === boundSymbol(n))) symbols.add(symbol);
     }
     this.freeSymbols.set(term, symbols);
+    return symbols;
+  }
+  // The term and level symbols a syntax DAG binds anywhere in it.
+  boundSymbols(term) {
+    let symbols = this.bound.get(term);
+    if (!symbols) {
+      symbols = new Set();
+      if (term) {
+        const n = this.node(term);
+        if (TERM_BINDERS.has(n.kind)) symbols.add(boundSymbol(n));
+        for (const child of n.children) for (const symbol of this.boundSymbols(child)) symbols.add(symbol);
+      }
+      this.bound.set(term, symbols);
+    }
     return symbols;
   }
   // Whether a syntax DAG binds a term or level symbol anywhere in it.
@@ -1673,7 +1693,7 @@ export class InstructionDriver {
     let found = this.binding.get(key);
     if (found === undefined) {
       const n = this.node(term);
-      found = TERM_BINDERS.has(n.kind) && n.payload === symbol || n.children.some(child => this.binds(child, symbol));
+      found = TERM_BINDERS.has(n.kind) && boundSymbol(n) === symbol || n.children.some(child => this.binds(child, symbol));
       this.binding.set(key, found);
     }
     return found;
@@ -1722,13 +1742,8 @@ export class InstructionDriver {
     }
     return id;
   }
-  sameName(left, right, bindings) {
-    for (let binding = bindings; binding; binding = binding.next)
-      if (binding.left === left || binding.right === right) return binding.left === left && binding.right === right;
-    return left === right;
-  }
-  // Two formulas agree up to the renaming `dims`. A dimension is read as
-  // sameName and levelsEqual read a name: bound, by the depth of the
+  // Two formulas agree up to the renaming `dims`. A dimension is read as a
+  // variable's role reads a name (web/cubical-variables.mjs): bound, by the depth of the
   // innermost binding that names it on its side, or free, by its index, so
   // that a bound dimension never meets a free one of the same index.
   sameFormula(left, right, dims) {

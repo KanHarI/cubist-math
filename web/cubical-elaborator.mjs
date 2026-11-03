@@ -7,7 +7,7 @@ import { NameSupply, assumptionMark, localName } from "./translator/names.mjs";
 import { sourceTexts } from "./cubical-source-text.mjs";
 import { contextDimensions, displayTerm, forSource, readableDimensions } from "./display-naming.mjs";
 import { cubicalText } from "./cubical-notation.mjs";
-import { levelNormal } from "./cubical-levels.mjs";
+import { sourceLevelNormal } from "./cubical-levels.mjs";
 import { InstructionDriver } from "./cubical-instruction-driver.mjs";
 import { KernelError } from "./cubical-kernel.mjs";
 import { RuntimeQuery } from "./cubical-runtime.mjs";
@@ -161,10 +161,10 @@ export class NativeCubicalElaborator {
   signatureExtensions(record) { return this.kernel.signature(record.index).experimental ? ["H1"] : []; }
   // Whether one level lies within another at every assignment (G0 §2.4,
   // Lemma 2): coefficient by coefficient. For messages only; the kernel
-  // decides levels.
+  // decides levels. The levels are a declaration's, over its universe
+  // parameters, which no scope binds: compared as written, not encoded.
   levelWithin(level, bound) {
-    const read = id => this.kernel.node(id);
-    const a = levelNormal(read, this.syntax.encodeLevel(level)), b = levelNormal(read, this.syntax.encodeLevel(bound));
+    const a = sourceLevelNormal(level), b = sourceLevelNormal(bound);
     if (a.tier || b.tier) return a.tier < b.tier || (a.tier === b.tier && a.constant <= b.constant);
     return a.constant <= b.constant && [...a.offsets].every(([name, offset]) => (b.offsets.get(name) ?? -1) >= offset);
   }
@@ -422,7 +422,7 @@ export class NativeCubicalElaborator {
     }
     const arena = this.kernel.arena(), derivedHandles = this.kernel.derivedHandles ??= new Set();
     derivedHandles.add(expression).add(type);
-    const names = this.kernel.variantStems?.size ? this.sourceNames ??= new SourceNames(this.kernel.variantStems) : null;
+    const stems = this.kernel.entryNames.stems, names = stems.size ? this.sourceNames ??= new SourceNames(stems) : null;
     const display = value => names ? names.apply(value) : value;
     return { expression, typeHandle: type, judgement, renamings, term: display(this.syntax.decode(expression, dimensions)),
       type: display(this.syntax.decode(type, dimensions)), checkingSteps,
@@ -597,7 +597,7 @@ export class NativeCubicalElaborator {
       // One driver per declaration: the next starts from a fresh one.
       this.kernel.instructionDriver = null;
     }
-    this.kernel.definitions.set(name, reference);
+    this.kernel.nameDefinition(name, reference);
     return { reference, admission: { ms: +(work.ms - ms).toFixed(3), judgements: work.judgements - judgements } };
   }
   // A universe-generic definition the elaborator builds, such as ua's: checked
