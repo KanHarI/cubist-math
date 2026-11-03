@@ -8,7 +8,7 @@
 // result under the declaration's name, for the syntax codec and inspection.
 import { InstructionDriver } from "./cubical-instruction-driver.mjs";
 import { CubicalSyntax } from "./cubical-syntax.mjs";
-import { signatureBegin, signatureConstructor } from "./cubical-variables.mjs";
+import { signatureBegin, signatureConstructor, withEntry } from "./cubical-variables.mjs";
 
 // The modifier the kernel takes: 0 untruncated, n + 2 for trunc(n), for
 // n from -1 up to the kernel's bound, CC_TRUNCATION_MAX.
@@ -51,12 +51,12 @@ export function admitSignature(kernel, spec, { syntax = new CubicalSyntax(kernel
   let scope = new Map([["dims", 0n]]);
   const levelEntries = levels.map(({ name }) => {
     const entry = driver.levelEntry(kernel.symbol(name), scope);
-    scope = new Map(scope).set(kernel.symbol(name), entry);
+    scope = withEntry(scope, kernel.symbol(name), entry);
     return entry;
   });
   const parameterEntries = parameters.map(({ name, type }) => {
     const entry = driver.bind(kernel.symbol(name), driver.asType(driver.derive(syntax.encode(type, new Map(), scope), scope)), scope);
-    scope = new Map(scope).set(kernel.symbol(name), entry);
+    scope = withEntry(scope, kernel.symbol(name), entry);
     return entry;
   });
   const universe = g.universe(syntax.encodeLevel(spec.level ?? 0, scope));
@@ -67,7 +67,7 @@ export function admitSignature(kernel, spec, { syntax = new CubicalSyntax(kernel
   // The sort's entry names it; a variant name when another entry has it.
   const sortSymbol = kernel.symbol(spec.sort ?? spec.name);
   const sort = driver.bind(sortSymbol, universe, scope), constructorEntries = [];
-  scope = new Map(scope).set(sortSymbol, sort);
+  scope = withEntry(scope, sortSymbol, sort);
   let signature = signatureBegin(g, former, modifierCode(spec.modifier), sort, recorded);
   for (const { name, type, display } of spec.constructors ?? []) {
     // A constructor's type lives in the sort's universe; one derived lower
@@ -76,7 +76,7 @@ export function admitSignature(kernel, spec, { syntax = new CubicalSyntax(kernel
       const derived = driver.convertTo(driver.derive(syntax.encode(type, new Map(), scope), scope), universe);
       const entry = driver.bind(kernel.symbol(name), derived, scope);
       signature = signatureConstructor(g, signature, derived, entry);
-      scope = new Map(scope).set(kernel.symbol(name), entry);
+      scope = withEntry(scope, kernel.symbol(name), entry);
       constructorEntries.push(entry);
     } catch (error) {
       const shown = display ?? name;

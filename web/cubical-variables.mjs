@@ -46,14 +46,30 @@ export function sameReference(left, right, bindings = null) {
 // A level variable's key in a level normal form (web/cubical-levels.mjs).
 export const levelKey = (node, bindings = null, right = false) => role(referenceSymbol(node), bindings, right);
 
+// A scope is the driver's map from the symbols of the variables it shows to
+// their entries. Under this key, the entries of variables it holds but does
+// not show, in increasing order: one shadowed by a later variable of the
+// same symbol, and one a derivation's narrowed scope leaves out while a
+// binder of the term could take it. A binder takes none of them, nor an
+// entry shown: two variables are never one (section 3.6).
+export const HIDDEN = "hidden";
+export const hiddenIn = scope => scope?.get(HIDDEN) ?? [];
+// A scope with `symbol`'s variable at `entry`: a variable it shadows is
+// hidden, not forgotten.
+export function withEntry(scope, symbol, entry) {
+  const extended = new Map(scope).set(symbol, entry), shadowed = scope?.get(symbol);
+  if (typeof shadowed === "number") extended.set(HIDDEN, [...new Set([...hiddenIn(scope), shadowed])].sort((a, b) => a - b));
+  return extended;
+}
+
 // A binder's body opened with an entry, to derive it there: the body, and
 // the scope in which the binder's variable is that entry. A level binder's
 // body is renamed to the entry's symbol where the two differ, as the kernel
 // finds a level's entries by its symbols (ABI 3).
 export function openBinder(graph, node, entry, scope) {
   const symbol = boundSymbol(node), own = graph.kernel.entryNames.symbol(entry);
-  if (!levelBinders.has(node.kind) || own === symbol) return { body: node.children[1], scope: new Map(scope).set(symbol, entry) };
-  return { body: graph.rename(node.children[1], false, symbol, own), scope: new Map(scope).set(own, entry) };
+  if (!levelBinders.has(node.kind) || own === symbol) return { body: node.children[1], scope: withEntry(scope, symbol, entry) };
+  return { body: graph.rename(node.children[1], false, symbol, own), scope: withEntry(scope, own, entry) };
 }
 // A binder over an entry: the instruction that discharges it from a body's
 // or a codomain's judgement.
@@ -126,11 +142,15 @@ const partsCompared = kind => kind === "U" ? 0 : kind === "PApp" || kind === "LA
 // wrapper beside its definitions (section 5.3): a driver is dropped more often
 // than entries die. Each entry has the name it was made for and the symbol it
 // holds (ABI 3), spelled as the name where no live entry held that, and as a
-// variant, x'1, otherwise. An entry is found again by its name and its type:
-// the same type handle first, then a type alpha-equal to it, as
-// cc_instr_extend's reuse by symbol found it, so that judgements derived
-// under one binder are shared; never one the caller excludes, an entry of the
-// scope being extended, which would make two variables one (section 3.6).
+// variant, x'1, otherwise. An entry is found again by its name and its type
+// up to alpha-equality, as cc_instr_extend's reuse by symbol found it, so
+// that judgements derived under one binder are shared; never one the caller
+// excludes, an entry the scope being extended holds, which would make two
+// variables one (section 3.6). Of the entries made for a name at alpha-equal
+// types, the first made that is not excluded is found: which entry a
+// variable is depends on its name, its type and the scope it is bound in,
+// not on the entries made since, so a variable bound again after a driver
+// reset is the entry the judgements kept from before it use.
 // A variant's spelling names its entry too: a term derived under it binds
 // it by that spelling (ABI 3), and binding it again finds the entry.
 // The kernel truncates entries to a checkpoint's count at its commit or
@@ -139,10 +159,15 @@ const partsCompared = kind => kind === "U" ? 0 : kind === "PApp" || kind === "LA
 export class EntryNames {
   constructor(kernel) {
     this.kernel = kernel;
-    // entry → { entry, name, symbol, type, likeness }, and each name's
-    // records in order.
+    // entry → { entry, name, symbol, type, keys }.
     this.records = new Map();
+    // Each name's entries, grouped by type up to alpha-equality: name →
+    // { groups: [{ type, likeness, entries }], known }, a group's entries in
+    // the order they were made, and `known` each type handle met for the
+    // name: its group, or how many groups it was compared with and found
+    // unlike. The names whose known handles a truncation could move (touched).
     this.named = new Map();
+    this.touched = new Set();
     // The live entry that holds a symbol.
     this.holders = new Map();
     // The last variant number of each name: a spelling is never made again, so
@@ -152,20 +177,29 @@ export class EntryNames {
     this.likenesses = new Map();
   }
   // A live entry made for `name` at `type`, a type's term handle or LEVEL,
-  // that `excluded` does not refuse; 0 when there is none. Only types alike
+  // that `excluded` does not refuse: the first made of those at a type
+  // alpha-equal to `type`; 0 when there is none.
+  find(name, type, excluded = () => false) {
+    for (const entry of this.group(name, type)?.entries ?? []) if (!excluded(entry)) return entry;
+    return 0;
+  }
+  // The group of `name`'s entries at types alpha-equal to `type`, or null:
+  // found by the type's handle once met, and otherwise by comparing the type
+  // with one entry's of each group not compared with yet. Only types alike
   // are compared up to alpha-equality: one name bound at many types, as a
   // binder of a type that mentions each of a search's fresh variables in
   // turn, would otherwise compare each new type with every earlier one.
-  find(name, type, excluded = () => false) {
-    const records = this.named.get(name);
-    if (!records) return 0;
-    for (const record of records) if (record.type === type && !excluded(record.entry)) return record.entry;
-    if (type === LEVEL) return 0;
+  group(name, type) {
+    const named = this.named.get(name);
+    if (!named) return null;
+    const known = named.known.get(type) ?? 0;
+    if (typeof known === "object") return known;
+    if (type === LEVEL) return null;
     const likeness = this.likeness(type);
-    for (const record of records)
-      if (record.likeness === likeness && record.type !== type && !excluded(record.entry) && this.kernel.alphaEqual(record.type, type))
-        return record.entry;
-    return 0;
+    const group = named.groups.slice(known).find(other => other.likeness === likeness && this.kernel.alphaEqual(other.type, type));
+    named.known.set(type, group ?? named.groups.length);
+    this.touched.add(name);
+    return group ?? null;
   }
   // What two alpha-equal types share: the root's kind, and the free
   // variables of the parts alpha-equality compares as syntax (a universe's
@@ -203,14 +237,20 @@ export class EntryNames {
     }
   }
   // An entry the kernel made, for `name`, holding the symbol `spelling` names.
-  record(entry, name, spelling, type) {
+  // A fresh entry is found again by its spelling only, as a binder of its
+  // name never takes it.
+  record(entry, name, spelling, type, fresh = false) {
     if (this.records.has(entry)) return;
-    const record = { entry, name, symbol: this.kernel.symbol(spelling), type, keys: [...new Set([name, spelling])],
-      likeness: type === LEVEL ? LEVEL : this.likeness(type) };
+    const record = { entry, name, symbol: this.kernel.symbol(spelling), type, keys: fresh ? [spelling] : [...new Set([name, spelling])] };
     this.records.set(entry, record);
     for (const key of record.keys) {
-      if (!this.named.has(key)) this.named.set(key, []);
-      this.named.get(key).push(record);
+      if (!this.named.has(key)) this.named.set(key, { groups: [], known: new Map() });
+      const named = this.named.get(key);
+      let group = this.group(key, type);
+      if (!group) named.groups.push(group = { type, likeness: type === LEVEL ? LEVEL : this.likeness(type), entries: [] });
+      named.known.set(type, group);
+      group.entries.push(entry);
+      this.touched.add(key);
     }
     this.holders.set(record.symbol, entry);
   }
@@ -228,17 +268,22 @@ export class EntryNames {
     return record.name;
   }
   // Entries from `count` on are gone: the kernel truncated them, and moved
-  // the handles made with them, which the likenesses read.
+  // the handles made with them, which the likenesses read, so each name
+  // touched since knows again only its entries' types, which are older.
   truncate(count) {
     this.likenesses.clear();
     for (const [entry, record] of this.records) {
       if (entry < count) continue;
       this.records.delete(entry);
       if (this.holders.get(record.symbol) === entry) this.holders.delete(record.symbol);
-      for (const key of record.keys) {
-        const records = this.named.get(key).filter(other => other !== record);
-        if (records.length) this.named.set(key, records); else this.named.delete(key);
-      }
+      for (const key of record.keys) this.touched.add(key);
     }
+    for (const key of this.touched) {
+      const named = this.named.get(key);
+      named.groups = named.groups.filter(group => (group.entries = group.entries.filter(entry => entry < count)).length);
+      if (!named.groups.length) { this.named.delete(key); continue; }
+      named.known = new Map(named.groups.flatMap(group => group.entries.map(entry => [this.records.get(entry).type, group])));
+    }
+    this.touched.clear();
   }
 }

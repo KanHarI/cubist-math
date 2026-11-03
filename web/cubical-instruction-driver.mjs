@@ -13,8 +13,8 @@ import { InstructionGraph } from "./cubical-instructions.mjs";
 import { KernelError } from "./cubical-kernel.mjs";
 import { freeDimensionMask } from "./cubical-syntax.mjs";
 import { levelNormal } from "./cubical-levels.mjs";
-import { LEVEL, binders as TERM_BINDERS, levelBinders as LEVEL_BINDERS, boundSymbol, buildBinder, freshBinder, levelKey,
-  openBinder, referenceSymbol, sameReference } from "./cubical-variables.mjs";
+import { HIDDEN, LEVEL, binders as TERM_BINDERS, levelBinders as LEVEL_BINDERS, boundSymbol, buildBinder, freshBinder,
+  hiddenIn, levelKey, openBinder, referenceSymbol, sameReference, withEntry } from "./cubical-variables.mjs";
 
 const unsupported = kind => new Error(`${kind} is not in instruction mode yet.`);
 // An error thrown again: its own copy, which a caller that describes it
@@ -270,7 +270,7 @@ export class InstructionDriver {
     if (!extensions.has(key)) {
       try {
         // A universe variable (G0) is a level entry, typed by its bound.
-        extensions.set(key, new Map(scope).set(symbol, this.node(type).kind === "LBound" ? this.levelEntry(symbol, scope)
+        extensions.set(key, withEntry(scope, symbol, this.node(type).kind === "LBound" ? this.levelEntry(symbol, scope)
           : this.bind(symbol, this.asType(this.derive(type, scope)), scope)));
       } catch (error) {
         if (!isResourceLimit(error?.kind)) extensions.set(key, { refused: copied(error) });
@@ -402,7 +402,7 @@ export class InstructionDriver {
       const found = names.find(name, this.statement(type).term, entry => this.holds(scope, entry));
       if (found) return found;
     }
-    return this.graph.extend(type, name, names.spelling(name, { fresh }));
+    return this.graph.extend(type, name, names.spelling(name, { fresh }), fresh);
   }
   // A level entry for a universe variable of `symbol`'s name, in `scope`, as
   // bind finds a term entry. Only a binder, whose body is renamed to its
@@ -414,36 +414,34 @@ export class InstructionDriver {
     if (found) return found;
     return this.graph.level(name, variant ? names.spelling(name, { level: true }) : name);
   }
-  // The variables of a scope a binder could take, by the names a binder
-  // takes them by: each term or level entry's name and its spelling
-  // (EntryNames), mapped to the scope's symbols for the entries.
+  // The entries a scope holds, shown or hidden (HIDDEN), by the names a
+  // binder takes them by: each term or level entry's name and its spelling
+  // (EntryNames).
   occupants(scope) {
     let occupants = this.scopeOccupants.get(scope);
     if (!occupants) {
       occupants = new Map();
       const names = this.kernel.entryNames;
-      for (const [symbol, entry] of scope) {
-        if (typeof symbol !== "number") continue;
+      for (const entry of this.entriesOf(scope))
         for (const name of new Set([this.kernel.symbol(names.name(entry)), names.symbol(entry)])) {
           if (!occupants.has(name)) occupants.set(name, []);
-          occupants.get(name).push(symbol);
+          occupants.get(name).push(entry);
         }
-      }
       this.scopeOccupants.set(scope, occupants);
     }
     return occupants;
   }
-  // Whether a scope's variables include an entry.
-  holds(scope, entry) {
-    if (!scope) return false;
+  // The entries a scope holds: its variables', and those it hides.
+  entriesOf(scope) {
     let entries = this.scopeEntries.get(scope);
     if (!entries) {
-      entries = new Set();
+      entries = new Set(hiddenIn(scope));
       for (const [symbol, value] of scope) if (typeof symbol === "number") entries.add(value);
       this.scopeEntries.set(scope, entries);
     }
-    return entries.has(entry);
+    return entries;
   }
+  holds(scope, entry) { return !!scope && this.entriesOf(scope).has(entry); }
 
   // A term derived once per scope it reads: the kernel shares repeated
   // instructions, and this skips walking the term again. A derivation reads
@@ -466,40 +464,43 @@ export class InstructionDriver {
   // as in the whole scope, which a summary could not undo.
   // A variable bound inside the term is bound by the term's own binders, at
   // the entry its name and type give it, whatever else is in scope, but
-  // never at an entry the scope holds: so a variable of the scope that a
-  // binder of the term could take, one made for the binder's name, is kept
-  // too (occupants), and the binder takes an entry of its own (bind). Then
-  // the derivation in the narrowed scope is the one the whole scope would give,
-  // and as each judgement's context is the union of its premises', it
-  // combines with any around it. Faces are rare (onFace's retry), and kept
-  // whole. A narrowed scope is made once per content: a memo key, as any
-  // scope is (scopeKey).
+  // never at an entry the scope holds, shown or hidden: so an entry of the
+  // scope that a binder of the term could take, one made for the binder's
+  // name, is hidden in the narrowed scope (occupants, HIDDEN), and the binder
+  // takes an entry of its own (bind). Then the derivation in the narrowed
+  // scope is the one the whole scope would give, and as each judgement's
+  // context is the union of its premises', it combines with any around it.
+  // Faces are rare (onFace's retry), and kept whole. A narrowed scope is made
+  // once per content: a memo key, as any scope is (scopeKey).
   narrow(handle, scope) {
     const live = liveIn(scope), symbols = this.freeTermSymbols(handle);
     let mentioned = scope.get(MENTIONED) ?? 0n, kept = symbols;
-    const keep = symbol => { if (!kept.has(symbol)) (kept = kept === symbols ? new Set(symbols) : kept).add(symbol); };
     for (const [symbol, dimensions] of this.dimensioned(scope)) {
       if (!this.binds(handle, symbol)) mentioned |= dimensions;
-      else keep(symbol);
+      else if (!kept.has(symbol)) (kept = kept === symbols ? new Set(symbols) : kept).add(symbol);
     }
-    const occupants = this.occupants(scope);
+    let entries = "";
+    const shown = new Set();
+    for (const symbol of kept) {
+      const entry = scope.get(symbol);
+      if (entry !== undefined) { entries += `,${symbol}:${entry}`; shown.add(entry); }
+    }
+    const occupants = this.occupants(scope), hidden = new Set();
     if (occupants.size) {
       const bound = this.boundSymbols(handle);
       for (const name of bound.size < occupants.size ? bound : occupants.keys())
-        if (bound.has(name) && occupants.has(name)) occupants.get(name).forEach(keep);
+        if (bound.has(name) && occupants.has(name))
+          for (const entry of occupants.get(name)) if (!shown.has(entry)) hidden.add(entry);
     }
-    let entries = "";
-    for (const symbol of kept) {
-      const entry = scope.get(symbol);
-      if (entry !== undefined) entries += `,${symbol}:${entry}`;
-    }
+    const hiddenEntries = [...hidden].sort((a, b) => a - b);
     const faces = facesIn(scope).length ? facesIn(scope) : null;
-    const key = `${live}|${mentioned}|${faces ? String(faces) : ""}|${entries}`;
+    const key = `${live}|${mentioned}|${faces ? String(faces) : ""}|${entries}|${hiddenEntries}`;
     let narrowed = this.narrowed.get(key);
     if (!narrowed) {
       narrowed = new Map([[LIVE, live], [MENTIONED, mentioned]]);
       for (const symbol of kept) if (scope.has(symbol)) narrowed.set(symbol, scope.get(symbol));
       if (faces) narrowed.set(FACE, faces);
+      if (hiddenEntries.length) narrowed.set(HIDDEN, hiddenEntries);
       this.narrowed.set(key, narrowed);
     }
     return narrowed;
@@ -1079,7 +1080,7 @@ export class InstructionDriver {
         const symbol = boundSymbol(n), entry = LEVEL_BINDERS.has(n.kind) ? this.levelEntry(symbol, scope)
           : this.bind(symbol, this.asType(this.derive(n.children[0], scope)), scope);
         if (this.kernel.entryNames.symbol(entry) !== symbol) return null;
-        scope = new Map(scope).set(symbol, entry);
+        scope = withEntry(scope, symbol, entry);
       }
       if (underBinder[n.kind]?.includes(child)) scope = withLive(scope, n.payload);
       term = n.children[child];

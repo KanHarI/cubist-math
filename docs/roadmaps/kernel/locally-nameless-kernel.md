@@ -1018,7 +1018,7 @@ actually changes.
 | `web/cubical-kernel.mjs` | 36 | 12 | the kind table `cubicalKinds`, `CUBICAL_ABI_VERSION`, `term`, `node`, `signature` (closed constructor types, no symbols), `definition` (no symbol), the new query; `symbol` and `symbolName` become driver-local, with no `_cb_fresh_symbol` |
 | `web/cubical-instructions.mjs` | 24 | 11 | `extend`, `level` and `define` with no name, Replace's entries, `signatureBegin` and `signatureConstructor` taking entries, `rename` (dimension mode only) |
 | `web/cubical-syntax.mjs` | 40 | 12 | `encode` and `encodeLevel` take a scope: bound names to `CC_BOUND` by depth, free names to the scope's entries, and the encoding cache keyed by the scope as it is by the dimension context (section 5.3); `decode` and `decodeLevel`: a name stack for `CC_BOUND`, the driver's names for `CC_CONTEXT`; `signatureRecord`'s names from the driver's records |
-| `web/cubical-instruction-driver.mjs` | 223 | 66 | `entry` and `contextScope` consult the kernel wrapper's map from name and type to entry, with its alpha-equality fallback, instead of `cc_instr_extend`'s symbol (section 5.3); `deriveNode` opens binder bodies with the new or reused entry, and its renaming of a level binder whose spelling a term entry holds goes; `scopeAt` hands Replace its entries; `agree`, `guide`, `sameHead` and `levelsEqual` compare term and level binders' bodies directly, so the term renaming chains (`pruneSymbols`, the term half of `chainId` and `unrenamed`) go, while the dimension chains (`prune`) and `renameBinder`, which renames dimensions, stay; `levelsEqual`'s keys by role (below); `freeTermSymbols`, `binds` and `freshFormer` simplify or go |
+| `web/cubical-instruction-driver.mjs` | 223 | 66 | `entry` and `contextScope` consult the kernel wrapper's map from name and type up to alpha-equality to entry, instead of `cc_instr_extend`'s symbol (section 5.3); `deriveNode` opens binder bodies with the new or reused entry, and its renaming of a level binder whose spelling a term entry holds goes; `scopeAt` hands Replace its entries; `agree`, `guide`, `sameHead` and `levelsEqual` compare term and level binders' bodies directly, so the term renaming chains (`pruneSymbols`, the term half of `chainId` and `unrenamed`) go, while the dimension chains (`prune`) and `renameBinder`, which renames dimensions, stay; `levelsEqual`'s keys by role (below); `freeTermSymbols`, `binds` and `freshFormer` simplify or go |
 | `web/cubical-elaborator.mjs` | 37 | 23 | scope first, then encoding: `derived`, `nextClauseType` and `nf` (section 5.3); the display renamings of entries (`viewOfJudgement`, `nextClauseType`) become decoder names; its `levelNormal` comparison of a level with its bound |
 | `web/cubical-levels.mjs` | 5 | 5 | `levelNormal` recognizes only `Var` and throws "Expected a level" on anything else; it must read `CC_BOUND` and `CC_CONTEXT` and key them by role, so that a bound level variable and an entry with equal numbers never meet |
 | `web/cubical-signatures.mjs` | 14 | 9 | admission passes entry names (`g.entry(sort).name`, `g.entry(entry).name`) to `signatureBegin` and `signatureConstructor`; it must pass the parameter, sort and constructor entries |
@@ -1229,23 +1229,35 @@ syntax or path-application annotations remain distinct handles that
 returns one entry for `x` at both: `find_entry` finds the entry by the
 symbol, and `ck_alpha_equal` accepts its type;
 a second entry there would make a later Transitivity refuse ("The
-equalities do not meet."). So the reuse keeps the exact handle as its fast
-path and, before making a new entry, compares the types of the entries
-already made for that name with `cc_kernel_alpha_equal`, reusing the first
-that agrees, as `cc_instr_extend` does now. This is compatibility, not only
-sharing. Only types alike are compared: the same root kind and the same free
+equalities do not meet."). So the map groups each name's entries by type up
+to alpha-equality, comparing a type it has not met with one entry's type of
+each group by `cc_kernel_alpha_equal`, as `cc_instr_extend` does now; the
+handles met are the fast path to their group. This is compatibility, not
+only sharing. Only types alike are compared: the same root kind and the same free
 variables in the parts alpha-equality compares as syntax, which two
 alpha-equal types always share. PR 1 found why: scope first binds the
 unifier's fresh names, and a binder of a type under each is one name at as
 many types (522 entries for one name in the `ordered_algebra` closure, 2.1
 million comparisons, 54 once only alike types are compared). An entry is
 reused only when it is not already in the scope being
-extended (section 3.6), and so a derivation's narrowed scope keeps, beside
-its free variables' entries, every entry of the scope that one of the
-term's binders could take, one made for that binder's name; otherwise
-`λ (x : A). λ (y : B(x)). λ (x : A). y` would bind the inner `x` at the outer
-one's entry, on which `y`'s depends, and its λ would be refused (main
-refuses it so, reusing the entry by symbol). The `x'1`, `x'2` variants that `entry` makes when a name is taken at
+extended (section 3.6): of its group, the first made that the scope does not
+hold. So which entry a variable is depends on its name, its type up to
+alpha-equality and its scope, never on the entries made since: preferring
+an entry made at the type's own handle would, after a shadowing binder made
+one at `Path(1; …)`, bind `x` at `Path(1; …)` after a driver reset at that
+entry, not at the one judgements kept from before the reset use, and a
+Transitivity between them would not meet (main meets). A scope holds
+entries it does not show: one shadowed by a later variable of the same
+name is hidden, not forgotten, and a derivation's narrowed scope hides,
+beside showing its free variables' entries, every entry of the scope that
+one of the term's binders could take, one made for that binder's name;
+the hidden entries are part of the derivation memo's key. Otherwise
+`λ (x : A). λ (y : B(x)). λ (x : A). y`, and `λ (x : A). λ (y : B(x)).
+λ (x : A). λ (x : A). y` with the second `x` shadowed, would bind an inner `x`
+at the outer one's entry, on which `y`'s depends, and its λ would be refused
+(main refuses both so, reusing the entry by symbol). A fresh entry, which
+the driver makes when it needs a variable no binder names, is found again
+by its spelling only, as main's fresh symbols were. The `x'1`, `x'2` variants that `entry` makes when a name is taken at
 another type become display matter only. The map lives as long as the
 entries it names, not as long as a driver (the table below). A driver
 that fails to reuse an entry gets two distinct
@@ -1306,10 +1318,11 @@ refers to it, and follows the kernel's lifecycle for that identity:
   (through `cb_entry_count`) and, in `finish`, deletes from these maps every
   entry at or above it, on both paths; entries from before the checkpoint
   keep their names. Their types' handles are older than the checkpoint too,
-  so neither a rollback nor a commit moves them, and keying the reuse by the
-  type's handle stays sound; types that are alpha-equal but distinct
-  handles, as with `CC_SHARE_SYNTAX` off or with dimension binders named
-  differently, are found by the alpha-equality fallback above.
+  so neither a rollback nor a commit moves them; the other handles a name's
+  group met during the declaration move, and are forgotten in `finish`, as a
+  rolled-back handle is made again for another term. Types that are
+  alpha-equal but distinct handles, as with `CC_SHARE_SYNTAX` off or with
+  dimension binders named differently, are found by comparing them as above.
 - **Numbers for names.** `symbol` and `symbolName` in `web/cubical-kernel.mjs`
   map names to numbers and back, with no handle involved; they allocate
   from a counter of the driver's own instead of `cb_fresh_symbol`, since no
@@ -1323,7 +1336,7 @@ Every map that replaces a kernel symbol, against every reset:
 | definition index → name (new) | kernel wrapper | new keys deleted at rollback (`sizes`) | the index at rollback only; a commit keeps every index |
 | name → signature record (`kernel.signatures`) | kernel wrapper | new keys deleted at rollback (`sizes`) | the index at rollback only |
 | signature index → name (new) | kernel wrapper | new keys deleted at rollback (`sizes`) | the index at rollback only |
-| name and type handle → entry, with the alpha-equality fallback; entry → name and variant (new, replacing `variantNames`, `freshNames` and the symbol on the entry) | kernel wrapper | in `finish`, entries at or above the checkpoint's entry count, at commit and at rollback | the entry at the commit or rollback of a checkpoint taken before it was made; never at a driver reset |
+| name → entries grouped by type up to alpha-equality, with the type handles met; entry → name and variant (new, replacing `variantNames`, `freshNames` and the symbol on the entry) | kernel wrapper | in `finish`, entries at or above the checkpoint's entry count, at commit and at rollback, and the handles met other than the entries' own types | the entry at the commit or rollback of a checkpoint taken before it was made; never at a driver reset |
 | the driver's caches (`contextScopes`, `heads`, `guesses`, `alphaMemo` and the rest) | instruction driver | at every driver reset (`finish`, `inspect`, `define`, `admitSignature`) | their judgements and handles at commit or rollback; dropping them earlier only costs recomputation, since the entry maps above outlive them |
 | the encoder's and decoder's caches (`encoded`, `decoded`, `heads`) | syntax codec | at `finish` (`checker.syntax.reset()`) | their handles at commit or rollback |
 | `derivedHandles` | kernel wrapper | at `finish` | at commit or rollback |
@@ -1453,7 +1466,7 @@ Each PR is verified locally first, opened as a draft, and keeps
    the inverse maps keyed by definition and signature index and kept in the
    transaction's `sizes`, constructors named through their instance's
    signature, and the entry maps moved off the driver onto the kernel
-   wrapper, with the alpha-equality fallback for reuse, truncated in
+   wrapper, grouped by type up to alpha-equality for reuse, truncated in
    `finish` to the checkpoint's entry count and kept across driver resets
    (section 5.3's table of maps); `levelWithin`
    comparing frontend levels without encoding; the assertion that encoding against a
@@ -1629,7 +1642,9 @@ Each PR is verified locally first, opened as a draft, and keeps
 - **Entries reused up to alpha-equality** (section 5.3): binding `x` at
   `Path(0; U0, Unit, Unit)` and again at `Path(1; U0, Unit, Unit)` gives one
   entry, and a Transitivity joining judgements derived under each meets,
-  as on main.
+  as on main; after a λ of `x` in the second scope and a driver reset, `x`
+  at `Path(1; …)` is that entry still, and a Transitivity with the judgement
+  kept from before the reset meets, as on main.
 - **Dependent arity and cube annotations in iota** (section 3.3): with
   `Tree : U1` and `node(A : U0, q : A → Tree)`, Iota at `node(Unit, q)` shows
   `λ (a : Unit). elim(q(a))`, as on main; the same for a path-valued
@@ -1652,7 +1667,9 @@ Each PR is verified locally first, opened as a draft, and keeps
 - **Names in the driver** (section 5.3): binding one name twice at one type
   in disjoint scopes reuses the entry, and a derivation repeated under it is
   answered from the memo; `λ (x : A). λ (x : A). x` derives with two
-  entries, the inner `x` the inner binder's; two `cc_instr_extend` calls at
+  entries, the inner `x` the inner binder's, and a third `x` binder takes a
+  third; `λ (x : A). λ (y : B(x)). λ (x : A). λ (x : A). y` derives, with
+  syntax sharing on and off; two `cc_instr_extend` calls at
   one type give two entries; two Defines of one closed judgement give two
   definitions with distinct references; `cc_kernel_definition` and the
   Lookup judgement report no symbol, and a definition's name, a

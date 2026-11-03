@@ -10,6 +10,7 @@ import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { CubicalDeclarationTransaction } from "../web/cubical-transaction.mjs";
 import { InstructionDriver } from "../web/cubical-instruction-driver.mjs";
+import { hiddenIn } from "../web/cubical-variables.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { checkProgram } from "./check-program.mjs";
 
@@ -45,8 +46,11 @@ test("an entry is found again by its name and its type, across drivers, and neve
   assert.equal(kernel.entryNames.name(inner), "x");
   assert.notEqual(kernel.entryNames.spelled(inner), "x", "spelled apart from the live entry");
   // A fresh entry is always new, and the driver never asks the kernel to
-  // reuse one by its symbol: two fresh entries at one type are two.
+  // reuse one by its symbol: two fresh entries at one type are two. A binder
+  // of its name takes none.
   assert.notEqual(driver.freshEntry(type, "x"), driver.freshEntry(type, "x"));
+  const made = driver.freshEntry(type, "w");
+  assert.notEqual(driver.bind(kernel.symbol("w"), type), made);
 });
 
 // The entries the λ and Π judgements of a derivation discharge, outermost first.
@@ -59,7 +63,7 @@ test("λ (x : A). λ (x : A). x binds two entries, the inner x the inner binder'
   const program = fresh(t), { kernel, checker } = program, driver = checker.driver;
   const term = lam("x", unit, lam("x", unit, x));
   const id = driver.infer(checker.syntax.encode(term)), judgement = driver.graph.judgement(id);
-  // The inner binder's narrowed scope keeps the outer entry, which its own
+  // The inner binder's narrowed scope hides the outer entry, which its own
   // name could take: it takes another.
   const [outer, inner] = discharged(driver.graph, id);
   assert.notEqual(outer, inner);
@@ -68,23 +72,39 @@ test("λ (x : A). λ (x : A). x binds two entries, the inner x the inner binder'
   const first = checker.syntax.encode(lam("a", unit, lam("b", unit, { tag: "Var", name: "a" })));
   assert.ok(kernel.alphaEqual(judgement.term, second));
   assert.ok(!kernel.alphaEqual(judgement.term, first));
+  // A third binder of the name takes neither: the outermost entry, shadowed,
+  // is still the scope's.
+  const three = discharged(driver.graph, driver.infer(checker.syntax.encode(lam("x", unit, term))));
+  assert.equal(new Set(three).size, 3);
 });
 
 test("a binder never takes an entry its scope holds, even one a later variable depends on", async t => {
   // λ (x : A). λ (y : B(x)). λ (x : A). y: the innermost binder's scope keeps
   // y, whose entry depends on the outer x's. Were the inner x to take that
   // entry, its λ would discharge it while y's still depends on it, which the
-  // kernel refuses, as main's reuse by symbol did.
-  const program = fresh(t), { kernel, checker } = program, driver = checker.driver, syntax = checker.syntax;
-  const A = { tag: "Var", name: "A" }, B = { tag: "Var", name: "B" }, Bx = { tag: "App", fn: B, arg: x }, u0 = { tag: "U", level: 0 };
-  const scope = driver.scopeOf([["A", u0], ["B", { tag: "Pi", name: "_", domain: A, body: u0 }]].map(([name, type]) => [kernel.symbol(name), type]),
-    0n, (type, at) => syntax.encode(type, new Map(), at));
-  const term = lam("x", A, lam("y", Bx, lam("x", A, { tag: "Var", name: "y" })));
-  const type = { tag: "Pi", name: "x", domain: A, body: { tag: "Pi", name: "y", domain: Bx, body: { tag: "Pi", name: "z", domain: A, body: Bx } } };
-  const id = driver.checkIn(syntax.encode(term, new Map(), scope), syntax.encode(type, new Map(), scope), scope);
-  const [outer, y, inner] = discharged(driver.graph, id);
-  assert.equal(new Set([outer, y, inner]).size, 3);
-  assert.deepEqual([outer, y, inner].map(entry => kernel.entryNames.name(entry)), ["x", "y", "x"]);
+  // kernel refuses, as main's reuse by symbol did. A fourth binder, x again,
+  // takes neither the third's entry, which it shadows, nor the first's, which
+  // the third shadowed: with the kernel sharing syntax and without.
+  for (const shareSyntax of [true, false]) {
+    const program = fresh(t, { optimizations: { shareSyntax } }), { kernel, checker } = program, driver = checker.driver, syntax = checker.syntax;
+    const A = { tag: "Var", name: "A" }, B = { tag: "Var", name: "B" }, Bx = { tag: "App", fn: B, arg: x }, u0 = { tag: "U", level: 0 };
+    const encode = (term, scope) => syntax.encode(term, new Map(), scope);
+    const scopeOf = context => driver.scopeOf(context.map(([name, type]) => [kernel.symbol(name), type]), 0n, encode);
+    const context = [["A", u0], ["B", { tag: "Pi", name: "_", domain: A, body: u0 }]], scope = scopeOf(context);
+    const pi = (name, domain, body) => ({ tag: "Pi", name, domain, body });
+    for (const inner of [["x"], ["x", "x"]]) {
+      const term = lam("x", A, lam("y", Bx, inner.reduceRight((body, name) => lam(name, A, body), { tag: "Var", name: "y" })));
+      const type = pi("x", A, pi("y", Bx, inner.reduceRight(body => pi("z", A, body), Bx)));
+      const entries = discharged(driver.graph, driver.checkIn(encode(term, scope), encode(type, scope), scope));
+      assert.equal(new Set(entries).size, entries.length, `${entries.length} binders`);
+      assert.deepEqual(entries.map(entry => kernel.entryNames.name(entry)), ["x", "y", ...inner]);
+    }
+    // So in a context whose second x shadows the first, on which y depends:
+    // λ (x : A). y takes neither x's entry.
+    const held = scopeOf([...context, ["x", A], ["y", Bx], ["x", A]]);
+    const [entry] = discharged(driver.graph, driver.derive(encode(lam("x", A, { tag: "Var", name: "y" }), held), held));
+    assert.ok(![...held.values(), ...hiddenIn(held)].includes(entry));
+  }
 });
 
 test("a type equal up to a dimension's name binds the same entry", async t => {
@@ -102,6 +122,26 @@ test("a type equal up to a dimension's name binds the same entry", async t => {
     return g.refl(driver.derive(checker.syntax.encode(x, new Map(), scope), scope));
   });
   assert.ok(g.transitivity(left, right));
+});
+
+test("an entry found again after a reset is the one kept judgements use, whatever was made since", async t => {
+  // x at Path(1; …) is the entry made for x at Path(0; …). A λ of x in that
+  // scope takes another, made at Path(1; …)'s own handle. After a reset, x
+  // at Path(1; …) is the first entry again, the first made for its name and
+  // type that the scope does not hold, not the one made at the same handle,
+  // and a Transitivity with the judgement kept from before the reset meets.
+  const program = fresh(t), { kernel, checker } = program, syntax = checker.syntax;
+  const u0 = syntax.encode({ tag: "U", level: 0 }), at = dimension => kernel.term("Path", dimension, u0, syntax.encode(unit), syntax.encode(unit));
+  const variable = kernel.term("Var", kernel.symbol("x")), context = dimension => [[kernel.symbol("x"), at(dimension)]];
+  const contextOf = id => checker.driver.graph.judgement(id).context;
+  const first = checker.driver.infer(variable, context(0)), kept = checker.driver.infer(variable, context(1));
+  assert.deepEqual(contextOf(kept), contextOf(first));
+  const shadowing = checker.driver.infer(kernel.term("Lam", kernel.symbol("x"), at(1), variable), context(1));
+  assert.ok(!contextOf(kept).includes(discharged(checker.driver.graph, shadowing)[0]));
+  kernel.instructionDriver = null;
+  const g = checker.driver.graph, again = checker.driver.infer(variable, context(1));
+  assert.deepEqual(g.judgement(again).context, g.judgement(kept).context);
+  assert.ok(g.transitivity(g.refl(kept), g.refl(again)));
 });
 
 test("an entry's name lives as long as the entry: across inspections, and to its checkpoint", async t => {
@@ -129,6 +169,22 @@ test("an entry's name lives as long as the entry: across inspections, and to its
     assert.throws(() => kernel.entryNames.name(late), /no context entry/);
     assert.equal(kernel.entryNames.name(entry), "x");
   }
+});
+
+test("a type handle met in a rolled-back declaration is forgotten with it", async t => {
+  // Path(1; …), made after the checkpoint, binds x at the entry made at
+  // Path(0; …). The rollback frees its handle, and the next node made takes
+  // it: x at that type, Unit → Unit, is another entry.
+  const program = fresh(t), { kernel, checker } = program, syntax = checker.syntax, symbol = kernel.symbol("x");
+  const u0 = syntax.encode({ tag: "U", level: 0 }), at = dimension => kernel.term("Path", dimension, u0, syntax.encode(unit), syntax.encode(unit));
+  const contextOf = type => checker.driver.graph.judgement(checker.driver.infer(kernel.term("Var", symbol), [[symbol, type]])).context;
+  const [entry] = contextOf(at(0));
+  const transaction = new CubicalDeclarationTransaction(kernel, checker), transient = at(1);
+  assert.deepEqual(contextOf(transient), [entry]);
+  transaction.finish(false);
+  const function_ = kernel.term("Pi", kernel.symbol("_"), syntax.encode(unit), syntax.encode(unit));
+  assert.equal(function_, transient, "the freed handle is made again");
+  assert.notDeepEqual(contextOf(function_), [entry]);
 });
 
 test("definitions are named by index: shared or not, relocated, and freed at a rollback", async t => {
