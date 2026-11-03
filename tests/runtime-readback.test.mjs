@@ -29,9 +29,11 @@ async function setup(t, source) {
   const { program, result } = await checkProgram(t, source, { module, options: { collectReferences: false } });
   assert.equal(result.complete, true, JSON.stringify(result.gaps));
   const { kernel, checker } = program, graph = new InstructionGraph(kernel), defined = new Map();
-  // A term written as kernel syntax, derived by the instruction driver: the
-  // elaborator names a shadowing binder apart, the kernel need not.
-  const define = (name, written) => defined.set(name, new InstructionDriver(kernel).infer(checker.syntax.encode(written)));
+  // A term written as kernel syntax, derived by the instruction driver, or a
+  // judgement made by instructions: the elaborator and the driver name a
+  // shadowing binder apart, the kernel need not.
+  const define = (name, written) => defined.set(name, typeof written === "function" ? written(graph, checker.syntax)
+    : new InstructionDriver(kernel).infer(checker.syntax.encode(written)));
   const judgement = name => defined.get(name) ?? graph.lookup(kernel.definitions.get(`main__${name}`));
   // A definition's checked term, which normalize accepts.
   const term = name => { const handle = graph.judgement(judgement(name)).term; (kernel.derivedHandles ??= new Set()).add(handle); return handle; };
@@ -62,8 +64,15 @@ const flag = index => ({ tag: "Con", index, sort: { tag: "Sort", signature: "mai
 const flagType = { tag: "Sort", signature: "main__Flag", parameters: [], levels: [] };
 // (λ (x : Flag). (λ (x : Flag). λ (u : Unit). x)(disabled))(enabled), one
 // symbol bound twice; and (λ (x : U0). λ (x : x). λ (u : Unit). x)(Unit, tt),
-// whose inner binder's domain is the outer x.
-const shadowed = app(lam("x", flagType, app(lam("x", flagType, lam("u", unit, v("x"))), flag(0))), flag(1));
+// whose inner binder's domain is the outer x. The driver binds the inner x of
+// the first apart from the outer, whose entry its scope holds, so its two λs
+// discharge one entry here, by instructions.
+const shadowed = (graph, syntax) => {
+  const driver = new InstructionDriver(graph.kernel), derive = term => driver.infer(syntax.encode(term));
+  const x = graph.extend(driver.asType(derive(flagType)), "x"), u = graph.extend(graph.unit(), "u");
+  const inner = graph.lambda(x, graph.lambda(u, graph.variable(x)));
+  return graph.apply(graph.lambda(x, graph.apply(inner, derive(flag(0)))), derive(flag(1)));
+};
 const shadowedDomain = app(app(lam("x", U0, lam("x", v("x"), lam("u", unit, v("x")))), unit), point);
 // The distinct nodes of a term.
 const dagSize = (kernel, handle) => {

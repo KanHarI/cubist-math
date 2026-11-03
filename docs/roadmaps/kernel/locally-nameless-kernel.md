@@ -1240,7 +1240,12 @@ unifier's fresh names, and a binder of a type under each is one name at as
 many types (522 entries for one name in the `ordered_algebra` closure, 2.1
 million comparisons, 54 once only alike types are compared). An entry is
 reused only when it is not already in the scope being
-extended (section 3.6). The `x'1`, `x'2` variants that `entry` makes when a name is taken at
+extended (section 3.6), and so a derivation's narrowed scope keeps, beside
+its free variables' entries, every entry of the scope that one of the
+term's binders could take, one made for that binder's name; otherwise
+`λ (x : A). λ (y : B(x)). λ (x : A). y` would bind the inner `x` at the outer
+one's entry, on which `y`'s depends, and its λ would be refused (main
+refuses it so, reusing the entry by symbol). The `x'1`, `x'2` variants that `entry` makes when a name is taken at
 another type become display matter only. The map lives as long as the
 entries it names, not as long as a driver (the table below). A driver
 that fails to reuse an entry gets two distinct
@@ -1646,12 +1651,8 @@ Each PR is verified locally first, opened as a draft, and keeps
   same for a signature's name at a reused signature index.
 - **Names in the driver** (section 5.3): binding one name twice at one type
   in disjoint scopes reuses the entry, and a derivation repeated under it is
-  answered from the memo; `λ (x : A). λ (x : A). x` derives with the inner
-  `x` the inner binder's, and a binder whose scope already holds the entry
-  made for its name and type gets another (the inner binder of this term
-  derives in its narrowed scope, which leaves the outer entry out, so there
-  one entry serves both, as `tests/driver-names.test.mjs` finds on ABI 3);
-  two `cc_instr_extend` calls at
+  answered from the memo; `λ (x : A). λ (x : A). x` derives with two
+  entries, the inner `x` the inner binder's; two `cc_instr_extend` calls at
   one type give two entries; two Defines of one closed judgement give two
   definitions with distinct references; `cc_kernel_definition` and the
   Lookup judgement report no symbol, and a definition's name, a
