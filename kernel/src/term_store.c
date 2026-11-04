@@ -245,13 +245,20 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
         return ck_fail(k, "A formula handle names no registered formula."), 0;
     if ((kind == CC_VAR || ck_term_binder(kind)) && payload == UINT32_MAX)
         return ck_fail_as(k, CC_ERROR_RESOURCE, "Term symbol space exhausted."), 0;
+    /* A leaf's counter is its payload plus one, which must not wrap to 0. */
+    if (kind == CC_BOUND && payload == UINT32_MAX)
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "Bound index space exhausted."), 0;
+    if (kind == CC_OPENED && payload == UINT32_MAX)
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "Opened level space exhausted."), 0;
     /* A context reference names a term or level entry of the judgement
      * store, never a dimension or face entry, nor one truncated. */
     if (kind == CC_CONTEXT && (!payload || payload >= k->entry_count || k->entries[payload].dimension ||
                                k->entries[payload].face))
         return ck_fail(k, "A context reference names no term or level entry."), 0;
     /* Identical syntax is one node. Every child and payload is compared after
-     * hashing, so collisions affect performance, never term identity. */
+     * hashing, so collisions affect performance, never term identity. A
+     * node's counters, loose and opened, are functions of its kind, payload
+     * and children, so they need no place in the key. */
     if (k->optimizations & CC_SHARE_SYNTAX) {
         intern_reserve(k);
         size_t mask = k->intern_capacity - 1;
@@ -309,13 +316,21 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
     }
     if (ck_dim_binder(kind) && payload < CC_DIMENSIONS)
         dims |= UINT64_C(1) << payload;
+    uint32_t loose = kind == CC_BOUND ? payload + 1 : 0, opened = kind == CC_OPENED ? payload + 1 : 0;
     for (unsigned i = 0; i < arity; ++i)
         if (children[i]) {
-            symbols |= k->nodes[children[i]].symbols;
-            dims |= k->nodes[children[i]].dims;
+            const cc_node *child = &k->nodes[children[i]];
+            symbols |= child->symbols;
+            dims |= child->dims;
+            /* A term or level binder binds index 0 in its body. */
+            uint32_t reach = i == 1 && ck_term_binder(kind) && child->loose ? child->loose - 1 : child->loose;
+            if (reach > loose) loose = reach;
+            if (child->opened > opened) opened = child->opened;
         }
     cc_term result = (cc_term)k->count++;
-    k->nodes[result] = (cc_node){kind, payload, {a,b,c,d}, depth, false, symbols, dims};
+    k->nodes[result] = (cc_node){.kind = (uint8_t)kind, .depth = (uint16_t)depth, .payload = payload,
+                                 .child = {a, b, c, d}, .loose = loose, .opened = opened,
+                                 .symbols = symbols, .dims = dims};
     if ((kind == CC_VAR || ck_term_binder(kind)) && payload >= k->next_symbol) {
         k->next_symbol = payload + 1;
     }

@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <stddef.h>
 
 /* The kernel's own syntax kinds, numbered after the ABI's last so that no
  * ABI number changes (docs/roadmaps/kernel/locally-nameless-kernel.md,
@@ -17,12 +18,23 @@
  * a definition or a query's answer. */
 enum { CC_BOUND = CC_LIST + 1, CC_CONTEXT, CC_OPENED };
 
+/* A syntax node: 48 bytes natively and under WebAssembly (section 3.2 of the
+ * design; the assertions below check it on both). kind is a cc_term_kind or
+ * one of the kernel's own kinds above, all below 256; depth is 1 to 512,
+ * ck_make refusing deeper syntax. loose is one more than the greatest loose
+ * CC_BOUND index, 0 exactly when the node is locally closed: i + 1 for
+ * CC_BOUND(i), for a term or level binder the larger of its domain's and
+ * its body's less one, otherwise its children's maximum. opened is one more
+ * than the greatest CC_OPENED level, its children's maximum. Both are exact,
+ * functions of the kind, payload and children, and cannot wrap: ck_make
+ * refuses a CC_BOUND or CC_OPENED payload of UINT32_MAX. */
 typedef struct {
-    cc_term_kind kind;
+    uint8_t kind;
+    bool dimensions_known;
+    uint16_t depth;
     uint32_t payload;
     cc_term child[4];
-    unsigned depth;
-    bool dimensions_known;
+    uint32_t loose, opened;
     /* symbols over-approximates mentioned term names, with bit s % 64 for
      * symbol s. dims always contains every free dimension; it may also
      * contain bound ones until dimensions_known makes it exact. A new node
@@ -32,6 +44,13 @@ typedef struct {
      * which is the property alpha comparison needs for scope pruning. */
     uint64_t symbols, dims;
 } cc_node;
+_Static_assert(CC_OPENED <= UINT8_MAX, "Every syntax kind fits a node's 8-bit kind.");
+_Static_assert(sizeof(cc_node) == 48, "A syntax node is 48 bytes.");
+_Static_assert(offsetof(cc_node, kind) == 0 && offsetof(cc_node, dimensions_known) == 1 &&
+               offsetof(cc_node, depth) == 2 && offsetof(cc_node, payload) == 4 &&
+               offsetof(cc_node, child) == 8 && offsetof(cc_node, loose) == 24 &&
+               offsetof(cc_node, opened) == 28 && offsetof(cc_node, symbols) == 32 &&
+               offsetof(cc_node, dims) == 40, "A syntax node's fields are at their offsets.");
 
 /* A definition: registered by instruction Define, from a derived closed
  * judgement, and read back by Lookup. */
