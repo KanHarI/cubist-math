@@ -13,11 +13,14 @@ export function judgementGraph(program, view, checked = null, {
 } = {}) {
   const kernel = program.kernel, checker = program.checker, dimensions = new Map(view.dimensions ?? []);
   const graph = driver.graph;
-  const encode = term => checker.syntax.encode(term, dimensions);
   const decode = handle => checker.syntax.decode(handle, dimensions);
-  const context = view.context.map(entry => [kernel.symbol(entry.name), encode(entry.type)]);
-  const live = [...dimensions.values()].reduce((mask, index) => mask | 1n << BigInt(index), 0n);
-  root ??= driver.check(checked?.expression ?? encode(view.expression), encode(view.type), context, live);
+  if (!root) {
+    // The view's context's scope first, made by this graph's driver, and the
+    // view's terms' syntax against it.
+    const scope = checker.scopeOf(new Map(view.context.map(entry => [entry.name, entry.type])), dimensions, driver);
+    const encode = term => checker.syntax.encode(term, dimensions, scope);
+    root = driver.checkIn(checked?.expression ?? encode(view.expression), encode(view.type), scope);
+  }
 
   // Every judgement the conclusion rests on: through premises, the judgements
   // that justify its context entries, and the bodies of expanded definitions.

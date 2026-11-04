@@ -1,5 +1,6 @@
 // Workbench transformations propose syntax; only the C checker accepts it.
 import { substituteTerm, substituteDimension } from "./translator/core.mjs";
+import { termFields, termParts, writtenFields } from "./translator/term-shape.mjs";
 
 // Simplify administrative lambda applications in displayed types. Do not
 // unfold definitions or evaluate recursors (which may encode huge numerals).
@@ -12,8 +13,10 @@ export function simplifyTypeApplications(term, budget = 10000) {
     if (--budget < 0) throw new Error("Display simplification budget");
     let changed = false;
     const child = value => { const result = visit(value); if (result !== value) changed = true; return result; };
+    // A rewrite reads the kernel view (term-shape.mjs): an annotation is
+    // simplified with the rest.
     let result = Array.isArray(value) ? value.map(child)
-      : Object.fromEntries(Object.entries(value).map(([key, value]) => [key, child(value)]));
+      : Object.fromEntries(termFields(value).map(([key, value]) => [key, child(value)]));
     if (!changed) result = value;
     if (result.tag === "App" && result.fn.tag === "Lam")
       result = visit(substituteTerm(result.fn.body, result.fn.name, result.arg));
@@ -84,7 +87,9 @@ export function reductionStep(term, kind, definition) {
       && value.fn.body.tag === "Var" && value.fn.body.name === value.fn.name;
     const preferred = { Lam: ["body", "domain"], Pair: ["first", "second", "as"],
       PLam: ["body", "family"], App: identityWrapper ? ["arg", "fn"] : ["fn", "arg"] }[value.tag] ?? [];
-    for (const key of [...preferred, ...Object.keys(value).filter(key => !preferred.includes(key))]) {
+    // A step is taken in the syntax as written, which is what is shown.
+    const keys = writtenFields(value).map(([key]) => key);
+    for (const key of [...preferred, ...keys.filter(key => !preferred.includes(key))]) {
       const child = visit(value[key]);
       if (change) {
         const result = Array.isArray(value) ? [...value] : { ...value };
@@ -108,8 +113,9 @@ export function checkReduction(program, view, side, term) {
     const used = new Set(dimensions.keys()), seen = new WeakSet();
     const collect = value => {
       if (!value || typeof value !== "object" || seen.has(value)) return;
+      // The kernel view: the new dimension is apart from an annotation's too.
       seen.add(value); if (value.dim) used.add(value.dim);
-      Object.values(value).forEach(collect);
+      termParts(value).forEach(collect);
     };
     collect(view[side]); collect(term); collect(original.type);
     let dim = "workbenchReduction"; while (used.has(dim)) dim += "_";

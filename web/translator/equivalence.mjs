@@ -4,6 +4,7 @@
 import {T,fill} from './core.mjs';
 import {interval as I,face as F} from './lattice.mjs';
 import {syntaxGraphBudget,syntaxNames as collectSyntaxNames,mapSyntax} from './syntax-graph.mjs';
+import {termFields} from './term-shape.mjs';
 const v=T.variable,ap=T.app,fst=T.first,snd=T.second;
 
 // Reserve even bound spellings, making these syntax builders hygienic without
@@ -169,7 +170,8 @@ export function withNativeReferences(inputs,build,{checkDeadline}={}) {
         return variable;
       }
       return undefined;
-    },{budget});
+    // The kernel view: a reference an annotation mentions is restored too.
+    },{budget,fields:termFields});
   const symbolic=rewrite(inputs);
   return rewrite(build(...symbolic),true);
 }

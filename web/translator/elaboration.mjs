@@ -245,6 +245,18 @@ export class Scope {
     if(this.context.has(name))throw Error(`Internal elaboration error: ${name} is already bound.`);
     return this.with({context:new Map(this.context).set(name,type)}).modelEvidence(T.variable(name),type);
   }
+  // A scope for head queries, with a variable of the translator's own bound
+  // at its type: a binder it peels or walks into, a rule's pattern variable,
+  // a call's placeholder. A query mentioning the variable then asks in a
+  // context that has it (section 5.3 of the locally nameless design). Nothing
+  // is elaborated there, so no evidence is read from it. A name already bound
+  // is bound apart, as `variable`, spelled as no source or supply name is
+  // (names.mjs), so that the unit's generated names stay as they were.
+  withVariable(name,type) {
+    let variable=name;
+    for(let n=1;this.context.has(variable)||this.dimensions.has(variable);n++)variable=`${name}?bound${n}`;
+    return {scope:this.with({context:new Map(this.context).set(variable,type)}),variable};
+  }
   bindDimension(name) {
     const dimensions=this.dimensions;
     if(dimensions.has(name))throw Error(`Internal elaboration error: ${name} is already bound.`);
@@ -278,7 +290,9 @@ export class Scope {
     if(result.ok||result.failure==="mismatch")return result.ok;
     throw result.error;
   }
-  nf(term) {this.spend("queries");return this.checker.nf(term,this.dimensions);}
+  // The term's head, asked in this scope's context: a free variable of the
+  // term is one of the context's, or the query is refused.
+  nf(term) {this.spend("queries");return this.checker.nf(term,this.context,this.dimensions);}
   // A locally reduced carrier can contain fresh path applications. Derive
   // it before callers ask head queries, which require checked annotations.
   homogeneousPath(path) {
@@ -296,7 +310,7 @@ export class Scope {
   // The next clause's type of an eliminator (H1), from the kernel.
   clauseType(motive,clauses) {this.spend("queries");return this.checker.nextClauseType(motive,clauses,this.context,this.dimensions);}
   equal(left,right) {this.spend("queries");return this.checker.equal(left,right,this.context,this.dimensions,this.unit.names);}
-  differ(left,right) {this.spend("queries");return this.checker.differ(left,right,this.dimensions);}
+  differ(left,right) {this.spend("queries");return this.checker.differ(left,right,this.context,this.dimensions);}
   expect(actual,expected) {this.spend("queries");return this.checker.expect(actual,expected,this.context,this.dimensions,this.unit.names);}
   // Keep a declared signature on a checked term; the identity is itself checked.
   ascribe(term,type) {return this.checker.ascribe?.(term,type,this.unit.names)??term;}

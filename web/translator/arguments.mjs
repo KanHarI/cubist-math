@@ -30,7 +30,7 @@ import {T,finiteLevel,substituteTerm,substituteDimension,freeNames,levelNames,be
 import {universeText} from "../cubical-levels.mjs";
 import {interval as I} from "./lattice.mjs";
 import {freeDimensions,bindDimensions} from "./dimension-slots.mjs";
-import {dimensionScope} from "./term-shape.mjs";
+import {dimensionScope,termBinders,termFields} from "./term-shape.mjs";
 import {syntaxGraphBudget,dimensionContextKey} from "./syntax-graph.mjs";
 import {statement as hlevelStatement} from "./hlevel.mjs";
 import {INDUCTIVE_TAGS} from "./inductive.mjs";
@@ -108,7 +108,7 @@ export function elaborateCall(t, n, scope, expected) {
     // arguments' values: those are elaborated first.
     if (type.tag !== "Pi" && type.tag !== "LPi") {
       solver.run(false);
-      type = scope.nf(solver.zonk(type));
+      type = solver.at.nf(solver.zonk(type));
     }
     const parameter = parameters?.[index]?.name ?? null;
     const site = node ?? n.fn;
@@ -159,10 +159,14 @@ export function elaborateCall(t, n, scope, expected) {
 
 // The unknowns of one call and its constraints. Each slot's variable stands
 // for its value: a hole's is found by unification, a written argument's by
-// elaborating it once its parameter's type mentions no unknown.
+// elaborating it once its parameter's type mentions no unknown. The
+// variables are entries of a scope of the solver's own, `at`, for the head
+// queries about types that mention them: a universe's a level entry, any
+// other at its parameter's domain over the ones before it. The call's
+// arguments are elaborated in its own scope.
 class ArgumentSolver {
   constructor(t, scope, slots, called, call) {
-    Object.assign(this, {t, scope, slots, called, call});
+    Object.assign(this, {t, scope, slots, called, call, at: scope});
     // Whether the call has a hole or a named argument as written.
     this.written = determinesArguments(call);
     this.byVariable = new Map();
@@ -202,6 +206,7 @@ class ArgumentSolver {
   add(slot) {
     this.slots.push(slot);
     this.byVariable.set(slot.variable, slot);
+    this.at = this.at.withVariable(slot.variable, slot.universe ? T.bound : slot.domain).scope;
     if (slot.universe) this.bounds.set(slot.variable, {lower: [], upper: [], equal: null});
   }
   // A level with each solved universe placeholder replaced, as in zonk.
@@ -337,7 +342,7 @@ class ArgumentSolver {
     try {
       for (const constraint of this.pending.splice(0)) {
         const saved = this.snapshot();
-        if (this.unify(constraint.smaller, constraint.larger, constraint.origin, "covariant", new Set(), this.scope) === "done") {
+        if (this.unify(constraint.smaller, constraint.larger, constraint.origin, "covariant", new Set(), this.at) === "done") {
           progress = true;
           continue;
         }
@@ -355,7 +360,7 @@ class ArgumentSolver {
       const pending = this.pending.splice(0);
       for (const constraint of pending) {
         const before = this.solution.size;
-        const outcome = this.unify(constraint.smaller, constraint.larger, constraint.origin, "covariant", new Set(), this.scope);
+        const outcome = this.unify(constraint.smaller, constraint.larger, constraint.origin, "covariant", new Set(), this.at);
         if (outcome === "stuck") this.pending.push(constraint);
         // The kernel's check of the argument reports it, unless a hole it
         // leaves open is reported first, with this as the reason.
@@ -442,11 +447,12 @@ class ArgumentSolver {
   parts(left, right, origin, polarity, bound, at) {
     const same = (l, r, p = "invariant", b = bound, s = at) => this.unify(l, r, origin, p, b, s);
     const all = outcomes => outcomes.includes("clash") ? "clash" : outcomes.includes("stuck") ? "stuck" : "done";
-    // Both binders renamed to one fresh name.
+    // Both binders renamed to one fresh name, bound at the left one's domain
+    // for the queries about the bodies.
     const under = (l, r, p) => {
       const name = at.fresh(stem(left.name));
       return same(substituteTerm(l.body, l.name, T.variable(name)), substituteTerm(r.body, r.name, T.variable(name)),
-        p, new Set(bound).add(name));
+        p, new Set(bound).add(name), at.withVariable(name, l.domain).scope);
     };
     const dimension = (l, r, key, p) => {
       const dim = at.fresh("i"), inner = at.bindDimension(dim);
@@ -611,14 +617,50 @@ class ArgumentSolver {
 }
 
 // A fallback scope check may need a definition beneath a type former.
-// Visit the shared syntax once per dimension context. Retain a native head
+// Visit the shared syntax once per scope it is met in. Retain a native head
 // only if it removes the offending names; never revisit a decoded head as
-// apparent progress. Candidate-local binders are not offending names.
+// apparent progress. Candidate-local binders are not offending names: each
+// is bound at its domain as the walk enters its body, so that a head asked
+// there is asked in a context that has it.
 function reduceScopeCandidate(value, blocked, at) {
-  const memo = new WeakMap(), budget = syntaxGraphBudget();
+  const memo = new WeakMap(), budget = syntaxGraphBudget(), contexts = new WeakMap(), mentioned = new WeakMap();
+  let count = 0;
+  const contextKey = scope => {
+    if (!contexts.has(scope.context)) contexts.set(scope.context, ++count);
+    return contexts.get(scope.context);
+  };
+  // The dimensions the types of a scope's variables mention: they stay in
+  // scope under a dimension binder of the candidate that does not mention
+  // them, as those variables do, and the binder is named and placed apart.
+  const contextDimensions = scope => {
+    let names = mentioned.get(scope.context);
+    if (!names) {
+      names = new Set();
+      for (const type of scope.context.values()) if (isTerm(type)) for (const name of freeDimensions(type)) names.add(name);
+      mentioned.set(scope.context, names);
+    }
+    return names;
+  };
+  // A dimension binder with its dimension named `name` in the parts it binds.
+  const renamedDimension = (term, name) => {
+    const rename = part => substituteDimension(part, term.dim, I.variable(name)), result = {...term, dim: name};
+    for (const key of dimensionScope.get(term.tag))
+      result[key] = key === "system" ? term.system.map(piece => ({...piece, term: rename(piece.term)})) : rename(term[key]);
+    return result;
+  };
+  // A binder's body, its variable bound in the scope, apart from a variable
+  // the scope has already: walked as the body that names that one, then
+  // named as the binder again.
+  const body = (term, scope) => {
+    const level = term.tag === "LPi" || term.tag === "LLam";
+    const {scope: inner, variable} = scope.withVariable(term.name, level ? T.bound : term.domain);
+    if (variable === term.name) return reduce(term.body, inner);
+    const renamed = substituteTerm(term.body, term.name, T.variable(variable)), walked = reduce(renamed, inner);
+    return walked === renamed ? term.body : substituteTerm(walked, variable, T.variable(term.name));
+  };
   const reduce = (term, scope) => {
     if (!term || typeof term !== "object") return term;
-    const key = dimensionContextKey(scope.dimensions);
+    const key = `${dimensionContextKey(scope.dimensions)}|${contextKey(scope)}`;
     const known = memo.get(term);
     if (known?.has(key)) return known.get(key);
     budget.tick();
@@ -637,11 +679,21 @@ function reduceScopeCandidate(value, blocked, at) {
     }
     if (result === term) {
       // Use the codec's binder allocation, including pruning dead outer
-      // dimensions, when a candidate contains a path or composition family.
+      // dimensions, when a candidate contains a path or composition family;
+      // but the dimensions the scope's variables' types mention stay. A
+      // binder named as one of them is walked renamed, and named back.
       const keys = dimensionScope.get(term.tag);
-      const inner = keys ? scope.with({dimensions: bindDimensions(term, scope.dimensions).inner}) : scope;
-      for (const [field, child] of Object.entries(term)) {
-        const changed = reduce(child, keys?.includes(field) ? inner : scope);
+      if (keys && contextDimensions(scope).has(term.dim) && scope.dimensions.has(term.dim)) {
+        const name = scope.fresh(term.dim), renamed = renamedDimension(term, name), walked = reduce(renamed, scope);
+        result = walked === renamed ? term : walked.tag === term.tag && walked.dim === name ? renamedDimension(walked, term.dim) : walked;
+        if (!known) memo.set(term, new Map([[key, result]]));
+        else known.set(key, result);
+        return result;
+      }
+      const inner = keys ? scope.with({dimensions: bindDimensions(term, scope.dimensions, contextDimensions(scope)).inner}) : scope;
+      // The kernel view: a solution names what its annotations mention too.
+      for (const [field, child] of termFields(term)) {
+        const changed = field === "body" && termBinders.has(term.tag) ? body(term, scope) : reduce(child, keys?.includes(field) ? inner : scope);
         if (changed !== child) {
           if (result === term) result = Array.isArray(term) ? [...term] : {...term};
           result[field] = changed;

@@ -52,7 +52,7 @@ def line : Int = Int := ua(U0, Int, Int, succ_equiv);
   const moved = end => T.trans("i", susp(T.at(ref("line"), I.variable("i"))), F.bottom,
     T.at(T.app(ref("meridian"), pos(zero)), end === undefined ? I.variable("r") : end ? [[]] : []));
   const checked = (term, dimensions = none) => checker.infer(term, none, dimensions).term;
-  const head = checker.nf(checked(moved(), at), at);
+  const head = checker.nf(checked(moved(), at), none, at);
   assert.deepEqual([head.tag, head.system.length], ["HComp", 3]);
   assert.deepEqual([head.base.tag, head.base.path.fn.tag, head.base.path.fn.index], ["PApp", "Con", 2]);
   assert.ok(checker.equal(checked(head.base.path.arg, at), pos(succ(zero)), none, at));

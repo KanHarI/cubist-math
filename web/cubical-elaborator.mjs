@@ -1,8 +1,9 @@
 import { isResourceLimit } from "./resource-limits.mjs";
-import { termBinders } from "./translator/term-shape.mjs";
+import { termBinders, termFields, termParts } from "./translator/term-shape.mjs";
 import { CubicalSyntax } from "./cubical-syntax.mjs";
 import { T, withoutEmptyFaces } from "./translator/core.mjs";
 import { interval as I } from "./translator/lattice.mjs";
+import { dimensionContextKey } from "./translator/syntax-graph.mjs";
 import { NameSupply, assumptionMark, localName } from "./translator/names.mjs";
 import { sourceTexts } from "./cubical-source-text.mjs";
 import { contextDimensions, displayTerm, forSource, readableDimensions } from "./display-naming.mjs";
@@ -20,7 +21,9 @@ export { betaReduce, dimensionNames, displayTerm, printedLabels, readableDimensi
 // Binder names the instruction driver made up, such as x'1 for a context
 // entry named apart from another x, taken back to their stems for display
 // wherever the stem occurs nowhere in the binder's body, so nothing in it
-// can tell the two apart. Syntax is shared, so each pass is memoized.
+// can tell the two apart. Syntax is shared, so each pass is memoized. A
+// renaming reads the kernel view (term-shape.mjs): an annotation is renamed
+// with the rest, and a stem it mentions keeps the binder's name.
 class SourceNames {
   constructor(stems) { this.stems = stems; this.results = new WeakMap(); this.mentions = new Map(); this.renamed = new Map(); }
   memo(table, key) {
@@ -31,7 +34,7 @@ class SourceNames {
   occurs(value, name) {
     if (!value || typeof value !== "object") return false;
     const seen = this.memo(this.mentions, name);
-    if (!seen.has(value)) seen.set(value, value.name === name || Object.values(value).some(field => this.occurs(field, name)));
+    if (!seen.has(value)) seen.set(value, value.name === name || termParts(value).some(field => this.occurs(field, name)));
     return seen.get(value);
   }
   // Free occurrences of a variable renamed; the new name occurs nowhere.
@@ -46,7 +49,7 @@ class SourceNames {
         const shadowed = termBinders.has(value.tag) && value.name === from;
         const copy = Array.isArray(value) ? [] : {};
         let changed = false;
-        for (const [key, field] of Object.entries(value)) {
+        for (const [key, field] of termFields(value)) {
           copy[key] = shadowed && key === "body" ? field : this.rename(field, from, to);
           changed ||= copy[key] !== field;
         }
@@ -65,7 +68,7 @@ class SourceNames {
         current = { ...value, name: stem, body: this.rename(value.body, value.name, stem) };
       const copy = Array.isArray(current) ? [] : {};
       let changed = current !== value;
-      for (const [key, field] of Object.entries(current)) {
+      for (const [key, field] of termFields(current)) {
         copy[key] = this.apply(field);
         changed ||= copy[key] !== field;
       }
@@ -150,7 +153,8 @@ export class NativeCubicalElaborator {
       seen.add(term);
       if (term.tag === "Sort" || term.tag === "Elim") signature(term.signature);
       if (term.tag === "DefRef") for (const marker of this.definitionExtensions.get(term.name) ?? []) found.add(marker);
-      for (const child of Object.values(term)) visit(child);
+      // The kernel view: an extension an annotation relies on is relied on.
+      for (const child of termParts(term)) visit(child);
     };
     terms.forEach(visit);
     return [...found].sort();
@@ -214,7 +218,8 @@ export class NativeCubicalElaborator {
       else if (termBinders.has(term.tag)) {
         for (const name of free(term.domain)) result.add(name);
         for (const name of free(term.body)) if (name !== term.name) result.add(name);
-      } else for (const child of Object.values(term)) for (const name of free(child)) result.add(name);
+        // The kernel view: an assumption an annotation mentions is required.
+      } else for (const child of termParts(term)) for (const name of free(child)) result.add(name);
       memo.set(term, result); return result;
     };
     const visit = term => { for (const name of free(term)) names.add(name); };
@@ -386,27 +391,50 @@ export class NativeCubicalElaborator {
     // A judgement derived earlier is reused without work, so the deadline is
     // polled here too, not only by the instructions the search issues.
     this.kernel.checkDeadline();
-    const driver = this.driver, graph = driver.graph, before = graph.count, mask = this.dimensionMask(dimensions);
-    const assumptions = [...this.context(context)].map(([name, type]) =>
-      [this.kernel.symbol(name), this.syntax.encode(type, dimensions)]);
-    const raw = this.syntax.encode(term, dimensions);
-    let judgement;
-    try {
-      judgement = this.instructed(graph, () => expected ? driver.check(raw, this.syntax.encode(expected, dimensions), assumptions, mask)
-        : driver.infer(raw, assumptions, mask));
-    } catch (error) {
-      // The kernel's own errors pass as they are: a mismatch, or running out
-      // of time, steps or representation space. Anything else is the instruction kernel's refusal.
-      if (error instanceof KernelError && speculativeFailure(error.kind)) throw error;
-      throw Object.assign(new KernelError(`Instruction kernel: ${error.message}`, error.kind ?? "other"), { mismatch: error.mismatch });
-    }
+    const driver = this.driver, graph = driver.graph, before = graph.count;
+    // The context's scope first, then the syntax against it. A variable no
+    // entry stands for is the instruction kernel's refusal, as deriving it
+    // was; the syntax's other errors pass as they are.
+    const scope = this.refused(() => this.scopeOf(context, dimensions));
+    let raw, type;
+    try { raw = this.syntax.encode(term, dimensions, scope); type = expected && this.syntax.encode(expected, dimensions, scope); }
+    catch (error) { throw error.unbound ? this.refusal(error) : error; }
+    const judgement = this.refused(() => this.instructed(graph, () => type ? driver.checkIn(raw, type, scope) : driver.derive(raw, scope)));
     const renamings = [];
-    for (const [symbol, entry] of driver.contextScope(assumptions, mask)) {
+    for (const [symbol, entry] of scope) {
       if (typeof symbol !== "number") continue;
       const own = graph.entry(entry).symbol;
       if (own !== symbol) renamings.push([own, symbol]);
     }
     return this.viewOfJudgement(judgement, dimensions, renamings, graph.count - before);
+  }
+  // A derivation's failure: the kernel's own errors pass as they are, a
+  // mismatch, or running out of time, steps or representation space.
+  // Anything else is the instruction kernel's refusal.
+  refused(derivation) {
+    try { return derivation(); }
+    catch (error) { throw this.refusal(error); }
+  }
+  refusal(error) {
+    if (error instanceof KernelError && speculativeFailure(error.kind)) return error;
+    return Object.assign(new KernelError(`Instruction kernel: ${error.message}`, error.kind ?? "other"), { mismatch: error.mismatch });
+  }
+  // The scope of a context, the assumptions and then `local`'s
+  // [name, type] pairs (context): made before any syntax in it is encoded,
+  // each type encoded against the scope of those before it and bound there
+  // (InstructionDriver.scopeOf). A scope's queries ask with the same context
+  // again and again, so it is kept for the driver's life by the context's
+  // map, which a caller only ever extends, and its size.
+  scopeOf(local, dimensions, driver = this.driver) {
+    const scopes = driver.sourceScopes ??= new WeakMap();
+    if (!scopes.has(local)) scopes.set(local, new Map());
+    const known = scopes.get(local), key = `${local.size}|${this.assumptions.size}|${dimensionContextKey(dimensions)}`;
+    if (!known.has(key)) {
+      const context = [...this.context(local)].map(([name, type]) => [this.kernel.symbol(name), type]);
+      known.set(key, this.instructed(driver.graph, () =>
+        driver.scopeOf(context, this.dimensionMask(dimensions), (type, scope) => this.syntax.encode(type, dimensions, scope))));
+    }
+    return known.get(key);
   }
   // Read an already checked judgement without deriving it again. The workbench
   // retains this certificate after each native Step, including its context.
@@ -435,15 +463,12 @@ export class NativeCubicalElaborator {
   nextClauseType(motive, clauses, context = new Map(), dimensions = this.dimensions) {
     this.kernel.checkDeadline();
     const driver = this.driver, graph = driver.graph;
-    const assumptions = [...this.context(context)].map(([name, type]) =>
-      [this.kernel.symbol(name), this.syntax.encode(type, dimensions)]);
-    const mask = this.dimensionMask(dimensions);
     let type;
     try {
-      const scope = driver.contextScope(assumptions, mask);
+      const scope = this.scopeOf(context, dimensions);
       const eliminator = this.instructed(graph, () => clauses.reduce((opened, clause) =>
-        driver.addClause(opened, driver.derive(this.syntax.encode(clause, dimensions), scope)),
-      driver.openEliminator(driver.derive(this.syntax.encode(motive, dimensions), scope))));
+        driver.addClause(opened, driver.derive(this.syntax.encode(clause, dimensions, scope), scope)),
+      driver.openEliminator(driver.derive(this.syntax.encode(motive, dimensions, scope), scope))));
       type = graph.judgement(eliminator).type;
       for (const [symbol, entry] of scope) {
         if (typeof symbol !== "number") continue;
@@ -495,27 +520,31 @@ export class NativeCubicalElaborator {
     const name = names.fresh("ascription");
     return { tag: "App", fn: { tag: "Lam", name, domain: type, body: { tag: "Var", name } }, arg: term };
   }
-  nf(term, dimensions = this.dimensions) {
+  // `context` is the asking scope's: the term is encoded against its scope,
+  // made first, and a context whose types cannot be derived fails the query.
+  nf(term, context = new Map(), dimensions = this.dimensions) {
     // Translator's nf calls ask for Pi/Sigma/Path heads, not full normal forms.
     // Unification asks for the same term's head again and again: the kernel
     // computes it once a declaration, for the term's node. A head served
     // again is no kernel query, so the deadline is polled here too, as
     // derived() polls it for a judgement reused.
     this.kernel.checkDeadline();
-    const node = this.syntax.encode(term, dimensions);
+    const node = this.syntax.encode(term, dimensions, this.scopeOf(context, dimensions));
     let head = this.syntax.heads.get(node);
     if (head === undefined) { head = this.kernel.head(node); this.syntax.heads.set(node, head, Math.max(node, head)); }
     return this.syntax.decode(head, dimensions);
   }
-  // Whether two closed terms differ, as the driver's guide finds it: their
-  // weak heads compared part by part, each with the session's step budget,
-  // with nothing normalized. A conversion that fails normalizes both terms
-  // first (InstructionDriver.settle), so this answers where a difference
-  // shows without that; false means only that none showed. A query, which
-  // certifies nothing.
-  differ(left, right, dimensions = this.dimensions) {
+  // Whether two terms of a context differ, as the driver's guide finds it:
+  // their weak heads compared part by part, each with the session's step
+  // budget, with nothing normalized. A conversion that fails normalizes both
+  // terms first (InstructionDriver.settle), so this answers where a
+  // difference shows without that; false means only that none showed. A
+  // query, which certifies nothing; the terms are encoded against the
+  // context's scope, as nf's are.
+  differ(left, right, context = new Map(), dimensions = this.dimensions) {
     this.kernel.checkDeadline();
-    return this.driver.differ(this.syntax.encode(left, dimensions), this.syntax.encode(right, dimensions), this.kernel.stepBudget);
+    const scope = this.scopeOf(context, dimensions);
+    return this.driver.differ(this.syntax.encode(left, dimensions, scope), this.syntax.encode(right, dimensions, scope), this.kernel.stepBudget);
   }
   equal(left, right, context = new Map(), dimensions = this.dimensions, names = this.names) {
     const type = this.infer(left, context, dimensions).type;

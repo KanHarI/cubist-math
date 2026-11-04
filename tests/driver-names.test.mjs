@@ -88,20 +88,21 @@ test("a binder never takes an entry its scope holds, even one a later variable d
   for (const shareSyntax of [true, false]) {
     const program = fresh(t, { optimizations: { shareSyntax } }), { kernel, checker } = program, driver = checker.driver, syntax = checker.syntax;
     const A = { tag: "Var", name: "A" }, B = { tag: "Var", name: "B" }, Bx = { tag: "App", fn: B, arg: x }, u0 = { tag: "U", level: 0 };
-    const context = [["A", u0], ["B", { tag: "Pi", name: "_", domain: A, body: u0 }]].map(([name, type]) => [kernel.symbol(name), syntax.encode(type)]);
+    const encode = (term, scope) => syntax.encode(term, new Map(), scope);
+    const scopeOf = context => driver.scopeOf(context.map(([name, type]) => [kernel.symbol(name), type]), 0n, encode);
+    const context = [["A", u0], ["B", { tag: "Pi", name: "_", domain: A, body: u0 }]], scope = scopeOf(context);
     const pi = (name, domain, body) => ({ tag: "Pi", name, domain, body });
     for (const inner of [["x"], ["x", "x"]]) {
       const term = lam("x", A, lam("y", Bx, inner.reduceRight((body, name) => lam(name, A, body), { tag: "Var", name: "y" })));
       const type = pi("x", A, pi("y", Bx, inner.reduceRight(body => pi("z", A, body), Bx)));
-      const entries = discharged(driver.graph, driver.check(syntax.encode(term), syntax.encode(type), context));
+      const entries = discharged(driver.graph, driver.checkIn(encode(term, scope), encode(type, scope), scope));
       assert.equal(new Set(entries).size, entries.length, `${entries.length} binders`);
       assert.deepEqual(entries.map(entry => kernel.entryNames.name(entry)), ["x", "y", ...inner]);
     }
     // So in a context whose second x shadows the first, on which y depends:
     // λ (x : A). y takes neither x's entry.
-    const shadowed = [...context, ...[["x", A], ["y", Bx], ["x", A]].map(([name, type]) => [kernel.symbol(name), syntax.encode(type)])];
-    const id = driver.infer(syntax.encode(lam("x", A, { tag: "Var", name: "y" })), shadowed);
-    const held = driver.contextScope(shadowed, 0n), [entry] = discharged(driver.graph, id);
+    const held = scopeOf([...context, ["x", A], ["y", Bx], ["x", A]]);
+    const [entry] = discharged(driver.graph, driver.derive(encode(lam("x", A, { tag: "Var", name: "y" }), held), held));
     assert.ok(![...held.values(), ...hiddenIn(held)].includes(entry));
   }
 });
@@ -116,7 +117,10 @@ test("a type equal up to a dimension's name binds the same entry", async t => {
   const typed = dimension => driver.asType(driver.derive(at(dimension), new Map([["dims", 0n]])));
   const entries = [0, 1].map(dimension => driver.bind(kernel.symbol("x"), typed(dimension)));
   assert.equal(entries[0], entries[1]);
-  const [left, right] = [0, 1].map(dimension => g.refl(driver.infer(checker.syntax.encode(x), [[kernel.symbol("x"), at(dimension)]])));
+  const [left, right] = [0, 1].map(dimension => {
+    const scope = driver.contextScope([[kernel.symbol("x"), at(dimension)]], 0n);
+    return g.refl(driver.derive(checker.syntax.encode(x, new Map(), scope), scope));
+  });
   assert.ok(g.transitivity(left, right));
 });
 
@@ -128,7 +132,7 @@ test("an entry found again after a reset is the one kept judgements use, whateve
   // and a Transitivity with the judgement kept from before the reset meets.
   const program = fresh(t), { kernel, checker } = program, syntax = checker.syntax;
   const u0 = syntax.encode({ tag: "U", level: 0 }), at = dimension => kernel.term("Path", dimension, u0, syntax.encode(unit), syntax.encode(unit));
-  const variable = syntax.encode(x), context = dimension => [[kernel.symbol("x"), at(dimension)]];
+  const variable = kernel.term("Var", kernel.symbol("x")), context = dimension => [[kernel.symbol("x"), at(dimension)]];
   const contextOf = id => checker.driver.graph.judgement(id).context;
   const first = checker.driver.infer(variable, context(0)), kept = checker.driver.infer(variable, context(1));
   assert.deepEqual(contextOf(kept), contextOf(first));
@@ -173,7 +177,7 @@ test("a type handle met in a rolled-back declaration is forgotten with it", asyn
   // it: x at that type, Unit → Unit, is another entry.
   const program = fresh(t), { kernel, checker } = program, syntax = checker.syntax, symbol = kernel.symbol("x");
   const u0 = syntax.encode({ tag: "U", level: 0 }), at = dimension => kernel.term("Path", dimension, u0, syntax.encode(unit), syntax.encode(unit));
-  const contextOf = type => checker.driver.graph.judgement(checker.driver.infer(syntax.encode(x), [[symbol, type]])).context;
+  const contextOf = type => checker.driver.graph.judgement(checker.driver.infer(kernel.term("Var", symbol), [[symbol, type]])).context;
   const [entry] = contextOf(at(0));
   const transaction = new CubicalDeclarationTransaction(kernel, checker), transient = at(1);
   assert.deepEqual(contextOf(transient), [entry]);

@@ -71,11 +71,11 @@ test("a declaration the instruction kernel cannot derive shows why, not a deriva
   t.after(() => program.dispose());
   await program.check("def Doubled(A : U0) : U0 := A or A;\n", "suspension");
   // Whatever the driver cannot derive; here, it is made to fail.
-  const check = InstructionDriver.prototype.check;
-  InstructionDriver.prototype.check = () => { throw new Error("The search could not derive this."); };
+  const check = InstructionDriver.prototype.checkIn;
+  InstructionDriver.prototype.checkIn = () => { throw new Error("The search could not derive this."); };
   let suspension;
   try { [suspension] = elaboration(program, "suspension"); }
-  finally { InstructionDriver.prototype.check = check; }
+  finally { InstructionDriver.prototype.checkIn = check; }
   // There is no other derivation to show: the term checker no longer checks,
   // and the declaration's view is itself derived.
   assert.equal(suspension.derivation, undefined);

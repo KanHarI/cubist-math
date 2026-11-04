@@ -5,6 +5,7 @@
 import {propagateElaborationStop} from "./control.mjs";
 import {T,finiteLevel,levelNames,homogeneousPath} from "./core.mjs";
 import {interval as I} from "./lattice.mjs";
+import {writtenParts} from "./term-shape.mjs";
 
 // A bounded search gave up: too many nodes, candidates or rewrites, a cycle,
 // or a term too large to compare. Speculative callers such as premise search
@@ -30,7 +31,7 @@ const levelOccurrence = (term, name) => {
     if ((t.tag === "U" || t.tag === "LApp") && typeof t.level === "object" && levelNames(t.level).has(name)) {
       if (t.level.tag === "Var" && t.level.name === name) bare = true; else other = true;
     }
-    for (const child of Object.values(t)) walk(child);
+    for (const child of writtenParts(t)) walk(child);
   };
   walk(term);
   return {bare, other, any: bare || other};
@@ -63,17 +64,22 @@ export function simplificationRule(scope, term, reverse = false, witnesses = [],
   if (type.tag === "Path") return equalityRule(scope, term, reverse);
   // A universe-generic rule (G0 §4.3) has one level, a pattern variable
   // matched only where the matched side has it bare: U or f(U).
-  let level = null;
+  // The rule's level and parameters are variables of a scope of its own, for
+  // the queries that open its binders: the level a level entry, each
+  // parameter an entry at its binder's domain, over the ones before it.
+  let level = null, at = scope;
   if (type.tag === "LPi") {
     level = scope.fresh("simp_level");
-    type = scope.nf(T.levelApply(T.levelLambda(type.name, type.body), T.variable(level)));
+    at = at.withVariable(level, T.bound).scope;
+    type = at.nf(T.levelApply(T.levelLambda(type.name, type.body), T.variable(level)));
   }
   const parameters = [],domains=[];
   while (type.tag === "Pi") {
     const marker = scope.fresh("simp_parameter");
     parameters.push(marker);
     domains.push(type.domain);
-    type = scope.nf(T.app(T.lam(type.name,type.domain,type.body),T.variable(marker)));
+    at = at.withVariable(marker, type.domain).scope;
+    type = at.nf(T.app(T.lam(type.name,type.domain,type.body),T.variable(marker)));
     if (parameters.length > 16) throw Error("Simplification rule has too many parameters.");
   }
   // These are pattern parameters, not assumptions in scope. Recognition is
@@ -85,13 +91,15 @@ export function simplificationRule(scope, term, reverse = false, witnesses = [],
   const present=new Set();
   const seen=new WeakSet();
   let visits=0;
+  // The matched side as written: a match binds no parameter that only a
+  // path application's annotation mentions.
   const collect=value=>{
     if(!value||typeof value!=="object"||seen.has(value))return;
     seen.add(value);
     scope.spend("nodes");
     if((++visits&255)===1)scope.checkDeadline();
     if(value.tag==="Var"&&markers.has(value.name))present.add(value.name);
-    for(const child of Object.values(value))collect(child);
+    for(const child of writtenParts(value))collect(child);
   };
   collect(pattern);
   // Otherwise the level is the least one that holds the arguments of
