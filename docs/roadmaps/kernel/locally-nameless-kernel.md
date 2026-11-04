@@ -1201,25 +1201,36 @@ by node and free dimensions) has the mirror condition: a node with
 `loose == 0` decodes the same under any name stack, and a node with loose
 indices is keyed by the names its loose indices take.
 
-The decoder also stores what it decodes for the encoder, so that a decoded
-object encodes back to its own node: a checked path application's
-annotation, which its syntax does not carry, survives the round trip
-(`tests/cubical-wasm.test.mjs` checks it). A decoded object whose node
-mentions a variable cannot be stored under a scope it was not decoded in.
-PR 1 keeps such objects apart, by node and dimension context and for the
-declaration only (`roundTrips` in `web/cubical-syntax.mjs`), and encodes one
-back to its node only where every variable and every dimension the node
-mentions, its annotations' included, is the scope's or bound by the term
-around it; elsewhere it is encoded from its syntax. The node can mention
-what the syntax does not: `p @ 0` checked where `p : Path(j; Unit, x, x)`
-carries that type, `x` included, as its annotation, and its annotation can
-mention a dimension the syntax does not. An object whose syntax mentions no
-variable but whose node does is kept the same way, not with the closed
-ones. What this does not reach on ABI 3 is a variable the node and its
-syntax share that names, where the object is encoded, another entry than
-where it was decoded: the annotation is then the one checked there, which a
-head query trusts, as on main. PR 3's decoder names `CC_CONTEXT` through a
-scope and stores the object under that scope, which makes the check exact.
+A decoded object carries everything its node holds. A checked path
+application's annotation, the kernel's record of its path's type, is a
+field of the decoded application (`pathType`), not something a side map
+restores: free names and free dimensions count it, substitution and
+renaming carry it along, and encoding rebuilds the checked application from
+the syntax alone, so the annotation survives the round trip
+(`tests/cubical-wasm.test.mjs` checks it). A term therefore has two
+views, and every walk over terms names the one it reads
+(`web/translator/term-shape.mjs`). The kernel view is everything the kernel term mentions, annotations
+included: scope, encoding, substitution and renaming read it, and so do the
+free names a scope check reads (`termChildren`, `termFields`, `termParts`,
+`freeNames`). The written view is the syntax as written, annotations left
+out: matching and determinacy (a simplification rule's parameter that only
+an annotation of its matched side mentions is not determined by the match),
+the h-level search's matchers, keys built from syntax (`alphaKey`, the
+simplifier's state key), display, inspection and the evaluation digests read
+it (`writtenChildren`, `writtenFields`, `writtenParts`, `writtenNames`); the
+argument solver's unification and the simplifier's matcher compare a path
+application by its path and its point alone, case by case. A decoded
+object is then encoded as any syntax is: a closed one by its dimensions
+alone, which the decoder records, an open one against the scope and
+binders it is encoded in, where a variable its annotation mentions must be
+bound as any other must. `p @ 0` checked where `p : Path(j; Unit, x, x)`
+mentions `x` through its annotation, and is refused where `x` is not in
+scope. PR 1 first kept such objects in a map from the decoded object to its
+node, which made every cache, key and lifetime answer for state the syntax
+did not show; two review rounds found three paths it missed. PR 3's
+decoder therefore needs no scope to store a decoded object under: it
+decodes `CC_CONTEXT` through a scope to a name, and the annotation is
+syntax as here.
 
 The order needs no kernel change and is adopted first, on ABI 3, in PR 1,
 with symbols still standing for the entries; PR 3 then changes only what a
