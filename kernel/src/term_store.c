@@ -84,6 +84,9 @@ void ck_leave(cc_kernel *k) {
 }
 
 unsigned ck_arity(cc_term_kind kind) {
+    /* The kernel's own kinds (term_internal.h) are leaves. */
+    if (kind == CC_BOUND || kind == CC_CONTEXT || kind == CC_OPENED)
+        return 0;
     switch (kind) {
     /* Retired primitive tags stay reserved in ABI 3, and are not syntax. */
     case CC_NAT: case CC_ZERO: case CC_SUCC: case CC_NATREC:
@@ -242,6 +245,11 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
         return ck_fail(k, "A formula handle names no registered formula."), 0;
     if ((kind == CC_VAR || ck_term_binder(kind)) && payload == UINT32_MAX)
         return ck_fail_as(k, CC_ERROR_RESOURCE, "Term symbol space exhausted."), 0;
+    /* A context reference names a term or level entry of the judgement
+     * store, never a dimension or face entry, nor one truncated. */
+    if (kind == CC_CONTEXT && (!payload || payload >= k->entry_count || k->entries[payload].dimension ||
+                               k->entries[payload].face))
+        return ck_fail(k, "A context reference names no term or level entry."), 0;
     /* Identical syntax is one node. Every child and payload is compared after
      * hashing, so collisions affect performance, never term identity. */
     if (k->optimizations & CC_SHARE_SYNTAX) {
@@ -291,7 +299,9 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
         }
         k->capacity = capacity;
     }
-    uint64_t symbols = kind == CC_VAR ? UINT64_C(1) << (payload % 64) : 0, dims = 0;
+    /* A context reference sets its entry's bit in the same filter, which
+     * abstraction reads until the filter becomes PR 3's `contexts`. */
+    uint64_t symbols = kind == CC_VAR || kind == CC_CONTEXT ? UINT64_C(1) << (payload % 64) : 0, dims = 0;
     if (kind == CC_PAPP || kind == CC_TUBE || kind == CC_GLUE_SYSTEM) {
         const cc_formula *formula = cc_kernel_get_formula(k, payload);
         for (size_t i = 0; formula && i < formula->length; ++i)
@@ -317,6 +327,9 @@ cc_term cc_kernel_term(cc_kernel *k, cc_term_kind kind, uint32_t payload,
                        cc_term a, cc_term b, cc_term c, cc_term d) {
     /* Building syntax is no operation: an error here is charged to none. */
     ck_standalone(k);
+    /* The kernel's own kinds are no part of ABI 3. */
+    if (k && !k->error[0] && (kind == CC_BOUND || kind == CC_CONTEXT || kind == CC_OPENED))
+        return ck_fail(k, "Unknown term constructor."), 0;
     return ck_make(k, kind, payload, a, b, c, d);
 }
 

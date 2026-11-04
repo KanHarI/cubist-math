@@ -6,6 +6,17 @@
 #include <string.h>
 #include <limits.h>
 
+/* The kernel's own syntax kinds, numbered after the ABI's last so that no
+ * ABI number changes (docs/roadmaps/kernel/locally-nameless-kernel.md,
+ * section 3.1). None is part of ABI 3: cc_kernel_term refuses them, and no
+ * rule makes them yet. Each is a leaf. CC_BOUND(i) is the variable of the
+ * i-th enclosing term or level binder, 0 the innermost: every binder of
+ * ck_term_binder binds index 0 in its child 1. CC_CONTEXT(e) refers to the
+ * term or level entry e, which ck_make requires to be live. CC_OPENED(m) is
+ * a binder that an operation opened at level m; it is never in a judgement,
+ * a definition or a query's answer. */
+enum { CC_BOUND = CC_LIST + 1, CC_CONTEXT, CC_OPENED };
+
 typedef struct {
     cc_term_kind kind;
     uint32_t payload;

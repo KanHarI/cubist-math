@@ -249,7 +249,8 @@ static bool alpha_ready(cc_kernel *k, alpha_frame *f, const alpha_frame *frames,
     f->left = k->nodes[a]; f->right = k->nodes[b];
     cc_node left = f->left, right = f->right;
     if (left.kind != right.kind) return false;
-    if (left.kind == CC_DEFREF || left.kind == CC_LBOUND) {
+    if (left.kind == CC_DEFREF || left.kind == CC_LBOUND ||
+        left.kind == CC_BOUND || left.kind == CC_CONTEXT || left.kind == CC_OPENED) {
         *equal = left.payload == right.payload;
         return false;
     }
