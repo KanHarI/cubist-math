@@ -539,6 +539,7 @@ export const diagnostics = [
   ["E703", "A recursive call of … passes its implicit parameters unchanged: give only the others, as …(…)."],
   ["E704", "… is not an implicit parameter of …: give it in parentheses, as …(… := …)."],
   ["E705", "… is an implicit parameter of …: give it in double braces, as …{{… := …}}(…)."],
+  ["E706", "Internal elaboration error: … of … mentions one of its unknowns."],
   // Theories and models
   ["E801", "Renaming … to … would capture a variable named …; pick another name.", "retired"],
   ["E802", "… gets a field named … from both … and …: rename one, as in …(… := …)."],

@@ -164,6 +164,31 @@ export function elaborateCall(t, n, scope, expected) {
 // queries about types that mention them: a universe's a level entry, any
 // other at its parameter's domain over the ones before it. The call's
 // arguments are elaborated in its own scope.
+//
+// A head query (`nf`) derives its context and only reduces its term: the
+// term itself is not type-checked, here as on main, and on ABI 3 the
+// kernel's head query takes no context (cc_kernel_whnf), so the answer is
+// the term's alone. The solver asks about its terms with every solution
+// substituted (zonk), as main does, so it learns what main learns, as long
+// as every context it asks in derives. `at` is the called function's own
+// telescope, so it does. The rest rests on one invariant, which `require`
+// and `parts` check:
+// - every constraint has a side that mentions none of the solver's
+//   variables, its closed side: an argument's inferred type, the type of a
+//   solution, which mentions no unknown, or the type expected of the call
+//   (the left side, but the right for the expected type);
+// - unify never swaps sides: a part is compared with the same part of the
+//   other side, and a head with the other side's head;
+// - so each binder unification descends under is bound at the closed
+//   side's domain, a type in the call's scope over that side's earlier
+//   binders, and every context the solver asks in derives.
+// Earlier versions bound each binder at the left side's domain, the
+// solver's own for the expected type, as it stood when the binder was met:
+// one that a universe solution reached after it, as Magma(V?) next to
+// Magma.M(V, B), was no context. Two attempts to keep the solver's own side
+// in the context, by asking about a placeholder at a provisional level or by
+// keeping a solution out of what was asked, changed what the solver learns
+// (docs/roadmaps/kernel/locally-nameless-kernel.md, Appendix A).
 class ArgumentSolver {
   constructor(t, scope, slots, called, call) {
     Object.assign(this, {t, scope, slots, called, call, at: scope});
@@ -269,9 +294,20 @@ class ArgumentSolver {
     return solved;
   }
   // `smaller` has to inhabit what `larger` does: an argument's type and its
-  // parameter's, or the call's type and the one expected of it.
+  // parameter's, a solution's type and its parameter's, or the call's type
+  // and the one expected of it. Its closed side, the larger for the expected
+  // type and the smaller otherwise, mentions none of the solver's variables
+  // (the invariant above).
   require(smaller, larger, origin) {
+    this.assertClosed(origin.expected ? larger : smaller, "a constraint's closed side");
     this.pending.push({smaller, larger, origin});
+  }
+  // A term on a constraint's closed side: one that mentions a variable of
+  // the solver's is an internal error, never a query asked in a context
+  // that may not derive.
+  assertClosed(term, what) {
+    if ([...freeNames(term)].some(name => this.byVariable.has(name)))
+      throw Error(`Internal elaboration error: ${what} of ${this.called} mentions one of its unknowns.`);
   }
   // Elaborate the arguments and solve the holes, as far as they go; when
   // `complete`, a hole left open is an error.
@@ -447,12 +483,15 @@ class ArgumentSolver {
   parts(left, right, origin, polarity, bound, at) {
     const same = (l, r, p = "invariant", b = bound, s = at) => this.unify(l, r, origin, p, b, s);
     const all = outcomes => outcomes.includes("clash") ? "clash" : outcomes.includes("stuck") ? "stuck" : "done";
-    // Both binders renamed to one fresh name, bound at the left one's domain
-    // for the queries about the bodies.
+    // Both binders renamed to one fresh name, bound for the queries about
+    // the bodies at the closed side's domain (the invariant above): the
+    // right one's for the type expected of the call, the left one's
+    // otherwise.
     const under = (l, r, p) => {
-      const name = at.fresh(stem(left.name));
+      const name = at.fresh(stem(left.name)), domain = origin.expected ? r.domain : l.domain;
+      this.assertClosed(domain, "a binder's domain on a constraint's closed side");
       return same(substituteTerm(l.body, l.name, T.variable(name)), substituteTerm(r.body, r.name, T.variable(name)),
-        p, new Set(bound).add(name), at.withVariable(name, l.domain).scope);
+        p, new Set(bound).add(name), at.withVariable(name, domain).scope);
     };
     const dimension = (l, r, key, p) => {
       const dim = at.fresh("i"), inner = at.bindDimension(dim);

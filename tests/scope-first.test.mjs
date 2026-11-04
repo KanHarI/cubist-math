@@ -142,6 +142,140 @@ def f : forall x : Unit. Ix(x) := c;
   assert.deepEqual(verdicts, { I: true, Ix: true, f: true });
 });
 
+// The scopes that could not be made while a source was checked, each by its
+// error's message: a query asked in one fails, and the constraint that asked
+// it waits.
+async function failedScopes(t, source) {
+  const failed = [], wrapped = new WeakSet();
+  const { verdicts } = await checkProgram(t, source, { module, options: { onDeclarationStart: (name, declaration, checker) => {
+    if (wrapped.has(checker)) return;
+    wrapped.add(checker);
+    const scopeOf = checker.scopeOf.bind(checker);
+    checker.scopeOf = (...rest) => {
+      try { return scopeOf(...rest); }
+      catch (error) { failed.push(error.message); throw error; }
+    };
+  } } });
+  return { verdicts, failed };
+}
+
+test("the solver binds a binder it descends under at the closed side's domain", async t => {
+  // Semigroup.Hom.magma, made for the extension, calls Magma.Hom.make with
+  // its universes and models as holes. Magma.Hom(U?, V?, A?) unfolds to
+  // fun (B : Magma(V?)) => …, and the expected Magma.Hom(U, V, …), the
+  // constraint's closed side, to fun (B : Magma(V)) => …: the domains solve
+  // V? as V, and the bodies are asked about with B at Magma(V). Bound at the
+  // solver's own side, Magma(V?), B made Magma.M(V, B) in the next binder's
+  // type ill-typed (#351's solver fails here, five times).
+  const { verdicts, failed } = await failedScopes(t, `import hlevels;
+
+theory Magma(U < UU0) {
+  M : set U;
+  mul(x, y : M) : M notation x * y;
+}
+
+theory Semigroup(U < UU0) extends Magma {
+  law mul_assoc(x, y, z : M) : (x * y) * z = x * (y * z);
+}
+`);
+  assert.equal(verdicts.Semigroup, true);
+  assert.deepEqual(failed, []);
+});
+
+test("a hole solved by a type in a universe its slot's is not yet known to contain leaves every context derivable", async t => {
+  // transpose(naturality(f, g, h, p)): naturality's type, the constraint's
+  // closed side, solves transpose's A? : U(U?) as B, of the universe U, and
+  // its corners and edges, while only that solution bounds U?. Until U? is
+  // solved, B is no type in U(U?). The solver's context keeps A? an entry
+  // at U(U?), the corners at A? and s at Square(U?, A?, …), as the call's
+  // telescope has them, and binds the path families' dimensions: no context
+  // it asks in mentions a solution.
+  const { verdicts, failed } = await failedScopes(t, `
+def Square{{U < UU0, A : U, a00, a01, a10, a11 : A}}(
+  a0_ : a00 = a01, a1_ : a10 = a11, a_0 : a00 = a10, a_1 : a01 = a11
+) :
+  U := PathP(fun (i : Interval) => a_0 @ i = a_1 @ i, a0_, a1_);
+
+def naturality{{U < UU0, A, B : U, x, y : A}}(
+  f, g : A -> B, h : forall a : A. f(a) = g(a), p : x = y
+) :
+  Square(h(x), h(y), cong(f, p), cong(g, p)) := path i => h(p @ i);
+
+def transpose{{
+  U < UU0, A : U, a00, a01, a10, a11 : A, a0_ : a00 = a01, a1_ : a10 = a11, a_0 : a00 = a10,
+  a_1 : a01 = a11
+}}(s : Square(a0_, a1_, a_0, a_1)) :
+  Square(a_0, a_1, a0_, a1_) := path j => path i => s @ i @ j;
+
+def transposed{{U < UU0, A, B : U, x, y : A}}(
+  f, g : A -> B, h : forall a : A. f(a) = g(a), p : x = y
+) :
+  Square(cong(f, p), cong(g, p), h(x), h(y)) := transpose(naturality(f, g, h, p));
+`);
+  assert.deepEqual(verdicts, { Square: true, naturality: true, transpose: true, transposed: true });
+  assert.deepEqual(failed, []);
+});
+
+// The arguments a call's solver inferred, as the inspector records them.
+const inferredArguments = result => result.links.filter(link => link.role === "inferred arguments").map(link => link.description);
+
+test("a universe placeholder is asked about as itself, so a bound found later still counts", async t => {
+  // take(Unit, U0): Unit bounds U by U0, and U0 by U1 through Wrap(U),
+  // which is U(U) once asked about. Asked about at its first bound, U0,
+  // Wrap(U) would be U0, and the second bound would be lost.
+  const { verdicts, result } = await checkProgram(t, `
+def Wrap(U < UU0) : UU0 := U;
+def take{{U < UU0}}(A : U, B : Wrap(U)) : Unit := tt;
+def taken : Unit := take(Unit, U0);
+`, { module });
+  assert.deepEqual(verdicts, { Wrap: true, take: true, taken: true });
+  assert.deepEqual(inferredArguments(result), ["Arguments of take inferred: U := U1."]);
+});
+
+test("a hole's solution is typed by a constraint, never while the solver guesses", async t => {
+  // pick(t) with t : Tag(z, 1): only matching Tag(x?, n?) against Tag(z, 1)
+  // argument by argument determines x? and n?, as z and 1. Typing x? := z,
+  // Family(0) against Family(n?), within that guess would match n? with 0.
+  const { verdicts, result } = await checkProgram(t, `import unat;
+use unat;
+def Family(n : UNat) : U0 := UNat;
+def Tag(x, n : UNat) : U0 := Unit;
+def pick{{n : UNat, x : Family(n)}}(t : Tag(x, n)) : UNat := n;
+def picked(z : Family(0), t : Tag(z, 1)) : UNat := pick(t);
+evaluate picked(0, tt) expecting 1;
+`, { module });
+  assert.deepEqual(verdicts, { Family: true, Tag: true, pick: true, picked: true });
+  assert.deepEqual(inferredArguments(result), ["Arguments of pick inferred: n := 1, x := z."]);
+  assert.deepEqual(result.gaps, []);
+});
+
+test("a function type's codomain bounds the universe through a solution not yet typed", async t => {
+  // take(b, fun (x : B) => U1): b solves A? as B, and the function's type
+  // B -> U2 is compared with Wrap(U?, A?), which unfolds, with A? := B, to
+  // B -> U(U?): its codomain bounds U? by U2, before universes are solved.
+  // The query is about the term with B in it, in the call's telescope,
+  // where A? is an entry at U(U?): the term is reduced, not checked.
+  const { verdicts, result } = await checkProgram(t, `
+def Wrap(U < UU0, A : U) : UU0 := A -> U;
+def take{{U < UU0, A : U}}(a : A, f : Wrap(U, A)) : Unit := tt;
+def taken(B : U1, b : B) : Unit := take(b, fun (x : B) => U1);
+`, { module });
+  assert.deepEqual(verdicts, { Wrap: true, take: true, taken: true });
+  assert.deepEqual(inferredArguments(result), ["Arguments of take inferred: U := U2, A := B."]);
+});
+
+test("a result solved as a function takes the next argument", async t => {
+  // identity(fun (x : B) => x, b): the first argument solves A? as B -> B
+  // while its universe is still unsolved, and the call's type so far, A?,
+  // is asked about as B -> B, a function type, which takes b.
+  const { verdicts, result } = await checkProgram(t, `
+def identity{{U < UU0, A : U}}(x : A) : A := x;
+def taken(B : U1, b : B) : B := identity(fun (x : B) => x, b);
+`, { module });
+  assert.deepEqual(verdicts, { identity: true, taken: true });
+  assert.deepEqual(inferredArguments(result), ["Arguments of identity inferred: U := U1, A := B -> B."]);
+});
+
 test("a call's candidate keeps the dimensions its scope's variables' types mention", async t => {
   // take(f)(tt) under x : p @ i: take's B would mention f's u, inside
   // PathP(j => Ignore(u), tt, tt), until the candidate is walked into and

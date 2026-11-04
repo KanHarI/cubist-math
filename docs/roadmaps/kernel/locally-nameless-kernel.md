@@ -1115,23 +1115,45 @@ changes:
     call's parameters by a placeholder variable (`unit.names.placeholder`),
     with its domain recorded (`slot.domain`, the head's Π domain at the
     earlier placeholders), and asks `nf` of types and terms that mention
-    them. A universe placeholder is a level entry; any other a term entry at
-    its domain, made in order, so each domain's earlier placeholders are
-    already entries. The unifier's descent under a pair of term binders
-    (`under` in `parts`) renames both bodies' variables to one fresh name
-    and later asks `nf` of parts that mention it (`unfolded`); that name
-    gets an entry at the left binder's domain. Its answers only guide the
-    search: the instructions check whatever it proposes.
+    them. A head query derives its context and only reduces its term: the
+    term asked is not type-checked, here as before scope first, and on ABI
+    3 the kernel's head query takes no context (`cb_head` calls
+    `cc_kernel_whnf(k, term)`), so the answer is the term's alone. The
+    solver asks about its terms with every solution substituted (`zonk`),
+    as before scope first, and so learns what it learned then, as long as
+    every context it asks in derives. Its root scope (`at`) is the called
+    function's own telescope: each placeholder at its parameter's domain
+    over the earlier ones, a universe's a level entry, made as the
+    placeholders are added, so it derives. The rest rests on one
+    invariant, which `require` and `parts` check:
+    - every constraint has a side that mentions none of the solver's
+      placeholders, its closed side: an argument's inferred type against
+      its parameter's domain, a solution's type (its value mentions no
+      unknown) against its parameter's domain, or the call's type against
+      the type expected of it, the closed side the left one but the right
+      for the expected type;
+    - the unifier never swaps sides: `parts` compares a part with the same
+      part of the other side, `unfolded` a head with the other side's head,
+      and `zonk` leaves a closed side as it is;
+    - so the unifier's descent under a pair of term binders (`under` in
+      `parts`), which renames both bodies' variables to one fresh name and
+      later asks `nf` of parts that mention it (`unfolded`), binds that
+      name at the closed side's binder domain: a type in the call's scope
+      over that side's earlier binders, renamed as the descent renames
+      them. Every context the solver asks in then derives, and no query
+      fails.
+
+    Its answers only guide the search: the instructions check whatever it
+    proposes.
   - If a synthetic variable ever had no known type, the honest option is not
     to ask the kernel about a term that mentions it: the query is reported
     as stuck, the outcome the unifier already has for an undecided
-    comparison, and no type is invented for it. The same holds where its
-    type is no type in the scope it is asked in, which PR 1 found (Appendix
-    A): while a constraint is pending, a type of the unifier's can mix a
-    placeholder's level with the level it is to be solved by, so the scope
-    of its `under` names cannot be derived; the query fails, the unifier
-    reports the constraint stuck, and the scope's failure is kept for the
-    driver's life, so it is not derived again.
+    comparison, and no type is invented for it. PR 1 found one place where
+    a type was no type in the scope it was asked in (Appendix A): the
+    solver bound each `under` name at the left side's binder domain as it
+    stood when the binder was met, the solver's own side for the expected
+    type, where a universe solution found later made the next binder's
+    domain ill-typed. It now binds them on the closed side, as above.
 
 - A diagnostic comparison: `levelWithin` in `web/cubical-elaborator.mjs`
   encodes two frontend levels with `encodeLevel` and no scope, to compare
@@ -1540,6 +1562,13 @@ Each PR is verified locally first, opened as a draft, and keeps
    and the measurements of section 6.3. The checking cost is reported, ticks
    and wall time for each import closure and the archive audit against main,
    with no preset threshold: the user decides on it then.
+   The argument solver relies on the head query being context-free: on
+   ABI 3, `cc_kernel_whnf(k, term)` takes no context, so a term's head is
+   the same in every context that derives and binds its variables, and
+   the solver binds its descents' names on the constraint's closed side
+   (section 5.3). ABI 4's head query must stay so over `CC_CONTEXT`
+   references, reading an entry only to name it, never its type; if it
+   comes to read entry types, that binding must be revisited.
 4. **PR 4, direct iota.** For an eligible constructor, build the reduct as
    the clause applied to the arguments and then to `elim(q_j)` for each
    recursive argument `q_j`, without the display and without `ck_apply_at`.
@@ -1839,18 +1868,37 @@ could not be made over the closures and the audit, on 2026-11-02:
   binders are bound at their own domains: none of them asked in a context
   that could not be derived, so each is a caller that "derives its context
   earlier". Row 6 is the one exception, below.
-- **The unifier's `under` names, rows 4 and 6.** While a constraint is
-  pending, the solver's terms can mix a placeholder's level with the level
-  it is to be solved by, so the domain at which `under` binds its fresh
-  name is no type in the solver's scope (in `algebra`'s homomorphisms, a
-  `Magma.M` at a caller's level applied to a variable bound at a
-  placeholder's). Such a query's scope cannot be derived: 247 times in the
-  `semirings` closure and 3,911 times over the 61 closures, which share
-  their imports, every time in `unfolded` under `under`, and never in the
-  archive audit. The query fails,
-  `unfolded` reports the constraint stuck, as for any head it cannot
-  compute, and the driver keeps the scope's failure (`extendScope`), so the
-  scope is not derived again. Every verdict of the suite, the library and
-  the archive is unchanged. Binding the name on each side at that side's
-  domain was tried and fails the same way, since the mixing is within one
-  side's term.
+- **The unifier's `under` names, rows 4 and 6.** The solver first bound
+  each name at the left side's binder domain as it stood when the binder
+  was met, while the terms it asked about had the solutions found since
+  substituted. For the type expected of a call, the left side is the
+  solver's own. In `algebra`'s parent homomorphisms, comparing
+  `Magma.Hom(U?, V?, A?)` with the expected `Magma.Hom(U, V, …)` unfolded,
+  the domains `Magma(V?)` and `Magma(V)` solve `V?` as `V`; the bodies'
+  fresh name `B` was then bound at `Magma(V?)`, and the next binder's type
+  `Magma.M(U?, A?) -> Magma.M(V, B)` was no type there. Such a query's
+  scope could not be derived: 247 times in the `semirings` closure and
+  3,911 times over the 61 closures, which share their imports, every time
+  in `unfolded` under `under`, and never in the archive audit; `unfolded`
+  reported the constraint stuck, where the solver had asked the same
+  query, context-free, before scope first. The solver now binds each name
+  at the closed side's domain (section 5.3): no query's scope fails in the
+  closures or the archive, every declaration elaborates to the same term
+  and type as before scope first, and the solver learns what it learned
+  then.
+- **Two approaches the solver dropped.** Both made a context out of the
+  solver's own side, with its solutions in it. That side's types are not
+  types until universes are solved: a hole of type `U(V?)` solved by a
+  type in `U(W)` leaves `V?` free, and `Square(V?, B, …)` is no type. One
+  approach asked about a placeholder bounded below at its least level,
+  and typed each solution at once, also while `approximate` guessed.
+  Review found it changed what the solver learns: a bound found later was
+  lost (`take(Unit, U0)` with `B : Wrap(U)` was refused), and a guess
+  typed a solution into another hole (`pick(t)` inferred `n := 0` where
+  the call says 1). The other kept a solution not known to fit its
+  parameter's type out of what was asked. That hid what the solver had
+  learned: a function type's codomain no longer bounded its universe
+  (`take(b, fun (x : B) => U1)` was refused), and a result solved as a
+  function took no further argument. A context needs no part of the
+  solver's side: the term asked is not type-checked, and the closed side
+  gives every binder a domain.
