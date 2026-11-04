@@ -1115,22 +1115,29 @@ changes:
     call's parameters by a placeholder variable (`unit.names.placeholder`),
     with its domain recorded (`slot.domain`, the head's Π domain at the
     earlier placeholders), and asks `nf` of types and terms that mention
-    them. Its scope (`scopeOf`) is made from what it has solved when it
-    asks: each placeholder not yet solved is an entry, a universe's a level
-    entry and any other's at its domain with the solutions substituted, made
-    in order, so each domain's earlier placeholders are already entries; a
-    solved one is substituted wherever it is asked about, and a universe
-    placeholder that a solution bounds below is asked about at the largest
-    of its lower bounds, the least level that solution's type allows (a
-    hole `A? : U(V?)` solved by `B : U(W)`, which a type such as
-    `Square(V?, B, …)` needs; the solver's own decisions still read `V?`).
-    A solution's type bounds the placeholders of its parameter's type as
-    soon as it is made (`typeSolution`). The unifier's descent under a pair
-    of term binders (`under` in `parts`) renames both bodies' variables to
-    one fresh name and later asks `nf` of parts that mention it
+    them. Its scope (`scopeOf`, from `view`) is made from what it has
+    solved when it asks, in order, so each domain's earlier placeholders
+    are already entries or substituted. A universe placeholder is
+    substituted once solved, and is a level entry until then: no level is
+    read at a value it may not keep. A hole or an argument is substituted
+    once solved by a value known to have its type there (`fits`): neither
+    mentions a placeholder, or the kernel accepts the value at that type,
+    which stays true as the placeholders in it are solved. Any other is an
+    entry at its domain as it stands, and is asked about as itself: a hole
+    `A? : U(V?)` solved by `B : U(W)` stays an entry until `V?` is solved,
+    since `B` is no `U(V?)` while `V?` is free and `Square(V?, B, …)` no
+    type. The solver decides on the terms with every solution substituted,
+    and asks the kernel about the same terms as they stood, with only the
+    solutions known to fit substituted; a head that mentions a withheld
+    solution leaves its constraint waiting. A solution's type bounds the
+    placeholders of its parameter's type through a constraint like any
+    other, never while `approximate` guesses. The unifier's descent under a
+    pair of term binders (`under` in `parts`) renames both bodies' variables
+    to one fresh name and later asks `nf` of parts that mention it
     (`unfolded`); that name gets an entry at the left binder's domain, also
-    with the solutions as they stand when it asks. Its answers only guide
-    the search: the instructions check whatever it proposes.
+    as the kernel is asked about it. A guess `approximate` undoes leaves no
+    scope behind: a restore is a change. Its answers only guide the search:
+    the instructions check whatever it proposes.
   - If a synthetic variable ever had no known type, the honest option is not
     to ask the kernel about a term that mentions it: the query is reported
     as stuck, the outcome the unifier already has for an undecided
@@ -1863,8 +1870,12 @@ could not be made over the closures and the audit, on 2026-11-02:
   second half: a hole of type `U(V?)` solved by a type in `U(W)` leaves
   `V?` free until universes are solved last, and a later placeholder's
   type such as `Square(V?, B, …)` is then no type (138 times in `squares`
-  once the scope reads the solutions). A solution's type now bounds its
-  parameter's placeholders at once (`typeSolution`), and a placeholder
-  bounded below is asked about at its least level. No query's scope fails
-  in the library's closures or the archive, and every verdict is
-  unchanged.
+  once the scope reads the solutions). The first fix asked about a
+  placeholder bounded below at its least level and typed each solution at
+  once, also while `approximate` guessed; review found both inexact: a
+  bound found later was lost (`take(Unit, U0)`, with `B : Wrap(U)`, was
+  refused), and a guess typed a solution into another hole (`pick(t)`
+  inferred `n := 0` where the call says 1). The scope now substitutes only
+  the solutions known to fit their parameter's type and keeps every other
+  an entry, as above. No query's scope fails in the library's closures or
+  the archive, and every verdict is unchanged.
