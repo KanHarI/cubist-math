@@ -4,8 +4,8 @@ import {scopeMapped,scopesOf,binderName} from "./scopes.mjs";
 import {mapResolution} from "./bindings.mjs";
 import {parameterLambdas} from "./telescopes.mjs";
 import {sourceText} from "../cubical-source-text.mjs";
-import {termBinders} from "../translator/term-shape.mjs";
-import {substituteTerm,freeNames,T} from "../translator/core.mjs";
+import {termBinders,termFields,writtenParts} from "../translator/term-shape.mjs";
+import {substituteTerm,writtenNames,T} from "../translator/core.mjs";
 import {visitSyntax,mapSyntax} from "../translator/syntax-graph.mjs";
 
 export function bindingDisplay(declaration,{table,globals=new Map(),locals=new Map()}={}) {
@@ -30,7 +30,8 @@ export function bindingDisplay(declaration,{table,globals=new Map(),locals=new M
     if(node.kind==="bindingReference")mapResolution(node.resolution,id=>{used.add(id);return id;},value=>{
       if(value.tag==="reserved")taken.add(value.label);return value;
     });
-    if(node.kind==="instantiated")visitSyntax(node.value,value=>{if(typeof value?.name==="string")taken.add(value.name);});
+    // Display reads a term as written (term-shape.mjs).
+    if(node.kind==="instantiated")visitSyntax(node.value,value=>{if(typeof value?.name==="string")taken.add(value.name);},{children:writtenParts});
     if(node.kind==="bindingReference")for(const [,replacement] of node.substitutions??[])scan(replacement);
     return node;
   },bind(token) {if(token.bindingId)tokens.set(token.bindingId,token);return token;},extend:at=>at},null);
@@ -118,7 +119,9 @@ export function bindingDisplay(declaration,{table,globals=new Map(),locals=new M
       }
       return names.get(key);
     };
-    value=mapSyntax(value,()=>undefined);
+    // A faithful copy (the kernel view) to relabel; what is shown is read as
+    // written.
+    value=mapSyntax(value,()=>undefined,{fields:termFields});
     visitSyntax(value,term=>{
       if(!term||typeof term!=="object")return;
       if(term.tag&&!allowed.has(term.tag))unsupported=true;
@@ -129,11 +132,11 @@ export function bindingDisplay(declaration,{table,globals=new Map(),locals=new M
       if(term.tag==="DefRef")updates.push([term,"name",declared(term.name)]);
       if(term.tag==="Sort")updates.push([term,"signature",declared(term.signature)]);
       if(term.tag==="Con")updates.push([term,"name",declared(`${term.sort?.signature}:constructor:${term.index}`)]);
-    });
+    },{children:writtenParts});
     if(unsupported)return marked();
     // Read every original key before changing any shared node in the DAG.
     for(const [term,key,label] of updates)term[key]=label;
-    for(const key of freeNames(value)) {
+    for(const key of writtenNames(value)) {
       if(argumentsShown.has(key)) {references.add(displays.get(key).text.split(".")[0]);continue;}
       if(!coreIds.has(key))return marked();
       value=substituteTerm(value,key,T.variable(declared(key)));

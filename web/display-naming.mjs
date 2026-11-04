@@ -1,4 +1,4 @@
-import { termBinders } from "./translator/term-shape.mjs";
+import { termBinders, writtenFields, writtenParts } from "./translator/term-shape.mjs";
 import { displayFreeNames } from "./translator/display-names.mjs";
 import { betaReduce as reduceRedexes, substituteDimension, substituteTerm } from "./translator/core.mjs";
 import { localName, numberedName, stem } from "./translator/names.mjs";
@@ -47,6 +47,10 @@ import { localName, numberedName, stem } from "./translator/names.mjs";
 // keeps them apart from the labels a body shows (labelsShown) and shows a
 // definition named as a dimension (dimensionNames), or marked qualified, by
 // its kernel name.
+//
+// Every pass reads a term as written (term-shape.mjs's written view): what
+// is shown is the syntax as written, and a copy a pass makes leaves out
+// what the kernel recorded beside it, a checked path application's type.
 
 const namedBinders = new Set(["Var", ...termBinders]);
 
@@ -105,7 +109,7 @@ export function readableDimensions(terms, pinned) {
         used.add(name);
         used.add(localName(name));
       }
-    Object.values(t).forEach(visit);
+    writtenParts(t).forEach(visit);
   };
   terms.forEach(visit);
   const fixed = new Set(pinned), unnamed = [...used].filter(name => /^d[0-9]+_*$/.test(name) && !fixed.has(name))
@@ -129,7 +133,7 @@ export function readableDimensions(terms, pinned) {
     if (copies.has(t)) return copies.get(t);
     const copy = Array.isArray(t) ? [] : {};
     copies.set(t, copy);
-    for (const [key, value] of Object.entries(t)) copy[key] = rename(value);
+    for (const [key, value] of writtenFields(t)) copy[key] = rename(value);
     if (!Array.isArray(t) && typeof t.dim === "string" && renaming.has(t.dim)) copy.dim = renaming.get(t.dim);
     return copy;
   };
@@ -167,7 +171,7 @@ export function betaReduce(term, budget = 256) {
   const beta = t => {
     if (!t || typeof t !== "object") return t;
     if (reduced.has(t)) return reduced.get(t);
-    let result = Array.isArray(t) ? t.map(beta) : Object.fromEntries(Object.entries(t).map(([key, value]) => [key, beta(value)]));
+    let result = Array.isArray(t) ? t.map(beta) : Object.fromEntries(writtenFields(t).map(([key, value]) => [key, beta(value)]));
     if (placed.has(t)) placed.add(result);
     for (;;) {
       const [root, former] = spine[result.tag] ?? [];
@@ -192,7 +196,7 @@ export function printedLabels(term) {
     seen.add(t);
     const label = t.tag === "Sort" || t.tag === "Elim" ? t.signature : t.tag === "Con" || t.tag === "DefRef" ? t.name : null;
     if (typeof label === "string") labels.add(localName(label));
-    Object.values(t).forEach(visit);
+    writtenParts(t).forEach(visit);
   };
   visit(term);
   return labels;
@@ -212,7 +216,7 @@ export function dimensionNames(term) {
     if (!t || typeof t !== "object" || seen.has(t)) return;
     seen.add(t);
     if (typeof t.dim === "string") names.add(t.dim);
-    Object.values(t).forEach(visit);
+    writtenParts(t).forEach(visit);
   };
   visit(term);
   return names;
@@ -263,12 +267,12 @@ function scopedNames(term, names, limit = 2000) {
       const taken = candidate => inScope.has(candidate) || others.has(candidate);
       let name = stem(t.name);
       for (let index = 1; taken(name); index++) name = numberedName(stem(t.name), index);
-      for (const [key, value] of Object.entries(t))
+      for (const [key, value] of writtenFields(t))
         result[key] = key === "body" ? go(value, new Map(shownAs).set(t.name, name), new Set(inScope).add(name))
           : key === "name" ? name : go(value, shownAs, inScope);
       return result;
     }
-    for (const [key, value] of Object.entries(t)) result[key] = go(value, shownAs, inScope);
+    for (const [key, value] of writtenFields(t)) result[key] = go(value, shownAs, inScope);
     return result;
   };
   // Free variables, such as a goal's context, show their stems when no two
@@ -299,7 +303,7 @@ function globalNames(shown, given) {
       names.add(t.name);
       if (t.tag !== "Var") bound.add(t.name);
     }
-    Object.values(t).forEach(collect);
+    writtenParts(t).forEach(collect);
   };
   collect(shown);
   const fixed = new Set([...names].filter(name => given.has(name) && !bound.has(name))), loose = [...names].filter(name => !fixed.has(name));
@@ -313,7 +317,7 @@ function globalNames(shown, given) {
   const apply = t => {
     if (!t || typeof t !== "object") return t;
     if (renamed.has(t)) return renamed.get(t);
-    const result = Array.isArray(t) ? t.map(apply) : Object.fromEntries(Object.entries(t).map(([key, value]) => [key, apply(value)]));
+    const result = Array.isArray(t) ? t.map(apply) : Object.fromEntries(writtenFields(t).map(([key, value]) => [key, apply(value)]));
     if (namedBinders.has(t.tag) && typeof t.name === "string") result.name = rename(t.name);
     renamed.set(t, result);
     return result;
@@ -358,7 +362,7 @@ export function spelledOut(terms, { definitions, symbols = {}, dimensions }) {
     seen.add(t);
     if (typeof t.name === "string") used.add(t.name);
     if (typeof t.dim === "string") used.add(t.dim);
-    Object.values(t).forEach(collect);
+    writtenParts(t).forEach(collect);
   };
   terms.forEach(collect);
   // A new variable is its stem where no name is, and numbered from 1
@@ -466,7 +470,7 @@ export function spelledOut(terms, { definitions, symbols = {}, dimensions }) {
           result = { ...result, motive: renamed(motive), clauses: [result.clauses[0], renamed(step)] };
         }
       }
-      for (const [key, value] of Object.entries(result)) {
+      for (const [key, value] of writtenFields(result)) {
         const changed = go(value, result.tag === "App" && key === "fn");
         if (changed !== value) {
           if (result === t) result = Array.isArray(t) ? [...t] : { ...t };
@@ -545,7 +549,7 @@ export function labelsShown(label) {
     if (value.tag === "DefRef") names.add(label(value.name));
     else if (value.tag === "Sort") names.add(label(value.signature));
     else if (value.tag === "Con" && value.name) names.add(value.name);
-    for (const child of Object.values(value)) for (const name of scan(child)) names.add(name);
+    for (const child of writtenParts(value)) for (const name of scan(child)) names.add(name);
     return names;
   };
   return scan;
@@ -590,7 +594,7 @@ export function qualified(terms, shown, { definitions, symbols = {} }) {
     if (!t || typeof t !== "object") return t;
     if (copies.has(t)) return copies.get(t);
     let result = t;
-    for (const [key, value] of Object.entries(t)) {
+    for (const [key, value] of writtenFields(t)) {
       const changed = mark(value);
       if (changed !== value) {
         if (result === t) result = Array.isArray(t) ? [...t] : { ...t };

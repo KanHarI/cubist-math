@@ -7,6 +7,7 @@ import { selectionName } from "./translator/theories.mjs";
 import {notationForScope} from "./translator/notation-context.mjs";
 import {emptySimpRegistry,mergeSimpRegistries} from "./translator/simp-registry.mjs";
 import { substituteTerm, T } from "./translator/core.mjs";
+import { writtenFields, writtenParts } from "./translator/term-shape.mjs";
 import { localName, printedForms, printsAsItself } from "./translator/names.mjs";
 import { parse } from "./cubist/parser.mjs";
 import {requireTestMode} from "./cubist/test-pragmas.mjs";
@@ -575,7 +576,8 @@ export class CubicalProgram {
         if (!t || typeof t !== "object" || seen.has(t)) return;
         seen.add(t);
         if (typeof t.name === "string") for (const form of printedForms(t.name)) used.add(form);
-        Object.values(t).forEach(value => visit(value, seen));
+        // What the view shows: the syntax as written (term-shape.mjs).
+        writtenParts(t).forEach(value => visit(value, seen));
       };
       visit(term);
     }
@@ -677,7 +679,8 @@ export class CubicalProgram {
       if (copies.has(t)) return copies.get(t);
       const copy = Array.isArray(t) ? [] : {};
       copies.set(t, copy);
-      for (const [key, value] of Object.entries(t)) copy[key] = visit(value);
+      // A copy for display, of the syntax as written (term-shape.mjs).
+      for (const [key, value] of writtenFields(t)) copy[key] = visit(value);
       const signature = t.tag === "Con" ? t.sort?.signature : null;
       if (typeof signature === "string" && t.index === generatedOf(signature))
         copy.name = `${this.symbols[signature]?.name ?? localName(signature)}.squash`;
@@ -699,7 +702,8 @@ export class CubicalProgram {
       if (seen.has(term)) return seen.get(term);
       const copy = Array.isArray(term) ? [] : {};
       seen.set(term, copy);
-      for (const [key, value] of Object.entries(term)) copy[key] = without(value, part, seen);
+      // A copy for display, of the syntax as written (term-shape.mjs).
+      for (const [key, value] of writtenFields(term)) copy[key] = without(value, part, seen);
       return copy;
     };
     return records.map(record => {

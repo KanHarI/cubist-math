@@ -1,6 +1,7 @@
 import { bindDimensions } from "./translator/dimension-slots.mjs";
 import { dimensionContextKey } from "./translator/syntax-graph.mjs";
 import { freeNames, isTerm } from "./translator/core.mjs";
+import { termParts } from "./translator/term-shape.mjs";
 import { binderName, binderTerm, binders, boundSymbol, pushName, referenceSymbol, variableName, variableTerm } from "./cubical-variables.mjs";
 // The scope of no context: what is encoded against it is closed.
 export const EMPTY_SCOPE = Object.freeze(new Map());
@@ -422,7 +423,7 @@ export class CubicalSyntax {
     // anew and cannot supply such an annotation.
     const freeze = value => {
       if (value && typeof value === "object" && !Object.isFrozen(value)) {
-        Object.values(value).forEach(freeze); Object.freeze(value);
+        termParts(value).forEach(freeze); Object.freeze(value);
       }
     };
     freeze(result);

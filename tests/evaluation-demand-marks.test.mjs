@@ -10,6 +10,7 @@ import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { checkProgram } from "./check-program.mjs";
 import { normalDigest, sharedNormalDigest } from "../tools/evaluation-baseline.mjs";
+import { termFields, writtenFields, writtenParts } from "../web/translator/term-shape.mjs";
 import { reported } from "../tools/inline-errors.mjs";
 import { printedNodes, valueForm } from "../web/translator/evaluation.mjs";
 import { Translator } from "../web/translator/translate.mjs";
@@ -1056,10 +1057,12 @@ function agree(values, label) {
   }
 }
 
+// The digests read a value as written (term-shape.mjs's written view), and
+// so do these helpers, but for oneChange, which changes annotations too.
 // A value with each of its objects copied wherever it occurs.
 function unshared(value) {
   if (value === null || typeof value !== "object") return value;
-  return Array.isArray(value) ? value.map(unshared) : Object.fromEntries(Object.entries(value).map(([key, item]) => [key, unshared(item)]));
+  return Array.isArray(value) ? value.map(unshared) : Object.fromEntries(writtenFields(value).map(([key, item]) => [key, unshared(item)]));
 }
 
 // The number of distinct objects a value holds, itself and arrays among them.
@@ -1069,7 +1072,7 @@ function distinctObjects(value) {
     const item = pending.pop();
     if (item === null || typeof item !== "object" || seen.has(item)) continue;
     seen.add(item);
-    pending.push(...Object.values(item));
+    pending.push(...writtenParts(item));
   }
   return seen.size;
 }
@@ -1086,12 +1089,13 @@ function namesIn(value) {
       for (const clause of item) for (const literal of clause) dims.add(literal.slice(0, literal.lastIndexOf(":")));
     if (item.tag === "Var" || typeof item.name === "string") terms.add(item.name);
     if (typeof item.dim === "string") dims.add(item.dim);
-    pending.push(...Object.values(item));
+    pending.push(...writtenParts(item));
   }
   return { terms, dims };
 }
 
-// A value with one part changed, each way once.
+// A value with one part changed, each way once: an annotation's parts too,
+// which neither digest reads.
 function* oneChange(value) {
   if (value === null || typeof value !== "object") {
     yield typeof value === "number" ? value + 1000 : typeof value === "string" ? `${value}′` : value === undefined ? null : undefined;
@@ -1101,7 +1105,7 @@ function* oneChange(value) {
   if (Array.isArray(value)) {
     if (value.length) yield value.slice(1);
     for (const [index, item] of value.entries()) for (const changed of oneChange(item)) yield value.map((other, at) => at === index ? changed : other);
-  } else for (const [key, item] of Object.entries(value)) for (const changed of oneChange(item)) yield { ...value, [key]: changed };
+  } else for (const [key, item] of termFields(value)) for (const changed of oneChange(item)) yield { ...value, [key]: changed };
 }
 
 // Both digests read any value decoding gives as it is: a field by its name

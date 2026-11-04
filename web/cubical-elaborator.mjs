@@ -1,5 +1,5 @@
 import { isResourceLimit } from "./resource-limits.mjs";
-import { termBinders } from "./translator/term-shape.mjs";
+import { termBinders, termFields, termParts } from "./translator/term-shape.mjs";
 import { CubicalSyntax } from "./cubical-syntax.mjs";
 import { T, withoutEmptyFaces } from "./translator/core.mjs";
 import { interval as I } from "./translator/lattice.mjs";
@@ -21,7 +21,9 @@ export { betaReduce, dimensionNames, displayTerm, printedLabels, readableDimensi
 // Binder names the instruction driver made up, such as x'1 for a context
 // entry named apart from another x, taken back to their stems for display
 // wherever the stem occurs nowhere in the binder's body, so nothing in it
-// can tell the two apart. Syntax is shared, so each pass is memoized.
+// can tell the two apart. Syntax is shared, so each pass is memoized. A
+// renaming reads the kernel view (term-shape.mjs): an annotation is renamed
+// with the rest, and a stem it mentions keeps the binder's name.
 class SourceNames {
   constructor(stems) { this.stems = stems; this.results = new WeakMap(); this.mentions = new Map(); this.renamed = new Map(); }
   memo(table, key) {
@@ -32,7 +34,7 @@ class SourceNames {
   occurs(value, name) {
     if (!value || typeof value !== "object") return false;
     const seen = this.memo(this.mentions, name);
-    if (!seen.has(value)) seen.set(value, value.name === name || Object.values(value).some(field => this.occurs(field, name)));
+    if (!seen.has(value)) seen.set(value, value.name === name || termParts(value).some(field => this.occurs(field, name)));
     return seen.get(value);
   }
   // Free occurrences of a variable renamed; the new name occurs nowhere.
@@ -47,7 +49,7 @@ class SourceNames {
         const shadowed = termBinders.has(value.tag) && value.name === from;
         const copy = Array.isArray(value) ? [] : {};
         let changed = false;
-        for (const [key, field] of Object.entries(value)) {
+        for (const [key, field] of termFields(value)) {
           copy[key] = shadowed && key === "body" ? field : this.rename(field, from, to);
           changed ||= copy[key] !== field;
         }
@@ -66,7 +68,7 @@ class SourceNames {
         current = { ...value, name: stem, body: this.rename(value.body, value.name, stem) };
       const copy = Array.isArray(current) ? [] : {};
       let changed = current !== value;
-      for (const [key, field] of Object.entries(current)) {
+      for (const [key, field] of termFields(current)) {
         copy[key] = this.apply(field);
         changed ||= copy[key] !== field;
       }
@@ -151,7 +153,8 @@ export class NativeCubicalElaborator {
       seen.add(term);
       if (term.tag === "Sort" || term.tag === "Elim") signature(term.signature);
       if (term.tag === "DefRef") for (const marker of this.definitionExtensions.get(term.name) ?? []) found.add(marker);
-      for (const child of Object.values(term)) visit(child);
+      // The kernel view: an extension an annotation relies on is relied on.
+      for (const child of termParts(term)) visit(child);
     };
     terms.forEach(visit);
     return [...found].sort();
@@ -215,7 +218,8 @@ export class NativeCubicalElaborator {
       else if (termBinders.has(term.tag)) {
         for (const name of free(term.domain)) result.add(name);
         for (const name of free(term.body)) if (name !== term.name) result.add(name);
-      } else for (const child of Object.values(term)) for (const name of free(child)) result.add(name);
+        // The kernel view: an assumption an annotation mentions is required.
+      } else for (const child of termParts(term)) for (const name of free(child)) result.add(name);
       memo.set(term, result); return result;
     };
     const visit = term => { for (const name of free(term)) names.add(name); };

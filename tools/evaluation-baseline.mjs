@@ -30,6 +30,7 @@ import { ReplSession } from "../web/repl-session.mjs";
 import { Translator } from "../web/translator/translate.mjs";
 import { RuntimeQuery } from "../web/cubical-runtime.mjs";
 import { sourceReader } from "./module-sources.mjs";
+import { writtenFields } from "../web/translator/term-shape.mjs";
 import { assertFreshBuild } from "./build-stamp.mjs";
 
 const root = new URL("../", import.meta.url);
@@ -217,6 +218,8 @@ function syntaxDepth(kernel, first, last) {
 // (web/cubical-syntax.mjs): the whole term, where a display is cut at 1000
 // characters. Bound variables and dimensions are numbered by binding depth,
 // so renaming them leaves it unchanged, and a formula's clauses are sorted.
+// Both digests read the syntax as written (web/translator/term-shape.mjs's
+// written view): a checked path application's annotation is the kernel's.
 const termBinders = new Set(["Pi", "Lam", "Sigma", "LPi", "LLam"]);
 // The fields a dimension binder binds; a composition's system binds its
 // tubes' terms, not their faces.
@@ -249,7 +252,7 @@ export function normalDigest(term) {
     const binds = termBinders.has(value.tag) ? ["body"] : dimensionBinders[value.tag] ?? [];
     const binder = termBinders.has(value.tag) ? "name" : binds.length ? "dim" : null;
     write(`{${value.tag ?? ""}`);
-    for (const [key, item] of Object.entries(value)) {
+    for (const [key, item] of writtenFields(value)) {
       if (key === "tag" || key === binder) continue;
       write(key);
       if (!binds.includes(key)) walk(item);
@@ -303,7 +306,7 @@ export function sharedNormalDigest(term) {
     else {
       const binds = termBinders.has(value.tag) ? ["body"] : dimensionBinders[value.tag] ?? [];
       const binder = termBinders.has(value.tag) ? "name" : binds.length ? "dim" : null;
-      for (const [key, item] of Object.entries(value)) {
+      for (const [key, item] of writtenFields(value)) {
         if (key === "tag" || key === binder) continue;
         if (!binds.includes(key)) add(freeNames(item));
         else if (binder === "name") add(freeNames(item), value.name);
@@ -364,7 +367,7 @@ export function sharedNormalDigest(term) {
     else {
       const binds = termBinders.has(value.tag) ? ["body"] : dimensionBinders[value.tag] ?? [];
       const binder = termBinders.has(value.tag) ? "name" : binds.length ? "dim" : null;
-      fields = ["node", value.tag ?? "", Object.entries(value).filter(([key]) => key !== "tag" && key !== binder).map(([key, item]) =>
+      fields = ["node", value.tag ?? "", writtenFields(value).filter(([key]) => key !== "tag" && key !== binder).map(([key, item]) =>
         [key, !binds.includes(key) ? digest(item)
           : binder === "name" ? under(scopes.terms, value.name, () => digest(item))
           : key !== "system" ? under(scopes.dims, value.dim, () => digest(item))

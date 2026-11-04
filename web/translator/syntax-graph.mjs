@@ -1,3 +1,4 @@
+import {termParts} from "./term-shape.mjs";
 // Shared, bounded operations on inert cubical syntax DAGs. These utilities
 // preserve object identity; they do not decide typing or proof equality.
 // The work is counted, never timed, so the same construction succeeds or
@@ -34,17 +35,21 @@ export function visitSyntax(root,visit,{budget=syntaxGraphBudget(),children=Obje
   }
 }
 
+// The names a term uses, in its kernel view (term-shape.mjs): a name chosen
+// apart from them is apart from its annotations' too.
 export function syntaxNames(root,{budget,...options}={}) {
   const used=new Set();
   visitSyntax(root,value=>{
     if(typeof value==='string')used.add(value.replace(/:[01]$/,''));
-  },{budget:budget??syntaxGraphBudget({maxVisits:250000,...options})});
+  },{budget:budget??syntaxGraphBudget({maxVisits:250000,...options}),children:termParts});
   return used;
 }
 
 // `replace` returns undefined to copy a node, or an explicit replacement.
 // Object and array children are copied once, including under multiple parents.
-export function mapSyntax(root,replace,{budget=syntaxGraphBudget()}={}) {
+// `fields` reads a node's fields: any syntax's, or a term's in one of its
+// views (termFields, writtenFields in term-shape.mjs).
+export function mapSyntax(root,replace,{budget=syntaxGraphBudget(),fields=Object.entries}={}) {
   const memo=new WeakMap(),pending=[];
   const copy=value=>{
     if(!value||typeof value!=='object')return value;
@@ -63,7 +68,7 @@ export function mapSyntax(root,replace,{budget=syntaxGraphBudget()}={}) {
   const result=copy(root);
   while(pending.length) {
     const [source,target]=pending.pop();
-    for(const [key,value] of Object.entries(source)) {
+    for(const [key,value] of fields(source)) {
       budget.tick();
       target[key]=copy(value);
     }

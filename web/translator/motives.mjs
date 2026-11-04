@@ -23,7 +23,7 @@ import {T,betaReduce,substituteTerm} from "./core.mjs";
 import {syntaxGraphBudget,syntaxNames} from "./syntax-graph.mjs";
 import {Goal,Transition,steps} from "./proof-goals.mjs";
 import {stem} from "./names.mjs";
-import {termBinders,dimensionScope} from "./term-shape.mjs";
+import {termBinders,dimensionScope,termFields} from "./term-shape.mjs";
 
 // A declared type's instance and its constructors compare by signature,
 // parameters and levels: each occurrence is elaborated on its own.
@@ -58,7 +58,9 @@ function abstractOccurrences(term,patterns,budget) {
       const bound=!value.tag?null:termBinders.has(value.tag)?{name:value.name,keys:["body"]}
         :dimensionScope.has(value.tag)?{name:value.dim,keys:dimensionScope.get(value.tag)}:null;
       let copy=null;
-      for(const [field,child] of Object.entries(value)) {
+      // The kernel view: an occurrence in an annotation is abstracted too,
+      // as the motive must not mention what it abstracts.
+      for(const [field,child] of termFields(value)) {
         const inner=bound?.keys.includes(field)?active.filter(pattern=>!pattern.names.has(bound.name)):active;
         const mapped=visit(child,inner);
         if(mapped!==child)(copy??=Array.isArray(value)?[...value]:{...value})[field]=mapped;

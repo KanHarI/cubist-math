@@ -1,4 +1,5 @@
 import { displayFreeNames } from "./translator/display-names.mjs";
+import { writtenParts } from "./translator/term-shape.mjs";
 import { renameLevel, universeText } from "./cubical-levels.mjs";
 import {numeralValue} from "./translator/numerals.mjs";
 import {binaryDigits, parsedLiteral} from "./translator/numeral-printing.mjs";
@@ -52,6 +53,7 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
   // A display limit does not bound this scan: it runs before visiting the
   // path's children. Compute each shared subtree once for each dimension.
   // If the scan budget is exhausted, retain explicit PathP/path notation.
+  // Display reads the syntax as written (term-shape.mjs's written view).
   let dependencyWork = 100000;
   const dependencyCache = new WeakMap();
   const knownDependency = (value, dim) => {
@@ -72,13 +74,13 @@ export function cubicalMathTree(term, symbols = {}, limit = 1200, { paths = fals
       if (knownDependency(node, dim) !== undefined) continue;
       if (frame.finish) {
         active.delete(node);
-        rememberDependency(node, dim, Object.values(node).some(child => knownDependency(child, dim) === true));
+        rememberDependency(node, dim, writtenParts(node).some(child => knownDependency(child, dim) === true));
         continue;
       }
       if (--dependencyWork < 0) { rememberDependency(value, dim, true); return true; }
       active.add(node);
       stack.push({ value: node, finish: true });
-      for (const child of Object.values(node)) {
+      for (const child of writtenParts(node)) {
         if (!child || typeof child !== "object" || knownDependency(child, dim) !== undefined) continue;
         if (active.has(child)) { rememberDependency(value, dim, true); return true; }
         stack.push({ value: child, finish: false });
