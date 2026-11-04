@@ -1,6 +1,8 @@
 // Presentation annotations for checked cubical syntax. The original terms are
 // retained for raw inspection/export. Local names abbreviate their actual
 // elaborated terms, not new variables or unchecked source assertions.
+import { writtenFields } from "./translator/term-shape.mjs";
+
 export function stripAscriptions(term) {
   while (term?.tag === "App" && term.fn.tag === "Lam" && term.fn.body.tag === "Var"
     && term.fn.body.name === term.fn.name) term = term.arg;
@@ -13,8 +15,9 @@ export function foldedInspection(view, aliases = []) {
     if (!term || typeof term !== "object") return `literal:${JSON.stringify(term)}`;
     term = stripAscriptions(term);
     if (memo.has(term)) return memo.get(term);
+    // Inspection reads the syntax as written (term-shape.mjs's written view).
     const result = Array.isArray(term) ? `[${term.map(key).join(",")}]`
-      : `{${Object.entries(term).map(([name, value]) => `${name}:${key(value)}`).join(",")}}`;
+      : `{${writtenFields(term).map(([name, value]) => `${name}:${key(value)}`).join(",")}}`;
     if (!intern.has(result)) intern.set(result, intern.size + 1);
     const id = `node:${intern.get(result)}`; memo.set(term, id); return id;
   };
@@ -39,7 +42,7 @@ export function foldedInspection(view, aliases = []) {
     if (!root && cache.has(term)) return cache.get(term);
     const result = {};
     if (!root) cache.set(term, result);
-    for (const [field, value] of Object.entries(term)) {
+    for (const [field, value] of writtenFields(term)) {
       const binds = (field === "body" && ["Pi", "Sigma", "Lam", "W", "LPi", "LLam"].includes(term.tag))
         || ["Path", "PLam", "Comp", "HComp", "Trans"].includes(term.tag);
       result[field] = visit(value, false, binds ? new Set(bound).add(term.name ?? term.dim) : bound);

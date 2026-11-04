@@ -44,6 +44,7 @@ import {notationOperand} from "./model-notation.mjs";
 import {enterExpressionScope} from "./expression-scopes.mjs";
 import {operatorBinding,theoryBinding,registerTheoryDeclaration,modelField,theoryDeclarations,missingEvidence,missingMorphisms,memberField,sectionScope,selected,usesScope,sourceItemScope,qualifiedOperator,notationDeclaration,SELECTION} from "./theories.mjs";
 import {determinesArguments,elaborateCall,isHole} from "./arguments.mjs";
+import {annotationFields,termParts} from "./term-shape.mjs";
 import {availablePrefix,bindQualifiedNames,constructorText,declaredIn,identityCollision,qualifiedNamesIn,unknownQualifiedName} from "./qualified-names.mjs";
 
 // A tactic search (rw's for one rule, a simplification, simpa's two,
@@ -59,6 +60,8 @@ import {availablePrefix,bindQualifiedNames,constructorText,declaredIn,identityCo
 const boundedStateKey = (term,fuel,kernel) => {
   let estimated=0,visits=0;
   const state=JSON.stringify(term,(key,value)=>{
+    // A key built from the syntax as written (term-shape.mjs's written view).
+    if(annotationFields.has(key))return undefined;
     estimated+=key.length+4;
     if(typeof value==="string")estimated+=value.length+2;
     else if(typeof value==="number")estimated+=String(value).length;
@@ -312,7 +315,8 @@ export class Translator {
       if(!node||typeof node!=="object"||visited.has(node))return;
       visited.add(node);
       if(node.tag==="DefRef")references.add(node.name);
-      for(const child of Array.isArray(node)?node:Object.values(node))walk(child);
+      // The kernel view: a definition an annotation mentions is relied on.
+      for(const child of termParts(node))walk(child);
     };
     walk(term);walk(type);
     for(const reference of references) {

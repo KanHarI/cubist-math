@@ -21,7 +21,8 @@
 // of the tactic's fuel. Every structural rule makes its obligations on
 // strictly smaller types; a rule's premise that repeats an obligation it is
 // proving is a cycle, and the rule is passed over.
-import { T, substituteTerm, substituteDimension, freeNames } from "./core.mjs";
+import { T, substituteTerm, substituteDimension, freeNames, writtenNames } from "./core.mjs";
+import { annotationFields, writtenFields } from "./term-shape.mjs";
 import { freeDimensions } from "./dimension-slots.mjs";
 import { interval as I } from "./lattice.mjs";
 import { transportToDependentPath } from "./path-over.mjs";
@@ -101,7 +102,9 @@ export class HLevelUnproved extends Error {
 // proves. `binders` keeps their order, in which the rule is applied.
 // A type that is no rule gives { refusal }, which noRule states; `show`
 // displays a term.
-export function ruleShape(type, show = term => JSON.stringify(term), bind = (variable, name = variable) => name) {
+// A term's text as written (term-shape.mjs's written view).
+const writtenText = term => JSON.stringify(term, (key, value) => annotationFields.has(key) ? undefined : value);
+export function ruleShape(type, show = writtenText, bind = (variable, name = variable) => name) {
   const binders = [];
   let body = headBeta(type);
   for (;;) {
@@ -112,7 +115,8 @@ export function ruleShape(type, show = term => JSON.stringify(term), bind = (var
   const conclusion = statement(body);
   if (!conclusion) return { refusal: `its type ends in ${show(body)}, which states no h-level` };
   if (typeof conclusion.level === "object") return { refusal: `its statement's level, ${show(conclusion.level.term)}, is no numeral` };
-  const determined = new Set([...freeNames(conclusion.type), ...freeNames({ tag: "U", level: conclusion.universe })]);
+  // What the statement determines, as written: a match reads no annotation.
+  const determined = new Set([...writtenNames(conclusion.type), ...writtenNames({ tag: "U", level: conclusion.universe })]);
   for (const binder of binders)
     if (binder.universe && !determined.has(binder.name)) return { refusal: `its universe ${bind(binder.name, stem(binder.name))} is not determined by its statement` };
   for (const param of binders) {
@@ -151,14 +155,15 @@ function instance(shape, universe, type, scope) {
     pattern = pattern?.tag ? headBeta(pattern) : pattern;
     actual = actual?.tag ? headBeta(actual) : actual;
     if (pattern?.tag === "Var" && variables.has(pattern.name)) {
-      if (values.has(pattern.name)) return JSON.stringify(values.get(pattern.name)) === JSON.stringify(actual)
+      if (values.has(pattern.name)) return writtenText(values.get(pattern.name)) === writtenText(actual)
         || typeof actual === "object" && !!actual?.tag && attempt(() => scope.equal(values.get(pattern.name), actual));
       values.set(pattern.name, actual); return true;
     }
     if (pattern === actual) return true;
     if (!pattern || !actual || typeof pattern !== "object" || typeof actual !== "object") return false;
-    const keys = Object.keys(pattern).filter(key => key !== "sort");
-    if (keys.length !== Object.keys(actual).filter(key => key !== "sort").length) return false;
+    // The syntax as written: an annotation is not compared.
+    const keys = writtenFields(pattern).map(([key]) => key).filter(key => key !== "sort");
+    if (keys.length !== writtenFields(actual).filter(([key]) => key !== "sort").length) return false;
     return keys.every(key => Object.hasOwn(actual, key) && match(pattern[key], actual[key]));
   };
   const fits = carrier => {
@@ -433,8 +438,9 @@ function specializeEvidence(term, type, carrier, scope) {
     }
     if (pattern === actual) return true;
     if (!pattern || !actual || typeof pattern !== "object" || typeof actual !== "object") return false;
-    const keys = Object.keys(pattern);
-    if (keys.length !== Object.keys(actual).length) return false;
+    // The syntax as written: an annotation is not compared.
+    const keys = writtenFields(pattern).map(([key]) => key);
+    if (keys.length !== writtenFields(actual).length) return false;
     return keys.every(key => Object.hasOwn(actual, key) && match(pattern[key], actual[key]));
   };
   if (!match(known.type, carrier) || parameters.some(name => !values.has(name))) return null;

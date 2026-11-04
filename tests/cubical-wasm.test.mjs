@@ -295,7 +295,7 @@ test("checked path applications retain annotations through unused dimension cont
     const checked = checker.checkSyntax(T.at(T.variable("p"), arg), null, context, dimensions);
     assert.equal(encode(checked.term, dimensions), checked.expression);
     assert.doesNotThrow(() => checker.nf(checked.term, context, dimensions));
-    // A decode-cache hit in another context must record that round trip too.
+    // A decode-cache hit in another context encodes back to the node too.
     const extended = new Map(dimensions).set("also_unused", 1);
     const again = syntax.decode(checked.expression, extended);
     assert.equal(again, checked.term);

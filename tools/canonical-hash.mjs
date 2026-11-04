@@ -1,8 +1,10 @@
 // Hash checked syntax up to the names of bound variables and dimensions,
 // so two checks of one meaning hash alike. tools/proof-migration.mjs compares
 // declarations by it, and tools/elaboration-fingerprint.mjs fingerprints
-// elaboration with it.
+// elaboration with it. It reads the syntax as written
+// (web/translator/term-shape.mjs's written view).
 import { createHash } from "node:crypto";
+import { writtenFields } from "../web/translator/term-shape.mjs";
 
 const termBinders = new Set(["Pi", "Lam", "Sigma", "W", "LPi", "LLam"]);
 // Which fields a dimension binder scopes, matching the core syntax rules.
@@ -23,7 +25,7 @@ export function canonicalHasher({ definitionName = name => name, signatureName =
     const add = (values, except = null) => { for (const name of values) if (name !== except) names.add(name); };
     if (Array.isArray(node)) node.forEach(child => add(free(child)));
     else if (node.tag === "Var") names.add(`t:${node.name}`);
-    else for (const [key, value] of Object.entries(node)) {
+    else for (const [key, value] of writtenFields(node)) {
       // face and arg hold interval formulas, except App.arg, which is a term.
       if ((key === "face" || key === "arg") && Array.isArray(value)) { add(formulaNames(value).map(name => `d:${name}`)); continue; }
       if (!value || typeof value !== "object") continue;
@@ -53,7 +55,7 @@ export function canonicalHasher({ definitionName = name => name, signatureName =
       for (const child of node) digest.update(hash(child, scope, depth) + ",");
     } else {
       digest.update(node.tag ?? "{");
-      for (const fieldName of Object.keys(node).sort()) {
+      for (const fieldName of writtenFields(node).map(([key]) => key).sort()) {
         const value = node[fieldName];
         if (fieldName === "tag") continue;
         // Con.name is display metadata. Constructor identity is its index

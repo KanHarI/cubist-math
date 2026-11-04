@@ -30,7 +30,7 @@ import {T,finiteLevel,substituteTerm,substituteDimension,freeNames,levelNames,be
 import {universeText} from "../cubical-levels.mjs";
 import {interval as I} from "./lattice.mjs";
 import {freeDimensions,bindDimensions} from "./dimension-slots.mjs";
-import {dimensionScope,termBinders} from "./term-shape.mjs";
+import {dimensionScope,termBinders,termFields} from "./term-shape.mjs";
 import {syntaxGraphBudget,dimensionContextKey} from "./syntax-graph.mjs";
 import {statement as hlevelStatement} from "./hlevel.mjs";
 import {INDUCTIVE_TAGS} from "./inductive.mjs";
@@ -774,7 +774,8 @@ function reduceScopeCandidate(value, blocked, at) {
         return result;
       }
       const inner = keys ? scope.with({dimensions: bindDimensions(term, scope.dimensions, contextDimensions(scope)).inner}) : scope;
-      for (const [field, child] of Object.entries(term)) {
+      // The kernel view: a solution names what its annotations mention too.
+      for (const [field, child] of termFields(term)) {
         const changed = field === "body" && termBinders.has(term.tag) ? body(term, scope) : reduce(child, keys?.includes(field) ? inner : scope);
         if (changed !== child) {
           if (result === term) result = Array.isArray(term) ? [...term] : {...term};

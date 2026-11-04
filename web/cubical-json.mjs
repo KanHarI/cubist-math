@@ -1,5 +1,7 @@
 // JSON has no references: serializing a compact checked DAG can expand it
 // exponentially. Stop before a raw inspector view allocates that tree.
+import { annotationFields } from "./translator/term-shape.mjs";
+
 export const syntaxDisplayLimitMessage =
   "Raw syntax exceeds the display limit. Inspect a smaller expression or use mathematical notation.";
 
@@ -9,6 +11,9 @@ export function boundedSyntaxJson(value, { maxNodes = 20000, maxCharacters = 100
   let nodes = 0, estimatedCharacters = 0;
   try {
     const result = JSON.stringify(value, function (key, item) {
+      // Raw syntax shows the syntax as written (term-shape.mjs's written
+      // view): a checked path application's annotation is the kernel's.
+      if (annotationFields.has(key)) return undefined;
       const depth = (depths.get(this) ?? -1) + 1;
       if (depth > maxDepth) throw limit;
       if (item && typeof item === "object") {

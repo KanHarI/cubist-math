@@ -1,7 +1,8 @@
-import { termBinders } from "./term-shape.mjs";
+import { termBinders, writtenFields } from "./term-shape.mjs";
 
 // One display pass's free-variable analysis. Unlike the checker's strict
-// term analysis, it accepts display-only nodes and records containing terms.
+// term analysis, it accepts display-only nodes and records containing terms,
+// and reads them as written (term-shape.mjs's written view).
 // Its cache lasts only for the pass; display records need not be immutable.
 // Returned sets belong to the cache and callers must not change them.
 export function displayFreeNames() {
@@ -12,7 +13,7 @@ export function displayFreeNames() {
     const names = new Set();
     memo.set(value, names);
     if (value.tag === "Var") names.add(value.name);
-    else for (const [key, child] of Object.entries(value))
+    else for (const [key, child] of writtenFields(value))
       for (const name of free(child))
         if (!(termBinders.has(value.tag) && key === "body" && name === value.name)) names.add(name);
     return names;

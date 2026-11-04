@@ -1,4 +1,5 @@
 import { displayFreeNames } from "./translator/display-names.mjs";
+import { writtenParts } from "./translator/term-shape.mjs";
 import { inductionBinders } from "./display-naming.mjs";
 import { cubicalMathTree, cubicalTextParts } from "./cubical-notation.mjs";
 import { renameLevel, universeText } from "./cubical-levels.mjs";
@@ -125,7 +126,7 @@ function render(term, symbols, limit, context, state) {
     if (typeof t === "string") return t === `${dim}:0` || t === `${dim}:1`;
     if (!t || typeof t !== "object" || seen.has(t)) return false;
     seen.add(t);
-    return Object.values(t).some(child => varies(child, dim, seen));
+    return writtenParts(t).some(child => varies(child, dim, seen));
   };
   // Interval formulas are disjunctions of conjunctions of literals; `i:0` is
   // the reversed coordinate. They print in the source's notation: ~i, i & j

@@ -15,14 +15,17 @@ import {ElaborationStop} from "./translator/control.mjs";
 import {RECURSIVE} from "./translator/match.mjs";
 import {notationContextKey} from "./translator/notation-context.mjs";
 import {T,freeNames} from "./translator/core.mjs";
+import {termFields,termParts} from "./translator/term-shape.mjs";
 import {assumptionNote} from "./axiom-labels.mjs";
 import {Goal} from "./translator/proof-goals.mjs";
 import {Scope} from "./translator/elaboration.mjs";
 import {replStatements} from "./repl-session.mjs";
 
+// Frozen and copied whole: a term in a result or a scope, in its kernel view
+// (term-shape.mjs), annotations included.
 const freeze=value=>{
   if(value&&typeof value==="object"&&!Object.isFrozen(value)) {
-    Object.values(value).forEach(freeze);Object.freeze(value);
+    termParts(value).forEach(freeze);Object.freeze(value);
   }
   return value;
 };
@@ -180,7 +183,7 @@ function copiedScope(scope,unit,names=null) {
       if(!Array.isArray(value)&&![Object.prototype,null].includes(Object.getPrototypeOf(value)))
         throw new TypeError("A contextual query cannot copy an unknown live value.");
       result=Array.isArray(value)?[]:{};copies.set(value,result);
-      for(const [key,entry] of Object.entries(value)) {
+      for(const [key,entry] of termFields(value)) {
         // Match continuation syntax is not a recursive-call permission.
         if(value.tag==="Recursive"&&key==="site")continue;
         result[key]=copy(entry);

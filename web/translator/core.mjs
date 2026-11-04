@@ -2,7 +2,7 @@
 // filling. Terms are inert JSON; building one certifies nothing, and the
 // kernel checks every term elaboration produces.
 import { interval as I, face as F } from "./lattice.mjs";
-import { termChildren as children, termBinders, dimensionScope } from "./term-shape.mjs";
+import { termChildren as children, writtenChildren, termBinders, dimensionScope, termFields, writtenFields } from "./term-shape.mjs";
 import { dimensionNames } from "./dimension-slots.mjs";
 
 export const T = {
@@ -84,12 +84,16 @@ const dimBinder = t => dimensionScope.has(t.tag);
 // set is made only where two parts' names meet, or a binder takes one off.
 // The names keep the order of a walk through the parts, as zonk reads them.
 // Dimension analysis is shared with the codec; it freezes the syntax it
-// inspects and owns its own cached sets.
-const freeTerms = new WeakMap(), noNames = new Set();
+// inspects and owns its own cached sets. Each view of a term (term-shape.mjs)
+// has its own names and cache.
+const kernelView = { children, cache: new WeakMap() }, writtenView = { children: writtenChildren, cache: new WeakMap() };
+const noNames = new Set();
 function free(t, dimension = false) {
   if (!t || !children[t.tag]) fail("Unknown term constructor.");
-  if (dimension) return dimensionNames(t);
-  const cached = freeTerms.get(t);
+  return dimension ? dimensionNames(t) : namesIn(t, kernelView);
+}
+function namesIn(t, view) {
+  const cached = view.cache.get(t);
   if (cached) return cached;
   let local = noNames, owned = false;
   const own = () => { if (!owned) { local = new Set(local); owned = true; } };
@@ -110,18 +114,26 @@ function free(t, dimension = false) {
   if (t.tag === "U" || t.tag === "LApp") for (const n of levelNames(t.level)) name(n);
   if (t.tag === "Sort") for (const level of t.levels ?? []) for (const n of levelNames(level)) name(n);
   if (t.tag === "Glue" || t.tag === "GlueTerm") for (const piece of t.system)
-    for (const key of t.tag === "Glue" ? ["type", "equiv"] : ["term"]) union(free(piece[key]));
-  if (t.tag === "Comp" || t.tag === "HComp") for (const piece of t.system) union(free(piece.term));
-  for (const key of children[t.tag]) if (t[key]) for (const item of items(t[key])) {
-    const names = free(item);
+    for (const key of t.tag === "Glue" ? ["type", "equiv"] : ["term"]) union(namesOf(piece[key], view));
+  if (t.tag === "Comp" || t.tag === "HComp") for (const piece of t.system) union(namesOf(piece.term, view));
+  for (const key of view.children[t.tag]) if (t[key]) for (const item of items(t[key])) {
+    const names = namesOf(item, view);
     union(termBinder(t) && key === "body" ? without(names, t.name) : names);
   }
-  freeTerms.set(t, local);
+  view.cache.set(t, local);
   return local;
 }
+const namesOf = (t, view) => {
+  if (!t || !children[t.tag]) fail("Unknown term constructor.");
+  return namesIn(t, view);
+};
 function fresh(n, avoid) { while (avoid.has(n)) n += "_"; return n; }
-// The free term names of a term, universe variables included.
+// The free term names of a term, universe variables included, in the kernel
+// view: everything the kernel term mentions, as a scope must bind it.
 export function freeNames(t) { return free(t); }
+// The free names of the syntax as written, annotations left out: what a
+// match or a determinacy check reads.
+export function writtenNames(t) { return namesOf(t, writtenView); }
 // Whether a value is a term, as opposed to another kind of entry in scope.
 export const isTerm = t => !!(t && typeof t === "object" && typeof t.tag === "string" && children[t.tag]);
 // A term with its beta redexes contracted, within a budget of substitutions,
@@ -134,7 +146,7 @@ export function betaReduce(term, budget = 256) {
     // Keep unchanged syntax by identity: decoded nodes carry the codec's
     // checked annotations and are shared by later kernel queries.
     let result = t;
-    for (const [key, value] of Object.entries(t)) {
+    for (const [key, value] of termFields(t)) {
       const changed = beta(value);
       if (changed !== value) {
         if (result === t) result = Array.isArray(t) ? [...t] : {...t};
@@ -258,7 +270,7 @@ export function withoutEmptyFaces(term,memo=new WeakMap()) {
   }
   let changed=false;
   const result={};
-  for(const [key,value] of Object.entries(term)) {
+  for(const [key,value] of termFields(term)) {
     let next=value;
     if(key==="system"&&Array.isArray(value)&&["Comp","HComp","Glue","GlueTerm"].includes(term.tag))
       next=value.filter(part=>!Array.isArray(part.face)||part.face.length>0);
@@ -297,7 +309,9 @@ export function alphaKey(term, renamed = new Map()) {
       if (t.tag === "PLam") node.body = renamedIn(t.body);
       if (t.tag === "Comp" || t.tag === "HComp") node.system = t.system.map(piece => ({...piece, term: renamedIn(piece.term)}));
     }
-    return Object.fromEntries(Object.entries(node).map(([key, value]) => [key, canonical(value)]));
+    // The syntax as written: two path applications are the same whatever
+    // the kernel recorded of their paths' types.
+    return Object.fromEntries(writtenFields(node).map(([key, value]) => [key, canonical(value)]));
   };
   return JSON.stringify(canonical(term), (key, value) => typeof value === "string" && renamed.has(value) ? renamed.get(value) : value);
 }

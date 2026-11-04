@@ -12,6 +12,7 @@ import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { checkProgram } from "./check-program.mjs";
+import { freeNames, writtenNames } from "../web/translator/core.mjs";
 
 const module = await createCubical();
 const unit = { tag: "Unit" }, point = { tag: "Point" }, u0 = { tag: "U", level: 0 };
@@ -232,24 +233,83 @@ def taken(p : Unit = Unit) :
   assert.deepEqual(verdicts, { Ignore: true, take: true, f: true, taken: true });
 });
 
-test("a decoded term encodes back to its node only where all the node mentions is in scope", async t => {
-  // p @ 0 checked where p : Path(j; Unit, x, x) carries that type, which
-  // mentions x, as its annotation; its syntax does not. Where p is a path
-  // between tt and tt and x is not in scope, it is encoded from its syntax,
-  // and a head query does not answer x. So for a dimension only the
-  // annotation mentions: q @ i, in i, where the query has none.
+test("a checked path application's annotation is syntax, and mentions what it mentions", async t => {
+  // p @ 0 checked where p : Path(j; Unit, x, x) carries that type, x
+  // included, as its annotation (pathType): the decoded term mentions x and
+  // encodes back to its node from its syntax alone. Where x is not in scope
+  // it is refused, as any term mentioning x is, and a head query does not
+  // answer x. So for a dimension: q @ i in the annotation of p @ 0, in i.
+  // Wrapped as fun (p : tt = tt) => p @ 0, a term with no other free name,
+  // it still mentions x.
   const { checker } = fresh(t), syntax = checker.syntax;
   const path = (left, right) => ({ tag: "Path", dim: "j", family: unit, left, right });
   const at = { tag: "PApp", path: variable("p"), arg: [] }, qi = { tag: "PApp", path: variable("q"), arg: [["i:1"]] };
-  const answer = (term, context) => { try { return checker.nf(term, context, new Map()); } catch { return null; } };
-  for (const [first, dimensions, second] of [
-    [new Map([["x", unit], ["p", path(variable("x"), variable("x"))]]), new Map(), new Map([["p", path(point, point)]])],
-    [new Map([["q", path(point, point)], ["p", path(qi, qi)]]), new Map([["i", 0]]), new Map([["q", path(point, point)], ["p", path(point, point)]])]
+  for (const [first, dimensions, second, refused] of [
+    [new Map([["x", unit], ["p", path(variable("x"), variable("x"))]]), new Map(), new Map([["p", path(point, point)]]), unbound],
+    [new Map([["q", path(point, point)], ["p", path(qi, qi)]]), new Map([["i", 0]]),
+      new Map([["q", path(point, point)], ["p", path(point, point)]]), /Unbound cubical dimension/]
   ]) {
     const checked = checker.checkSyntax(at, null, first, dimensions);
     assert.equal(syntax.encode(checked.term, dimensions, checker.scopeOf(first, dimensions)), checked.expression);
-    assert.notEqual(syntax.encode(checked.term, new Map(), checker.scopeOf(second, new Map())), checked.expression);
-    const asked = answer(checked.term, second);
-    assert.ok(!asked || asked.tag === "Point", "no answer from what only the annotation mentions");
+    assert.throws(() => syntax.encode(checked.term, new Map(), checker.scopeOf(second, new Map())), refused);
+    assert.throws(() => checker.nf(checked.term, second, new Map()), refused);
   }
+  const first = new Map([["x", unit], ["p", path(variable("x"), variable("x"))]]), empty = new Map();
+  const wrapper = lam("p", path(point, point), checker.checkSyntax(at, null, first, new Map()).term);
+  assert.deepEqual([...freeNames(wrapper)], ["x"]);
+  assert.throws(() => syntax.encode(wrapper, new Map(), checker.scopeOf(empty, new Map())), unbound);
+  const applied = { tag: "App", fn: wrapper, arg: { tag: "PLam", dim: "k", family: unit, body: point } };
+  assert.throws(() => checker.nf(applied, empty, new Map()), unbound);
+});
+
+test("a rule parameter only its matched side's annotations mention is not determined by the match", async t => {
+  // transport v along p in C is Trans(i. C(p @ i), v): x, p's endpoint, is
+  // in the matched side only as p @ i's annotation, Path(A, x, x). A match
+  // reads the side as written (term-shape.mjs), so x is not determined and
+  // the rule is refused. Read with its annotations, it would bind x.
+  const normal = [];
+  const { verdicts } = await checkProgram(t, `
+def only_annotated(A : U0, C : A -> U0, x : A, p : x = x, v : C(x)) :
+  (transport v along p in C) = (transport v along p in C) := refl(transport v along p in C);
+
+def use_it(A : U0, C : A -> U0, y : A, q : y = y, w : C(y)) :
+  (transport w along q in C) = (transport w along q in C) {
+  simp only [only_annotated];
+}
+`, { module, options: { onDeclarationStart: (name, declaration, checker) => {
+    if (declaration.name.text !== "use_it") return;
+    const nf = checker.nf.bind(checker);
+    checker.nf = (...args) => {
+      const result = nf(...args);
+      normal.push(result);
+      return result;
+    };
+  } } });
+  assert.equal(verdicts.only_annotated, true);
+  assert.match(verdicts.use_it, /A simplification rule parameter is not determined by the matched side/);
+  // The rule's statement, its parameters entries of its scope: one of them
+  // is in its matched side, but only in an annotation.
+  const hidden = normal.filter(type => type?.tag === "Path").flatMap(type => [...freeNames(type.left)]
+    .filter(name => name.startsWith("simp_parameter") && !writtenNames(type.left).has(name)));
+  assert.ok(hidden.length, "a parameter is in the matched side's annotations alone");
+});
+
+test("an annotation kept as syntax survives a declaration's end", async t => {
+  // Each declaration's end drops what the codec read of its handles; a
+  // decoded Π kept from before, forall x : Unit. p @ 0, still carries its
+  // body's annotation, so g is checked as f is (main accepts both).
+  const { verdicts } = await checkProgram(t, `
+inductive I(A : U0) {
+  c(x : Unit);
+}
+
+def p := axiom (I(Unit) = I(Unit));
+
+def Expected : U0 := forall x : Unit. p @ 0;
+
+def f : Expected := c;
+
+def g : Expected := c;
+`, { module });
+  assert.deepEqual(verdicts, { I: true, p: true, Expected: true, f: true, g: true });
 });
