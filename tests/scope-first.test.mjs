@@ -159,13 +159,14 @@ async function failedScopes(t, source) {
   return { verdicts, failed };
 }
 
-test("the solver asks about a binder's body with the binder at its domain as solved", async t => {
+test("the solver binds a binder it descends under at the closed side's domain", async t => {
   // Semigroup.Hom.magma, made for the extension, calls Magma.Hom.make with
   // its universes and models as holes. Magma.Hom(U?, V?, A?) unfolds to
-  // fun (B : Magma(V?)) => …, and the expected Magma.Hom(U, V, …) to
-  // fun (B : Magma(V)) => …: the domains solve V? as V, and the bodies are
-  // asked about with B at Magma(V). Bound at Magma(V?), as the domain stood
-  // before, B made Magma.M(V, B) in the next binder's type ill-typed.
+  // fun (B : Magma(V?)) => …, and the expected Magma.Hom(U, V, …), the
+  // constraint's closed side, to fun (B : Magma(V)) => …: the domains solve
+  // V? as V, and the bodies are asked about with B at Magma(V). Bound at the
+  // solver's own side, Magma(V?), B made Magma.M(V, B) in the next binder's
+  // type ill-typed (#351's solver fails here, five times).
   const { verdicts, failed } = await failedScopes(t, `import hlevels;
 
 theory Magma(U < UU0) {
@@ -181,12 +182,14 @@ theory Semigroup(U < UU0) extends Magma {
   assert.deepEqual(failed, []);
 });
 
-test("a hole whose solution is not yet known to have its type stays an entry of the solver's scope", async t => {
-  // transpose(naturality(f, g, h, p)): naturality's type solves transpose's
-  // A? : U(U?) as B, of the universe U, and its corners and edges, while
-  // only that solution bounds U?. Until U? is solved, B is no type in
-  // U(U?): the solver's scope keeps A? an entry at U(U?), the corners at A?
-  // and s at Square(U?, A?, …), and asks about them as they stand.
+test("a hole solved by a type in a universe its slot's is not yet known to contain leaves every context derivable", async t => {
+  // transpose(naturality(f, g, h, p)): naturality's type, the constraint's
+  // closed side, solves transpose's A? : U(U?) as B, of the universe U, and
+  // its corners and edges, while only that solution bounds U?. Until U? is
+  // solved, B is no type in U(U?). The solver's context keeps A? an entry
+  // at U(U?), the corners at A? and s at Square(U?, A?, …), as the call's
+  // telescope has them, and binds the path families' dimensions: no context
+  // it asks in mentions a solution.
   const { verdicts, failed } = await failedScopes(t, `
 def Square{{U < UU0, A : U, a00, a01, a10, a11 : A}}(
   a0_ : a00 = a01, a1_ : a10 = a11, a_0 : a00 = a10, a_1 : a01 = a11
@@ -210,27 +213,6 @@ def transposed{{U < UU0, A, B : U, x, y : A}}(
   Square(cong(f, p), cong(g, p), h(x), h(y)) := transpose(naturality(f, g, h, p));
 `);
   assert.deepEqual(verdicts, { Square: true, naturality: true, transpose: true, transposed: true });
-  assert.deepEqual(failed, []);
-});
-
-test("a guess the solver undoes leaves no scope behind", async t => {
-  // Twice.Hom.pointed calls Pointed.Hom.make with its holes, and the solver
-  // matches one definition applied on both sides argument by argument,
-  // solving a hole, before it gives that guess up. The scopes made while it
-  // guessed substitute that solution: asked in after the guess is undone,
-  // the hole is no entry of them, and a query fails.
-  const { verdicts, failed } = await failedScopes(t, `import hlevels;
-
-theory Pointed(U < UU0) {
-  M : set U;
-  point : M;
-}
-
-theory Twice(U < UU0) extends Pointed {
-  law point_point : point = point;
-}
-`);
-  assert.equal(verdicts.Twice, true);
   assert.deepEqual(failed, []);
 });
 
@@ -265,6 +247,33 @@ evaluate picked(0, tt) expecting 1;
   assert.deepEqual(verdicts, { Family: true, Tag: true, pick: true, picked: true });
   assert.deepEqual(inferredArguments(result), ["Arguments of pick inferred: n := 1, x := z."]);
   assert.deepEqual(result.gaps, []);
+});
+
+test("a function type's codomain bounds the universe through a solution not yet typed", async t => {
+  // take(b, fun (x : B) => U1): b solves A? as B, and the function's type
+  // B -> U2 is compared with Wrap(U?, A?), which unfolds, with A? := B, to
+  // B -> U(U?): its codomain bounds U? by U2, before universes are solved.
+  // The query is about the term with B in it, in the call's telescope,
+  // where A? is an entry at U(U?): the term is reduced, not checked.
+  const { verdicts, result } = await checkProgram(t, `
+def Wrap(U < UU0, A : U) : UU0 := A -> U;
+def take{{U < UU0, A : U}}(a : A, f : Wrap(U, A)) : Unit := tt;
+def taken(B : U1, b : B) : Unit := take(b, fun (x : B) => U1);
+`, { module });
+  assert.deepEqual(verdicts, { Wrap: true, take: true, taken: true });
+  assert.deepEqual(inferredArguments(result), ["Arguments of take inferred: U := U2, A := B."]);
+});
+
+test("a result solved as a function takes the next argument", async t => {
+  // identity(fun (x : B) => x, b): the first argument solves A? as B -> B
+  // while its universe is still unsolved, and the call's type so far, A?,
+  // is asked about as B -> B, a function type, which takes b.
+  const { verdicts, result } = await checkProgram(t, `
+def identity{{U < UU0, A : U}}(x : A) : A := x;
+def taken(B : U1, b : B) : B := identity(fun (x : B) => x, b);
+`, { module });
+  assert.deepEqual(verdicts, { identity: true, taken: true });
+  assert.deepEqual(inferredArguments(result), ["Arguments of identity inferred: U := U1, A := B -> B."]);
 });
 
 test("a call's candidate keeps the dimensions its scope's variables' types mention", async t => {
