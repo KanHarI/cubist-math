@@ -204,7 +204,82 @@ typedef struct {
     unsigned reference;
     uint32_t payload;
 } index_operation;
-enum { MEMO_INSTANTIATE = 7, MEMO_INSTANTIATE_ALL = 8, MEMO_ABSTRACT = 9, MEMO_CLOSE = 10 };
+enum { MEMO_INSTANTIATE = 7, MEMO_INSTANTIATE_ALL = 8, MEMO_ABSTRACT = 9, MEMO_CLOSE = 10, MEMO_INDEX_OCCURS = 11 };
+
+/* Whether a dimension binder binds its dimension in child i, 0 or 1 (child
+ * 1 of a composition is its tube list, whose bodies it binds): the children
+ * SUBSTITUTE_RENAME_DIMENSION renames. */
+static bool binds_dimension_in(cc_term_kind kind, unsigned i) {
+    return i == 0 ? kind != CC_HCOMP : kind == CC_PLAM || kind == CC_COMP || kind == CC_HCOMP;
+}
+
+/* Whether CC_BOUND(index) occurs in `term`, the index raised by one in the
+ * body of each term or level binder crossed. Exact: it visits only nodes
+ * whose `loose` exceeds the index sought there, takes a step per node
+ * visited, and memoizes each answer. */
+static bool index_occurs(cc_kernel *k, cc_term term, uint32_t index) {
+    typedef struct {
+        cc_term term;
+        uint32_t index;
+        unsigned next;
+        bool waiting;
+    } frame;
+    frame local[32], *frames = local;
+    size_t count = 1;
+    bool result = false;
+    frames[0] = (frame){term, index, UINT_MAX, false};
+    while (count && !k->error[0]) {
+        frame *f = &frames[count - 1];
+        cc_node n = f->term ? k->nodes[f->term] : (cc_node){0};
+        if (f->next == UINT_MAX) {
+            uint64_t cached;
+            if (n.loose <= f->index) {
+                result = false;
+                --count;
+                continue;
+            }
+            if (ck_memo_get(k, MEMO_INDEX_OCCURS, f->term, f->index, 0, &cached)) {
+                result = cached != 0;
+                --count;
+                continue;
+            }
+            if (!ck_tick(k)) break;
+            if (n.kind == CC_BOUND) {
+                result = n.payload == f->index;
+                goto done;
+            }
+            f->next = 0;
+        }
+        if (f->waiting) {
+            if (result) goto done;
+            f->waiting = false;
+        }
+        if (f->next == ck_arity(n.kind)) {
+            result = false;
+            goto done;
+        }
+        unsigned i = f->next++;
+        f->waiting = true;
+        if (frames == local && count == sizeof local / sizeof *local) {
+            size_t capacity = k->nodes[term].depth + (size_t)1;
+            frames = capacity <= SIZE_MAX / sizeof *frames ? malloc(capacity * sizeof *frames) : NULL;
+            if (!frames) {
+                frames = local;
+                ck_fail_as(k, CC_ERROR_RESOURCE, "Variable scan allocation failed.");
+                break;
+            }
+            memcpy(frames, local, sizeof local);
+        }
+        /* A node visited has loose > index, so the index cannot wrap. */
+        frames[count++] = (frame){n.child[i], f->index + (i == 1 && ck_term_binder(n.kind)), UINT_MAX, false};
+        continue;
+done:
+        ck_memo_put(k, MEMO_INDEX_OCCURS, f->term, f->index, 0, result);
+        --count;
+    }
+    if (frames != local) free(frames);
+    return !k->error[0] && result;
+}
 
 typedef struct {
     substitution_kind kind;
@@ -267,6 +342,29 @@ static uint64_t instantiation_dims(cc_kernel *k, index_operation *op) {
         op->value_dims |= ck_free_dims(k, op->values[i]);
     op->dimensions_known = !k->error[0];
     return op->value_dims;
+}
+
+/* The free dimensions of the values an instantiation puts where the
+ * dimension binder of `f` binds: those of the values whose index occurs in
+ * a child it binds. A value put nowhere under it, its index absent or only
+ * in a child it does not bind, must neither force a renaming nor narrow the
+ * names one may take. The union over all values decides first; the exact
+ * scan runs only when that union meets the binder's dimension. */
+static uint64_t inserted_dims(cc_kernel *k, const substitution_frame *f) {
+    index_operation *op = f->index;
+    uint64_t all = instantiation_dims(k, op);
+    if (k->error[0] || !(all & (UINT64_C(1) << f->node.payload))) return all;
+    /* The frame is visited, so loose > name: no index at or above
+     * loose - name occurs, and name + i cannot wrap. */
+    uint32_t reach = k->nodes[f->term].loose - f->name;
+    uint64_t inserted = 0;
+    for (uint32_t i = 0; i < op->count && i < reach && !k->error[0]; ++i) {
+        bool put = false;
+        for (unsigned child = 0; child < 2 && !put && !k->error[0]; ++child)
+            put = binds_dimension_in(f->node.kind, child) && index_occurs(k, f->node.child[child], f->name + i);
+        if (put) inserted |= ck_free_dims(k, op->values[i]);
+    }
+    return inserted;
 }
 
 /* Most external requests are cached or leave their input untouched. Keep
@@ -428,7 +526,7 @@ static cc_term substitution(cc_kernel *k, substitution_frame root) {
             /* Abstraction puts in a CC_BOUND, which mentions no dimension. */
             if (ck_dim_binder(f->node.kind) && f->node.payload < CC_DIMENSIONS && f->kind != SUBSTITUTE_ABSTRACT) {
                 uint64_t value_dims = f->kind == SUBSTITUTE_TERM ? ck_free_dims(k, f->value)
-                    : f->kind == SUBSTITUTE_INSTANTIATE ? instantiation_dims(k, f->index)
+                    : f->kind == SUBSTITUTE_INSTANTIATE ? inserted_dims(k, f)
                     : formula_names(&f->interval);
                 if ((f->kind != SUBSTITUTE_DIMENSION || f->node.payload != f->name) &&
                     (value_dims & (UINT64_C(1) << f->node.payload))) {
@@ -458,8 +556,7 @@ static cc_term substitution(cc_kernel *k, substitution_frame root) {
                 break;
             }
             bool tube = i == 1 && (f->node.kind == CC_COMP || f->node.kind == CC_HCOMP);
-            bool bound = i == 0 ? f->node.kind != CC_HCOMP : f->node.kind == CC_PLAM || tube;
-            if (!bound) break;
+            if (!binds_dimension_in(f->node.kind, i)) break;
             substitution_frame child = tube
                 ? tube_request(f->node.child[i], f->node.payload, &f->rename_interval, true, false)
                 : dimension_request(f->node.child[i], f->node.payload, &f->rename_interval);

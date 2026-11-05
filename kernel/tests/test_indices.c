@@ -28,10 +28,13 @@ void *cc_test_traversal_calloc(size_t count, size_t size) {
 static cc_kernel *k;
 static cc_term unit, entries[66];
 
-static cc_term node(cc_term_kind kind, uint32_t payload, cc_term a, cc_term b, cc_term c) {
-    cc_term term = ck_make(k, kind, payload, a, b, c, 0);
+static cc_term node4(cc_term_kind kind, uint32_t payload, cc_term a, cc_term b, cc_term c, cc_term d) {
+    cc_term term = ck_make(k, kind, payload, a, b, c, d);
     assert(term && !k->error[0]);
     return term;
+}
+static cc_term node(cc_term_kind kind, uint32_t payload, cc_term a, cc_term b, cc_term c) {
+    return node4(kind, payload, a, b, c, 0);
 }
 static cc_term bound(uint32_t index) { return node(CC_BOUND, index, 0, 0, 0); }
 static cc_term opened(uint32_t level) { return node(CC_OPENED, level, 0, 0, 0); }
@@ -96,7 +99,7 @@ static cc_term replace_opened(cc_term t, uint32_t level, cc_term value) {
         child[i] = replace_opened(n.child[i], level, value);
         changed |= child[i] != n.child[i];
     }
-    return changed ? node(n.kind, n.payload, child[0], child[1], child[2]) : t;
+    return changed ? node4(n.kind, n.payload, child[0], child[1], child[2], child[3]) : t;
 }
 
 /* Instantiation and abstraction by recursion, apart from the kernel's
@@ -116,7 +119,7 @@ static cc_term instantiated(cc_term t, uint32_t depth, const cc_term *values, ui
         child[i] = instantiated(n.child[i], depth + (i == 1 && binds(n.kind)), values, count);
         changed |= child[i] != n.child[i];
     }
-    return changed ? node(n.kind, n.payload, child[0], child[1], child[2]) : t;
+    return changed ? node4(n.kind, n.payload, child[0], child[1], child[2], child[3]) : t;
 }
 static cc_term abstracted(cc_term t, uint32_t depth, unsigned kind, uint32_t payload) {
     if (!t) return 0;
@@ -128,7 +131,7 @@ static cc_term abstracted(cc_term t, uint32_t depth, unsigned kind, uint32_t pay
         child[i] = abstracted(n.child[i], depth + (i == 1 && binds(n.kind)), kind, payload);
         changed |= child[i] != n.child[i];
     }
-    return changed ? node(n.kind, n.payload, child[0], child[1], child[2]) : t;
+    return changed ? node4(n.kind, n.payload, child[0], child[1], child[2], child[3]) : t;
 }
 
 static uint64_t seed = 0x2545F4914F6CDD1DULL;
@@ -141,11 +144,20 @@ static uint32_t roll(uint32_t bound) {
 static uint32_t drawn(bool ends) {
     return ends && roll(2) ? UINT32_MAX - 1 - roll(3) : roll(4);
 }
-/* Random syntax over every term and level binder, the dimension binders and
- * their applications, and the leaves the counters read. */
+static cc_term random_term(unsigned depth, bool ends);
+/* A composition's tube list: none, or faces with bodies. */
+static cc_term random_tubes(unsigned depth, bool ends) {
+    if (!depth || !roll(3)) return 0;
+    return node(CC_TUBE, ck_endpoint_face(k, roll(2), roll(2)), random_term(depth - 1, ends),
+                random_tubes(depth - 1, ends), 0);
+}
+/* Random syntax over every term and level binder, every dimension binder
+ * (path types and abstractions, compositions with their tube lists,
+ * transport), path applications, a node of four children, and the leaves
+ * the counters read. */
 static cc_term random_term(unsigned depth, bool ends) {
     static const cc_term_kind binders[] = {CC_PI, CC_LAM, CC_SIGMA, CC_LPI, CC_LLAM};
-    switch (depth ? roll(12) : roll(5)) {
+    switch (depth ? roll(17) : roll(5)) {
     case 0: return bound(drawn(ends));
     case 1: return opened(drawn(ends));
     case 2: return context(roll(3));
@@ -157,6 +169,14 @@ static cc_term random_term(unsigned depth, bool ends) {
     case 9: return node(CC_PAIR, 0, random_term(depth - 1, ends), random_term(depth - 1, ends),
                         random_term(depth - 1, ends));
     case 10: return node(CC_PLAM, roll(2), random_term(depth - 1, ends), random_term(depth - 1, ends), 0);
+    case 11: case 12:
+        return node(roll(2) ? CC_PATH : CC_TRANS, roll(2), random_term(depth - 1, ends),
+                    random_term(depth - 1, ends), random_term(depth - 1, ends));
+    case 13: case 14:
+        return node(roll(2) ? CC_COMP : CC_HCOMP, roll(2), random_term(depth - 1, ends),
+                    random_tubes(depth - 1, ends), random_term(depth - 1, ends));
+    case 15: return node4(CC_SUMREC, 0, random_term(depth - 1, ends), random_term(depth - 1, ends),
+                          random_term(depth - 1, ends), random_term(depth - 1, ends));
     default: return node(CC_PAPP, ck_interval_variable(k, roll(2)), random_term(depth - 1, ends),
                          roll(2) ? random_term(depth - 1, ends) : 0, 0);
     }
@@ -303,6 +323,30 @@ static void binder_cases(void) {
     }
     cc_term path = node(CC_PLAM, 0, bound(0), sum(bound(0), bound(1)), 0);
     assert(same(ck_instantiate(k, path, v), node(CC_PLAM, 0, v, sum(v, bound(1)), 0)) && !k->error[0]);
+}
+
+/* A dimension binder is renamed only for a value put where it binds: a
+ * value whose index does not occur there forces no renaming, though it
+ * mentions every dimension (review round 2's case), nor does an index the
+ * instantiation leaves, or a value put only into a child the binder does
+ * not bind. A value whose index occurs under a term binder there does. */
+static void capture_scan(void) {
+    cc_term every = unit;
+    for (unsigned d = 0; d < CC_DIMENSIONS; ++d)
+        every = sum(every, node(CC_PAPP, ck_interval_variable(k, d), node(CC_VAR, 30, 0, 0, 0), 0, 0));
+    assert(ck_free_dims(k, every) == UINT64_MAX && !k->nodes[every].loose);
+    cc_term point = node(CC_POINT, 0, 0, 0, 0), values[] = {point, every};
+    cc_term t = node(CC_PLAM, 0, unit, bound(0), 0);
+    assert(same(ck_instantiate_all(k, t, values, 2), node(CC_PLAM, 0, unit, point, 0)) && !k->error[0]);
+    cc_term outer = node(CC_PLAM, 0, unit, bound(1), 0);
+    assert(same(ck_instantiate(k, outer, every), outer) && !k->error[0]);
+    cc_term at = node(CC_PAPP, ck_interval_variable(k, 0), node(CC_VAR, 31, 0, 0, 0), 0, 0);
+    assert(same(ck_instantiate(k, node(CC_HCOMP, 0, bound(0), 0, unit), at), node(CC_HCOMP, 0, at, 0, unit)));
+    assert(!k->error[0]);
+    cc_term renamed = ck_instantiate(k, node(CC_COMP, 0, bound(0), 0, unit), at);
+    assert(renamed && k->nodes[renamed].payload != 0 && !k->error[0]);
+    renamed = ck_instantiate(k, node(CC_PLAM, 0, unit, lam(unit, bound(1)), 0), at);
+    assert(renamed && k->nodes[renamed].payload != 0 && ck_free_dims(k, renamed) == 1 && !k->error[0]);
 }
 
 /* Instantiation renames a dimension binder its value would be captured by,
@@ -477,6 +521,7 @@ int main(void) {
         laws();
         binder_cases();
         serial_wrap();
+        capture_scan();
         dimension_capture();
         filter_collision();
         dag();

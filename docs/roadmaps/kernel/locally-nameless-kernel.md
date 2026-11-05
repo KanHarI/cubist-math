@@ -1548,7 +1548,11 @@ Each PR is verified locally first, opened as a draft, and keeps
    `ck_abstract` reads. `ck_alpha_equal` compares the three leaves by
    payload, as it compares `CC_DEFREF`. The primitives are two kinds of
    frame in `substitution`'s worklist, memoized as syntax memo operations
-   7 to 10. The simultaneous form is keyed by a serial of its call
+   7 to 10. At a dimension binder, instantiation renames only for the
+   values whose index occurs in a child the binder binds (`index_occurs`,
+   operation 11, run only when the values' union meets the binder's
+   dimension), so a value put nowhere under it neither forces a renaming
+   nor narrows the names one may take. The simultaneous form is keyed by a serial of its call
    (`instantiation_serial`, the memo cleared when it wraps), not by its
    values: a list of them as the key would be deeper than the deepest value
    and refuse results that fit the depth limit. So its entries serve the
