@@ -816,7 +816,7 @@ def mixed(a, b : UNat, h : a = b) : a &lt;= b {
                 <tr id="E614"><td><code>E614</code></td><td>The eliminator's motive is over another declared type.</td></tr>
                 <tr id="E615"><td><code>E615</code></td><td>A signature's former binds its universe parameters first.</td></tr>
                 <tr id="E616"><td><code>E616</code></td><td>A signature's former binds its parameters after its levels.</td></tr>
-                <tr id="E617"><td><code>E617</code></td><td>Could not allocate a symbol.</td></tr>
+                <tr id="E617"><td><code>E617</code></td><td>Could not allocate a symbol. (retired)</td></tr>
                 <tr id="E618"><td><code>E618</code></td><td>An instance takes each of its signature's parameters.</td></tr>
                 <tr id="E619"><td><code>E619</code></td><td>An instance gives each recorded universe parameter its level, and no other.</td></tr>
                 <tr id="E620"><td><code>E620</code></td><td>An erased universe parameter has no parameter to read it from.</td></tr>
@@ -871,6 +871,9 @@ def mixed(a, b : UNat, h : a = b) : a &lt;= b {
                 <tr id="E669"><td><code>E669</code></td><td>A checked definition has no registered name.</td></tr>
                 <tr id="E670"><td><code>E670</code></td><td>No declared type is registered at signature ….</td></tr>
                 <tr id="E671"><td><code>E671</code></td><td>The driver made no context entry ….</td></tr>
+                <tr id="E672"><td><code>E672</code></td><td>A bound variable was derived outside its binder.</td></tr>
+                <tr id="E673"><td><code>E673</code></td><td>Too many entries.</td></tr>
+                <tr id="E674"><td><code>E674</code></td><td>A bound variable has no binder around it (index …).</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-e7">Arguments and their inference</h3>
@@ -1021,7 +1024,7 @@ def mixed(a, b : UNat, h : a = b) : a &lt;= b {
                 <tr id="K130"><td><code>K130</code></td><td>Signature table allocation failed.</td></tr>
                 <tr id="K131"><td><code>K131</code></td><td>A signature has too many constructors.</td></tr>
                 <tr id="K132"><td><code>K132</code></td><td>Constructor table allocation failed.</td></tr>
-                <tr id="K133"><td><code>K133</code></td><td>A binder in a boundary reuses a name of the signature.</td></tr>
+                <tr id="K133"><td><code>K133</code></td><td>A binder in a boundary reuses a name of the signature. (retired)</td></tr>
                 <tr id="K134"><td><code>K134</code></td><td>A binder's type in a boundary mentions the sort, a constructor or a position (section 1.4).</td></tr>
                 <tr id="K135"><td><code>K135</code></td><td>A path abstraction or application in a boundary carries a type that is not a cube over the sort (section 1.4).</td></tr>
                 <tr id="K136"><td><code>K136</code></td><td>A boundary may not contain a composition, hcomp or transport (section 1.4, Q3).</td></tr>
@@ -1031,9 +1034,9 @@ def mixed(a, b : UNat, h : a = b) : a &lt;= b {
                 <tr id="K140"><td><code>K140</code></td><td>A boundary must be a constructor expression: a position or an earlier constructor, applied, or a path application or abstraction of one (section 1.4).</td></tr>
                 <tr id="K141"><td><code>K141</code></td><td>A constructor has too many dimensions, or a position too deep a cube.</td></tr>
                 <tr id="K142"><td><code>K142</code></td><td>A position's type and a constructor's result end in the sort, or in an iterated path type over it (section 1.2).</td></tr>
-                <tr id="K143"><td><code>K143</code></td><td>A constructor's argument reuses a name of the signature.</td></tr>
+                <tr id="K143"><td><code>K143</code></td><td>A constructor's argument reuses a name of the signature. (retired)</td></tr>
                 <tr id="K144"><td><code>K144</code></td><td>A constructor has too many arguments.</td></tr>
-                <tr id="K145"><td><code>K145</code></td><td>A position's arity reuses a name of the signature.</td></tr>
+                <tr id="K145"><td><code>K145</code></td><td>A position's arity reuses a name of the signature. (retired)</td></tr>
                 <tr id="K146"><td><code>K146</code></td><td>A position's arity mentions the sort, a constructor or a position: the sort occurs only at the end of a position (section 1.3).</td></tr>
                 <tr id="K147"><td><code>K147</code></td><td>A position's arity is too long.</td></tr>
                 <tr id="K148"><td><code>K148</code></td><td>A data argument follows a position; the kernel requires all data first (section 1.2).</td></tr>
@@ -1044,11 +1047,11 @@ def mixed(a, b : UNat, h : a = b) : a &lt;= b {
                 <tr id="K153"><td><code>K153</code></td><td>Declared types (H1) are switched off in this kernel; CC_EXTENSION_H1 switches them on.</td></tr>
                 <tr id="K154"><td><code>K154</code></td><td>A signature's former type must be closed.</td></tr>
                 <tr id="K155"><td><code>K155</code></td><td>A truncation level is at most the kernel's bound.</td></tr>
-                <tr id="K156"><td><code>K156</code></td><td>A signature needs a sort symbol.</td></tr>
+                <tr id="K156"><td><code>K156</code></td><td>A signature needs a sort symbol. (retired)</td></tr>
                 <tr id="K157"><td><code>K157</code></td><td>A signature has too many universe parameters.</td></tr>
                 <tr id="K158"><td><code>K158</code></td><td>A signature's universe parameters range below UU0: x &lt; ω.</td></tr>
                 <tr id="K159"><td><code>K159</code></td><td>A signature's former type is Π (xs &lt; ω). Π (ps : Ps). U(ℓ).</td></tr>
-                <tr id="K160"><td><code>K160</code></td><td>A signature's parameters need distinct symbols, other than the sort's.</td></tr>
+                <tr id="K160"><td><code>K160</code></td><td>A signature's parameters need distinct symbols, other than the sort's. (retired)</td></tr>
                 <tr id="K161"><td><code>K161</code></td><td>The classification marks a universe parameter the signature does not have.</td></tr>
                 <tr id="K162"><td><code>K162</code></td><td>An erased universe parameter needs a determining occurrence: a parameter whose type ends in U(x) (section 1.1). Otherwise it is recorded.</td></tr>
                 <tr id="K163"><td><code>K163</code></td><td>Signature allocation failed.</td></tr>
@@ -1059,8 +1062,8 @@ def mixed(a, b : UNat, h : a = b) : a &lt;= b {
                 <tr id="K168"><td><code>K168</code></td><td>A constructor entry's type is not that constructor's.</td></tr>
                 <tr id="K169"><td><code>K169</code></td><td>A constructor type's context holds an entry that is not the signature's: a later constructor, or a name from outside the signature (section 1.5).</td></tr>
                 <tr id="K170"><td><code>K170</code></td><td>A constructor type is derived in the signature's universe U(ℓ); lift it there first.</td></tr>
-                <tr id="K171"><td><code>K171</code></td><td>A constructor needs a symbol.</td></tr>
-                <tr id="K172"><td><code>K172</code></td><td>A constructor's symbol must be new to the signature.</td></tr>
+                <tr id="K171"><td><code>K171</code></td><td>A constructor needs a symbol. (retired)</td></tr>
+                <tr id="K172"><td><code>K172</code></td><td>A constructor's symbol must be new to the signature. (retired)</td></tr>
                 <tr id="K173"><td><code>K173</code></td><td>A constructor type mentions an erased universe parameter; only a recorded one may occur there (section 1.1).</td></tr>
                 <tr id="K174"><td><code>K174</code></td><td>Expected an instance of a declared type.</td></tr>
                 <tr id="K175"><td><code>K175</code></td><td>Only an admitted signature has instances.</td></tr>
@@ -1073,6 +1076,14 @@ def mixed(a, b : UNat, h : a = b) : a &lt;= b {
                 <tr id="K182"><td><code>K182</code></td><td>The instance's parameters and levels are not the signature's.</td></tr>
                 <tr id="K183"><td><code>K183</code></td><td>A parameter reads an erased universe parameter at another level than an earlier one; lift the lower parameter first.</td></tr>
                 <tr id="K184"><td><code>K184</code></td><td>A parameter's type is not the signature's telescope at the earlier parameters.</td></tr>
+                <tr id="K185"><td><code>K185</code></td><td>A signature takes one entry for each of its former's parameters.</td></tr>
+                <tr id="K186"><td><code>K186</code></td><td>A signature's universe parameter takes a level entry.</td></tr>
+                <tr id="K187"><td><code>K187</code></td><td>A signature's term parameter takes a term entry.</td></tr>
+                <tr id="K188"><td><code>K188</code></td><td>A signature's entries are pairwise distinct, the sort's apart from its parameters'.</td></tr>
+                <tr id="K189"><td><code>K189</code></td><td>A signature's sort takes a term entry.</td></tr>
+                <tr id="K190"><td><code>K190</code></td><td>A constructor type mentions an entry outside its signature's telescope.</td></tr>
+                <tr id="K191"><td><code>K191</code></td><td>A constructor takes a term entry.</td></tr>
+                <tr id="K192"><td><code>K192</code></td><td>A constructor's entry is already in its signature's telescope.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-k2">Kernel: instructions</h3>
@@ -1148,9 +1159,9 @@ def mixed(a, b : UNat, h : a = b) : a &lt;= b {
                 <tr id="K267"><td><code>K267</code></td><td>Two dimension entries with one index meet in a context.</td></tr>
                 <tr id="K268"><td><code>K268</code></td><td>A context entry still depends on the discharged entry.</td></tr>
                 <tr id="K269"><td><code>K269</code></td><td>The binder would capture another dimension entry with its index.</td></tr>
-                <tr id="K270"><td><code>K270</code></td><td>Entry index allocation failed.</td></tr>
-                <tr id="K271"><td><code>K271</code></td><td>A context entry needs a symbol.</td></tr>
-                <tr id="K272"><td><code>K272</code></td><td>The symbol already names a context entry.</td></tr>
+                <tr id="K270"><td><code>K270</code></td><td>Entry index allocation failed. (retired)</td></tr>
+                <tr id="K271"><td><code>K271</code></td><td>A context entry needs a symbol. (retired)</td></tr>
+                <tr id="K272"><td><code>K272</code></td><td>The symbol already names a context entry. (retired)</td></tr>
                 <tr id="K273"><td><code>K273</code></td><td>Expected a level entry.</td></tr>
                 <tr id="K274"><td><code>K274</code></td><td>Dimension outside the native range.</td></tr>
                 <tr id="K275"><td><code>K275</code></td><td>Unbound level variable.</td></tr>
@@ -1167,7 +1178,7 @@ def mixed(a, b : UNat, h : a = b) : a &lt;= b {
                 <tr id="K286"><td><code>K286</code></td><td>Only a Π or Σ type has a domain.</td></tr>
                 <tr id="K287"><td><code>K287</code></td><td>Only a Π or Σ type has a family.</td></tr>
                 <tr id="K288"><td><code>K288</code></td><td>Only a closed judgement can be defined.</td></tr>
-                <tr id="K289"><td><code>K289</code></td><td>Definition symbol is already registered.</td></tr>
+                <tr id="K289"><td><code>K289</code></td><td>Definition symbol is already registered. (retired)</td></tr>
                 <tr id="K290"><td><code>K290</code></td><td>Unknown checked definition reference.</td></tr>
                 <tr id="K291"><td><code>K291</code></td><td>A declared type's instance reads finite levels only, below ω (Q16).</td></tr>
                 <tr id="K292"><td><code>K292</code></td><td>A restriction's face is one consistent conjunction of endpoint equations.</td></tr>
@@ -1204,7 +1215,7 @@ def mixed(a, b : UNat, h : a = b) : a &lt;= b {
                 <tr id="K318"><td><code>K318</code></td><td>Expected a level.</td></tr>
                 <tr id="K319"><td><code>K319</code></td><td>A level successor counts at least one.</td></tr>
                 <tr id="K320"><td><code>K320</code></td><td>A bound is not a level.</td></tr>
-                <tr id="K321"><td><code>K321</code></td><td>A level variable's key is not a symbol.</td></tr>
+                <tr id="K321"><td><code>K321</code></td><td>A level variable's key is not a symbol. (retired)</td></tr>
                 <tr id="K322"><td><code>K322</code></td><td>Level normalization depth exceeded.</td></tr>
                 <tr id="K323"><td><code>K323</code></td><td>Composition face allocation failed.</td></tr>
                 <tr id="K324"><td><code>K324</code></td><td>Syntax memo allocation failed.</td></tr>
@@ -1232,12 +1243,12 @@ def mixed(a, b : UNat, h : a = b) : a &lt;= b {
                 <tr id="K346"><td><code>K346</code></td><td>Term arena capacity overflow.</td></tr>
                 <tr id="K347"><td><code>K347</code></td><td>Term arena allocation failed.</td></tr>
                 <tr id="K348"><td><code>K348</code></td><td>Normal cache allocation failed.</td></tr>
-                <tr id="K349"><td><code>K349</code></td><td>Term symbol space exhausted.</td></tr>
+                <tr id="K349"><td><code>K349</code></td><td>Term symbol space exhausted. (retired)</td></tr>
                 <tr id="K350"><td><code>K350</code></td><td>Formula handle space exhausted.</td></tr>
                 <tr id="K351"><td><code>K351</code></td><td>Formula arena capacity overflow.</td></tr>
                 <tr id="K352"><td><code>K352</code></td><td>Formula arena allocation failed.</td></tr>
                 <tr id="K353"><td><code>K353</code></td><td>Formula copy failed.</td></tr>
-                <tr id="K354"><td><code>K354</code></td><td>Fresh symbol space exhausted.</td></tr>
+                <tr id="K354"><td><code>K354</code></td><td>Fresh symbol space exhausted. (retired)</td></tr>
                 <tr id="K355"><td><code>K355</code></td><td>Native prototype has exhausted its 64 dimension names.</td></tr>
                 <tr id="K356"><td><code>K356</code></td><td>Term substitution dimension allocation failed.</td></tr>
                 <tr id="K357"><td><code>K357</code></td><td>Malformed composition tube list.</td></tr>
@@ -1259,6 +1270,32 @@ def mixed(a, b : UNat, h : a = b) : a &lt;= b {
                 <tr id="K373"><td><code>K373</code></td><td>Substitution stack depth exceeded.</td></tr>
                 <tr id="K374"><td><code>K374</code></td><td>Alpha-comparison stack allocation failed.</td></tr>
                 <tr id="K375"><td><code>K375</code></td><td>Level traversal stack allocation failed.</td></tr>
+                <tr id="K376"><td><code>K376</code></td><td>A binder's body already mentions the entry it would be opened with.</td></tr>
+                <tr id="K377"><td><code>K377</code></td><td>Reduction reached a term with a loose bound variable.</td></tr>
+                <tr id="K378"><td><code>K378</code></td><td>Normalization reached a term with a loose bound variable.</td></tr>
+                <tr id="K379"><td><code>K379</code></td><td>A term or level binder carries no name: its payload is zero.</td></tr>
+                <tr id="K380"><td><code>K380</code></td><td>A variable's index exceeds the kernel's bound.</td></tr>
+                <tr id="K381"><td><code>K381</code></td><td>A context reference names no live term or level entry.</td></tr>
+                <tr id="K382"><td><code>K382</code></td><td>Instantiation needs locally closed values.</td></tr>
+                <tr id="K383"><td><code>K383</code></td><td>An operation opened more binders than the kernel's bound.</td></tr>
+                <tr id="K384"><td><code>K384</code></td><td>Opening allocation failed.</td></tr>
+              </tbody>
+            </table></div>
+            <h3 id="codes-k4">Kernel: instructions (continued)</h3>
+            <div class="table-scroll"><table class="codes">
+              <thead><tr><th>Code</th><th>Message</th></tr></thead>
+              <tbody>
+                <tr id="K401"><td><code>K401</code></td><td>A replacement takes an entry, or 0, for each term or level binder its position crosses.</td></tr>
+                <tr id="K402"><td><code>K402</code></td><td>A replacement takes a level entry for a level binder, and a term entry for a term binder.</td></tr>
+                <tr id="K403"><td><code>K403</code></td><td>A replacement's entry for a binder is already in the rewritten judgement's context.</td></tr>
+                <tr id="K404"><td><code>K404</code></td><td>A replacement's entry for a binder has a type that needs an outer binder given no entry.</td></tr>
+                <tr id="K405"><td><code>K405</code></td><td>An equivalence type's operands must be locally closed.</td></tr>
+                <tr id="K406"><td><code>K406</code></td><td>Missing entries.</td></tr>
+                <tr id="K407"><td><code>K407</code></td><td>A result would hold a variable an operation opened.</td></tr>
+                <tr id="K408"><td><code>K408</code></td><td>A judgement's terms are locally closed.</td></tr>
+                <tr id="K409"><td><code>K409</code></td><td>A replacement gives one entry to two of its binders.</td></tr>
+                <tr id="K410"><td><code>K410</code></td><td>A replacement gives no entry to a binder its occurrence uses.</td></tr>
+                <tr id="K411"><td><code>K411</code></td><td>A replacement's equality keeps an entry that depends on a binder's entry.</td></tr>
               </tbody>
             </table></div>
             <h3 id="codes-w7">Warnings</h3>

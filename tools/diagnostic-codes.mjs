@@ -53,7 +53,8 @@ const fileGroups = [
   [/^web\/(cubical-instruction-driver|cubical-syntax|cubical-kernel|cubical-reduction|cubical-elaborator|cubical-instructions|cubical-assumptions|cubical-transaction|cubical-variables)\.mjs$/, "E6"],
   [/^(web|cli)\//, "E2"],
   [/^kernel\/src\/(signatures|eliminators|hit_composition)\.c$/, "K1"],
-  [/^kernel\/src\/instruction/, "K2"],
+  // K2 is full; its codes keep their numbers.
+  [/^kernel\/src\/instruction/, "K4"],
   [/^kernel\/src\//, "K3"],
 ];
 export const groupOf = file => fileGroups.find(([pattern]) => pattern.test(file))?.[1];
