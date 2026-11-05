@@ -716,10 +716,11 @@ static cc_term index_substitution(cc_kernel *k, substitution_kind kind, cc_term 
  * answer a later one; it is a cache, and clearing it changes no result. */
 cc_term ck_instantiate_all(cc_kernel *k, cc_term term, const cc_term *values, uint32_t count) {
     if (k->error[0]) return 0;
-    for (uint32_t i = 0; i <= count; ++i) {
-        cc_term handle = i < count ? values[i] : term;
-        if (!handle || handle >= k->count) return ck_fail(k, "Invalid syntax child handle."), 0;
-    }
+    /* The term apart from the values, so that the loop's counter stays
+     * below `count` and cannot wrap at UINT32_MAX. */
+    if (!term || term >= k->count) return ck_fail(k, "Invalid syntax child handle."), 0;
+    for (uint32_t i = 0; i < count; ++i)
+        if (!values[i] || values[i] >= k->count) return ck_fail(k, "Invalid syntax child handle."), 0;
     if (!count) return term;
     index_operation op = {.operation = count == 1 ? MEMO_INSTANTIATE : MEMO_INSTANTIATE_ALL,
                           .values = values, .count = count};

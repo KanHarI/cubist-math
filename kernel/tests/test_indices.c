@@ -542,6 +542,116 @@ static void capture_scan(void) {
     assert(agreed && ck_free_dims(k, out) == 1 && !k->error[0]);
 }
 
+/* Every width in the primitives at its boundaries (review round 6):
+ * binder depths across 255/256 up to 511, levels, entries and indices
+ * across 255/256 and 65535/65536, filter bits 0, 31, 32 and 63, memo keys
+ * whose operands agree in their low bits, kinds that agree with an ABI kind
+ * in their low byte, the entries a context reference may name, and the new
+ * leaves compared. Each result is checked against the references. */
+static cc_term binders_over(unsigned count, cc_term body) {
+    for (unsigned i = 0; i < count; ++i) body = lam(unit, body);
+    return body;
+}
+static cc_term reference(uint32_t entry) { return node(CC_CONTEXT, entry, 0, 0, 0); }
+enum { WIDE = 65537 };
+static cc_term wide[WIDE];
+static void boundaries(void) {
+    /* Abstraction and close beneath 255, 256 and 511 binders. */
+    const unsigned depths[] = {255, 256, 511};
+    for (unsigned i = 0; i < 3; ++i) {
+        cc_term t = binders_over(depths[i], context(0)), o = binders_over(depths[i], opened(300));
+        assert(same(ck_abstract(k, t, entries[0]), abstracted(t, 0, CC_CONTEXT, (uint32_t)entries[0])));
+        assert(same(ck_close(k, o, 300), abstracted(o, 0, CC_OPENED, 300)) && !k->error[0]);
+    }
+    /* Levels: open puts the level in, and close takes out exactly it, not a
+     * level agreeing with it in the low 8 or 16 bits; both closes of one
+     * term are memoized apart. */
+    const uint32_t levels[] = {255, 256, 65535, 65536, 65792, UINT32_MAX - 1};
+    for (unsigned i = 0; i < 6; ++i) {
+        uint32_t m = levels[i], low = m & 0xff, mid = m & 0xffff;
+        cc_term at = opened(m), body = sum(bound(0), unit);
+        assert(same(ck_open(k, body, m), instantiated(body, 0, &at, 1)));
+        cc_term t = sum(sum(opened(m), opened(low)), lam(unit, opened(mid)));
+        assert(same(ck_close(k, t, m), abstracted(t, 0, CC_OPENED, m)));
+        assert(same(ck_close(k, t, low), abstracted(t, 0, CC_OPENED, low)));
+        assert(same(ck_close(k, t, mid), abstracted(t, 0, CC_OPENED, mid)) && !k->error[0]);
+    }
+    /* Entries across 255/256, at filter bits 0, 31, 32 and 63; both
+     * abstractions of one term are memoized apart. */
+    cc_judgement_id type = cc_instr_unit(k);
+    for (uint32_t symbol = 5000; k->entry_count <= 600; ++symbol) assert(cc_instr_extend(k, type, symbol));
+    const uint32_t ids[] = {256, 287, 288, 319};
+    for (unsigned i = 0; i < 4; ++i) {
+        uint32_t e = ids[i], alias = e + 256;
+        assert(!k->entries[e].face && !k->entries[e].dimension && !k->entries[alias].dimension);
+        cc_term t = sum(lam(unit, reference(e)), lam(unit, reference(alias)));
+        assert(same(ck_abstract(k, t, e), abstracted(t, 0, CC_CONTEXT, e)));
+        assert(same(ck_abstract(k, t, alias), abstracted(t, 0, CC_CONTEXT, alias)) && !k->error[0]);
+    }
+    /* Vectors of 257 and 65,537 values, indices across 255/256 and
+     * 65535/65536, at the root and under a binder. */
+    for (uint32_t i = 0; i < WIDE; ++i) wide[i] = node(CC_VAR, 10000 + i, 0, 0, 0);
+    cc_term t = sum(sum(bound(0), bound(255)), sum(sum(bound(256), bound(65535)), bound(65536)));
+    cc_term under = lam(unit, sum(sum(bound(256), bound(257)), sum(bound(65536), bound(65537))));
+    const uint32_t counts[] = {257, WIDE};
+    for (unsigned i = 0; i < 2; ++i) {
+        assert(same(ck_instantiate_all(k, t, wide, counts[i]), instantiated(t, 0, wide, counts[i])));
+        assert(same(ck_instantiate_all(k, under, wide, counts[i]), instantiated(under, 0, wide, counts[i])));
+        assert(!k->error[0]);
+    }
+    /* A value at index 65536 or 256 that a binder would capture: the scan
+     * seeks it there. */
+    const uint32_t far[] = {256, 65536};
+    for (unsigned i = 0; i < 2; ++i) {
+        cc_term saved = wide[far[i]], p = node(CC_VAR, 9000, 0, 0, 0);
+        wide[far[i]] = node(CC_PAPP, ck_interval_variable(k, 0), p, 0, 0);
+        cc_term over = node(CC_PLAM, 0, unit, sum(bound(far[i]), bound(1)), 0);
+        cc_term out = ck_instantiate_all(k, over, wide, WIDE);
+        bool agreed = out && agrees(out, over, 0, wide, WIDE);
+        assert(agreed && ck_free_dims(k, out) == 1 && !k->error[0]);
+        wide[far[i]] = saved;
+    }
+    /* Memo keys agreeing in their low bits. A subterm met at depth 1 and at
+     * depth 257 within one instantiation: */
+    cc_term x = sum(bound(1), unit), twice = sum(lam(unit, x), binders_over(257, x));
+    cc_term one = node(CC_VAR, 9001, 0, 0, 0);
+    assert(same(ck_instantiate(k, twice, one), instantiated(twice, 0, &one, 1)));
+    /* two values whose handles differ by 65,536: */
+    cc_term y = sum(bound(0), node(CC_VAR, 9002, 0, 0, 0)), first = node(CC_VAR, 9003, 0, 0, 0);
+    for (uint32_t filler = 0; k->count < (size_t)first + 65536; ++filler) node(CC_VAR, 100000 + filler, 0, 0, 0);
+    cc_term second = node(CC_VAR, 9004, 0, 0, 0);
+    assert(second == first + 65536);
+    assert(same(ck_instantiate(k, y, first), sum(first, node(CC_VAR, 9002, 0, 0, 0))));
+    assert(same(ck_instantiate(k, y, second), sum(second, node(CC_VAR, 9002, 0, 0, 0))));
+    /* and two serials 65,536 apart. */
+    cc_term pair[] = {first, second}, swapped[] = {second, first}, z = sum(bound(0), bound(1));
+    k->instantiation_serial = 0;
+    assert(same(ck_instantiate_all(k, z, pair, 2), sum(first, second)));
+    k->instantiation_serial = 65536;
+    assert(same(ck_instantiate_all(k, z, swapped, 2), sum(second, first)) && !k->error[0]);
+    /* A kind beyond the ABI's is refused whole, though its low byte or
+     * bits are an ABI kind. */
+    const unsigned beyond[] = {CC_UNIT + 256, CC_VAR + 256, CC_LAM + 65536, CC_OPENED + 256};
+    for (unsigned i = 0; i < 4; ++i) {
+        assert(!cc_kernel_term(k, (cc_term_kind)beyond[i], 0, 0, 0, 0, 0));
+        assert(!strcmp(cc_kernel_error(k), "Unknown term constructor."));
+        cc_kernel_clear_error(k);
+    }
+    /* A context reference names a level entry, never a face entry. */
+    cc_entry_id level = cc_instr_level(k, 9100);
+    assert(level && ck_make(k, CC_CONTEXT, level, 0, 0, 0, 0) && !k->error[0]);
+    cc_entry_id face = ck_instr_face_entry(k, (cc_clause){.positive = 1});
+    assert(face && !ck_make(k, CC_CONTEXT, face, 0, 0, 0, 0));
+    assert(!strcmp(k->error, "A face entry is an assumption, not a variable or a dimension."));
+    cc_kernel_clear_error(k);
+    /* Comparison reads the new leaves' payloads: equal leaves are equal
+     * whatever their handles, unequal ones are not. */
+    assert(ck_alpha_equal(k, bound(3), bound(3)) && !ck_alpha_equal(k, bound(3), bound(4)));
+    assert(ck_alpha_equal(k, opened(3), opened(3)) && !ck_alpha_equal(k, opened(3), opened(259)));
+    assert(ck_alpha_equal(k, context(1), context(1)) && !ck_alpha_equal(k, context(1), context(2)));
+    assert(!k->error[0]);
+}
+
 /* Instantiation renames a dimension binder its value would be captured by,
  * as term substitution does (SUBSTITUTE_RENAME_DIMENSION). */
 static void dimension_capture(void) {
@@ -717,6 +827,7 @@ int main(void) {
         capture_scan();
         comparison_cases();
         capture_laws();
+        boundaries();
         dimension_capture();
         filter_collision();
         dag();
