@@ -549,7 +549,9 @@ test("readback size stays within its bound and grows as n² for n closures over 
   const sizes = [];
   for (const n of [4, 8, 16]) {
     const xs = Array.from({ length: n }, (_, i) => `x${i}`), tuple = Array(n).fill("Unit").join(" and ");
-    const closures = xs.map((_, i) => `fun (u${i} : Unit) => typed(${tuple}, (${xs.join(", ")}))`);
+    // Each closure a rotation of the tuple, so that the n are n terms: closures
+    // equal up to their binders' names are one node (ABI 4).
+    const closures = xs.map((_, i) => `fun (u${i} : Unit) => typed(${tuple}, (${[...xs.slice(i), ...xs.slice(0, i)].join(", ")}))`);
     const s = await setup(t, `def scaled := (fun (${xs.join(", ")} : Unit) => typed(${Array(n).fill(`(Unit -> (${tuple}))`).join(" and ")}, (${closures.join(", ")})))(${Array(n).fill("tt").join(", ")});`);
     const runtime = s.query("scaled");
     s.walk(runtime);
@@ -588,10 +590,8 @@ const mutations = [
   ["a constructor's instance", "value", "boxed", [["instance: this.#delay(c[0], kept), args", "instance: this.#delay(c[0], null), args"]]],
   ["a dropped instance", "value", "observed_instance", [["{ tag: \"Type\", node: cell.code, env: this.#forReadback ? this.#pruned(cell.code, env) : null }", "{ tag: \"Type\" }"]]],
   ["a λ's body", "value", "constant", [["body: c[1], env, domain", "body: this.#node(c[1]).kind === \"Point\" ? c[0] : c[1], env, domain"]]],
-  ["a λ's symbol", "value", "pairing", [["symbol: n.payload, body: c[1], env, domain",
-    "symbol: this.#node(c[1]).kind === \"App\" ? this.#kernel().symbol(\"mutated\") : n.payload, body: c[1], env, domain"]]],
   ["a λ's environment", "value", "shadowed", [["body: c[1], env, domain: annotation(c[0])",
-    "body: c[1], env: this.#node(c[1]).kind === \"Var\" ? env?.parent ?? env : env, domain: annotation(c[0])"]]],
+    "body: c[1], env: this.#node(c[1]).kind === \"Bound\" ? env?.parent ?? env : env, domain: annotation(c[0])"]]],
   ["an eliminator's motive", "heads", "toggle", [["motive: annotation(c[0]), clauses", "motive: annotation(this.#node(c[1]).children[0]), clauses"]]],
   ["an eliminator's clauses", "heads", "toggle", [["clauses: this.#list(c[1], delay) }", "clauses: this.#list(c[1], delay).reverse() }"]]],
   ["an η-produced constructor's index", "heads", "successor", [["value = yield* this.#run(this.#delay(f, instance));",
@@ -601,14 +601,13 @@ const mutations = [
   ["a value read instead of its origin", "folded", "projected", [["mode === \"outer\" && !data.has(value.tag))) return", "false)) return"]]],
   ["a data cell inside a non-data origin read by its value", "folded", "projected",
     [["(mode === \"origin\" ||", "(mode === \"origin\" && !data.has(value.tag) ||"]]],
-  ["the farthest binding instead of the nearest", "value", "shadowed", [["if (at.symbol === symbol) return at;\n    }\n    return fail(",
-    "if (at.symbol === symbol) env = at;\n    }\n    if (env?.symbol === symbol) return env;\n    return fail("]]],
+  ["a binding one frame too far", "value", "shadowed", [["        if (!at.cell) break;\n        return at;",
+    "        if (!at.cell) break;\n        return at.parent?.binds && at.parent.cell ? at.parent : at;"]]],
   ["a free variable skipped", "value", "domain_only", [["if (!child) return [];", "if (!child || binder && i === 0) return [];"]]],
   ["domains closed one by one", "typed", "captured", [[
-    "for (let i = frames.length; i-- > 0;) term = this.#write(binder(frames[i]).kind, frames[i].symbol, binder(frames[i]).children[0], term);\n"
+    "term = this.#write(b.kind, 0, domain, term);\n        }\n"
     + "        frames.forEach((frame, i) => { term = this.#write(level(frame) ? \"LApp\" : \"App\", 0, term, args[i]); });",
-    "for (let i = frames.length; i-- > 0;) term = this.#write(level(frames[i]) ? \"LApp\" : \"App\", 0, "
-    + "this.#write(binder(frames[i]).kind, frames[i].symbol, binder(frames[i]).children[0], term), args[i]);"]]],
+    "term = this.#write(level(frames[k]) ? \"LApp\" : \"App\", 0, this.#write(b.kind, 0, domain, term), args[k]);\n        }"]]],
   ["a memo reused across generations", "expired", "flag", [["this.#kernel();\n      this.#epoch++;", "this.#epoch++;"],
     ["kernel = this.#kernel();\n      (kernel", "kernel = this.#image.kernel;\n      (kernel"]]],
 ];

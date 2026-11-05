@@ -478,7 +478,10 @@ def value : Unit and UNat := (helper(tt), unused_);
 // or the session's disposal expires its unread syntax, and what it copied
 // and computed before stays observable.
 test("unread syntax expires with the kernel's handles, and what was read survives", async t => {
-  const { program, query, kernel, graph } = await setup(t, "def value : Unit and Unit := (tt, (fun (u : Unit) => u)(tt));");
+  // The second component's λ has a body no other node shares: a body
+  // Bound 0, as the identity's, would be one node with the ascription's
+  // (ABI 4), read when that is forced.
+  const { program, query, kernel, graph } = await setup(t, "def value : Unit and Unit := (tt, (fun (u : Unit) => (fun (w : Unit) => u)(tt))(tt));");
   // Made before later declarations, accepted or refused, a query expires at
   // the first one's end, though no handle it holds moved: no reader tells.
   const outside = query("value"), fields = await outside.observe();
@@ -534,8 +537,7 @@ test("a checkpoint ended through any alias of the module's exports expires every
   // for the next node made, the type Void at first: through the module's
   // export, the captured alias and the copy alike.
   g.unit();
-  const fresh = [() => g.judgement(g.void()).term, () => kernel.term("Var", kernel.symbol("recycled_1")),
-    () => kernel.term("Var", kernel.symbol("recycled_2"))];
+  const fresh = [() => g.judgement(g.void()).term, () => kernel.term("Bound", 9001), () => kernel.term("Bound", 9002)];
   for (const [i, roll] of [token => m._cb_rollback(token), rollback, token => facade._cb_rollback(token)].entries()) {
     m._cb_checkpoint(kernel.handle);
     const point = g.point(), recycled = queried(point), handle = g.judgement(point).term;
