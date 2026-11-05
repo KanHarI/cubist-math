@@ -400,13 +400,21 @@ export class NativeCubicalElaborator {
     try { raw = this.syntax.encode(term, dimensions, scope); type = expected && this.syntax.encode(expected, dimensions, scope); }
     catch (error) { throw error.unbound ? this.refusal(error) : error; }
     const judgement = this.refused(() => this.instructed(graph, () => type ? driver.checkIn(raw, type, scope) : driver.derive(raw, scope)));
-    const renamings = [];
-    for (const [symbol, entry] of scope) {
-      if (typeof symbol !== "number") continue;
-      const own = graph.entry(entry).symbol;
-      if (own !== symbol) renamings.push([own, symbol]);
+    return this.viewOfJudgement(judgement, dimensions, this.namingOf(scope), graph.count - before);
+  }
+  // The names a scope shows its entries by: each variable's own, where the
+  // entry is spelled otherwise, as a variant entry is. A view decodes its
+  // judgement with them, so that an assumption the driver had to name apart
+  // takes its own name back; an entry the scope does not show is shown by
+  // its spelling. Made once per scope.
+  namingOf(scope) {
+    const namings = this.namings ??= new WeakMap();
+    if (!namings.has(scope)) {
+      const naming = new Map();
+      for (const [symbol, entry] of scope) if (typeof symbol === "number") naming.set(entry, this.kernel.symbolName(symbol));
+      namings.set(scope, naming);
     }
-    return this.viewOfJudgement(judgement, dimensions, renamings, graph.count - before);
+    return namings.get(scope);
   }
   // A derivation's failure: the kernel's own errors pass as they are, a
   // mismatch, or running out of time, steps or representation space.
@@ -439,21 +447,17 @@ export class NativeCubicalElaborator {
   // Read an already checked judgement without deriving it again. The workbench
   // retains this certificate after each native Step, including its context.
   // Its ID and handles must not be retained across checkpoint commit/rollback.
-  viewOfJudgement(judgement, dimensions, renamings = [], checkingSteps = 0) {
+  // `naming` names its entries (namingOf).
+  viewOfJudgement(judgement, dimensions, naming = null, checkingSteps = 0) {
     const graph = this.driver.graph;
-    let { term: expression, type, kind } = graph.judgement(judgement);
+    const { term: expression, type, kind } = graph.judgement(judgement);
     if (kind !== "typing") throw new TypeError("An inspected view needs a typing judgement.");
-    // An assumption the driver had to name apart takes its own name back.
-    for (const [own, symbol] of renamings) {
-      expression = graph.rename(expression, false, own, symbol);
-      type = graph.rename(type, false, own, symbol);
-    }
     const arena = this.kernel.arena(), derivedHandles = this.kernel.derivedHandles ??= new Set();
     derivedHandles.add(expression).add(type);
     const stems = this.kernel.entryNames.stems, names = stems.size ? this.sourceNames ??= new SourceNames(stems) : null;
     const display = value => names ? names.apply(value) : value;
-    return { expression, typeHandle: type, judgement, renamings, term: display(this.syntax.decode(expression, dimensions)),
-      type: display(this.syntax.decode(type, dimensions)), checkingSteps,
+    return { expression, typeHandle: type, judgement, naming, term: display(this.syntax.decode(expression, dimensions, null, naming)),
+      type: display(this.syntax.decode(type, dimensions, null, naming)), checkingSteps,
       arenaNodes: arena.nodes, arenaBytes: arena.bytes };
   }
   // The type the kernel computes for the next clause of an eliminator, with
@@ -463,23 +467,19 @@ export class NativeCubicalElaborator {
   nextClauseType(motive, clauses, context = new Map(), dimensions = this.dimensions) {
     this.kernel.checkDeadline();
     const driver = this.driver, graph = driver.graph;
-    let type;
+    let type, scope;
     try {
-      const scope = this.scopeOf(context, dimensions);
+      scope = this.scopeOf(context, dimensions);
       const eliminator = this.instructed(graph, () => clauses.reduce((opened, clause) =>
         driver.addClause(opened, driver.derive(this.syntax.encode(clause, dimensions, scope), scope)),
       driver.openEliminator(driver.derive(this.syntax.encode(motive, dimensions, scope), scope))));
       type = graph.judgement(eliminator).type;
-      for (const [symbol, entry] of scope) {
-        if (typeof symbol !== "number") continue;
-        const own = graph.entry(entry).symbol;
-        if (own !== symbol) type = graph.rename(type, false, own, symbol);
-      }
     } catch (error) {
       if (error instanceof KernelError && speculativeFailure(error.kind)) throw this.describeMismatch(error, dimensions);
       throw Object.assign(new KernelError(`Instruction kernel: ${error.message}`, error.kind ?? "other"), { mismatch: error.mismatch });
     }
-    return this.syntax.decode(type, dimensions);
+    // Its entries by the names the scope shows them by.
+    return this.syntax.decode(type, dimensions, null, this.namingOf(scope));
   }
   // A check over a context given as [name, type] pairs, for inspection.
   checkView(term, expected, context = [], dimensions = new Map()) {
@@ -529,10 +529,12 @@ export class NativeCubicalElaborator {
     // again is no kernel query, so the deadline is polled here too, as
     // derived() polls it for a judgement reused.
     this.kernel.checkDeadline();
-    const node = this.syntax.encode(term, dimensions, this.scopeOf(context, dimensions));
+    const scope = this.scopeOf(context, dimensions), node = this.syntax.encode(term, dimensions, scope);
     let head = this.syntax.heads.get(node);
     if (head === undefined) { head = this.kernel.head(node); this.syntax.heads.set(node, head, Math.max(node, head)); }
-    return this.syntax.decode(head, dimensions);
+    // The head's entries by the names the asking scope shows them by, so that
+    // it encodes back against the scope.
+    return this.syntax.decode(head, dimensions, null, this.namingOf(scope));
   }
   // Whether two terms of a context differ, as the driver's guide finds it:
   // their weak heads compared part by part, each with the session's step
@@ -684,8 +686,11 @@ export class NativeCubicalElaborator {
   // The normal form of a derived handle, decoded: folded, a stuck
   // definition kept as written, unless the full one is asked for
   // (docs/roadmaps/historical/folded-normal-forms.md).
+  // Its binders are named as the term's and the definitions it unfolds named
+  // them (CubicalKernel.named).
   normalForm(handle, { full = false } = {}) {
-    return this.syntax.decode(full ? this.kernel.normalize(handle) : this.kernel.normalizeFolded(handle), this.dimensions);
+    const normal = full ? this.kernel.normalize(handle) : this.kernel.normalizeFolded(handle);
+    return this.syntax.decode(normal, this.dimensions);
   }
   // The weak head of a handle, computed once a declaration, as nf's are. The
   // head of a derived handle, and its data parts (a pair's components, an

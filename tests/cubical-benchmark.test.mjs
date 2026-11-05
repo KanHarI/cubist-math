@@ -86,7 +86,7 @@ test("a timeout remains a speed failure", () => {
 test("successful compaction retains definitions and translates references", async t => {
   const { module, kernel, graph, define, typeOf } = await session(t);
   module._cb_checkpoint(kernel.handle);
-  for (let i = 0; i < 300; i++) kernel.term("Var", kernel.symbol(`unused${i}`));
+  for (let i = 0; i < 300; i++) kernel.term("Bound", 1000 + i);
   const reference = define("retained");
   kernel.head(reference);
   assert.equal(module._cb_commit_checkpoint(kernel.handle), 1);

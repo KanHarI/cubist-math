@@ -431,7 +431,9 @@ def h(k : UNat) : forall q : k = k. Unit := induction k as m return forall q : m
   assert.deepEqual(result.gaps, []);
   const { kernel, checker } = program;
   for (const [name, spelled, type] of [["f", /induction n as k return forall k1 : k = k\. k1 = k1 /, "n = n. q = q"],
-    ["g", /induction n as k return /, "n = n. Unit"], ["h", /induction k as k1 return /, "k = k. Unit"]]) {
+    // h's value is one node with g's, alpha-equal to it, and shows the names
+    // g's encoding gave it: binders carry no names (ABI 4).
+    ["g", /induction n as k return /, "n = n. Unit"], ["h", /induction n as k return /, "k = k. Unit"]]) {
     const value = checker.syntax.decode(kernel.definition(kernel.definitions.get(`main__${name}`)).value);
     const shown = sourceText(forSource([value], bare)[0], {}, 4000, { selection: "unat" });
     assert.match(shown, spelled, shown);
@@ -568,7 +570,9 @@ def h : f = f := path j => (fun (p : f = f) => p)(refl(f)) @ j;
     : Array.isArray(t) ? t.map(inline) : Object.fromEntries(Object.entries(t).map(([key, value]) => [key, inline(value)]));
   const value = inline(checker.syntax.decode(kernel.definition(kernel.definitions.get("main__h")).value));
   const texts = [0, 256].map(reduce => checker.displayText(value, [], { width: 4000, reduce }));
-  assert.equal(texts[1], "refl(fun (x : S) => match x return Circle { pt => base; edge(u) @ j => loop @ j; })");
+  // The edge clause's λ is one the normal form rebuilt, which carries no
+  // name (ABI 4): the driver shows it as x, apart from the x around it.
+  assert.equal(texts[1], "refl(fun (x : S) => match x return Circle { pt => base; edge(x1) @ j => loop @ j; })");
   for (const text of texts) {
     const { result: back } = await checkProgram(t, `${source}def back : f = f := ${text};\n`, { module });
     assert.deepEqual(back.gaps, [], text);
@@ -637,8 +641,10 @@ test("a definition named as a dimension of the context is shown qualified", asyn
   const values = [
     ["def q(r : base = base) : base = base := path f => r @ ~f;\ndef g : base = base := q(typed(base = base, path e => loop @ e));",
       ascribed(`main::q(${ascribed("path i => loop @ i")})`)],
+    // The ascription's λ is one node with q's λ (r : base = base). r, which
+    // was encoded first and so names it: binders carry no names (ABI 4).
     ["def q : base = base := (fun (u : Unit) => fun (r : base = base) => r)(tt, path e => loop @ e);\ndef g : base = base := path j => q @ ~j;",
-      ascribed("path i => main::q @ ~i")],
+      "(fun (r : base = base) => r)(path i => main::q @ ~i)"],
     ["def q(r : base = base) : base = base := path f => r @ ~f;\ndef g : base = base := path k => (fun (p : base = base) => q(p))(path j => loop @ j) @ k;",
       ascribed("path i => (fun (p : base = base) => main::q(p))(path i => loop @ i) @ i")],
     // No definition is named so: the display's beta reduction alone.

@@ -30,6 +30,9 @@ export class CubicalDeclarationTransaction {
     // Both the commit and the rollback truncate the context entries to their
     // count at the checkpoint; the driver's names for them go too.
     this.entries = kernel.module._cb_entry_count(kernel.handle) >>> 0;
+    // Nodes from this handle on are made after the checkpoint: a commit
+    // moves them and a rollback drops them, and the binders' names with them.
+    this.nodes = kernel.arena().nodes + 1;
     this.active = true;
   }
   added(collection) {
@@ -46,6 +49,13 @@ export class CubicalDeclarationTransaction {
         const handle=kernel.definitions.get(name);
         kernel.definitions.set(name,kernel.module._cb_relocated(kernel.handle,handle));
       }
+      // A binder kept by the commit keeps the name it was encoded with.
+      const moved = [...kernel.binderNames].filter(([handle]) => handle >= this.nodes);
+      for (const [handle] of moved) kernel.binderNames.delete(handle);
+      for (const [handle, name] of moved) {
+        const kept = kernel.module._cb_relocated(kernel.handle, handle) >>> 0;
+        if (kept && !kernel.binderNames.has(kept)) kernel.binderNames.set(kept, name);
+      }
     } else {
       kernel.module._cb_rollback(kernel.handle);
       for (const [collection,snapshot] of this.metadata) {
@@ -53,7 +63,10 @@ export class CubicalDeclarationTransaction {
       }
       for (const collection of this.sizes.keys())
         for (const key of this.added(collection)) collection.delete(key);
+      for (const handle of kernel.binderNames.keys()) if (handle >= this.nodes) kernel.binderNames.delete(handle);
     }
+    // Handles from here on are new nodes, none of them shown yet.
+    for (const handle of kernel.binderNames.shownUnnamed ?? []) if (handle >= this.nodes) kernel.binderNames.shownUnnamed.delete(handle);
     kernel.entryNames.truncate(this.entries);
     checker.syntax.reset();
     kernel.forgetNodes();

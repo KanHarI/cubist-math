@@ -203,7 +203,9 @@ test("alpha equality over binders and faces agrees with the kernel's", async t =
     x = x + Math.imul(x ^ x >>> 7, 61 | x) ^ x;
     return ((x ^ x >>> 14) >>> 0) % n;
   };
-  const unit = kernel.term("Unit"), point = kernel.term("Point"), path = kernel.term("Var", 7);
+  // The path is a variable no binder of these terms binds: a loose index,
+  // which both comparisons read as it is.
+  const unit = kernel.term("Unit"), point = kernel.term("Point"), path = kernel.term("Bound", 7);
   const indices = [1, 2, 3, 4];
   // A formula over the binders in scope and free dimensions: clauses of
   // distinct dimensions, each 0 or 1.
@@ -429,19 +431,18 @@ def beta(A, B : U0, e : Equiv(U0, A, B), x : A) := UnivalenceBeta(U0, A, B, e, x
   // λA B e (a : A). <i> glue(e(a), [i = 0 ↦ a, i = 1 ↦ e(a)]) : ua's line,
   // built on the Glue type in the body of the generic ua instantiated at U0
   // (level β). The driver infers its type, then derives it at that type.
-  const generic = kernel.definition(kernel.definitions.get("builtin__ua")).value;
-  let body = kernel.head(kernel.term("LApp", 0, generic, kernel.term("LConst", 0)));
+  // Built as named syntax, read from that body, and encoded: a binder is
+  // put around parts read under other binders, which the encoder indexes.
+  const generic = kernel.definition(kernel.definitions.get("builtin__ua")).value, syntax = new CubicalSyntax(kernel);
+  let body = syntax.decode(kernel.head(kernel.term("LApp", 0, generic, kernel.term("LConst", 0))));
   const binders = [];
-  while (kernel.node(body).kind === "Lam") { binders.push(kernel.node(body)); body = kernel.node(body).children[1]; }
-  const line = kernel.node(body), glue = line.children[1];
-  const [, first] = kernel.node(glue).children, second = kernel.node(first).children[2];
-  const [source, equivalence] = kernel.node(first).children, a = kernel.symbol("glued'a");
-  const image = kernel.term("App", 0, kernel.term("Fst", 0, equivalence), kernel.term("Var", a));
-  const values = kernel.term("Tube", kernel.node(first).payload, kernel.term("Var", a),
-    kernel.term("Tube", kernel.node(second).payload, image));
-  const path = kernel.term("PLam", line.payload, glue, kernel.term("GlueTerm", 0, glue, image, values));
-  const value = binders.reduceRight((inner, binder) => kernel.term("Lam", binder.payload, binder.children[0], inner),
-    kernel.term("Lam", a, source, path));
+  while (body.tag === "Lam") { binders.push(body); body = body.body; }
+  const line = body, glue = line.body, [first, second] = glue.system, a = { tag: "Var", name: "glued_a" };
+  const image = { tag: "App", fn: { tag: "Fst", pair: first.equiv }, arg: a };
+  const path = { tag: "PLam", dim: line.dim, family: glue,
+    body: { tag: "GlueTerm", as: glue, base: image, system: [{ face: first.face, term: a }, { face: second.face, term: image }] } };
+  const value = syntax.encode(binders.reduceRight((inner, binder) => ({ ...binder, body: inner }),
+    { tag: "Lam", name: "glued_a", domain: first.type, body: path }));
   const inferring = new InstructionDriver(kernel), inferred = inferring.graph.judgement(inferring.infer(value));
   rules.clear();
   derive(inferred.term, inferred.type);

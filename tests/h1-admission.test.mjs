@@ -18,46 +18,58 @@ function session(t) {
   return { kernel, syntax: new CubicalSyntax(kernel), g: new InstructionGraph(kernel) };
 }
 
-test("the ABI version is 3, with the declared-type kinds", () => {
-  assert.equal(CUBICAL_ABI_VERSION, 3);
-  assert.equal(module._cb_abi_version(), 3);
+test("the ABI version is 4, with the declared-type kinds and variables by role", () => {
+  assert.equal(CUBICAL_ABI_VERSION, 4);
+  assert.equal(module._cb_abi_version(), 4);
 });
+
+// A constructor's entry, made for its type: it stands for the constructor in
+// the later constructors' types (section 3.4 of the locally nameless design).
+const constructor = (g, signature, type, name) => g.signatureConstructor(signature, type, g.extend(type, name));
 
 test("SignatureBegin admits by default, and is refused with H1 switched off", t => {
   const { kernel, syntax, g } = session(t);
-  const u0 = g.universe(syntax.encodeLevel(0));
+  const u0 = g.universe(syntax.encodeLevel(0)), s = g.extend(u0, "N");
   assert.deepEqual(kernel.extensions, { h1: true });
   kernel.setExtensions({ h1: false });
-  assert.throws(() => g.signatureBegin(u0, 0, "N"), /switched off/);
+  assert.throws(() => g.signatureBegin(u0, 0, [], s), /switched off/);
   kernel.setExtensions({ h1: true });
-  assert.ok(g.signatureBegin(u0, 0, "N") > 0);
+  assert.ok(g.signatureBegin(u0, 0, [], s) > 0);
 });
 
 test("natural numbers and the circle are admitted one constructor at a time", t => {
   const { kernel, syntax, g } = session(t);
   kernel.setExtensions({ h1: true });
   const u0 = g.universe(syntax.encodeLevel(0));
-  // inductive N { zero; succ(n : N); }
-  let sig = g.signatureBegin(u0, 0, "N");
-  assert.equal(g.judgement(sig).kind, "signature");
+  // inductive N { zero; succ(n : N); }: the sort's entry first, then each
+  // constructor's, made for its type.
   const s = g.extend(u0, "N");
-  sig = g.signatureConstructor(sig, g.variable(s), "zero");
-  g.extend(g.variable(s), "zero");
+  let sig = g.signatureBegin(u0, 0, [], s);
+  assert.equal(g.judgement(sig).kind, "signature");
+  assert.deepEqual([g.judgement(sig).entries, g.judgement(sig).operands[0]], [[], s]);
+  sig = constructor(g, sig, g.variable(s), "zero");
+  // The sort's entry stands for the sort already: it is no constructor's.
+  assert.throws(() => g.signatureConstructor(sig, g.variable(s), s), /already in its signature's telescope/);
   const n = g.extend(g.variable(s), "n");
-  sig = g.signatureConstructor(sig, g.pi(n, g.variable(s)), "succ");
+  sig = constructor(g, sig, g.pi(n, g.variable(s)), "succ");
   const unat = kernel.signature(g.signatureClose(sig));
+  // Each constructor type is reported closed over the admission telescope:
+  // zero : s is Bound 0 over [s], and succ : Π (n : s). s over [s, zero].
+  const node = handle => kernel.node(handle), [zeroType, succType] = unat.constructors.map(c => node(c.type));
+  assert.deepEqual([zeroType.kind, zeroType.payload], ["Bound", 0]);
+  assert.deepEqual([succType.kind, node(succType.children[0]).payload, node(succType.children[1]).payload], ["Pi", 1, 2]);
   assert.equal(unat.admitted, true);
   // Since H1's release no signature is admitted experimentally.
   assert.equal(unat.experimental, false);
   assert.deepEqual(unat.constructors.map(c => [c.data, c.positions, c.dimensions]), [[0, 0, 0], [0, 1, 0]]);
   assert.throws(() => g.signatureClose(sig), /already admitted/);
   // inductive Circle { base; loop : base = base; }
-  let circle = g.signatureBegin(u0, 0, "Circle");
   const c = g.extend(u0, "Circle");
-  circle = g.signatureConstructor(circle, g.variable(c), "base");
+  let circle = g.signatureBegin(u0, 0, [], c);
   const base = g.extend(g.variable(c), "base");
+  circle = g.signatureConstructor(circle, g.variable(c), base);
   const loopType = g.path(g.dimension(0), g.variable(c), g.variable(base), g.variable(base));
-  circle = g.signatureConstructor(circle, loopType, "loop");
+  circle = constructor(g, circle, loopType, "loop");
   const s1 = kernel.signature(g.signatureClose(circle));
   assert.equal(s1.constructors[1].dimensions, 1);
 });
@@ -69,10 +81,14 @@ test("a truncation gets the generated squash, and an erased parameter stays out 
   const x = g.level("x"), scope = new Map([[kernel.symbol("x"), x]]), ux = g.universe(syntax.encodeLevel({ tag: "Var", name: "x" }, scope));
   const a = g.extend(ux, "A");
   const former = g.levelPi(x, g.pi(a, ux));
-  let trunc = g.signatureBegin(former, 1, "Trunc");
   const s = g.extend(ux, "Trunc");
+  // The parameters' entries stand for the former's binders, a level entry
+  // for a universe parameter.
+  assert.throws(() => g.signatureBegin(former, 1, [a, a], s), /universe parameter takes a level entry/);
+  assert.throws(() => g.signatureBegin(former, 1, [x, a], a), /pairwise distinct/);
+  let trunc = g.signatureBegin(former, 1, [x, a], s);
   const point = g.extend(g.variable(a), "a");
-  trunc = g.signatureConstructor(trunc, g.pi(point, g.variable(s)), "point");
+  trunc = constructor(g, trunc, g.pi(point, g.variable(s)), "point");
   const info = kernel.signature(g.signatureClose(trunc));
   assert.equal(info.recorded, 0);
   assert.equal(info.levels, 1);
@@ -81,9 +97,9 @@ test("a truncation gets the generated squash, and an erased parameter stays out 
   assert.deepEqual([squash.generated, squash.positions, squash.dimensions], [true, 2, 1]);
   // Holder(U < UU0, A : U) : next(U) { hold(B : U); }, with U proposed erased.
   const next = g.universe(syntax.encodeLevel({ tag: "LSucc", count: 1, level: { tag: "Var", name: "x" } }, scope));
-  const holder = g.signatureBegin(g.levelPi(x, g.pi(a, next)), 0, "Holder");
   const h = g.extend(next, "Holder"), b = g.extend(ux, "B");
-  assert.throws(() => g.signatureConstructor(holder, g.pi(b, g.variable(h)), "hold"), /erased universe parameter/);
+  const holder = g.signatureBegin(g.levelPi(x, g.pi(a, next)), 0, [x, a], h);
+  assert.throws(() => constructor(g, holder, g.pi(b, g.variable(h)), "hold"), /erased universe parameter/);
 });
 
 test("instances of admitted signatures give their constructors", t => {
@@ -91,10 +107,10 @@ test("instances of admitted signatures give their constructors", t => {
   kernel.setExtensions({ h1: true });
   const u0 = g.universe(syntax.encodeLevel(0));
   // inductive N { zero; succ(n : N); }: with no parameters, SortBegin completes it.
-  let sig = g.signatureBegin(u0, 0, "N");
   const s = g.extend(u0, "N");
-  sig = g.signatureConstructor(sig, g.variable(s), "zero");
-  sig = g.signatureConstructor(sig, g.pi(g.extend(g.variable(s), "n"), g.variable(s)), "succ");
+  let sig = g.signatureBegin(u0, 0, [], s);
+  sig = constructor(g, sig, g.variable(s), "zero");
+  sig = constructor(g, sig, g.pi(g.extend(g.variable(s), "n"), g.variable(s)), "succ");
   const n = g.sortBegin(g.signatureClose(sig));
   assert.equal(g.judgement(n).kind, "typing");
   const one = g.apply(g.construct(n, 1), g.construct(n, 0));
@@ -102,10 +118,9 @@ test("instances of admitted signatures give their constructors", t => {
   assert.throws(() => g.construct(n, 2), /no such constructor/);
   // Trunc(U < UU0, A : U) : prop { point(a : A); } at UNat: in progress, then complete.
   const x = g.level("x"), scope = new Map([[kernel.symbol("x"), x]]), ux = g.universe(syntax.encodeLevel({ tag: "Var", name: "x" }, scope));
-  const a = g.extend(ux, "A");
-  let trunc = g.signatureBegin(g.levelPi(x, g.pi(a, ux)), 1, "Trunc");
-  const ts = g.extend(ux, "Trunc");
-  trunc = g.signatureConstructor(trunc, g.pi(g.extend(g.variable(a), "a"), g.variable(ts)), "point");
+  const a = g.extend(ux, "A"), ts = g.extend(ux, "Trunc");
+  let trunc = g.signatureBegin(g.levelPi(x, g.pi(a, ux)), 1, [x, a], ts);
+  trunc = constructor(g, trunc, g.pi(g.extend(g.variable(a), "a"), g.variable(ts)), "point");
   const started = g.sortBegin(g.signatureClose(trunc));
   assert.equal(g.judgement(started).kind, "instance");
   assert.throws(() => g.construct(started, 0), /Expected a typing judgement/);
@@ -116,9 +131,9 @@ test("instances of admitted signatures give their constructors", t => {
   // Pointed(U < UU0) : next(U) { pt(X : U, x : X); }: its level is recorded.
   const y = g.level("y"), atY = new Map([[kernel.symbol("y"), y]]), uy = g.universe(syntax.encodeLevel({ tag: "Var", name: "y" }, atY));
   const next = g.universe(syntax.encodeLevel({ tag: "LSucc", count: 1, level: { tag: "Var", name: "y" } }, atY));
-  let pointed = g.signatureBegin(g.levelPi(y, next), 0, "Pointed", 1);
   const ps = g.extend(next, "Pointed"), carrier = g.extend(uy, "X");
-  pointed = g.signatureConstructor(pointed, g.pi(carrier, g.pi(g.extend(g.variable(carrier), "element"), g.variable(ps))), "pt");
+  let pointed = g.signatureBegin(g.levelPi(y, next), 0, [y], ps, 1);
+  pointed = constructor(g, pointed, g.pi(carrier, g.pi(g.extend(g.variable(carrier), "element"), g.variable(ps))), "pt");
   const p0 = g.sortLevel(g.sortBegin(g.signatureClose(pointed)), syntax.encodeLevel(0));
   assert.equal(g.judgement(p0).type, g.judgement(g.universe(syntax.encodeLevel(1))).term);
   assert.equal(g.judgement(g.construct(p0, 0)).rule, "construct");
@@ -129,11 +144,11 @@ test("a constructor at an endpoint steps to its boundary", t => {
   kernel.setExtensions({ h1: true });
   const u0 = g.universe(syntax.encodeLevel(0));
   // inductive Circle { base; loop : base = base; }
-  let sig = g.signatureBegin(u0, 0, "Circle");
   const c = g.extend(u0, "Circle");
-  sig = g.signatureConstructor(sig, g.variable(c), "base");
+  let sig = g.signatureBegin(u0, 0, [], c);
   const base = g.extend(g.variable(c), "base");
-  sig = g.signatureConstructor(sig, g.path(g.dimension(0), g.variable(c), g.variable(base), g.variable(base)), "loop");
+  sig = g.signatureConstructor(sig, g.variable(c), base);
+  sig = constructor(g, sig, g.path(g.dimension(0), g.variable(c), g.variable(base), g.variable(base)), "loop");
   const circle = g.sortBegin(g.signatureClose(sig));
   const point = g.judgement(g.construct(circle, 0)).term;
   for (const endpoint of [0, 1])
@@ -147,10 +162,10 @@ test("an eliminator takes a clause per constructor and computes by Iota", t => {
   const { kernel, syntax, g } = session(t);
   kernel.setExtensions({ h1: true });
   const u0 = g.universe(syntax.encodeLevel(0));
-  let sig = g.signatureBegin(u0, 0, "N");
   const s = g.extend(u0, "N");
-  sig = g.signatureConstructor(sig, g.variable(s), "zero");
-  sig = g.signatureConstructor(sig, g.pi(g.extend(g.variable(s), "n"), g.variable(s)), "succ");
+  let sig = g.signatureBegin(u0, 0, [], s);
+  sig = constructor(g, sig, g.variable(s), "zero");
+  sig = constructor(g, sig, g.pi(g.extend(g.variable(s), "n"), g.variable(s)), "succ");
   const n = g.sortBegin(g.signatureClose(sig));
   const zero = g.construct(n, 0), succ = g.construct(n, 1);
   // A motive P : N -> U0, and clauses pz : P(zero), ps : Π (m : N). P(m) -> P(succ(m)).

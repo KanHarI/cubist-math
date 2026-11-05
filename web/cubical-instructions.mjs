@@ -3,7 +3,7 @@
 // readers expose the judgement graph and its context entries. Instructions
 // check their side conditions in C; nothing here certifies anything.
 import { KernelError } from "./cubical-kernel.mjs";
-import { LEVEL as LEVEL_ENTRY } from "./cubical-variables.mjs";
+import { LEVEL as LEVEL_ENTRY, carryBinderNames } from "./cubical-variables.mjs";
 
 // cc_instruction, in order.
 // An instruction's name at its opcode. null marks a retired instruction whose
@@ -76,6 +76,16 @@ export class InstructionGraph {
     this.module._cb_clear_error(this.kernel.handle);
     throw error;
   }
+  // The entries of the next replacement or signature begin, in order
+  // (cb_entries_push).
+  entries(list) {
+    this.module._cb_entries_clear(this.kernel.handle);
+    for (const entry of list) {
+      if (!Number.isInteger(entry) || entry < 0 || entry > 0xffffffff)
+        throw new TypeError(`An entry must be a 32-bit unsigned integer, not ${entry}.`);
+      if (!this.module._cb_entries_push(this.kernel.handle, entry)) throw new KernelError("Too many entries.");
+    }
+  }
   // A position up to 64 deep is set in one call, packed (cb_position_set);
   // a deeper one, child by child.
   position(path) {
@@ -102,19 +112,20 @@ export class InstructionGraph {
   sum(left, right) { return this.issue("sum", left, right); }
   inject(type, value, right) { return this.issue("inject", type, value, right ? 1 : 0); }
   sumElim(motive, left, right, value) { return this.issue("sumElim", motive, left, right, value); }
-  // A term entry for `name` at a type judgement. The session's record names
-  // it (web/cubical-variables.mjs, EntryNames); on ABI 3 the kernel takes the
-  // symbol `spelling` names, the name itself unless the driver chose a
-  // variant; a fresh entry, which no binder of its name takes, is a variant.
+  // A new term entry for `name` at a type judgement: the kernel makes a new
+  // one every time, and keeps no name. The session's record names it
+  // (web/cubical-variables.mjs, EntryNames), spelled as `spelling`, the name
+  // itself unless the driver chose a variant; a fresh entry, which no binder
+  // of its name takes, is a variant.
   extend(type, name, spelling = name, fresh = false) {
-    const entry = this.issue(EXTEND, type, this.kernel.symbol(spelling));
+    const entry = this.issue(EXTEND, type);
     this.kernel.entryNames.record(entry, name, spelling, this.module._cb_judgement(this.kernel.handle, type, 1) >>> 0, fresh);
     return entry;
   }
   dimension(index) { return this.issue(DIMENSION, index); }
-  // A universe variable x < ω (G0): a level entry, used only inside levels.
+  // A universe variable x < ω (G0): a new level entry, used only inside levels.
   level(name, spelling = name) {
-    const entry = this.issue(LEVEL, this.kernel.symbol(spelling));
+    const entry = this.issue(LEVEL);
     this.kernel.entryNames.record(entry, name, spelling, LEVEL_ENTRY);
     return entry;
   }
@@ -151,12 +162,16 @@ export class InstructionGraph {
   levelApply(fn, level) { return this.issue("levelApply", fn, level); }
   // Declared types (H1). The modifier is 0 for an untruncated sort and n + 2
   // for trunc(n); bit j of recorded marks universe parameter j recorded.
-  // signatureClose returns the admitted signature's index, not a judgement.
-  signatureBegin(former, modifier, sortName, recorded = 0) {
-    return this.issue("signatureBegin", former, modifier, this.kernel.symbol(sortName), recorded);
+  // The parameters' entries, level entries first, and the sort's entry stand
+  // for the telescope; each constructor's entry for it in later constructor
+  // types. signatureClose returns the admitted signature's index, not a
+  // judgement.
+  signatureBegin(former, modifier, parameters, sort, recorded = 0) {
+    this.entries(parameters);
+    return this.issue("signatureBegin", former, modifier, sort, recorded);
   }
-  signatureConstructor(signature, type, name) {
-    return this.issue("signatureConstructor", signature, type, this.kernel.symbol(name));
+  signatureConstructor(signature, type, entry) {
+    return this.issue("signatureConstructor", signature, type, entry);
   }
   signatureClose(signature) { return this.issue("signatureClose", signature); }
   // An instance of admitted signature `index`: its recorded levels first (level
@@ -205,10 +220,10 @@ export class InstructionGraph {
   glueTermPiece(system, value, image) { return this.issue("glueTermPiece", system, value, image); }
   glueTerm(system) { return this.issue("glueTerm", system); }
   unglue(value) { return this.issue("unglue", value); }
-  // A definition of a closed judgement, named by the session by its index
-  // (CubicalKernel.nameDefinition); on ABI 3 the kernel takes the name's symbol.
+  // A new definition of a closed judgement, named by the session by its index
+  // (CubicalKernel.nameDefinition): the kernel keeps no name.
   define(name, closed) {
-    const judgement = this.issue("define", this.kernel.symbol(name), closed);
+    const judgement = this.issue("define", closed);
     const reference = this.module._cb_judgement(this.kernel.handle, judgement, 1) >>> 0;
     this.kernel.definitionNames.set(this.kernel.node(reference).payload, name);
     return judgement;
@@ -220,13 +235,25 @@ export class InstructionGraph {
     const code = stepRules.indexOf(rule);
     if (code < 1) throw new TypeError(`Unknown step rule: ${rule}`);
     this.position(path);
-    return this.issue("step", judgement, side(where), code);
+    return this.carried(judgement, this.issue("step", judgement, side(where), code), side(where));
   }
   // Replace the subterm at `path` in a side of a judgement by the right side
-  // of the equality `by`, whose left side it is.
-  replace(judgement, where, path, by) {
+  // of the equality `by`, whose left side it is, opened with `entries`: one
+  // for each term or level binder the path crosses, outermost first, or 0
+  // where the subterm uses none.
+  replace(judgement, where, path, by, entries = []) {
     this.position(path);
-    return this.issue("replace", judgement, side(where), by);
+    this.entries(entries);
+    return this.carried(judgement, this.issue("replace", judgement, side(where), by), side(where));
+  }
+  // A step or a replacement rebuilds the binders above the place it
+  // rewrites, which carry no names: each takes the name of the binder in its
+  // place before, as the source's names stayed in a binder's symbol on ABI 3
+  // (web/cubical-variables.mjs, carryBinderNames).
+  carried(before, after, index) {
+    const read = id => this.module._cb_judgement(this.kernel.handle, id, index + 1) >>> 0;
+    carryBinderNames(this.kernel, read(before), read(after));
+    return after;
   }
   eta(typing) { return this.issue("eta", typing); }
   side(equality, which) { return this.issue("side", equality, side(which)); }
@@ -243,9 +270,9 @@ export class InstructionGraph {
   endpointTerm(term, dimension, endpoint) {
     return this.answer(this.module._cb_endpoint_term(this.kernel.handle, term, dimension, endpoint), "Could not substitute an endpoint.");
   }
-  // Syntax only, for the same search: a free name or dimension renamed.
-  rename(term, dimension, from, to) {
-    return this.answer(this.module._cb_rename(this.kernel.handle, term, dimension ? 1 : 0, from, to), "Could not rename.");
+  // Syntax only, for the same search: a free dimension renamed.
+  rename(term, from, to) {
+    return this.answer(this.module._cb_rename(this.kernel.handle, term, from, to), "Could not rename.");
   }
   get count() { return this.module._cb_judgement_count(this.kernel.handle) >>> 0; }
   get entryCount() { return this.module._cb_entry_count(this.kernel.handle) >>> 0; }
@@ -268,6 +295,10 @@ export class InstructionGraph {
       judgement.position = Array.from({ length: depth }, (_, index) => field(13 + index));
       if (rule === "step") judgement.stepRule = stepRules[judgement.operands[1]];
     }
+    // A replacement's entries for the binders its position crosses, and a
+    // signature's parameter entries and its sort entry.
+    if (rule === "replace" || rule === "signatureBegin")
+      judgement.entries = Array.from({ length: field(2048) }, (_, index) => field(2049 + index));
     return judgement;
   }
   // A context entry: a term or level variable, a dimension, or a face entry,
@@ -280,11 +311,12 @@ export class InstructionGraph {
       const clause = [mask(5), mask(7)];
       return { id, dimension: false, face: true, symbol: 0, clause, name: faceName(clause), type: 0, source: 0 };
     }
-    // A dimension entry's symbol is its index; a term or level entry is
-    // named by the session (web/cubical-variables.mjs, EntryNames).
+    // A dimension entry's symbol is its index; a term or level entry has no
+    // name in the kernel, and is named by the session (web/cubical-variables.mjs,
+    // EntryNames).
     const dimension = !!field(2), names = this.kernel.entryNames;
     if (dimension) return { id, dimension, face: false, symbol: field(0), name: `d${field(0)}`, type: field(1), source: field(3) };
-    if (!field(0)) throw new Error(`Unknown context entry ${id}.`);
+    if (!field(1)) throw new Error(`Unknown context entry ${id}.`);
     return { id, dimension, face: false, symbol: names.symbol(id), name: names.spelled(id), type: field(1), source: field(3) };
   }
 }

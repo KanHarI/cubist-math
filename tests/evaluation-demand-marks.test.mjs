@@ -9,6 +9,7 @@ import { lint } from "../web/cubist/lint.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { checkProgram } from "./check-program.mjs";
+import { namedTerms } from "./named-terms.mjs";
 import { normalDigest, sharedNormalDigest } from "../tools/evaluation-baseline.mjs";
 import { termFields, writtenFields, writtenParts } from "../web/translator/term-shape.mjs";
 import { reported } from "../tools/inline-errors.mjs";
@@ -324,7 +325,9 @@ print(evaluate(!!far));
     // The data computes; the function stays named, its value no data, and
     // only !!! unfolds it.
     "(6, double)",
-    "(6, fun (n : UNat) => induction n return UNat { zero => n; succ h => succ(h); })",
+    // A binder the normal form rebuilt is named by the driver: the kernel
+    // keeps no names (ABI 4), so it is x where the definition said n.
+    "(6, fun (x : UNat) => induction x return UNat { zero => x; succ h => succ(h); })",
     "<type>",
     "<path>",
     // Eta makes the successor function the constructor, whose value it is,
@@ -394,7 +397,9 @@ use unat;
 def p : UNat and UNat := ((fun (x : UNat) => succ(x))(2), 0);
 print(evaluate(!p));
 print(evaluate(p));`, { module });
-  assert.deepEqual(result.prints.map(print => print.text), ["((fun (x : UNat) => succ(x))(2), 0)", "(3, 0)"]);
+  // The λ is one node with the library's λ (m : UNat). succ(m), which was
+  // encoded first and so names it: binders carry no names (ABI 4).
+  assert.deepEqual(result.prints.map(print => print.text), ["((fun (m : UNat) => succ(m))(2), 0)", "(3, 0)"]);
 });
 
 test("the value form stops exactly where the printer's 4,000 nodes end", async t => {
@@ -836,8 +841,9 @@ test("the report's digest tells terms apart as the baseline's digest of their de
   // Terms as the kernel's normal forms may hold them, with their dimensions
   // in any slots, built directly: alike but for their slots, or different in
   // the binder a formula names, once in a part shared under both binders.
-  const { kernel } = program, raw = (kind, payload, ...children) => kernel.term(kind, payload, ...children);
-  const family = raw("Var", kernel.symbol("A")), path = raw("Var", kernel.symbol("p"));
+  // Free variables are entries (ABI 4).
+  const { kernel } = program, raw = (kind, payload, ...children) => kernel.term(kind, payload, ...children), named = namedTerms(kernel);
+  const family = named.realize(named.v("A")), path = named.realize(named.v("p"));
   const at = slot => raw("PApp", syntax.formula([["d:1"]], "interval", new Map([["d", slot]])), path);
   const plam = (slot, body) => raw("PLam", slot, family, body);
   const built = {
@@ -867,8 +873,9 @@ test("the report's digest tells terms apart as the baseline's digest of their de
 test("the report's digest reads every part decoding reads", async t => {
   const { program, verdicts } = await checkProgram(t, "import unat;\nuse unat;\ndef two := 2;\ndef three := 3;\ninductive Flag {\n  lit;\n  unlit;\n}\n", { module });
   assert.deepEqual([verdicts.two, verdicts.three], [true, true]);
-  const { kernel, checker: { syntax } } = program, raw = (kind, payload, ...children) => kernel.term(kind, payload, ...children);
-  const v = name => raw("Var", kernel.symbol(name)), level = value => raw("LConst", value);
+  // Terms written with names (tests/named-terms.mjs), made kernel syntax at the end.
+  const { kernel, checker: { syntax } } = program, { term: raw, bind, v, lv, realize } = namedTerms(kernel);
+  const level = value => raw("LConst", value);
   const face = (slot, bit = 1) => syntax.formula([[`d:${bit}`]], "face", new Map([["d", slot]]));
   const at = slot => raw("PApp", syntax.formula([["d:1"]], "interval", new Map([["d", slot]])), v("p"));
   const list = items => items.reduceRight((next, item) => raw("List", 0, item, next), 0);
@@ -876,12 +883,12 @@ test("the report's digest reads every part decoding reads", async t => {
   const sort = (signature, parameters, levels) => raw("Sort", signature, list(parameters), list(levels));
   const glue = (type, equiv, at) => raw("Glue", 0, v("a"), raw("GlueSystem", at, type, equiv, 0));
   const glueTerm = (as, term, at) => raw("GlueTerm", 0, as, v("b"), raw("Tube", at, term, 0));
-  const tube = (at, term) => raw("Tube", at, term, 0), lambda = (name, body) => raw("Lam", kernel.symbol(name), v("A"), body);
+  const tube = (at, term) => raw("Tube", at, term, 0), lambda = (name, body) => bind("Lam", name, v("A"), body);
   const formula = (clauses, outer, inner) => raw("PApp", syntax.formula(clauses, "interval", new Map([["d", outer], ["e", inner]])), v("p"));
   const both = (outer, inner) => formula([["d:1", "e:1"]], outer, inner), either = (outer, inner) => formula([["d:1"], ["e:1"]], outer, inner);
   const comp = term => raw("Comp", 3, v("A"), tube(face(4), term), v("b"));
   const faced = (kind, slot) => raw(kind, 3, v("A"), tube(face(slot), v("t")), v("b"));
-  const levelLambda = (kind, bound, used) => raw(kind, kernel.symbol(bound), raw("LBound", 1), raw("U", 0, raw("Var", kernel.symbol(used))));
+  const levelLambda = (kind, bound, used) => bind(kind, bound, raw("LBound", 1), raw("U", 0, lv(used)));
   const terms = {
     free_a: v("a"), free_b: v("b"),
     two: kernel.definitions.get("main__two"), three: kernel.definitions.get("main__three"),
@@ -910,9 +917,9 @@ test("the report's digest reads every part decoding reads", async t => {
     unshadowed: lambda("x", lambda("y", raw("App", 0, v("x"), lambda("z", v("x"))))),
     // What a binder does not bind: a lambda's domain, a path's endpoints, a
     // composition's and a transport's base.
-    domain: raw("Lam", kernel.symbol("x"), v("x"), v("x")), domain_renamed: raw("Lam", kernel.symbol("y"), v("x"), v("y")),
-    pi: raw("Pi", kernel.symbol("x"), v("A"), v("x")), pi_renamed: raw("Pi", kernel.symbol("y"), v("A"), v("y")),
-    sigma: raw("Sigma", kernel.symbol("x"), v("A"), v("x")), sigma_renamed: raw("Sigma", kernel.symbol("y"), v("A"), v("y")),
+    domain: bind("Lam", "x", v("x"), v("x")), domain_renamed: bind("Lam", "y", v("x"), v("y")),
+    pi: bind("Pi", "x", v("A"), v("x")), pi_renamed: bind("Pi", "y", v("A"), v("y")),
+    sigma: bind("Sigma", "x", v("A"), v("x")), sigma_renamed: bind("Sigma", "y", v("A"), v("y")),
     path_type: raw("Path", 3, at(3), at(3), v("a")), path_type_moved: raw("Path", 5, at(5), at(3), v("a")),
     path_family: raw("PLam", 3, at(3), v("a")), path_family_moved: raw("PLam", 5, at(5), v("a")),
     comp_base: raw("Comp", 3, v("A"), 0, at(3)), comp_base_moved: raw("Comp", 5, v("A"), 0, at(3)),
@@ -925,7 +932,7 @@ test("the report's digest reads every part decoding reads", async t => {
     // binder's bound, a transport descriptor's term.
     annotated: raw("PApp", syntax.formula([["d:1"]], "interval", new Map([["d", 3]])), v("p"), v("T")),
     annotated_other: raw("PApp", syntax.formula([["d:1"]], "interval", new Map([["d", 3]])), v("p"), v("U")),
-    level_bound: raw("LLam", kernel.symbol("l"), raw("LBound", 2), raw("U", 0, raw("Var", kernel.symbol("l")))),
+    level_bound: bind("LLam", "l", raw("LBound", 2), raw("U", 0, lv("l"))),
     trans_descriptor: raw("Trans", 3, at(3), tube(face(4), v("c")), v("b")),
     // An outer binding read again after an inner binder of its name.
     restored: lambda("x", raw("App", 0, lambda("x", v("x")), v("x"))), restored_renamed: lambda("x", raw("App", 0, lambda("y", v("y")), v("x"))),
@@ -974,6 +981,7 @@ test("the report's digest reads every part decoding reads", async t => {
     level_max: raw("U", 0, raw("LMax", 0, level(0), level(1))), level_tier: raw("U", 0, raw("LConst", (1 << 16) | 3)), level_bound_term: raw("LBound", 2),
     unit: raw("Unit", 0), point: raw("Point", 0), void: raw("Void", 0), path_of: raw("Path", 3, v("A"), v("a"), v("b")),
   };
+  for (const [name, part] of Object.entries(terms)) terms[name] = realize(part);
   const digests = Object.fromEntries(Object.entries(terms).map(([name, value]) => [name, digested(program, value)]));
   // It counts every distinct object of the decoding, arrays among them.
   for (const [name, value] of Object.entries(terms)) {

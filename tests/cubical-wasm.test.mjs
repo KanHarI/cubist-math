@@ -66,11 +66,13 @@ test("the kernel derives an application and leaves reduction explicit", t => {
 test("the kernel checks contexts and path endpoints instead of trusting annotations", t => {
   const k = session(t), syntax = new CubicalSyntax(k);
   const type = syntax.encode(two), l = syntax.encode(left), r = syntax.encode(right);
-  const x = k.symbol("x"), variable = k.term("Var", x);
-  assert.throws(() => derive(k, variable, type));
-  assert.equal(k.node(derive(k, variable, type, [[x, type]]).type).kind, "Sum");
-  assert.equal(k.node(variable).name, "x");
-  assert.throws(() => derive(k, variable, type, [[x, l]]));
+  // A variable is a context entry, Context of its id (ABI 4): a reference to
+  // no live entry is refused, and an entry's variable has its entry's type.
+  assert.throws(() => k.term("Context", 4096), /no live term or level entry/);
+  const g = new InstructionGraph(k), x = g.extend(g.sum(g.unit(), g.unit()), "x"), variable = k.term("Context", x);
+  assert.equal(k.node(derive(k, variable, type).type).kind, "Sum");
+  assert.equal(k.entryNames.name(x), "x");
+  assert.throws(() => derive(k, variable, syntax.encode(T.unit)));
   const path = k.term("PLam", 0, type, l);
   const good = k.term("Path", 0, type, l, l), forged = k.term("Path", 0, type, l, r);
   assert.equal(k.node(derive(k, path, good).type).kind, "Path");
@@ -416,7 +418,7 @@ test("the motive service's binders avoid every name the scope binds", t => {
 
 test("G0: the module's ABI version is checked, and a universe carries its level as a child", t => {
   // A module built for another encoding is refused before any syntax is made.
-  assert.throws(() => new CubicalKernel({ ...module, _cb_abi_version: () => 1 }), /ABI version 1, but this code expects version 3/);
+  assert.throws(() => new CubicalKernel({ ...module, _cb_abi_version: () => 1 }), /ABI version 1, but this code expects version 4/);
   assert.throws(() => new CubicalKernel({ _cb_new: module._cb_new }), /ABI version 1/);
   const k = session(t), syntax = new CubicalSyntax(k);
   // Tier-0 levels stay numbers; other constants are objects.

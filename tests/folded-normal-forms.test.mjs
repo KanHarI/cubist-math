@@ -5,6 +5,7 @@ import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { checkProgram } from "./check-program.mjs";
+import { normalDigest } from "../tools/evaluation-baseline.mjs";
 
 // The folded normal form (docs/roadmaps/historical/folded-normal-forms.md),
 // through the kernel's JavaScript interface: closed data computes in full,
@@ -258,7 +259,11 @@ def f(s : Box) := match s return Unit -> Unit { box(g) => g; };
     const boxed = { tag: "App", fn: { tag: "Con", index: 0, sort: domain }, arg: { tag: "App", fn: { tag: "DefRef", name: "main__f" }, arg: x } };
     const term = { tag: "App", fn: { tag: "App", fn: eliminator, arg: boxed }, arg: { tag: "Point" } };
     const { expression } = checker.checkSyntax(term, null, new Map([["x", domain]]), new Map());
-    shown.push(checker.displayText(checker.syntax.decode(kernel.normalizeFolded(expression)), [], { width: 1000, limit: 1000, notation: {}, reduce: 0 }));
+    // Up to the names of bound variables: a binder's name is the driver's
+    // record of its node (ABI 4), and without interning the normal form's
+    // nodes are not the definition's.
+    const normal = checker.syntax.decode(kernel.normalizeFolded(expression));
+    shown.push({ digest: normalDigest(normal), text: checker.displayText(normal, [], { width: 1000, limit: 1000, notation: {}, reduce: 0 }) });
   }
-  assert.equal(shown[0], shown[1]);
+  assert.equal(shown[0].digest, shown[1].digest, `${shown[0].text} against ${shown[1].text}`);
 });

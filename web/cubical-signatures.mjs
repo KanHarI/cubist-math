@@ -64,11 +64,13 @@ export function admitSignature(kernel, spec, { syntax = new CubicalSyntax(kernel
   for (const entry of [...parameterEntries].reverse()) former = g.pi(entry, former);
   for (const entry of [...levelEntries].reverse()) former = g.levelPi(entry, former);
   const recorded = levels.reduce((mask, level, j) => mask | (level.recorded ? 1 << j : 0), 0);
-  // The sort's entry names it; a variant name when another entry has it.
+  // The sort's entry names it; a variant name when another entry has it. The
+  // parameters' entries and the sort's stand for the telescope, all distinct:
+  // the scope holds each, so no binding reuses one.
   const sortSymbol = kernel.symbol(spec.sort ?? spec.name);
   const sort = driver.bind(sortSymbol, universe, scope), constructorEntries = [];
   scope = withEntry(scope, sortSymbol, sort);
-  let signature = signatureBegin(g, former, modifierCode(spec.modifier), sort, recorded);
+  let signature = signatureBegin(g, former, modifierCode(spec.modifier), [...levelEntries, ...parameterEntries], sort, recorded);
   for (const { name, type, display } of spec.constructors ?? []) {
     // A constructor's type lives in the sort's universe; one derived lower
     // is lifted to it. A refusal names the constructor.
@@ -86,8 +88,9 @@ export function admitSignature(kernel, spec, { syntax = new CubicalSyntax(kernel
   const index = g.signatureClose(signature);
   const constructors = (spec.constructors ?? []).map(c => c.display ?? c.name);
   if (kernel.signature(index).constructors.length > constructors.length) constructors.push("squash");
-  // The names the admission's entries are spelled by, as the stored types
-  // mention them: the kernel keeps them on ABI 3, but they are read here.
+  // The names the admission's entries are spelled by: the telescope's names,
+  // by which a stored constructor type, closed over it, is decoded
+  // (CubicalSyntax.decodeOver).
   const spelled = entry => kernel.entryNames.spelled(entry);
   const admission = Object.freeze({ levels: Object.freeze(levelEntries.map(spelled)), parameters: Object.freeze(parameterEntries.map(spelled)),
     sort: spelled(sort), constructors: Object.freeze(constructorEntries.map(spelled)) });

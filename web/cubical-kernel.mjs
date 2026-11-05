@@ -1,11 +1,13 @@
 // Integer-handle interface to the C kernel, usable in a browser worker or
 // Node. Building syntax never certifies it: only an instruction derives a
 // judgement (web/cubical-instructions.mjs).
-import { EntryNames } from "./cubical-variables.mjs";
+import { EntryNames, carryBinderNames } from "./cubical-variables.mjs";
 // A term kind's name at its number. null marks a retired kind whose number
-// stays reserved, Nat's, W's and pushouts' (kernel/include/cubical_kernel.h).
+// stays reserved, the named variable's of ABI 3, Nat's, W's and pushouts'
+// (kernel/include/cubical_kernel.h). A variable is Bound, by de Bruijn index,
+// or Context, by its entry's id (ABI 4).
 export const cubicalKinds = [
-  "", "U", "Var", "Pi", "Lam", "App", "Sigma", "Pair", "Fst", "Snd",
+  "", "U", null, "Pi", "Lam", "App", "Sigma", "Pair", "Fst", "Snd",
   null, null, null, null, "Unit", "Point", "Path", "PLam", "PApp",
   "Comp", "Tube", "Void", "Abort", null, null, null, "Sum", "Inl", "Inr",
   "SumRec", "UnitRec", "Glue", "GlueSystem", "GlueTerm", "Unglue", "DefRef",
@@ -13,11 +15,14 @@ export const cubicalKinds = [
   "HComp", "Trans",
   "LBound", "LConst", "LSucc", "LMax", "LPi", "LLam", "LApp",
   "Sort", "Con", "Elim", "List",
+  "Bound", "Context",
 ];
 // The syntax encoding this code is written for (CC_KERNEL_ABI_VERSION in
 // kernel/include/cubical_kernel.h). Version 2 keeps a universe's level in a
-// level child rather than its payload; version 3 adds the declared-type kinds.
-export const CUBICAL_ABI_VERSION = 3;
+// level child rather than its payload; version 3 adds the declared-type kinds;
+// version 4 refers to a variable by its role, a binder's index or an entry's
+// id, and keeps no names.
+export const CUBICAL_ABI_VERSION = 4;
 // The most kernel steps one query may take, after its budget has doubled from
 // the session's (10M by default) on each exhaustion: a hard, declared limit.
 export const MAX_QUERY_STEPS = 1280000000n;
@@ -106,6 +111,23 @@ function uint32(value, label) {
   return value;
 }
 
+// The driver's names of binder nodes (web/cubical-variables.mjs, binderName).
+// A binder the kernel built is shown as x until an encoding of the same node
+// names it, which may come after a decoding showed it: so each binder shown
+// unnamed is noted (`shownUnnamed`), and naming one of them moves `epoch`,
+// at which the codec drops the decodings it kept (CubicalSyntax.decode).
+class BinderNames extends Map {
+  set(handle, name) {
+    if (this.shownUnnamed?.delete(handle)) this.epoch++;
+    return super.set(handle, name);
+  }
+  shown(handle) {
+    if (super.has(handle)) return;
+    (this.shownUnnamed ??= new Set()).add(handle);
+  }
+  epoch = 0;
+}
+
 export class CubicalKernel {
   constructor(module) {
     guardModule(module);
@@ -117,12 +139,16 @@ export class CubicalKernel {
     this.module = module;
     this.handle = module._cb_new();
     if (!this.handle) throw new KernelError("Could not allocate cubical kernel session.", "resource");
+    // Names and the numbers the driver keys them by: its own, since the kernel
+    // keeps no names (ABI 4).
     this.names = new Map();
     this.symbolNames = new Map();
-    // A node read's name: its payload's symbol's, which symbolName may give
-    // a kernel-made symbol after the node is read.
-    const symbolNames = this.symbolNames;
-    this.nodeName = Object.create(Object.prototype, { name: { get() { return symbolNames.get(this.payload); } } });
+    // The name each binder node was encoded with, by its handle: the source's
+    // name, which decoding shows (web/cubical-syntax.mjs). The first encoding
+    // of a handle names it. A declaration's commit relocates them, and its
+    // rollback drops those of nodes made since its checkpoint
+    // (CubicalDeclarationTransaction.finish).
+    this.binderNames = new BinderNames();
     // What node(id) read of each node: nodes do not change, but a
     // declaration's commit or rollback moves them, so the transaction that
     // ends one forgets these (forgetNodes).
@@ -176,14 +202,17 @@ export class CubicalKernel {
   signature(index) {
     this.assertOpen();
     const m = this.module, h = this.handle, field = f => m._cb_signature(h, index, f) >>> 0;
-    const levels = field(4), parameters = field(5), count = field(6);
+    const levels = field(3), parameters = field(4), count = field(5);
+    // A constructor's type is closed over the admission telescope: the
+    // levels, the parameters, the sort and the earlier constructors, index 0
+    // the last of them. The level is over the former's prenex.
     const constructor = c => {
       const at = f => m._cb_signature_constructor(h, index, c, f) >>> 0;
-      return { data: at(1), positions: at(2), dimensions: at(3), type: at(4), generated: at(5) === 1 };
+      return { data: at(0), positions: at(1), dimensions: at(2), type: at(3), generated: at(4) === 1 };
     };
     return {
       admitted: field(0) === 1, experimental: field(1) === 1, modifier: field(2),
-      recorded: field(7), former: field(8), level: field(9), levels, parameters,
+      recorded: field(6), former: field(7), level: field(8), levels, parameters,
       constructors: Array.from({ length: count }, (_, c) => constructor(c)),
     };
   }
@@ -265,28 +294,18 @@ export class CubicalKernel {
     if (this.handle && !moduleFault(this.module)) this.module._cb_free(this.handle);
     this.handle = 0;
   }
+  // A name's number, the driver's own: the kernel keeps no names (ABI 4), so
+  // the numbers come from a counter of the driver's and never meet the
+  // kernel's.
   symbol(name) {
     this.assertOpen();
     if (typeof name !== "string" || !name) throw new TypeError("A symbol needs a nonempty name.");
     if (!this.names.has(name)) {
-      // The kernel allocates the id: its own fresh names come from the same
-      // counter, so a page name and a kernel name never share one.
-      const id = uint32(this.module._cb_fresh_symbol(this.handle) >>> 0, "Symbol");
-      if (!id) throw this.failure("Could not allocate a symbol.");
-      this.nextSymbol = Math.max(this.nextSymbol, id + 1);
+      const id = this.nextSymbol++;
       this.names.set(name, id);
       this.symbolNames.set(id, name);
     }
     return this.names.get(name);
-  }
-  // A symbol no name spells, for a binder renamed apart from every name in
-  // use (web/cubical-variables.mjs, freshBinder).
-  freshSymbol() {
-    this.assertOpen();
-    const id = this.module._cb_fresh_symbol(this.handle) >>> 0;
-    if (!id) throw new Error("Could not allocate a symbol.");
-    this.nextSymbol = Math.max(this.nextSymbol, id + 1);
-    return id;
   }
   symbolName(id) {
     uint32(id, "Symbol");
@@ -309,6 +328,15 @@ export class CubicalKernel {
     while (children.length < 4) children.push(0);
     const id = this.module._cb_term(this.handle, tag, payload, ...children) >>> 0;
     if (!id) throw this.failure(`Could not construct ${kind}.`);
+    return id;
+  }
+  // A binder's body with its index 0 replaced by an entry, for deriving it
+  // under the binder (cc_kernel_instantiate): refused when the body mentions
+  // the entry already.
+  instantiate(body, entry) {
+    this.assertOpen();
+    const id = this.module._cb_instantiate(this.handle, uint32(body, "Term handle"), uint32(entry, "Entry")) >>> 0;
+    if (!id) throw this.failure("Could not open a binder's body.");
     return id;
   }
   formula(sort, clauses) {
@@ -336,7 +364,15 @@ export class CubicalKernel {
       throw new KernelError("Normalize a term or type an instruction derived.");
     const id = this.withGrowingBudget(() => this.module._cb_normalize(this.handle, derivedHandle)) >>> 0;
     if (!id) throw this.failure();
-    return id;
+    return this.named(derivedHandle, id);
+  }
+  // A term the kernel computed from another: its binders are nodes of their
+  // own, which carry no names (ABI 4), and each takes the name of the binder
+  // in its place in the term, or in a definition the computation unfolded
+  // (web/cubical-variables.mjs, carryBinderNames).
+  named(from, to) {
+    carryBinderNames(this, from, to, true);
+    return to;
   }
   // The folded normal form of a derived term (cc_kernel_normalize_folded).
   normalizeFolded(derivedHandle) {
@@ -346,13 +382,13 @@ export class CubicalKernel {
       throw new KernelError("Normalize a term or type an instruction derived.");
     const id = this.withGrowingBudget(() => this.module._cb_normalize_folded(this.handle, derivedHandle)) >>> 0;
     if (!id) throw this.failure();
-    return id;
+    return this.named(derivedHandle, id);
   }
   head(handle) {
     this.assertOpen();
     const id = this.withGrowingBudget(() => this.module._cb_head(this.handle, uint32(handle, "Term handle"))) >>> 0;
     if (!id) throw this.failure();
-    return id;
+    return this.named(handle, id);
   }
   // A term's application spine: its root node, read, and the handles of
   // the arguments applied to it, in order.
@@ -367,9 +403,9 @@ export class CubicalKernel {
   definition(reference) {
     this.assertOpen();
     uint32(reference, "Definition handle");
-    const values = [0, 1, 2].map(field => this.module._cb_definition(this.handle, reference, field) >>> 0);
+    const values = [0, 1].map(field => this.module._cb_definition(this.handle, reference, field) >>> 0);
     if (!values[0]) throw new Error("Unknown checked cubical definition.");
-    return { name: this.definitionNames.get(this.node(reference).payload), value: values[1], type: values[2] };
+    return { name: this.definitionNames.get(this.node(reference).payload), value: values[0], type: values[1] };
   }
   // A definition registered under a name: for encoding, by the name, and for
   // decoding, by its index, which every reference to it carries.
@@ -391,9 +427,7 @@ export class CubicalKernel {
       if (!values[0]) throw new Error("Unknown cubical node handle.");
       // The read itself is returned, frozen: a node is read many times a
       // declaration, and a copy each time was a twentieth of a check's time.
-      // Its name is its payload symbol's as named when asked (nodeName).
-      read = Object.freeze(Object.assign(Object.create(this.nodeName), { id, kind: cubicalKinds[values[0]], payload: values[1],
-        children: Object.freeze(values.slice(2)) }));
+      read = Object.freeze({ id, kind: cubicalKinds[values[0]], payload: values[1], children: Object.freeze(values.slice(2)) });
       (id < this.settled ? this.settledNodes : this.nodes).set(id, read);
     }
     return read;

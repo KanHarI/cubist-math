@@ -1,50 +1,32 @@
 // Variables and binders, read and built in one place
-// (docs/roadmaps/kernel/locally-nameless-kernel.md, section 7, PR 1). The
+// (docs/roadmaps/kernel/locally-nameless-kernel.md, sections 5 and 7). The
 // driver reads a term or level binder here, opens its body with an entry,
 // builds a binder over an entry, names a variable's role and keys a level
 // variable by it; the decoder names variables through a stack of binders;
-// signature admission names its entries here; and EntryNames gives each entry
-// the driver makes its name. When the kernel refers to a bound variable by
-// index and to a context entry by its id (ABI 4), this module changes and its
-// callers do not.
+// signature admission passes its entries here; and EntryNames gives each
+// entry the driver makes its name.
 //
-// On ABI 3 a binder's payload is the symbol it binds, and a variable is
-// Var(symbol): bound by the nearest enclosing binder of that symbol, and
-// otherwise a reference to the context entry the symbol names. The kernel
-// still keeps those symbols; every name the driver reads is its own.
+// The kernel keeps no names (ABI 4). A term or level binder carries no name
+// and binds index 0 of its body; a variable is Bound(i), the variable of the
+// i-th enclosing binder, 0 the innermost, or Context(e), a reference to the
+// context entry e. Every name the driver shows is its own: a binder's is the
+// one it was encoded with (kernel.binderNames), or one made up.
 
 export const termBinders = new Set(["Pi", "Lam", "Sigma"]);
 export const levelBinders = new Set(["LPi", "LLam"]);
-// Term and level binders form one chain, as their variables share one space
-// of names.
+// Term and level binders form one chain of indices.
 export const binders = new Set([...termBinders, ...levelBinders]);
+// The kinds of a variable: a bound one, by index, and an entry, by its id.
+export const variables = new Set(["Bound", "Context"]);
 
-// The symbol a binder binds, by which a renaming pairs two binders and a
-// variable finds its binder.
-export const boundSymbol = node => node.payload;
-// The symbol a variable refers by: its binder's, or its entry's.
-export const referenceSymbol = node => node.payload;
-
-// A variable's role under a renaming of binders, a chain {left, right, next}
-// innermost first, read on its left or right side: bound, by the depth of
-// the binder that binds it, or a context reference, by its symbol. Two
-// variables are the same exactly when their roles are, so a bound variable
-// never meets an entry with the same number.
-export function role(symbol, bindings = null, right = false) {
-  let depth = 0;
-  for (let binding = bindings; binding; binding = binding.next, depth++)
-    if ((right ? binding.right : binding.left) === symbol) return `bound ${depth}`;
-  return `context ${symbol}`;
-}
-// Whether two variables, read on the left and on the right of a renaming,
-// have one role, as `role` gives them: without building either.
-export function sameReference(left, right, bindings = null) {
-  for (let binding = bindings; binding; binding = binding.next)
-    if (binding.left === left || binding.right === right) return binding.left === left && binding.right === right;
-  return left === right;
-}
+// A variable's role: bound, by its index, or a context reference, by its
+// entry. Two variables at the same depth are the same exactly when their
+// roles are, so a bound variable never meets an entry with the same number.
+export const role = node => node.kind === "Bound" ? `bound ${node.payload}` : `context ${node.payload}`;
+// Whether two variables, read at the same depth, have one role.
+export const sameReference = (left, right) => left.kind === right.kind && left.payload === right.payload;
 // A level variable's key in a level normal form (web/cubical-levels.mjs).
-export const levelKey = (node, bindings = null, right = false) => role(referenceSymbol(node), bindings, right);
+export const levelKey = node => role(node);
 
 // A scope is the driver's map from the symbols of the variables it shows to
 // their entries. Under this key, the entries of variables it holds but does
@@ -62,74 +44,155 @@ export function withEntry(scope, symbol, entry) {
   return extended;
 }
 
-// A binder's body opened with an entry, to derive it there: the body, and
-// the scope in which the binder's variable is that entry. A level binder's
-// body is renamed to the entry's symbol where the two differ, as the kernel
-// finds a level's entries by its symbols (ABI 3).
+// The name a binder node's variable goes by in the driver: the name it was
+// encoded with, or, for a binder the kernel built, the stem x.
+export const UNNAMED = "x";
+export const binderName = (kernel, handle) => kernel.binderNames.get(handle) ?? UNNAMED;
+// The name a binder's variable is bound by in the driver's scopes: its own,
+// or for a binder the kernel built, which has none, a name of its node,
+// x@handle, as the kernel's fresh symbols were on ABI 3. Its entries are
+// then its own: a term met under it never binds that name again, so a
+// narrowed scope never holds them for it (InstructionDriver.narrow), however
+// many binders the kernel built around it. They are spelled as x (spelledAs).
+export const binderKey = (kernel, handle) => kernel.binderNames.get(handle) ?? `${UNNAMED}@${handle}`;
+// The name an entry made for a binder's key is spelled from.
+export const spelledAs = name => name.includes("@") ? UNNAMED : name;
+
+// A binder's body opened with an entry, to derive it there: the body with
+// index 0 the entry (cc_kernel_instantiate, which refuses an entry the body
+// already mentions), and the scope in which the binder's name is that entry.
 export function openBinder(graph, node, entry, scope) {
-  const symbol = boundSymbol(node), own = graph.kernel.entryNames.symbol(entry);
-  if (!levelBinders.has(node.kind) || own === symbol) return { body: node.children[1], scope: withEntry(scope, symbol, entry) };
-  return { body: graph.rename(node.children[1], false, symbol, own), scope: withEntry(scope, own, entry) };
+  const symbol = graph.kernel.symbol(binderKey(graph.kernel, node.id));
+  return { body: openBody(graph.kernel, node.children[1], entry), scope: withEntry(scope, symbol, entry) };
 }
-// A binder over an entry: the instruction that discharges it from a body's
-// or a codomain's judgement.
-export function buildBinder(graph, kind, entry, body) {
-  switch (kind) {
-    case "Pi": return graph.pi(entry, body);
-    case "Sigma": return graph.sigma(entry, body);
-    case "Lam": return graph.lambda(entry, body);
-    case "LPi": return graph.levelPi(entry, body);
-    case "LLam": return graph.levelLambda(entry, body);
-    default: throw new TypeError(`${kind} binds no variable.`);
+// A body opened with an entry. Opening rebuilds the nodes that mention the
+// binder's variable, binders among them, as new handles: each takes the name
+// its original was encoded with, so that a binder inside keeps its source's
+// name once opened.
+export function openBody(kernel, body, entry) {
+  const opened = kernel.instantiate(body, entry);
+  carryBinderNames(kernel, body, opened);
+  return opened;
+}
+// The names of `from`'s binders given to the binders of `to` in the same
+// places, where `to` is `from` with some of its leaves replaced, as an
+// opening's result is: only the parts that differ are walked, each once.
+// With `unfold`, a definition of `from` is read as its value where `to` has
+// something else there, as a normal form unfolds it: the names its binders
+// had where a normal form keeps the shape of what it computed, for display.
+export function carryBinderNames(kernel, from, to, unfold = false) {
+  const names = kernel.binderNames, seen = new Set(), pending = [from, to];
+  while (pending.length) {
+    const b = pending.pop();
+    let a = pending.pop();
+    if (a === b || !a || !b || seen.has(`${a},${b}`)) continue;
+    seen.add(`${a},${b}`);
+    let na = kernel.node(a);
+    const nb = kernel.node(b);
+    for (let guard = 0; unfold && na.kind === "DefRef" && nb.kind !== "DefRef" && guard < 64; guard++) {
+      a = kernel.definition(a).value;
+      na = kernel.node(a);
+    }
+    if (na.kind !== nb.kind) continue;
+    if (binders.has(na.kind) && names.has(a) && !names.has(b)) names.set(b, names.get(a));
+    for (let i = 0; i < 4; i++) if (na.children[i] !== nb.children[i]) pending.push(na.children[i], nb.children[i]);
   }
 }
-// Raw syntax of a binder with its variable renamed apart from every name in
-// use, a symbol the kernel allocates now, which no entry holds (ABI 3); its
-// body, so renamed, is given to `rebuild` too.
-export function freshBinder(graph, node, rebuild = body => body) {
-  const kernel = graph.kernel, fresh = kernel.freshSymbol();
-  return kernel.term(node.kind, fresh, node.children[0], rebuild(graph.rename(node.children[1], false, boundSymbol(node), fresh)));
+// A binder over an entry: the instruction that discharges it from a body's
+// or a codomain's judgement, abstracting it. A binder it builds that has no
+// name yet, its term's and a λ's type's, goes by the entry's name, as on
+// ABI 3 it went by the entry's symbol.
+export function buildBinder(graph, kind, entry, body) {
+  let judgement;
+  switch (kind) {
+    case "Pi": judgement = graph.pi(entry, body); break;
+    case "Sigma": judgement = graph.sigma(entry, body); break;
+    case "Lam": judgement = graph.lambda(entry, body); break;
+    case "LPi": judgement = graph.levelPi(entry, body); break;
+    case "LLam": judgement = graph.levelLambda(entry, body); break;
+    default: throw new TypeError(`${kind} binds no variable.`);
+  }
+  // Abstracting the entry rebuilt the binders of the body that mention it:
+  // each takes the name of the binder in its place in the body. An entry
+  // made for a binder the kernel built names nothing (binderKey).
+  const kernel = graph.kernel, name = kernel.entryNames.name(entry), named = !name.includes("@");
+  const read = (id, field) => kernel.module._cb_judgement(kernel.handle, id, field) >>> 0;
+  for (const field of kind === "Lam" || kind === "LLam" ? [1, 3] : [1]) {
+    const handle = read(judgement, field);
+    if (!handle) continue;
+    if (named && !kernel.binderNames.has(handle)) kernel.binderNames.set(handle, name);
+    carryBinderNames(kernel, read(body, field), kernel.node(handle).children[1]);
+  }
+  return judgement;
 }
 
 // Raw syntax as the encoder builds it from named syntax
 // (web/cubical-syntax.mjs), against a scope: the driver's map from the
 // symbols of a context's variables to their entries, made first (scope
 // first, section 5.3). A variable is bound by one of the term's own binders
-// around it, or is an entry of the scope; any other is refused, as the
-// kernel's syntax will refer to a context variable only as an entry that
-// exists. On ABI 3 both are Var(symbol), the name's, and a binder's payload
-// is its name's symbol.
-export function resolveVariable(kernel, name, bound, scope) {
-  const symbol = kernel.symbol(name);
-  if (!bound && typeof scope.get(symbol) !== "number") throw unboundVariable(name);
-  return symbol;
+// around it, `binders`, a chain {name, next} innermost first, and is then
+// Bound at that binder's depth; or it is an entry of the scope, Context of
+// that entry; any other is refused, as the kernel's syntax refers to a
+// context variable only as an entry that exists.
+export function variableTerm(kernel, name, binders, scope) {
+  let index = 0;
+  for (let binder = binders; binder; binder = binder.next, index++)
+    if (binder.name === name) return kernel.term("Bound", index);
+  const entry = scope.get(kernel.symbol(name));
+  if (typeof entry !== "number") throw unboundVariable(name);
+  return kernel.term("Context", entry);
 }
-export const variableTerm = (kernel, name, bound, scope) => kernel.term("Var", resolveVariable(kernel, name, bound, scope));
-export const binderTerm = (kernel, kind, name, ...children) => kernel.term(kind, kernel.symbol(name), ...children);
+// A binder over its children, which carries no name: the name it was
+// written with is the driver's record of the handle, the first one given.
+export function binderTerm(kernel, kind, name, ...children) {
+  const handle = kernel.term(kind, 0, ...children);
+  if (!kernel.binderNames.has(handle)) kernel.binderNames.set(handle, name);
+  return handle;
+}
 // The driver's own message for a variable no entry stands for, marked so
 // that a derivation refuses it as deriving the variable did.
 const unboundVariable = name => Object.assign(new Error(`Unbound variable ${name}.`), { unbound: name });
 
-// The name a decoder shows a binder's variable by, and pushes on its stack.
-export const binderName = (kernel, node) => kernel.symbolName(boundSymbol(node));
-// The name a decoder shows a variable by, with `names` the binders around
-// it, a chain {symbol, name, next} innermost first: its binder's name where
-// one binds it, and otherwise its entry's. On ABI 3 both are its symbol's
-// name, so a decoding does not depend on the stack.
-export function variableName(kernel, node, names = null) {
-  const symbol = referenceSymbol(node);
-  for (let binder = names; binder; binder = binder.next) if (binder.symbol === symbol) return binder.name;
-  return kernel.symbolName(symbol);
+// Decoding. `names` is the stack of the binders around a node, a chain
+// {name, next} innermost first, and `naming` maps an entry to the name a
+// view shows it by (a scope's, NamesOfScope), every other entry shown by its
+// spelling (EntryNames). A bound variable is named by its binder.
+export function variableName(kernel, node, names = null, naming = null) {
+  if (node.kind === "Bound") {
+    let binder = names;
+    for (let i = 0; binder && i < node.payload; i++) binder = binder.next;
+    if (!binder) throw new Error(`A bound variable has no binder around it (index ${node.payload}).`);
+    return binder.name;
+  }
+  return naming?.get(node.payload) ?? kernel.entryNames.spelled(node.payload);
 }
-export const pushName = (kernel, node, names) => ({ symbol: boundSymbol(node), name: binderName(kernel, node), next: names });
+export const pushName = (name, names) => ({ name, next: names });
+// The name a decoded binder shows: its own (binderName), unless that would
+// capture a variable its body refers to otherwise, an outer binder's or an
+// entry's, `avoid`; then the first numbered name, x1, x2, …, that would not,
+// numbered as a generated name is (web/translator/names.mjs, NameSupply), so
+// that the display shows it by its stem where it can and the printed text
+// parses.
+export function shownBinderName(kernel, handle, avoid) {
+  const own = binderName(kernel, handle);
+  if (!avoid.has(own)) return own;
+  const stem = kernel.entryNames.stems.get(own) ?? own;
+  const base = /[0-9]$/.test(stem) || /^U+$/.test(stem) ? `${stem}_` : stem;
+  for (let suffix = 1; ; suffix++) {
+    const variant = `${base}${suffix}`;
+    if (avoid.has(variant)) continue;
+    kernel.entryNames.stems.set(variant, stem);
+    return variant;
+  }
+}
 
-// Signature admission over entries (the H1 specification's 6.1): the sort's
-// entry begins it, and each constructor's entry names the constructor in the
-// later ones' types. On ABI 3 the kernel takes the entries' symbols.
-export const signatureBegin = (graph, former, modifier, sort, recorded = 0) =>
-  graph.issue("signatureBegin", former, modifier, graph.kernel.entryNames.symbol(sort), recorded);
+// Signature admission over entries (the H1 specification's 6.1, section 3.4
+// of the design): the parameters' entries and the sort's begin it, and each
+// constructor's entry names the constructor in the later ones' types.
+export const signatureBegin = (graph, former, modifier, parameters, sort, recorded = 0) =>
+  graph.signatureBegin(former, modifier, parameters, sort, recorded);
 export const signatureConstructor = (graph, signature, type, entry) =>
-  graph.issue("signatureConstructor", signature, type, graph.kernel.entryNames.symbol(entry));
+  graph.signatureConstructor(signature, type, entry);
 
 // A level entry's place in the records below, where a term entry has its
 // type's handle.
@@ -140,26 +203,25 @@ export const LEVEL = "level";
 const partsCompared = kind => kind === "U" ? 0 : kind === "PApp" || kind === "LApp" || kind === "Sort" ? 1 : 4;
 // The names of the term and level entries a session makes, kept by the kernel
 // wrapper beside its definitions (section 5.3): a driver is dropped more often
-// than entries die. Each entry has the name it was made for and the symbol it
-// holds (ABI 3), spelled as the name where no live entry held that, and as a
-// variant, x'1, otherwise. An entry is found again by its name and its type
-// up to alpha-equality, as cc_instr_extend's reuse by symbol found it, so
-// that judgements derived under one binder are shared; never one the caller
-// excludes, an entry the scope being extended holds, which would make two
-// variables one (section 3.6). Of the entries made for a name at alpha-equal
-// types, the first made that is not excluded is found: which entry a
-// variable is depends on its name, its type and the scope it is bound in,
-// not on the entries made since, so a variable bound again after a driver
-// reset is the entry the judgements kept from before it use.
-// A variant's spelling names its entry too: a term derived under it binds
-// it by that spelling (ABI 3), and binding it again finds the entry.
+// than entries die. Each entry has the name it was made for and a spelling,
+// the name where no live entry is spelled so, and a variant, x'1, otherwise,
+// by which it is shown where no scope names it. An entry is found again by
+// its name and its type up to alpha-equality, so that judgements derived
+// under one binder are shared; never one the caller excludes, an entry the
+// scope being extended holds, which would make two variables one (section
+// 3.6). Of the entries made for a name at alpha-equal types, the first made
+// that is not excluded is found: which entry a variable is depends on its
+// name, its type and the scope it is bound in, not on the entries made since,
+// so a variable bound again after a driver reset is the entry the judgements
+// kept from before it use.
+// A variant's spelling names its entry too: binding it again finds the entry.
 // The kernel truncates entries to a checkpoint's count at its commit or
 // rollback, and the transaction truncates these records with them
 // (CubicalDeclarationTransaction.finish).
 export class EntryNames {
   constructor(kernel) {
     this.kernel = kernel;
-    // entry → { entry, name, symbol, type, keys }.
+    // entry → { entry, name, symbol, type, keys }: symbol is the spelling's.
     this.records = new Map();
     // Each name's entries, grouped by type up to alpha-equality: name →
     // { groups: [{ type, likeness, entries }], known }, a group's entries in
@@ -168,7 +230,7 @@ export class EntryNames {
     // unlike. The names whose known handles a truncation could move (touched).
     this.named = new Map();
     this.touched = new Set();
-    // The live entry that holds a symbol.
+    // The live entry spelled by a symbol.
     this.holders = new Map();
     // The last variant number of each name: a spelling is never made again, so
     // a variant names one stem for ever, as its display reads it (stems).
@@ -201,30 +263,28 @@ export class EntryNames {
     this.touched.add(name);
     return group ?? null;
   }
-  // What two alpha-equal types share: the root's kind, and the free
-  // variables of the parts alpha-equality compares as syntax (a universe's
-  // level, an instantiation's, an instance's recorded levels, compared by
-  // normal form, and a path application's annotation, not compared, left
-  // out).
+  // What two alpha-equal types share: the root's kind, and the entries the
+  // parts alpha-equality compares as syntax mention (a universe's level, an
+  // instantiation's, an instance's recorded levels, compared by normal form,
+  // and a path application's annotation, not compared, left out). A bound
+  // variable is an index, the same on both sides.
   likeness(type) {
     const free = handle => {
       let known = this.likenesses.get(handle);
       if (known) return known;
       const node = this.kernel.node(handle), children = node.children.slice(0, partsCompared(node.kind));
       known = new Set();
-      if (node.kind === "Var") known.add(referenceSymbol(node));
-      children.forEach((child, i) => {
-        if (child) for (const symbol of free(child)) if (!(i === 1 && binders.has(node.kind) && symbol === boundSymbol(node))) known.add(symbol);
-      });
+      if (node.kind === "Context") known.add(node.payload);
+      for (const child of children) if (child) for (const entry of free(child)) known.add(entry);
       this.likenesses.set(handle, known);
       return known;
     };
     return `${this.kernel.node(type).kind} ${[...free(type)].sort((a, b) => a - b).join(",")}`;
   }
-  // The spelling of a new entry's symbol for `name`: the name itself where
-  // no live entry holds its symbol, unless the entry is to be `fresh`, and
-  // otherwise the next variant, `stem'n` for a term entry and `stem'level n`
-  // for a level entry.
+  // The spelling of a new entry for `name`: the name itself where no live
+  // entry is spelled so, unless the entry is to be `fresh`, and otherwise the
+  // next variant, `stem'n` for a term entry and `stem'level n` for a level
+  // entry.
   spelling(name, { level = false, fresh = false } = {}) {
     if (!fresh && !this.holders.has(this.kernel.symbol(name))) return name;
     const key = level ? `${name}'level` : `${name}'`;
@@ -236,9 +296,9 @@ export class EntryNames {
       return variant;
     }
   }
-  // An entry the kernel made, for `name`, holding the symbol `spelling` names.
-  // A fresh entry is found again by its spelling only, as a binder of its
-  // name never takes it.
+  // An entry the kernel made, for `name`, spelled `spelling`. A fresh entry
+  // is found again by its spelling only, as a binder of its name never
+  // takes it.
   record(entry, name, spelling, type, fresh = false) {
     if (this.records.has(entry)) return;
     const record = { entry, name, symbol: this.kernel.symbol(spelling), type, keys: fresh ? [spelling] : [...new Set([name, spelling])] };
@@ -254,7 +314,7 @@ export class EntryNames {
     }
     this.holders.set(record.symbol, entry);
   }
-  // The symbol an entry holds, and the name its symbol spells.
+  // The symbol an entry's spelling is, and the spelling.
   symbol(entry) {
     const record = this.records.get(entry);
     if (!record) throw new Error(`The driver made no context entry ${entry}.`);
