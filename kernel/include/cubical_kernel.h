@@ -475,8 +475,8 @@ void cc_kernel_arena(const cc_kernel *, size_t *nodes, size_t *bytes);
  * definition reference, a path endpoint, a side and a step rule, or an
  * injection's side. The position is the highlighted one, for a step or a
  * replacement. The entries are a replacement's, one for each term or level
- * binder its position crosses, or a signature's parameter entries and then
- * its sort entry. Both are valid until the next instruction. */
+ * binder its position crosses, or a signature's parameter entries (its sort
+ * entry is its first operand). Both are valid until the next instruction. */
 typedef struct {
     uint32_t kind;
     cc_term term, other, type;

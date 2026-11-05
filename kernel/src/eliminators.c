@@ -289,7 +289,7 @@ static cc_term lifted(cc_kernel *k, cc_term eliminator, cc_term instance, cc_ter
  * at the actual arguments: the levels closed to indices, the last argument at
  * index 0, and those instantiated in one pass. */
 static cc_term at_arguments(cc_kernel *k, cc_term term, uint32_t first, const cc_term *arguments, uint32_t count) {
-    cc_term values[CC_CONSTRUCTOR_ARGUMENTS];
+    cc_term values[CC_CONSTRUCTOR_ARGUMENTS] = {0};
     for (uint32_t i = 0; i < count; ++i)
         values[i] = arguments[count - 1 - i];
     term = term ? ck_close_loose(k, term, first, count) : 0;

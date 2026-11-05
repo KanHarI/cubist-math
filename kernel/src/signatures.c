@@ -383,10 +383,10 @@ cc_judgement_id cc_instr_signature_begin(cc_kernel *k, cc_judgement_id former_id
                                          const cc_entry_id *parameters, size_t count, cc_entry_id sort,
                                          uint32_t recorded) {
     /* Each admission is a new sort (Q10), and the gate and the table change:
-     * never the cached result of an identical call. Its entries are recorded
-     * with it, the parameters' and then the sort's. */
+     * never the cached result of an identical call. Its parameters' entries
+     * are recorded with it, and its sort's entry is its first operand. */
     if (!ck_instr_begin_stateful(k, (cc_derivation){.rule = CC_INSTR_SIGNATURE_BEGIN, .premise = {former_id},
-                                                    .operand = {sort, recorded}, .entry = modifier}, NULL, 0))
+                                                    .operand = {sort, recorded}, .entry = modifier}, parameters, count))
         return 0;
     if (!(k->extensions & CC_EXTENSION_H1))
         return fail(k, "Declared types (H1) are switched off in this kernel; CC_EXTENSION_H1 switches them on."), 0;
@@ -424,18 +424,10 @@ cc_judgement_id cc_instr_signature_begin(cc_kernel *k, cc_judgement_id former_id
     uint32_t total = levels + parameter_count;
     if (count != total || (count && !parameters))
         return fail(k, "A signature takes one entry for each of its former's parameters."), 0;
-    /* The entries are recorded with the judgement: the parameters', then the
-     * sort's. */
-    cc_entry_id recorded_entries[CC_SIGNATURE_LEVELS + CC_SIGNATURE_PARAMETERS + 1];
-    for (uint32_t i = 0; i < total; ++i)
-        recorded_entries[i] = parameters[i];
-    recorded_entries[total] = sort;
-    k->pending.entry_count = total + 1;
-    k->pending_entries = recorded_entries;
     /* Each parameter's entry is of its binder's kind and at its binder's
      * domain, opened with the entries before it; all are distinct, and the
      * sort's apart from them (section 3.6). */
-    cc_term opened_with[CC_SIGNATURE_LEVELS + CC_SIGNATURE_PARAMETERS];
+    cc_term opened_with[CC_SIGNATURE_LEVELS + CC_SIGNATURE_PARAMETERS] = {0};
     for (uint32_t i = 0; i < total; ++i) {
         bool universe = i < levels;
         if (!entry_of_kind(k, parameters[i], universe))
@@ -445,7 +437,7 @@ cc_judgement_id cc_instr_signature_begin(cc_kernel *k, cc_judgement_id former_id
             if (parameters[j] == parameters[i])
                 return fail(k, "A signature's entries are pairwise distinct, the sort's apart from its parameters'."), 0;
         if (!universe) {
-            cc_term values[CC_SIGNATURE_LEVELS + CC_SIGNATURE_PARAMETERS];
+            cc_term values[CC_SIGNATURE_LEVELS + CC_SIGNATURE_PARAMETERS] = {0};
             for (uint32_t m = 0; m < i; ++m)
                 values[m] = opened_with[i - 1 - m];
             cc_term expected = ck_instantiate_all(k, types[i - levels], values, i);
@@ -467,7 +459,7 @@ cc_judgement_id cc_instr_signature_begin(cc_kernel *k, cc_judgement_id former_id
         if (parameters[i] == sort)
             return fail(k, "A signature's entries are pairwise distinct, the sort's apart from its parameters'."), 0;
     {
-        cc_term values[CC_SIGNATURE_LEVELS + CC_SIGNATURE_PARAMETERS];
+        cc_term values[CC_SIGNATURE_LEVELS + CC_SIGNATURE_PARAMETERS] = {0};
         for (uint32_t m = 0; m < total; ++m)
             values[m] = opened_with[total - 1 - m];
         cc_term universe = ck_universe(k, ck_instantiate_all(k, level, values, total));
@@ -515,6 +507,9 @@ cc_judgement_id cc_instr_signature_begin(cc_kernel *k, cc_judgement_id former_id
     s->level = level;
     cc_term sort_term = ck_make(k, CC_SORT, index, 0, 0, 0, 0);
     cc_judgement_id id = sort_term ? ck_instr_publish(k, CC_FACT_SIGNATURE, sort_term, 0, f.term, 0) : 0;
+    /* The entries were copied into the store: the caller's array is not kept. */
+    k->pending_entries = NULL;
+    k->pending.entry_count = 0;
     if (!id) {
         release(s);
         --k->signature_count;
@@ -572,7 +567,7 @@ static cc_term closed_type(cc_kernel *k, const cc_signature *s, cc_term type, ui
  * parameters' entries: the stored level opened with them. */
 static cc_term open_level(cc_kernel *k, const cc_signature *s) {
     uint32_t total = s->level_count + s->parameter_count;
-    cc_term values[CC_SIGNATURE_LEVELS + CC_SIGNATURE_PARAMETERS];
+    cc_term values[CC_SIGNATURE_LEVELS + CC_SIGNATURE_PARAMETERS] = {0};
     for (uint32_t m = 0; m < total; ++m)
         if (!(values[m] = ck_make(k, CC_CONTEXT, s->entries[total - 1 - m], 0, 0, 0, 0)))
             return 0;
@@ -722,7 +717,7 @@ static bool admitted_signature(cc_kernel *k, cc_term sort, uint32_t *index, cc_s
  * With level values among them, every level of the result is taken to
  * normal form, as level instantiation does (G0 §2.8). */
 static cc_term at_telescope(cc_kernel *k, cc_term term, const cc_term *values, uint32_t count, bool levels) {
-    cc_term reversed[CC_SIGNATURE_LEVELS + CC_SIGNATURE_PARAMETERS + CC_SIGNATURE_CONSTRUCTORS + 1];
+    cc_term reversed[CC_SIGNATURE_LEVELS + CC_SIGNATURE_PARAMETERS + CC_SIGNATURE_CONSTRUCTORS + 1] = {0};
     for (uint32_t i = 0; i < count; ++i)
         reversed[i] = values[count - 1 - i];
     cc_term result = ck_instantiate_all(k, term, reversed, count);
@@ -757,7 +752,7 @@ static cc_judgement_id complete_instance(cc_kernel *k, uint32_t index, const cc_
             return fail(k, "An erased universe parameter has no determining occurrence."), 0;
     }
     /* The telescope's values so far: the levels, then the parameters. */
-    cc_term values[CC_SIGNATURE_LEVELS + CC_SIGNATURE_PARAMETERS];
+    cc_term values[CC_SIGNATURE_LEVELS + CC_SIGNATURE_PARAMETERS] = {0};
     for (uint32_t j = 0; j < s->level_count; ++j)
         values[j] = rho[j];
     for (uint32_t i = 0; i < s->parameter_count; ++i) {
@@ -895,7 +890,7 @@ cc_term ck_constructor_type(cc_kernel *k, cc_term instance, uint32_t constructor
     uint32_t parameter_count = items(k, sort.child[0], as, CC_SIGNATURE_PARAMETERS, false);
     if (level_count != recorded_count(s) || parameter_count != s->parameter_count)
         return fail(k, "The instance's parameters and levels are not the signature's."), 0;
-    cc_term values[CC_SIGNATURE_LEVELS + CC_SIGNATURE_PARAMETERS + CC_SIGNATURE_CONSTRUCTORS + 1];
+    cc_term values[CC_SIGNATURE_LEVELS + CC_SIGNATURE_PARAMETERS + CC_SIGNATURE_CONSTRUCTORS + 1] = {0};
     uint32_t n = 0;
     cc_term erased = s->recorded == (s->level_count < 32 ? (UINT32_C(1) << s->level_count) - 1 : UINT32_MAX)
         ? 0 : ck_level_constant(k, 0, 0);

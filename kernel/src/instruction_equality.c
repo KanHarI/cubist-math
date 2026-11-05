@@ -451,7 +451,7 @@ static bool binder_entries(cc_kernel *k, const crossing *crossed, size_t depth, 
             return ck_fail(k, "A replacement's entry for a binder is already in the rewritten judgement's context.");
         /* The domain, under the binders outside it, opened with what opens
          * them: the innermost of those is index 0. */
-        cc_term outer[1024];
+        cc_term outer[1024] = {0};
         for (size_t m = 0; m < b; ++m)
             outer[m] = values[b - 1 - m];
         cc_term domain = ck_instantiate_all(k, crossed[at].node.child[0], outer, (uint32_t)b);
@@ -503,7 +503,7 @@ cc_judgement_id cc_instr_replace(cc_kernel *k, cc_judgement_id id, unsigned side
     if (!binder_entries(k, crossed, depth, entries, count, e.context, values, terms, &count_scoped))
         goto done;
     {
-        cc_term reversed[1024];
+        cc_term reversed[1024] = {0};
         for (size_t b = 0; b < count; ++b)
             reversed[b] = values[count - 1 - b];
         target = ck_instantiate_all(k, target, reversed, (uint32_t)count);
