@@ -1539,6 +1539,16 @@ Each PR is verified locally first, opened as a draft, and keeps
    with the opened-level counter of section 3.1, unused by the rules yet. C
    tests for their laws and bounds (below). Its own PR (decided
    2026-11-02).
+   *As implemented:* the three kinds, `CC_CONTEXT` included, are an enum in
+   `kernel/src/term_internal.h` numbered from 54, not in `cc_term_kind`,
+   since `tests/wasm-interface.test.mjs` holds that enum to the driver's
+   table; PR 3 moves `CC_BOUND` and `CC_CONTEXT` there. Until `contexts`
+   replaces `symbols`, a `CC_CONTEXT(e)` sets bit `e % 64` of `symbols`, which
+   `ck_abstract` reads. `ck_alpha_equal` compares the three leaves by
+   payload, as it compares `CC_DEFREF`. The primitives are two kinds of
+   frame in `substitution`'s worklist, memoized as syntax memo operations
+   7 to 10; the simultaneous form is keyed by a `CC_LIST` of its values, so
+   it takes at most 511. Tests: `kernel/tests/test_indices.c`.
 3. **PR 3, the switch: term and level binders, ABI 4.** `CC_VAR` retired,
    `CC_BOUND` and `CC_CONTEXT` in; binders without payload; every change of
    sections 3.3 to 3.7, the freshness conditions of section 3.6 and the
