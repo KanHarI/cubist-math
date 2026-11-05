@@ -15,8 +15,13 @@
  * ck_term_binder binds index 0 in its child 1. CC_CONTEXT(e) refers to the
  * term or level entry e, which ck_make requires to be live. CC_OPENED(m) is
  * a binder that an operation opened at level m; it is never in a judgement,
- * a definition or a query's answer. */
-enum { CC_BOUND = CC_LIST + 1, CC_CONTEXT, CC_OPENED };
+ * a definition or a query's answer. They are constants of type
+ * cc_term_kind, not enumerators of an enum of their own, so they compare
+ * with and pass as a cc_term_kind without mixing two enum types (GCC's
+ * -Wenum-compare and -Wenum-conversion). */
+#define CC_BOUND ((cc_term_kind)(CC_LIST + 1))
+#define CC_CONTEXT ((cc_term_kind)(CC_LIST + 2))
+#define CC_OPENED ((cc_term_kind)(CC_LIST + 3))
 
 /* A syntax node: 48 bytes natively and under WebAssembly (section 3.2 of the
  * design; the assertions below check it on both). kind is a cc_term_kind or

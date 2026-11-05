@@ -1539,8 +1539,9 @@ Each PR is verified locally first, opened as a draft, and keeps
    with the opened-level counter of section 3.1, unused by the rules yet. C
    tests for their laws and bounds (below). Its own PR (decided
    2026-11-02).
-   *As implemented:* the three kinds, `CC_CONTEXT` included, are an enum in
-   `kernel/src/term_internal.h` numbered from 54, not in `cc_term_kind`,
+   *As implemented:* the three kinds, `CC_CONTEXT` included, are constants
+   of type `cc_term_kind` in `kernel/src/term_internal.h`, numbered from 54,
+   not enumerators of `cc_term_kind`,
    since `tests/wasm-interface.test.mjs` holds that enum to the driver's
    table; PR 3 moves `CC_BOUND` and `CC_CONTEXT` there. Until `contexts`
    replaces `symbols`, a `CC_CONTEXT(e)` sets bit `e % 64` of `symbols`, which
