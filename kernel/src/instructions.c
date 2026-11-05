@@ -325,7 +325,9 @@ bool ck_instr_merge3(cc_kernel *k, uint32_t a, uint32_t b, uint32_t c, uint32_t 
 
 /* Remove entries from a context. A remaining entry must not depend on a
  * removed one, and must not be another dimension entry with a removed
- * dimension's index: the binder would capture it. */
+ * dimension's index: the binder would capture it. A removed entry may depend
+ * on another removed one, as a replacement's entries for nested binders do
+ * (section 3.6). */
 bool ck_instr_discharge(cc_kernel *k, uint32_t set, const cc_entry_id *removed, size_t count, uint32_t *out) {
     if (k->error[0])
         return false;
@@ -338,16 +340,18 @@ bool ck_instr_discharge(cc_kernel *k, uint32_t set, const cc_entry_id *removed, 
     for (uint32_t i = 0; i < s.count; ++i) {
         cc_entry e = k->entries[items[i]];
         bool gone = false;
-        for (size_t r = 0; r < count && !gone; ++r) {
-            cc_entry binder = k->entries[removed[r]];
+        for (size_t r = 0; r < count && !gone; ++r)
             gone = items[i] == removed[r];
-            if (!gone && contains(k, e.context, removed[r]))
+        if (gone)
+            continue;
+        for (size_t r = 0; r < count; ++r) {
+            cc_entry binder = k->entries[removed[r]];
+            if (contains(k, e.context, removed[r]))
                 return ck_fail(k, "A context entry still depends on the discharged entry.");
-            if (!gone && e.dimension && binder.dimension && e.index == binder.index)
+            if (e.dimension && binder.dimension && e.index == binder.index)
                 return ck_fail(k, "The binder would capture another dimension entry with its index.");
         }
-        if (!gone)
-            z[n++] = items[i];
+        z[n++] = items[i];
     }
     if (n == s.count) { *out = set; return true; }
     return publish_set(k, n, out);

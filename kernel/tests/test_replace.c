@@ -104,6 +104,12 @@ static void conditions(void) {
     cc_term argument = child(child(replaced, 1), 1);
     assert(kind(argument) == CC_BOUND && payload(argument) == 0);
     assert(context_size(result) == 0);
+    /* Entries for nested binders may depend on each other, B and b : B for
+     * λ (A : U0). λ (m : A). m at m, and are discharged together. */
+    cc_entry_id both[] = {B, element};
+    cc_judgement_id together = OK(cc_instr_replace(k, OK(cc_instr_refl(k, dependent)), 1, inner, 2,
+                                                   OK(cc_instr_refl(k, var(element))), both, 2));
+    assert(info(together).other == info(dependent).term && context_size(together) == 0);
     puts("Replace: each freshness condition refused with its own message; a right side's binder use accepted.");
 }
 
