@@ -67,13 +67,16 @@ test("steps preserve binders, renamed context entries, and type-side reductions"
   // Force the same printed name to need two different native context entries.
   program.checker.checkView(variable("y"), { tag: "U", level: 0 }, [["y", { tag: "U", level: 0 }]]);
   const open = check(program, app(identity, variable("y")), unit, [{ name: "y", type: unit }]);
-  assert.ok(open.checked.renamings.length);
+  // The view names its entry by the scope's name, y, where the entry is
+  // spelled apart.
+  const graph = program.checker.driver.graph, [entry] = graph.judgement(open.checked.judgement).context;
+  assert.notEqual(graph.entry(entry).name, "y");
+  assert.equal(open.checked.naming.get(entry), "y");
   const result = step(program, open, "expression", [], "beta");
   assert.equal(result.view.expression.name, "y");
-  const graph = program.checker.driver.graph;
   assert.deepEqual(graph.judgement(result.checked.judgement).context, graph.judgement(open.checked.judgement).context);
-  assert.ok(graph.judgement(result.checked.judgement).context.some(id => graph.entry(id).symbol ===
-    program.kernel.node(graph.judgement(result.checked.judgement).term).payload));
+  const term = program.kernel.node(graph.judgement(result.checked.judgement).term);
+  assert.deepEqual([term.kind, term.payload], ["Context", entry]);
   const under = check(program, { tag: "Lam", name: "z", domain: unit, body: app(identity, variable("z")) },
     { tag: "Pi", name: "z", domain: unit, body: unit });
   const body = step(program, under, "expression", [1], "beta").view.expression;

@@ -1,6 +1,6 @@
 import { boundedSyntaxJson } from "./cubical-json.mjs";
 import { kernelOccurrence } from "./cubical-kernel-step.mjs";
-import { binderName, termBinders, variableName } from "./cubical-variables.mjs";
+import { binderName, binders, variableName } from "./cubical-variables.mjs";
 
 const clipped = (text, limit) => text.length > limit
   ? { text: text.slice(0, limit), omittedCharacters: text.length - limit }
@@ -88,8 +88,12 @@ export function traceSnapshot(program, state, side, path, limit = 16) {
     const n = kernel.node(handle);
     const node = { handle, kind: n.kind, payload: n.payload, operands: [...n.children] };
     if (n.kind === "DefRef") node.definition = kernel.definition(handle);
-    if (n.kind === "Var") node.name = variableName(kernel, n);
-    else if (termBinders.has(n.kind)) node.name = binderName(kernel, n);
+    // An entry by its spelling, a bound variable by its index (the snapshot
+    // reads nodes apart from the binders around them), a binder by the name
+    // it was encoded with.
+    if (n.kind === "Context") node.name = variableName(kernel, n);
+    else if (n.kind === "Bound") node.index = n.payload;
+    else if (binders.has(n.kind)) node.name = binderName(kernel, handle);
     nodes.push(node); pending.push(...n.children.filter(Boolean));
   }
   return { state: state.id, binding: state.selected, judgement: state.checked.judgement,

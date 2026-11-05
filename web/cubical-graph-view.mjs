@@ -4,6 +4,7 @@
 // and type handles lead into the syntax graph (the assembly view).
 import { InstructionDriver } from "./cubical-instruction-driver.mjs";
 import { ththNames } from "./cubical-instructions.mjs";
+import { binderName, binders, pushName } from "./cubical-variables.mjs";
 
 // `expanded` holds definition references whose bodies are derived too: THTH
 // derived a DefLookup from the Def judgement that registered the definition,
@@ -13,7 +14,8 @@ export function judgementGraph(program, view, checked = null, {
 } = {}) {
   const kernel = program.kernel, checker = program.checker, dimensions = new Map(view.dimensions ?? []);
   const graph = driver.graph;
-  const decode = handle => checker.syntax.decode(handle, dimensions);
+  // `names` name a subterm's loose indices: the binders above it.
+  const decode = (handle, names = null) => checker.syntax.decode(handle, dimensions, names);
   if (!root) {
     // The view's context's scope first, made by this graph's driver, and the
     // view's terms' syntax against it.
@@ -88,7 +90,7 @@ export function judgementGraph(program, view, checked = null, {
   const shownNames = new Map();
   // A dimension, or a face entry, its clause: shown without a type.
   const bare = item => item.dimension ? `${item.name} : 𝕀` : item.face ? `[${item.name}]` : null;
-  const text = (judgement, first, second = null) => {
+  const text = (judgement, first, second = null, binderNames = null) => {
     const scope = new Map(), terms = [], dimensions = new Map();
     for (const entry of judgement.context) {
       const info = entries.get(entry);
@@ -97,7 +99,7 @@ export function judgementGraph(program, view, checked = null, {
     }
     // The judgement's dimensions, which a definition shown by its label must
     // not read as (display-naming.mjs).
-    const shown = checker.displayGoal(scope, dimensions, decode(first), second ? decode(second) : null, { width: 240, kernel: true, reduce: false });
+    const shown = checker.displayGoal(scope, dimensions, decode(first, binderNames), second ? decode(second, binderNames) : null, { width: 240, kernel: true, reduce: false });
     terms.forEach((entry, index) => { if (!shownNames.has(entry)) shownNames.set(entry, shown.locals[index]?.name); });
     const names = judgement.context.map(entry => {
       const info = entries.get(entry), index = terms.indexOf(entry);
@@ -123,13 +125,16 @@ export function judgementGraph(program, view, checked = null, {
       const premise = judgements.get(j.premises[0]);
       // A step inside a system (a composition's tubes, a Glue type's or term's
       // pieces) highlights the term the system belongs to.
+      // A subterm under binders is shown with their names.
       let handle = premise[j.side === "term" ? "term" : j.side === "other" ? "other" : "type"], shown = handle;
+      let names = null, shownNames = null;
       for (const child of j.position) {
-        handle = kernel.node(handle).children[child];
-        if (!["Tube", "GlueSystem"].includes(kernel.node(handle).kind)) shown = handle;
+        const node = kernel.node(handle);
+        if (child === 1 && binders.has(node.kind)) names = pushName(binderName(kernel, handle), names);
+        handle = node.children[child];
+        if (!["Tube", "GlueSystem"].includes(kernel.node(handle).kind)) { shown = handle; shownNames = names; }
       }
-      handle = shown;
-      row.highlight = { side: j.side, position: j.position, rule: j.stepRule ?? "replace", text: text(premise, handle).first };
+      row.highlight = { side: j.side, position: j.position, rule: j.stepRule ?? "replace", text: text(premise, shown, null, shownNames).first };
     }
     return row;
   });

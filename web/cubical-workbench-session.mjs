@@ -7,7 +7,7 @@ import { kernelOccurrence, kernelReductionActions, kernelStep } from "./cubical-
 import { judgementGraph } from "./cubical-graph-view.mjs";
 import { checkReduction, reduceView } from "./cubical-reduction.mjs";
 import { levelText } from "./cubical-levels.mjs";
-import { variableName } from "./cubical-variables.mjs";
+import { binderName, binders, pushName, variableName } from "./cubical-variables.mjs";
 import { safeTrace, traceSources, traceSnapshot, traceCounters, traceCost } from "./cubical-workbench-trace.mjs";
 
 // A transfer's sources are text, which no reader placed: `fromLibrary` says
@@ -75,15 +75,15 @@ export class WorkbenchSession {
   occurrence(id, side, path) {
     const { view, checked } = this.state(id), { kernel, checker } = this.program;
     const node = kernelOccurrence(kernel, checked, side, path);
-    const label = handle => {
+    const label = (handle, names = node.names) => {
       if (!handle) return "unused";
       const n = kernel.node(handle);
       if (n.kind === "DefRef") {
         const { name } = kernel.definition(handle);
         return view.symbols[name]?.name ?? name;
       }
-      if (n.kind === "Var") {
-        const name = variableName(kernel, n);
+      if (n.kind === "Context" || n.kind === "Bound") {
+        const name = variableName(kernel, n, names, checked.naming);
         return view.symbols[name]?.name ?? name;
       }
       return opcodeName(n.kind);
@@ -93,14 +93,16 @@ export class WorkbenchSession {
     let text = label(node.handle);
     if (["LConst", "LSucc", "LMax"].includes(node.kind)) text = levelText(checker.syntax.decodeLevel(node.handle));
     else if (!["Tube", "GlueSystem", "List", "LBound"].includes(node.kind)) {
-      const dimensions = new Map(view.dimensions ?? []), term = checker.syntax.decode(node.handle, dimensions);
+      const dimensions = new Map(view.dimensions ?? []), term = checker.syntax.decode(node.handle, dimensions, node.names, checked.naming);
       text = checker.displayGoal(new Map(view.context.map(x => [x.name, x.type])),
         dimensions, term, null, { width: 180, kernel: true, reduce: false }).goal;
     }
     return { ...node, text, label: label(node.handle),
       actions: kernelReductionActions(kernel, checked, side, path),
       operands: node.children.map((handle, index) => ({ handle, index,
-        role: operandNames[node.kind]?.[index] ?? "unused", label: label(handle),
+        // A binder's body is under its binder, whose variable is its index 0.
+        role: operandNames[node.kind]?.[index] ?? "unused",
+        label: label(handle, binders.has(node.kind) && index === 1 ? pushName(binderName(kernel, node.handle), node.names) : node.names),
         kind: handle ? kernel.node(handle).kind : null })) };
   }
   async handle(command, args) {

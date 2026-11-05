@@ -83,7 +83,8 @@ test("a generic assumption is one kernel entry, and each use is a level applicat
   assert.equal(view.expression.tag, "Var");
   assert.equal(view.type.tag, "LPi");
   const listing = kernelAssembly(program, view, checked);
-  assert.equal(program.kernel.node(listing.roots[0].handle).kind, "Var");
+  // The assumption is a context entry (ABI 4).
+  assert.equal(program.kernel.node(listing.roots[0].handle).kind, "Context");
   assert.equal(program.kernel.node(listing.roots.find(root => root.label === "Checked type").handle).kind, "LPi");
   for (const level of [0, 1]) {
     const use = program.inspect(`assembly_generic_assumptions__choice${level}`).expression;
