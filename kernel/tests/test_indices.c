@@ -244,6 +244,14 @@ static void bounds(void) {
      * CC_OPENED, the kernel's own, is not. */
     cc_term public_largest = cc_kernel_term(k, CC_BOUND, UINT32_MAX - 1, 0, 0, 0, 0);
     assert(public_largest && k->nodes[public_largest].loose == UINT32_MAX);
+    /* Not closed to the queries either, alone or under a binder, which
+     * lowers its counter by one. */
+    const cc_term open_ends[] = {public_largest, lam(unit, public_largest)};
+    for (unsigned j = 0; j < 2; ++j) {
+        assert(!cc_kernel_normalize(k, open_ends[j]));
+        assert(!strcmp(cc_kernel_error(k), "Normalization reached a term with a loose bound variable."));
+        cc_kernel_clear_error(k);
+    }
     assert(!cc_kernel_term(k, CC_BOUND, UINT32_MAX, 0, 0, 0, 0) && cc_kernel_error_kind(k) == CC_ERROR_RESOURCE);
     assert(!strcmp(cc_kernel_error(k), bound_exceeded));
     cc_kernel_clear_error(k);

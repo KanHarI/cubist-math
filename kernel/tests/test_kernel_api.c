@@ -73,6 +73,35 @@ static void definitions(void) {
     cc_kernel_free(k);
 }
 
+/* The kernel keeps no names (ABI 4): two Extends at one type are two
+ * entries, each with its own variable, and a binder over one leaves the
+ * other free; the same for two level entries. */
+static void entries(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_judgement_id unit = cc_instr_unit(k);
+    cc_entry_id x = cc_instr_extend(k, unit), y = cc_instr_extend(k, unit);
+    assert(x && y && x != y);
+    uint32_t index = 1;
+    cc_term x_type = 0, y_type = 0;
+    assert(cc_kernel_entry(k, x, &index, &x_type, NULL, NULL) && index == 0);
+    assert(cc_kernel_entry(k, y, &index, &y_type, NULL, NULL) && index == 0 && x_type == y_type);
+    cc_term x_term = info(k, cc_instr_variable(k, x)).term, y_term = info(k, cc_instr_variable(k, y)).term;
+    uint32_t payload = 0;
+    assert(x_term != y_term && kind(k, y_term) == CC_CONTEXT);
+    assert(cc_kernel_node(k, y_term, NULL, &payload, NULL) && payload == y);
+    /* λ (x : Unit). y: the body is y's variable, not the bound one, and y
+     * stays in the context. */
+    cc_judgement_id constant = cc_instr_lambda(k, x, cc_instr_variable(k, y));
+    cc_term children[4];
+    assert(cc_kernel_node(k, info(k, constant).term, NULL, NULL, children) && children[1] == y_term);
+    assert(cc_kernel_judgement_context(k, constant, 0) == y && !cc_kernel_judgement_context(k, constant, 1));
+    cc_entry_id u = cc_instr_level(k), v = cc_instr_level(k);
+    assert(u && v && u != v && u != x && v != y);
+    assert(cc_kernel_error_kind(k) == CC_ERROR_NONE);
+    cc_kernel_free(k);
+}
+
 /* Callers classify a rejection by its kind, never by its message. */
 static void error_kinds(void) {
     cc_kernel *k = cc_kernel_new();
@@ -207,6 +236,7 @@ static void exact_sharing(void) {
 
 int main(void) {
     definitions();
+    entries();
     exact_sharing();
     error_kinds();
     resource_failures();
