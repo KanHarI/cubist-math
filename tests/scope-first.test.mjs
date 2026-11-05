@@ -47,6 +47,14 @@ test("the encoding cache keys an open term by its scope and binders, a closed on
     assert.ok(kernel.alphaEqual(judgement.term, syntax.encode(term)));
     assert.ok(kernel.alphaEqual(judgement.type, syntax.encode(type)));
   }
+  // The object is Bound 0 under the one binder and Bound 1 under the two,
+  // read from the kernel's nodes: the cache never hands one encoding to the
+  // other, in either order.
+  const body = (handle, depth) => { let node = kernel.node(handle); for (let n = 0; n < depth; n++) node = kernel.node(node.children[1]); return node; };
+  for (const [term, depth, index] of [[outer, 2, 1], [inner, 1, 0], [outer, 2, 1]]) {
+    const read = body(syntax.encode(term), depth);
+    assert.deepEqual([read.kind, read.payload], ["Bound", index]);
+  }
   // Encoded under a binder, the same object is not taken for one encoded
   // bare: that is refused.
   assert.throws(() => syntax.encode(x), unbound);
