@@ -84,22 +84,25 @@ All AST terms live in a table `k->nodes` inside a `cc_kernel` arena ([term_inter
 
 ```c
 typedef struct {
-    cc_term_kind kind;
+    uint8_t kind;          /* a cc_term_kind, or CC_BOUND, CC_CONTEXT, CC_OPENED */
+    bool dimensions_known;
+    uint16_t depth;        /* 1 to 512 */
     uint32_t payload;
     cc_term child[4];
-    unsigned depth;
-    bool dimensions_known;
-    uint64_t symbols;
-    uint64_t dims;
+    uint32_t loose, opened;
+    uint64_t symbols, dims;
 } cc_node;
 ```
+
+A node is 48 bytes, natively and under WebAssembly: `_Static_assert`s in [term_internal.h](../../kernel/src/term_internal.h) check its size and every field's offset in both builds (`kind` at 0, `dimensions_known` at 1, `depth` at 2, `payload` at 4, `child` at 8, `loose` at 24, `opened` at 28, `symbols` at 32, `dims` at 40).
 
 - **Handles (`cc_term`):** Node `0` is the null/absent sentinel. Valid handles run from `1` to `k->count - 1`; a handle made after a checkpoint is valid until the next rollback or commit.
 - **Structural sharing (`CC_SHARE_SYNTAX`):** When syntax sharing is enabled (the default), `ck_make` hash-conses `(kind, payload, child[0..3])` in the `k->interned` table so structurally identical AST nodes share a single `cc_term` handle.
 - **Depth bound:** Every node records `depth = 1 + max_i(child[i].depth)`. Any construction exceeding depth `512` (a literal in `ck_make`; there is no named constant) fails with `CC_ERROR_RESOURCE`.
 - **Fast dependency bitmasks:**
-  - `symbols` is a 64-bit Bloom filter over the symbols of the `CC_VAR` nodes in a term, term and level variables alike (`1ULL << (s % 64)`), unioned upward from children; a binder's own name is recorded only where a variable with that name occurs under it. If a symbol's bit is clear in `n.symbols`, no variable with that symbol occurs in `n` (bound or free), allowing substitution and comparison to skip subtrees in $O(1)$ time.
+  - `symbols` is a 64-bit Bloom filter over the symbols of the `CC_VAR` nodes in a term, term and level variables alike (`1ULL << (s % 64)`), and the entries of its `CC_CONTEXT` nodes (bit `e % 64`, below), unioned upward from children; a binder's own name is recorded only where a variable with that name occurs under it. If a symbol's bit is clear in `n.symbols`, no variable with that symbol occurs in `n` (bound or free), allowing substitution and comparison to skip subtrees in $O(1)$ time.
   - `dims` is a 64-bit mask over the 64 interval dimensions (`0..63`). Initially it conservatively unions the dimensions of the node's formula payload, its own bound dimension if it is a dimension binder, and its children's masks; once `ck_free_dims` completes on a node, `dimensions_known` is set to `1` and `dims` holds the exact bitset of free dimensions.
+- **Locally nameless kinds and counters (unused by the rules on ABI 3):** Three leaf kinds are the kernel's own, numbered after `CC_LIST` in [term_internal.h](../../kernel/src/term_internal.h) rather than in `cc_term_kind`: `CC_BOUND(i)`, the variable of the `i`-th enclosing term or level binder (each binder of `ck_term_binder` binds index `0` in its `child[1]`); `CC_CONTEXT(e)`, a reference to the term or level entry `e`; and `CC_OPENED(m)`, a binder an operation opened at level `m`. `cc_kernel_term` refuses all three as unknown constructors, and `ck_make` refuses a `CC_CONTEXT` that names no live term or level entry. `ck_make` records two exact counters: `loose`, one more than the greatest loose `CC_BOUND` index (`0` exactly when the node is locally closed; a binder lowers its body's by one), and `opened`, one more than the greatest `CC_OPENED` level. Neither wraps, since `ck_make` refuses a `CC_BOUND` or `CC_OPENED` payload of `UINT32_MAX` as a resource error. The primitives that read them (`ck_instantiate`, `ck_instantiate_all`, `ck_abstract`, `ck_open`, `ck_close`, and an opener's counter, `ck_opener_above` and `ck_opener_take`, in [term_substitution.c](../../kernel/src/term_substitution.c)) are tested in [test_indices.c](../../kernel/tests/test_indices.c) and called by no rule yet; the plan that will use them is [Variables by role: a locally nameless kernel](../roadmaps/kernel/locally-nameless-kernel.md).
 
 ---
 

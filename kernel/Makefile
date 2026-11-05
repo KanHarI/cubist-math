@@ -11,7 +11,7 @@ SANITIZERS ?= address,undefined
 comma := ,
 SRC = $(wildcard src/*.c)
 HEADERS = $(sort $(wildcard include/*.h src/*.h))
-TESTS = test-lattice test-kernel-api test-comparison test-path-head test-substitution test-traversals \
+TESTS = test-lattice test-kernel-api test-comparison test-path-head test-substitution test-indices test-traversals \
 	test-checkpoint test-allocations test-instructions test-levels test-work test-signatures test-isolation test-faces test-normalize \
 	test-bridge
 PROGRAMS = lattice-cli bench-lattice $(TESTS)
@@ -75,6 +75,8 @@ fault_sources_test-allocations = instructions term_normalize
 fault_objects_test-allocations = instructions-fault normalization-fault
 fault_sources_test-substitution = term_substitution
 fault_objects_test-substitution = substitution-fault
+fault_sources_test-indices = term_substitution syntax_cache
+fault_objects_test-indices = substitution-fault syntax-cache-fault
 fault_sources_test-traversals = term_conversion levels syntax_cache
 fault_objects_test-traversals = comparison-fault levels-fault syntax-cache-fault
 program_objects = $(filter-out $(addprefix $(OUT)/obj/,$(addsuffix .o,$(fault_sources_$(1)))),$(OBJ)) $(addprefix $(OUT)/obj/tests/,$(addsuffix .o,$(fault_objects_$(1))))

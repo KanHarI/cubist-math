@@ -5,13 +5,41 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <stddef.h>
 
+/* The kernel's own syntax kinds, numbered after the ABI's last so that no
+ * ABI number changes (docs/roadmaps/kernel/locally-nameless-kernel.md,
+ * section 3.1). None is part of ABI 3: cc_kernel_term refuses them, and no
+ * rule makes them yet. Each is a leaf. CC_BOUND(i) is the variable of the
+ * i-th enclosing term or level binder, 0 the innermost: every binder of
+ * ck_term_binder binds index 0 in its child 1. CC_CONTEXT(e) refers to the
+ * term or level entry e, which ck_make requires to be live. CC_OPENED(m) is
+ * a binder that an operation opened at level m; it is never in a judgement,
+ * a definition or a query's answer. They are constants of type
+ * cc_term_kind, not enumerators of an enum of their own, so they compare
+ * with and pass as a cc_term_kind without mixing two enum types (GCC's
+ * -Wenum-compare and -Wenum-conversion). */
+#define CC_BOUND ((cc_term_kind)(CC_LIST + 1))
+#define CC_CONTEXT ((cc_term_kind)(CC_LIST + 2))
+#define CC_OPENED ((cc_term_kind)(CC_LIST + 3))
+
+/* A syntax node: 48 bytes natively and under WebAssembly (section 3.2 of the
+ * design; the assertions below check it on both). kind is a cc_term_kind or
+ * one of the kernel's own kinds above, all below 256; depth is 1 to 512,
+ * ck_make refusing deeper syntax. loose is one more than the greatest loose
+ * CC_BOUND index, 0 exactly when the node is locally closed: i + 1 for
+ * CC_BOUND(i), for a term or level binder the larger of its domain's and
+ * its body's less one, otherwise its children's maximum. opened is one more
+ * than the greatest CC_OPENED level, its children's maximum. Both are exact,
+ * functions of the kind, payload and children, and cannot wrap: ck_make
+ * refuses a CC_BOUND or CC_OPENED payload of UINT32_MAX. */
 typedef struct {
-    cc_term_kind kind;
+    uint8_t kind;
+    bool dimensions_known;
+    uint16_t depth;
     uint32_t payload;
     cc_term child[4];
-    unsigned depth;
-    bool dimensions_known;
+    uint32_t loose, opened;
     /* symbols over-approximates mentioned term names, with bit s % 64 for
      * symbol s. dims always contains every free dimension; it may also
      * contain bound ones until dimensions_known makes it exact. A new node
@@ -21,6 +49,13 @@ typedef struct {
      * which is the property alpha comparison needs for scope pruning. */
     uint64_t symbols, dims;
 } cc_node;
+_Static_assert(CC_OPENED <= UINT8_MAX, "Every syntax kind fits a node's 8-bit kind.");
+_Static_assert(sizeof(cc_node) == 48, "A syntax node is 48 bytes.");
+_Static_assert(offsetof(cc_node, kind) == 0 && offsetof(cc_node, dimensions_known) == 1 &&
+               offsetof(cc_node, depth) == 2 && offsetof(cc_node, payload) == 4 &&
+               offsetof(cc_node, child) == 8 && offsetof(cc_node, loose) == 24 &&
+               offsetof(cc_node, opened) == 28 && offsetof(cc_node, symbols) == 32 &&
+               offsetof(cc_node, dims) == 40, "A syntax node's fields are at their offsets.");
 
 /* A definition: registered by instruction Define, from a derived closed
  * judgement, and read back by Lookup. */
@@ -152,6 +187,10 @@ struct cc_kernel {
     cc_term *interned;
     size_t intern_capacity, intern_used;
     cc_syntax_memo *syntax_memo;
+    /* The memo key of the latest simultaneous instantiation
+     * (ck_instantiate_all): one per call, never reused while the memo can
+     * hold an entry under it. */
+    uint32_t instantiation_serial;
     cc_alpha_memo *alpha_memo;
     cc_alpha_scope *alpha_scopes;
     uint64_t next_alpha_scope;
@@ -313,6 +352,28 @@ uint64_t ck_free_dims(cc_kernel *, cc_term);
 unsigned ck_fresh_dimension(cc_kernel *, uint64_t avoid);
 cc_term ck_substitute(cc_kernel *, cc_term, uint32_t, cc_term);
 cc_term ck_dimension_substitute(cc_kernel *, cc_term, unsigned, const cc_formula *);
+/* The locally nameless primitives (term_substitution.c; section 3.3 of
+ * docs/roadmaps/kernel/locally-nameless-kernel.md), unused by the rules on
+ * ABI 3. Instantiate replaces index 0 of a binder's body by a locally closed
+ * value, and ck_instantiate_all indices 0 to count - 1 in one pass; abstract
+ * binds every CC_CONTEXT(entry) as the index of a binder put around the
+ * term; open and close are instantiation by CC_OPENED(level) and its
+ * abstraction. Each returns 0 on failure. */
+cc_term ck_instantiate(cc_kernel *, cc_term body, cc_term value);
+cc_term ck_instantiate_all(cc_kernel *, cc_term term, const cc_term *values, uint32_t count);
+cc_term ck_abstract(cc_kernel *, cc_term, cc_entry_id);
+cc_term ck_open(cc_kernel *, cc_term body, uint32_t level);
+cc_term ck_close(cc_kernel *, cc_term, uint32_t level);
+/* The levels an operation opens binders at (section 3.1): a counter local to
+ * the operation, passed to the helpers it calls, never a field of the
+ * kernel. Zero-initialized, raised above each operand's `opened` by
+ * ck_opener_above, it hands out each level once (ck_opener_take), and fails
+ * as a resource error rather than reach UINT32_MAX. */
+typedef struct {
+    uint32_t next;
+} cc_opener;
+void ck_opener_above(const cc_kernel *, cc_opener *, cc_term operand);
+bool ck_opener_take(cc_kernel *, cc_opener *, uint32_t *level);
 cc_term ck_restrict(cc_kernel *, cc_term, cc_clause);
 cc_term ck_whnf(cc_kernel *, cc_term);
 cc_term ck_expose(cc_kernel *, cc_term);

@@ -1539,6 +1539,33 @@ Each PR is verified locally first, opened as a draft, and keeps
    with the opened-level counter of section 3.1, unused by the rules yet. C
    tests for their laws and bounds (below). Its own PR (decided
    2026-11-02).
+   *As implemented:* the three kinds, `CC_CONTEXT` included, are constants
+   of type `cc_term_kind` in `kernel/src/term_internal.h`, numbered from 54,
+   not enumerators of `cc_term_kind`,
+   since `tests/wasm-interface.test.mjs` holds that enum to the driver's
+   table; PR 3 moves `CC_BOUND` and `CC_CONTEXT` there. Until `contexts`
+   replaces `symbols`, a `CC_CONTEXT(e)` sets bit `e % 64` of `symbols`, which
+   `ck_abstract` reads. `ck_alpha_equal` compares the three leaves by
+   payload, as it compares `CC_DEFREF`. The primitives are two kinds of
+   frame in `substitution`'s worklist, memoized as syntax memo operations
+   7 to 10. At a dimension binder, instantiation renames only for the
+   values whose index occurs in a child the binder binds (`index_occurs`,
+   operation 11, run only when the values' union meets the binder's
+   dimension), so a value put nowhere under it neither forces a renaming
+   nor narrows the names one may take. The simultaneous form is keyed by a serial of its call
+   (`instantiation_serial`, the memo cleared when it wraps), not by its
+   values: a list of them as the key would be deeper than the deepest value
+   and refuse results that fit the depth limit. So its entries serve the
+   sharing within one call and no later call. Tests:
+   `kernel/tests/test_indices.c`, which checks every primitive against a
+   reference by recursion that shares no code with it. PR 2 adds no
+   diagnostic code, so its refusals reuse registered messages ("Term symbol
+   space exhausted." for a `CC_BOUND` or `CC_OPENED` payload of
+   `UINT32_MAX`, "Fresh symbol space exhausted." for an opener's counter,
+   `ck_instr_entry`'s refusals for a `CC_CONTEXT` naming no live entry), and
+   instantiation does not check that its values are locally closed. PR 3,
+   which brings the callers, gives these refusals their own messages and
+   codes and adds that O(1) check (`loose == 0` for each value).
 3. **PR 3, the switch: term and level binders, ABI 4.** `CC_VAR` retired,
    `CC_BOUND` and `CC_CONTEXT` in; binders without payload; every change of
    sections 3.3 to 3.7, the freshness conditions of section 3.6 and the
