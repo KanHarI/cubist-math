@@ -7,21 +7,18 @@
 #include <limits.h>
 #include <stddef.h>
 
-/* The kernel's own syntax kinds, numbered after the ABI's last so that no
- * ABI number changes (docs/roadmaps/kernel/locally-nameless-kernel.md,
- * section 3.1). None is part of ABI 3: cc_kernel_term refuses them, and no
- * rule makes them yet. Each is a leaf. CC_BOUND(i) is the variable of the
- * i-th enclosing term or level binder, 0 the innermost: every binder of
- * ck_term_binder binds index 0 in its child 1. CC_CONTEXT(e) refers to the
- * term or level entry e, which ck_make requires to be live. CC_OPENED(m) is
- * a binder that an operation opened at level m; it is never in a judgement,
- * a definition or a query's answer. They are constants of type
- * cc_term_kind, not enumerators of an enum of their own, so they compare
- * with and pass as a cc_term_kind without mixing two enum types (GCC's
- * -Wenum-compare and -Wenum-conversion). */
-#define CC_BOUND ((cc_term_kind)(CC_LIST + 1))
-#define CC_CONTEXT ((cc_term_kind)(CC_LIST + 2))
-#define CC_OPENED ((cc_term_kind)(CC_LIST + 3))
+/* The kernel's own syntax kind, numbered after the ABI's last
+ * (docs/roadmaps/kernel/locally-nameless-kernel.md, section 3.1), and no part
+ * of the ABI: cc_kernel_term refuses it. CC_BOUND(i) (cubical_kernel.h) is
+ * the variable of the i-th enclosing term or level binder, 0 the innermost:
+ * every binder of ck_term_binder binds index 0 in its child 1. CC_CONTEXT(e)
+ * refers to the term or level entry e, which ck_make requires to be live.
+ * CC_OPENED(m), a leaf, is a binder that an operation opened at level m; it
+ * is never in a judgement, a definition or a query's answer. It is a
+ * constant of type cc_term_kind, not an enumerator of an enum of its own, so
+ * it compares with and passes as a cc_term_kind without mixing two enum
+ * types (GCC's -Wenum-compare and -Wenum-conversion). */
+#define CC_OPENED ((cc_term_kind)(CC_CONTEXT + 1))
 
 /* A syntax node: 48 bytes natively and under WebAssembly (section 3.2 of the
  * design; the assertions below check it on both). kind is a cc_term_kind or
@@ -40,27 +37,28 @@ typedef struct {
     uint32_t payload;
     cc_term child[4];
     uint32_t loose, opened;
-    /* symbols over-approximates mentioned term names, with bit s % 64 for
-     * symbol s. dims always contains every free dimension; it may also
+    /* contexts over-approximates the entries the node mentions, with bit
+     * e % 64 for CC_CONTEXT(e): zero exactly when it mentions none, and a
+     * binder never clears a bit, since no binder binds an entry. dims
+     * always contains every free dimension; it may also
      * contain bound ones until dimensions_known makes it exact. A new node
      * combines its children's current masks, including refined ones, so
      * dims need not contain every dimension mentioned as bound in syntax.
      * Refinement only removes bits. A clear dimension bit proves "not free",
      * which is the property alpha comparison needs for scope pruning. */
-    uint64_t symbols, dims;
+    uint64_t contexts, dims;
 } cc_node;
 _Static_assert(CC_OPENED <= UINT8_MAX, "Every syntax kind fits a node's 8-bit kind.");
 _Static_assert(sizeof(cc_node) == 48, "A syntax node is 48 bytes.");
 _Static_assert(offsetof(cc_node, kind) == 0 && offsetof(cc_node, dimensions_known) == 1 &&
                offsetof(cc_node, depth) == 2 && offsetof(cc_node, payload) == 4 &&
                offsetof(cc_node, child) == 8 && offsetof(cc_node, loose) == 24 &&
-               offsetof(cc_node, opened) == 28 && offsetof(cc_node, symbols) == 32 &&
+               offsetof(cc_node, opened) == 28 && offsetof(cc_node, contexts) == 32 &&
                offsetof(cc_node, dims) == 40, "A syntax node's fields are at their offsets.");
 
 /* A definition: registered by instruction Define, from a derived closed
  * judgement, and read back by Lookup. */
 typedef struct {
-    uint32_t symbol;
     cc_term value, type;
 } cc_definition;
 
@@ -78,6 +76,10 @@ typedef struct {
     uint32_t entry;
     uint32_t operand[2];
     uint32_t position, depth; /* into the kernel's positions */
+    /* Into the kernel's entry vectors (section 3.7): a replacement's entries
+     * for the binders its position crosses, or a signature's parameter
+     * entries and its sort entry. Part of the derivation's identity. */
+    uint32_t entries, entry_count;
 } cc_derivation;
 typedef struct {
     uint32_t kind;
@@ -89,7 +91,7 @@ typedef struct {
     uint64_t pending;
 } cc_fact;
 typedef struct {
-    uint32_t symbol;  /* a term symbol, or a dimension index */
+    uint32_t index;   /* a dimension's interval index; 0 for any other entry */
     cc_term type;     /* zero for a dimension */
     cc_term level;    /* the level of the type's universe, canonical */
     uint32_t context; /* the context the type needs */
@@ -98,7 +100,7 @@ typedef struct {
     bool dimension;
     bool level_variable; /* a level entry x < ω: its type is LBound(1) */
     /* A face entry, Γ, φ: the assumption that a clause holds, which Restrict
-     * adds. It has no symbol and no type; its context is the clause's
+     * adds. It has no index and no type; its context is the clause's
      * dimension entries, so no binder discharges them while it is there.
      * Only an instruction that takes a value on a face implying the clause,
      * a partial element, discharges it. */
@@ -110,21 +112,26 @@ typedef struct {
     uint32_t count;
 } cc_context_set;
 
-/* Declared types (signatures.c, H1). A constructor's type is over the
- * admission symbols: the universe and term parameters, the sort and the
- * earlier constructors. A signature is open until SignatureClose, then
- * immutable. The checkpoint fields restore an open signature on rollback. */
+/* Declared types (signatures.c, H1). A constructor's type is stored closed
+ * over the admission telescope: the universe and term parameters, the sort
+ * and the earlier constructors, index 0 the last of them. While a signature
+ * is open, entries stand for the telescope: they are read only then, since a
+ * commit can truncate them once it is admitted. A signature is open until
+ * SignatureClose, then immutable. The checkpoint fields restore an open
+ * signature on rollback. */
 typedef struct {
-    uint32_t symbol, data, positions, dimensions;
+    uint32_t data, positions, dimensions;
+    cc_entry_id entry;            /* while open; 0 for the generated squash */
     cc_term type;
     bool generated;
 } cc_constructor;
 typedef struct {
     bool admitted, experimental;
-    uint32_t modifier, sort_symbol, level_count, parameter_count, recorded;
-    cc_term former, level;
-    uint32_t *symbols;            /* universe parameters, then term parameters */
-    cc_term *parameter_types;     /* one per term parameter, over earlier symbols */
+    uint32_t modifier, level_count, parameter_count, recorded;
+    cc_entry_id sort_entry;       /* while open */
+    cc_term former, level;        /* level: loose over the former's prenex */
+    cc_entry_id *entries;         /* while open: universe parameters, then term parameters */
+    cc_term *parameter_types;     /* one per term parameter, loose over the earlier ones */
     cc_constructor *constructors;
     uint32_t constructor_count, constructor_capacity;
     uint32_t checkpoint_constructors;
@@ -150,15 +157,15 @@ typedef struct {
 #define CC_SYNTAX_MEMO_SIZE 8192
 #define CC_INTERN_MINIMUM 65536
 
-/* Comparison keys include exact, never-reused binder-renaming scopes. An
+/* Comparison keys include exact, never-reused dimension-renaming scopes. An
  * identity renaming is equivalent to the empty renaming and uses scope zero.
  * An entry holds the result of the syntactic comparison (ck_alpha_equal) for
- * its pair: equal or different, up to bound names. It caches syntax, never a
- * typing judgement. */
+ * its pair: equal or different, up to bound dimension names. It caches
+ * syntax, never a typing judgement. */
 enum { CC_FOLDED_UNKNOWN, CC_FOLDED_EQUAL, CC_FOLDED_DIFFERENT };
 typedef struct {
     cc_term left, right;
-    uint64_t term_scope, dimension_scope;
+    uint64_t dimension_scope;
     uint8_t folded;
 } cc_alpha_memo;
 #define CC_ALPHA_MEMO_SIZE 8192
@@ -202,7 +209,6 @@ struct cc_kernel {
     size_t definition_count, definition_capacity;
     cc_formula *formulas;
     size_t formula_count, formula_capacity;
-    uint32_t next_symbol;
     uint64_t budget, operation_budget;
     /* Cumulative work (cc_kernel_work) and the kind of operation now running,
      * which its steps and its error are charged to. Never reset. */
@@ -227,17 +233,19 @@ struct cc_kernel {
     size_t context_item_count, context_item_capacity;
     uint8_t *positions;
     size_t position_count, position_capacity;
+    /* The entry vectors of derivations (section 3.7), beside positions. */
+    uint32_t *entry_vectors;
+    size_t entry_vector_count, entry_vector_capacity;
     /* Facts by derivation. Truncated ids are tombstones until a rebuild. */
     uint32_t *derivations;
     size_t derivation_capacity, derivation_used;
-    /* Term entries by symbol, and the dimension entry of each index. Truncated
-     * ids are ignored, as in the derivation index. */
-    uint32_t *entry_index;
-    size_t entry_index_capacity, entry_index_used;
+    /* The dimension entry of each index. A truncated id is ignored. */
     uint32_t dimension_entries[CC_DIMENSIONS];
     cc_derivation pending; /* the instruction being checked */
     const uint8_t *pending_position;
-    size_t checkpoint_store[5]; /* facts, entries, context sets, items, positions */
+    const uint32_t *pending_entries;
+    /* facts, entries, context sets, items, positions, entry vectors */
+    size_t checkpoint_store[6];
     /* Declared types (H1). Index 0 is invalid. */
     unsigned extensions;
     cc_signature *signatures;
@@ -266,9 +274,14 @@ bool ck_instr_formula_context(cc_kernel *, cc_formula_id, uint32_t *out);
 cc_term ck_instr_append_tube(cc_kernel *, cc_term tubes, cc_formula_id face, cc_term tube);
 cc_judgement_id ck_instr_system_fact(cc_kernel *, cc_term comp, cc_term type, uint32_t context, uint64_t pending);
 bool ck_instr_begin(cc_kernel *, cc_derivation, const uint8_t *position, size_t depth, cc_judgement_id *found);
-/* Begin an instruction whose result depends on the signature table, which
- * changes: it is never answered from the derivation cache. */
-bool ck_instr_begin_stateful(cc_kernel *, cc_derivation);
+/* The same, for a derivation with an entry vector (section 3.7), which is
+ * part of its identity. */
+bool ck_instr_begin_entries(cc_kernel *, cc_derivation, const uint8_t *position, size_t depth,
+                            const cc_entry_id *entries, size_t count, cc_judgement_id *found);
+/* Begin an instruction whose result depends on the signature or definition
+ * table, which changes: it is never answered from the derivation cache. Its
+ * entry vector, if any, is recorded with the judgement, for reading. */
+bool ck_instr_begin_stateful(cc_kernel *, cc_derivation, const cc_entry_id *entries, size_t count);
 cc_judgement_id ck_instr_publish(cc_kernel *, uint32_t kind, cc_term term, cc_term other, cc_term type,
                                  uint32_t context);
 bool ck_instr_premise(cc_kernel *, cc_judgement_id, uint32_t kind, cc_fact *);
@@ -279,7 +292,15 @@ bool ck_alpha_equal(cc_kernel *, cc_term, cc_term);
 
 /* Universe levels (levels.c, G0 §2.4). A normal form is finite, a tier-0
  * constant with an offset for each variable it mentions, sorted by key; or a
- * constant of tier 1 or above, with no variables. Keys are symbols. */
+ * constant of tier 1 or above, with no variables. A key is the variable's
+ * reference, by its role (section 3.1): CC_CONTEXT(e) is e, below 2^32;
+ * CC_OPENED(m) is 2^32 + m; CC_BOUND(i) is 2 · 2^32 + (2^32 - 1 - i), so
+ * that the outer of two bound variables comes first, as their entries did
+ * before abstraction made them indices. A bound variable and an entry never
+ * share a key. */
+#define CC_LEVEL_KEY_OPENED (UINT64_C(1) << 32)
+#define CC_LEVEL_KEY_BOUND (UINT64_C(2) << 32)
+uint64_t ck_level_key(cc_term_kind, uint32_t payload);
 typedef struct {
     uint64_t key;
     uint32_t offset;
@@ -296,14 +317,14 @@ bool ck_level_equal(cc_kernel *, cc_term, cc_term);
 bool ck_level_leq(cc_kernel *, cc_term, cc_term);
 cc_term ck_level_canonical(cc_kernel *, cc_term);
 cc_term ck_level_max(cc_kernel *, cc_term, cc_term);
-cc_term ck_level_limit(cc_kernel *, uint32_t symbol, cc_term);
+cc_term ck_level_limit(cc_kernel *, uint64_t key, cc_term);
 cc_term ck_universe(cc_kernel *, cc_term level);
 void ck_level_nf_sort(cc_level_nf *);
 bool ck_level_nf_succ(cc_kernel *, cc_level_nf *);
 bool ck_level_nf_equal(const cc_level_nf *, const cc_level_nf *);
-/* t[x := l] for a level variable x, capture-avoiding, with every level of
- * the result in normal form (G0 §2.8). */
-cc_term ck_level_instantiate(cc_kernel *, cc_term body, uint32_t symbol, cc_term level);
+/* A level binder's body with its index 0 instantiated at a locally closed
+ * level, with every level of the result in normal form (G0 §2.8). */
+cc_term ck_level_instantiate(cc_kernel *, cc_term body, cc_term level);
 cc_term ck_canonical_levels(cc_kernel *, cc_term);
 cc_term ck_universe_at(cc_kernel *, uint32_t level);
 bool ck_syntactic_cumulative(cc_kernel *, cc_term actual, cc_term expected);
@@ -343,27 +364,40 @@ cc_formula_id ck_formula(cc_kernel *, const cc_formula *);
 bool ck_deadline(cc_kernel *);
 unsigned ck_arity(cc_term_kind);
 cc_term ck_make(cc_kernel *, cc_term_kind, uint32_t, cc_term, cc_term, cc_term, cc_term);
-cc_term ck_var(cc_kernel *, uint32_t);
-uint32_t ck_fresh_symbol(cc_kernel *);
 bool ck_term_binder(cc_term_kind);
 bool ck_dim_binder(cc_term_kind);
-bool ck_term_free(cc_kernel *, cc_term, uint32_t);
 uint64_t ck_free_dims(cc_kernel *, cc_term);
 unsigned ck_fresh_dimension(cc_kernel *, uint64_t avoid);
-cc_term ck_substitute(cc_kernel *, cc_term, uint32_t, cc_term);
 cc_term ck_dimension_substitute(cc_kernel *, cc_term, unsigned, const cc_formula *);
 /* The locally nameless primitives (term_substitution.c; section 3.3 of
- * docs/roadmaps/kernel/locally-nameless-kernel.md), unused by the rules on
- * ABI 3. Instantiate replaces index 0 of a binder's body by a locally closed
- * value, and ck_instantiate_all indices 0 to count - 1 in one pass; abstract
- * binds every CC_CONTEXT(entry) as the index of a binder put around the
- * term; open and close are instantiation by CC_OPENED(level) and its
- * abstraction. Each returns 0 on failure. */
+ * docs/roadmaps/kernel/locally-nameless-kernel.md). Instantiate replaces
+ * index 0 of a binder's body by a locally closed value, and
+ * ck_instantiate_all indices 0 to count - 1 in one pass; abstract binds every
+ * CC_CONTEXT(entry) as the index of a binder put around the term; open and
+ * close are instantiation by CC_OPENED(level) and its abstraction. The _at
+ * forms bind their reference as if `base` more binders stood between the
+ * term and the new one: they abstract an entry, or close a level, into a
+ * term that already has loose indices of the binders below it. Each returns
+ * 0 on failure. */
 cc_term ck_instantiate(cc_kernel *, cc_term body, cc_term value);
 cc_term ck_instantiate_all(cc_kernel *, cc_term term, const cc_term *values, uint32_t count);
 cc_term ck_abstract(cc_kernel *, cc_term, cc_entry_id);
+cc_term ck_abstract_at(cc_kernel *, cc_term, cc_entry_id, uint32_t base);
 cc_term ck_open(cc_kernel *, cc_term body, uint32_t level);
 cc_term ck_close(cc_kernel *, cc_term, uint32_t level);
+cc_term ck_close_at(cc_kernel *, cc_term, uint32_t level, uint32_t base);
+/* Whether a term mentions CC_CONTEXT(entry): the contexts filter first, then
+ * a search, memoized. Whether CC_BOUND(index) occurs in it, the index
+ * raised under each term or level binder: exact by `loose`. */
+bool ck_mentions(cc_kernel *, cc_term, cc_entry_id);
+bool ck_index_occurs(cc_kernel *, cc_term, uint32_t index);
+/* A term's loose indices opened with CC_OPENED levels from `opener`, the
+ * innermost index at the highest level, and a term's levels from `first`
+ * on closed back to indices 0 .. count - 1, the highest level at index 0:
+ * the two halves of an operation on a loose term (cc_kernel_whnf, Step under
+ * binders). */
+cc_term ck_open_loose(cc_kernel *, cc_term, uint32_t first);
+cc_term ck_close_loose(cc_kernel *, cc_term, uint32_t first, uint32_t count);
 /* The levels an operation opens binders at (section 3.1): a counter local to
  * the operation, passed to the helpers it calls, never a field of the
  * kernel. Zero-initialized, raised above each operand's `opened` by

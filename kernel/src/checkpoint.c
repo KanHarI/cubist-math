@@ -13,6 +13,7 @@ void cc_kernel_checkpoint(cc_kernel *k) {
     k->checkpoint_store[2] = k->context_set_count;
     k->checkpoint_store[3] = k->context_item_count;
     k->checkpoint_store[4] = k->position_count;
+    k->checkpoint_store[5] = k->entry_vector_count;
     ck_signatures_checkpoint(k);
 }
 
@@ -25,6 +26,7 @@ static void truncate_store(cc_kernel *k) {
     k->context_set_count = k->checkpoint_store[2];
     k->context_item_count = k->checkpoint_store[3];
     k->position_count = k->checkpoint_store[4];
+    k->entry_vector_count = k->checkpoint_store[5];
 }
 void cc_kernel_rollback(cc_kernel *k) {
     if (!k || !k->checkpoint_count) return;

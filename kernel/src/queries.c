@@ -14,12 +14,23 @@ void cc_kernel_arena(const cc_kernel *k, size_t *nodes, size_t *bytes) {
                       (k->folded_cache ? k->capacity * sizeof(cc_term) : 0);
 }
 
+/* No query's answer holds a variable an operation opened: an O(1) check of
+ * its `opened` against the query's term (section 3.1). */
+static cc_term answer(cc_kernel *k, cc_term term, cc_term result) {
+    if (!result || k->error[0])
+        return 0;
+    if (k->nodes[result].opened > k->nodes[term].opened)
+        return ck_fail(k, "A result would hold a variable an operation opened."), 0;
+    return result;
+}
+
+/* A term with loose indices is refused by normalization itself (normal). */
 cc_term cc_kernel_normalize(cc_kernel *k, cc_term term) {
     if (!k || !term || term >= k->count || k->error[0])
         return 0;
     ck_operation(k, CC_WORK_QUERY);
     k->recursion = 0;
-    return ck_normal(k, term);
+    return answer(k, term, ck_normal(k, term));
 }
 
 cc_term cc_kernel_normalize_folded(cc_kernel *k, cc_term term) {
@@ -27,17 +38,42 @@ cc_term cc_kernel_normalize_folded(cc_kernel *k, cc_term term) {
         return 0;
     ck_operation(k, CC_WORK_QUERY);
     k->recursion = 0;
-    return ck_normal_folded(k, term);
+    return answer(k, term, ck_normal_folded(k, term));
 }
 
+/* A term read under binders has loose indices: they are opened with
+ * CC_OPENED levels above every level the term holds, its head computed, and
+ * the head closed back over the same indices (section 5.1). Nothing reads an
+ * entry's type, so a head is the same in every context that binds the
+ * term's variables. */
 cc_term cc_kernel_whnf(cc_kernel *k, cc_term term) {
     if (!k || !term || term >= k->count || k->error[0])
         return 0;
     ck_operation(k, CC_WORK_QUERY);
     k->recursion = 0;
+    uint32_t loose = k->nodes[term].loose, first = k->nodes[term].opened;
+    cc_term opened = loose ? ck_open_loose(k, term, first) : term;
     /* A head computed while a nested computation failed is no answer. */
-    cc_term head = ck_whnf(k, term);
-    return k->error[0] ? 0 : head;
+    cc_term head = opened ? ck_whnf(k, opened) : 0;
+    if (head && loose)
+        head = ck_close_loose(k, head, first, loose);
+    return answer(k, term, head);
+}
+
+/* The driver's opening of a binder's body with an entry, one binder at a
+ * time (section 3.6): refused when the body already mentions the entry,
+ * which would make the binder's variable and the entry one. */
+cc_term cc_kernel_instantiate(cc_kernel *k, cc_term body, cc_entry_id entry) {
+    if (!k || !body || body >= k->count || k->error[0])
+        return 0;
+    ck_operation(k, CC_WORK_QUERY);
+    k->recursion = 0;
+    cc_term variable = ck_make(k, CC_CONTEXT, entry, 0, 0, 0, 0);
+    if (!variable)
+        return 0;
+    if (ck_mentions(k, body, entry))
+        return ck_fail(k, "A binder's body already mentions the entry it would be opened with."), 0;
+    return k->error[0] ? 0 : answer(k, body, ck_instantiate(k, body, variable));
 }
 
 /* A face formula with exactly one clause. */

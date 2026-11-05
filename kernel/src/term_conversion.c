@@ -1,8 +1,10 @@
-/* Comparison by syntax: equality up to bound names and the interval algebra,
- * with nothing reduced or unfolded, and cumulativity built on it. This is the
- * comparison the instructions use. Interval normal forms remain De Morgan
- * expressions; endpoint tests are face formulas. An unbound name must never
- * be identified with a binder on the other side. */
+/* Comparison by syntax: equality up to bound dimension names and the
+ * interval algebra, with nothing reduced or unfolded, and cumulativity built
+ * on it. This is the comparison the instructions use. Term and level binders
+ * bind indices, so their bodies compare directly; only dimension binders keep
+ * names, and so scopes. Interval normal forms remain De Morgan expressions;
+ * endpoint tests are face formulas. An unbound dimension must never be
+ * identified with a binder on the other side. */
 #include "term_internal.h"
 
 typedef struct alpha_binding {
@@ -10,8 +12,7 @@ typedef struct alpha_binding {
     uint64_t scope;
     bool identity;
     size_t previous;
-    /* Every name this binding and the ones before it rename, one bit per
-     * name modulo 64, as cc_node's masks: a symbol, or a dimension. */
+    /* Every dimension this binding and the ones before it rename. */
     uint64_t left_mask, right_mask;
 } alpha_binding;
 
@@ -19,10 +20,10 @@ typedef struct alpha_binding {
  * growing the frame array never leaves a pointer into its old allocation. */
 typedef struct {
     cc_term a, b;
-    size_t terms, dims, inner_dims;
+    size_t dims, inner_dims;
     cc_node left, right;
     alpha_binding binding;
-    uint64_t term_scope, dimension_scope;
+    uint64_t dimension_scope;
     size_t slot;
     unsigned next;
     bool tubes, waiting, cache;
@@ -65,10 +66,9 @@ static alpha_binding bind(cc_kernel *k, uint32_t left, uint32_t right,
         (previous ? previous->right_mask : 0) | UINT64_C(1) << (right % 64)};
 }
 
-static size_t alpha_slot(cc_term left, cc_term right, uint64_t terms, uint64_t dims) {
+static size_t alpha_slot(cc_term left, cc_term right, uint64_t dims) {
     uint64_t hash = (uint64_t)left * UINT64_C(1099511628211);
     hash = (hash ^ right) * UINT64_C(1099511628211);
-    hash = (hash ^ terms) * UINT64_C(1099511628211);
     hash = (hash ^ dims) * UINT64_C(1099511628211);
     return comparison_slot(hash);
 }
@@ -88,36 +88,13 @@ static bool same_name(uint32_t a, uint32_t b, const alpha_frame *frames, size_t 
     return left || right ? left && left == right : a == b;
 }
 
-/* Levels are equal when their normal forms are (G0 §2.9), with each
- * variable bound on the way down named by the binding it resolves to, so
- * that λ (x < ω). U(x) and λ (y < ω). U(y) agree. Free variables keep their
- * symbols; bound ones take keys above every symbol. */
-static void bound_keys(cc_level_nf *nf, const alpha_frame *frames, size_t terms, bool right) {
-    for (uint32_t i = 0; i < nf->count; ++i) {
-        const alpha_binding *binding = binding_at(frames, bound(frames, terms, (uint32_t)nf->terms[i].key, right));
-        if (binding)
-            nf->terms[i].key = UINT64_C(1) << 63 | binding->scope;
-    }
-    ck_level_nf_sort(nf);
-}
-
-static bool level_alpha(cc_kernel *k, cc_term a, cc_term b, const alpha_frame *frames, size_t terms) {
+/* Levels are equal when their normal forms are (G0 §2.9). A bound level
+ * variable is an index, keyed by it on both sides, so that λ (x < ω). U(x)
+ * and λ (y < ω). U(y) agree. */
+static bool level_alpha(cc_kernel *k, cc_term a, cc_term b) {
     if (a == b && a < k->count && k->nodes[a].kind == CC_LCONST)
         return true;
-    if (!terms)
-        return ck_level_equal(k, a, b);
-    cc_level_nf left, right;
-    if (!ck_level_normal(k, a, &left))
-        return false;
-    bool equal = false;
-    if (ck_level_normal(k, b, &right)) {
-        bound_keys(&left, frames, terms, false);
-        bound_keys(&right, frames, terms, true);
-        equal = ck_level_nf_equal(&left, &right);
-        ck_level_nf_free(&right);
-    }
-    ck_level_nf_free(&left);
-    return equal && !k->error[0];
+    return ck_level_equal(k, a, b);
 }
 
 static bool clause_included(cc_clause a, cc_clause b, const alpha_frame *frames, size_t dims) {
@@ -168,30 +145,14 @@ static bool formula_equal(cc_kernel *k, uint32_t a, uint32_t b, const alpha_fram
     return true;
 }
 
-/* Scope pruning asks only about names that could occur, retaining exact
- * free-name checks for colliding symbol bits and bound annotations. */
-static bool renamed_free(cc_kernel *k, cc_term term, const alpha_frame *frames, size_t env, bool right) {
-    const alpha_binding *scope = binding_at(frames, env);
-    uint64_t mask = k->nodes[term].symbols;
-    if (!(mask & (right ? scope->right_mask : scope->left_mask)))
-        return false;
-    for (; env && !k->error[0]; env = binding_at(frames, env)->previous) {
-        const alpha_binding *binding = binding_at(frames, env);
-        uint32_t name = right ? binding->right : binding->left;
-        if ((mask & UINT64_C(1) << (name % 64)) && ck_term_free(k, term, name))
-            return true;
-    }
-    return false;
-}
-
 static bool renamed_dims_free(cc_kernel *k, cc_term term, const alpha_frame *frames, size_t env, bool right) {
     const alpha_binding *scope = binding_at(frames, env);
     uint64_t renamed = right ? scope->right_mask : scope->left_mask;
     return (k->nodes[term].dims & renamed) && (ck_free_dims(k, term) & renamed);
 }
 
-static bool same_key(const cc_alpha_memo *entry, cc_term a, cc_term b, uint64_t terms, uint64_t dims) {
-    return entry->left == a && entry->right == b && entry->term_scope == terms && entry->dimension_scope == dims;
+static bool same_key(const cc_alpha_memo *entry, cc_term a, cc_term b, uint64_t dims) {
+    return entry->left == a && entry->right == b && entry->dimension_scope == dims;
 }
 
 static void alpha_completed(cc_kernel *k, const alpha_frame *f, bool equal) {
@@ -204,7 +165,7 @@ static void alpha_completed(cc_kernel *k, const alpha_frame *f, bool equal) {
         }
     }
     /* A child may have reused the slot. Publish only this completed answer. */
-    k->alpha_memo[f->slot] = (cc_alpha_memo){f->a, f->b, f->term_scope, f->dimension_scope,
+    k->alpha_memo[f->slot] = (cc_alpha_memo){f->a, f->b, f->dimension_scope,
                                            equal ? CC_FOLDED_EQUAL : CC_FOLDED_DIFFERENT};
 }
 
@@ -221,18 +182,15 @@ static bool alpha_ready(cc_kernel *k, alpha_frame *f, const alpha_frame *frames,
                formula_equal(k, f->left.payload, f->right.payload, frames, f->dims);
     }
     if (a && b && a < k->count && b < k->count && (k->nodes[a].depth >= 8 || k->nodes[b].depth >= 8)) {
-        const alpha_binding *terms = binding_at(frames, f->terms), *dims = binding_at(frames, f->dims);
-        if (terms && !terms->identity && !renamed_free(k, a, frames, f->terms, false) &&
-            !renamed_free(k, b, frames, f->terms, true)) f->terms = 0;
+        const alpha_binding *dims = binding_at(frames, f->dims);
         if (dims && !dims->identity && !renamed_dims_free(k, a, frames, f->dims, false) &&
             !renamed_dims_free(k, b, frames, f->dims, true)) f->dims = 0;
         if (k->error[0]) return false;
     }
-    const alpha_binding *terms = binding_at(frames, f->terms), *dims = binding_at(frames, f->dims);
-    f->term_scope = terms && !terms->identity ? terms->scope : 0;
+    const alpha_binding *dims = binding_at(frames, f->dims);
     f->dimension_scope = dims && !dims->identity ? dims->scope : 0;
-    f->slot = alpha_slot(a, b, f->term_scope, f->dimension_scope);
-    if (a && b && k->alpha_memo && same_key(&k->alpha_memo[f->slot], a, b, f->term_scope, f->dimension_scope)) {
+    f->slot = alpha_slot(a, b, f->dimension_scope);
+    if (a && b && k->alpha_memo && same_key(&k->alpha_memo[f->slot], a, b, f->dimension_scope)) {
         uint8_t folded = k->alpha_memo[f->slot].folded;
         if (folded != CC_FOLDED_UNKNOWN) {
             *equal = ck_tick(k) && folded == CC_FOLDED_EQUAL;
@@ -242,7 +200,7 @@ static bool alpha_ready(cc_kernel *k, alpha_frame *f, const alpha_frame *frames,
     f->cache = a && b;
     if (!ck_tick(k)) return false;
     if (!a || !b) { *equal = a == b; return false; }
-    if (a == b && (!terms || terms->identity) && (!dims || dims->identity)) {
+    if (a == b && (!dims || dims->identity)) {
         *equal = true;
         return false;
     }
@@ -255,20 +213,14 @@ static bool alpha_ready(cc_kernel *k, alpha_frame *f, const alpha_frame *frames,
         return false;
     }
     if (left.kind == CC_U) {
-        *equal = level_alpha(k, left.child[0], right.child[0], frames, f->terms);
+        *equal = level_alpha(k, left.child[0], right.child[0]);
         return false;
     }
     if (left.kind == CC_LCONST || left.kind == CC_LSUCC || left.kind == CC_LMAX) {
-        *equal = level_alpha(k, a, b, frames, f->terms);
+        *equal = level_alpha(k, a, b);
         return false;
     }
-    if (left.kind == CC_VAR) {
-        *equal = same_name(left.payload, right.payload, frames, f->terms);
-        return false;
-    }
-    if (ck_term_binder(left.kind))
-        f->binding = bind(k, left.payload, right.payload, frames, f->terms);
-    else if (ck_dim_binder(left.kind))
+    if (ck_dim_binder(left.kind))
         f->binding = bind(k, left.payload, right.payload, frames, f->dims);
     if ((left.kind == CC_GLUE_SYSTEM || left.kind == CC_TUBE || left.kind == CC_PAPP) &&
         !formula_equal(k, left.payload, right.payload, frames, f->dims)) return false;
@@ -316,7 +268,7 @@ static bool alpha_traverse(cc_kernel *k, alpha_frame root) {
         if (f->next == arity) { equal = true; goto complete; }
         unsigned i = f->next++;
         if (!f->tubes && left.kind == CC_LAPP && i == 1) {
-            equal = level_alpha(k, left.child[1], right.child[1], frames, f->terms);
+            equal = level_alpha(k, left.child[1], right.child[1]);
             goto complete;
         }
         if (!f->tubes && left.kind == CC_SORT && i == 1) {
@@ -324,19 +276,17 @@ static bool alpha_traverse(cc_kernel *k, alpha_frame root) {
             equal = true;
             for (; l && r && !k->error[0]; l = k->nodes[l].child[1], r = k->nodes[r].child[1])
                 if (k->nodes[l].kind != CC_LIST || k->nodes[r].kind != CC_LIST ||
-                    !level_alpha(k, k->nodes[l].child[0], k->nodes[r].child[0], frames, f->terms)) {
+                    !level_alpha(k, k->nodes[l].child[0], k->nodes[r].child[0])) {
                     equal = false;
                     break;
                 }
             equal = equal && !l && !r;
             goto complete;
         }
-        alpha_frame child = {.a = left.child[i], .b = right.child[i], .terms = f->terms, .dims = f->dims};
+        alpha_frame child = {.a = left.child[i], .b = right.child[i], .dims = f->dims};
         if (f->tubes) {
             if (i == 0) child.dims = f->inner_dims;
             else { child.tubes = true; child.inner_dims = f->inner_dims; }
-        } else if (ck_term_binder(left.kind)) {
-            if (i == 1) child.terms = count;
         } else if (ck_dim_binder(left.kind)) {
             if ((i == 0 && left.kind != CC_HCOMP) || (i == 1 && left.kind == CC_PLAM))
                 child.dims = count;
@@ -377,13 +327,11 @@ cc_term cc_kernel_endpoint_term(cc_kernel *k, cc_term term, uint32_t dimension, 
     return ck_endpoint_term(k, term, dimension, endpoint);
 }
 
-cc_term cc_kernel_rename(cc_kernel *k, cc_term term, bool dimension, uint32_t from, uint32_t to) {
+cc_term cc_kernel_rename(cc_kernel *k, cc_term term, uint32_t from, uint32_t to) {
     if (!k || k->error[0] || !term || term >= k->count)
         return 0;
     ck_operation(k, CC_WORK_QUERY);
     k->recursion = 0;
-    if (!dimension)
-        return ck_substitute(k, term, from, ck_var(k, to));
     if (from >= CC_DIMENSIONS || to >= CC_DIMENSIONS)
         return ck_fail(k, "Dimension outside the native range."), 0;
     cc_formula point;
@@ -394,14 +342,15 @@ cc_term cc_kernel_rename(cc_kernel *k, cc_term term, bool dimension, uint32_t fr
     return renamed;
 }
 
-/* Syntactic equality up to bound names and interval algebra: nothing is
- * reduced or unfolded. The instruction kernel uses only this. */
+/* Syntactic equality up to bound dimension names and interval algebra:
+ * nothing is reduced or unfolded. The instruction kernel uses only this. */
 bool ck_alpha_equal(cc_kernel *k, cc_term a, cc_term b) {
     return alpha(k, a, b);
 }
 
 /* Cumulativity without conversion: universes by level, and Π or Σ with
- * identical domains and cumulative codomains. */
+ * identical domains and cumulative codomains, compared as they are: a
+ * binder's body is at the same depth on both sides. */
 bool ck_syntactic_cumulative(cc_kernel *k, cc_term actual, cc_term expected) {
     for (;;) {
         if (ck_alpha_equal(k, actual, expected))
@@ -411,12 +360,10 @@ bool ck_syntactic_cumulative(cc_kernel *k, cc_term actual, cc_term expected) {
         cc_node left = k->nodes[actual], right = k->nodes[expected];
         if (left.kind == CC_U && right.kind == CC_U)
             return ck_level_leq(k, left.child[0], right.child[0]);
-        /* Bounds/domains agree; compare bodies under one fresh variable. */
         if ((left.kind != CC_PI && left.kind != CC_SIGMA && left.kind != CC_LPI) ||
             left.kind != right.kind || !ck_alpha_equal(k, left.child[0], right.child[0]))
             return false;
-        cc_term variable = ck_var(k, ck_fresh_symbol(k));
-        actual = ck_substitute(k, left.child[1], left.payload, variable);
-        expected = ck_substitute(k, right.child[1], right.payload, variable);
+        actual = left.child[1];
+        expected = right.child[1];
     }
 }

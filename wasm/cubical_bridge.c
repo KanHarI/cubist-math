@@ -14,6 +14,10 @@ typedef struct {
     cc_error_kind error_kind;
     uint8_t position[1024]; /* the highlighted position of the next step or replacement */
     size_t depth;
+    /* The entries of the next replacement, one for each binder its position
+     * crosses, or of the next SignatureBegin, one for each parameter. */
+    cc_entry_id entries[1024];
+    size_t entry_count;
     uint32_t generation; /* cb_generation: 0 once spent */
 } browser_session;
 
@@ -197,12 +201,12 @@ uint32_t cb_formula_end(uint32_t token) {
     return cc_kernel_formula(s->kernel, &s->formula);
 }
 
+/* A definition's fields: 0 its value, 1 its type. It has no name. */
 uint32_t cb_definition(uint32_t token, uint32_t reference, unsigned field) {
     browser_session *s = lookup(token);
-    uint32_t symbol;
     cc_term value, type;
-    if (!s || !cc_kernel_definition(s->kernel, reference, &symbol, &value, &type)) return 0;
-    return field == 0 ? symbol : field == 1 ? value : field == 2 ? type : 0;
+    if (!s || !cc_kernel_definition(s->kernel, reference, &value, &type)) return 0;
+    return field == 0 ? value : field == 1 ? type : 0;
 }
 
 uint32_t cb_head(uint32_t token, uint32_t term) {
@@ -259,10 +263,12 @@ uint32_t cb_formula_view(uint32_t token, uint32_t id, unsigned clause, unsigned 
 }
 
 /* Instructions (kernel/include/cubical_kernel.h). cb_instr applies one by
- * its cc_instruction code, or extends the context (CB_EXTEND: a = type
- * judgement, b = symbol; CB_DIMENSION: a = index; CB_LEVEL: a = symbol). A step or replacement
- * reads the position pushed since the last cb_position_clear. An
- * instruction's error stays recorded until cb_clear_error. */
+ * its cc_instruction code, or extends the context with a new entry
+ * (CB_EXTEND: a = type judgement; CB_DIMENSION: a = index; CB_LEVEL). A step
+ * or replacement reads the position pushed since the last
+ * cb_position_clear; a replacement, and SignatureBegin, the entries pushed
+ * since the last cb_entries_clear. An instruction's error stays recorded
+ * until cb_clear_error. */
 enum { CB_EXTEND = 100, CB_DIMENSION = 101, CB_LEVEL = 102 };
 
 void cb_position_clear(uint32_t token) {
@@ -286,6 +292,19 @@ int cb_position_set(uint32_t token, uint32_t depth, uint32_t w0, uint32_t w1, ui
     const uint32_t words[] = {w0, w1, w2, w3};
     for (uint32_t i = 0; i < depth; ++i) s->position[i] = (uint8_t)(words[i / 16] >> (2 * (i % 16)) & 3);
     s->depth = depth;
+    return 1;
+}
+
+/* The entries of the next replacement or SignatureBegin, pushed in order. */
+void cb_entries_clear(uint32_t token) {
+    browser_session *s = lookup(token);
+    if (s) s->entry_count = 0;
+}
+
+int cb_entries_push(uint32_t token, uint32_t entry) {
+    browser_session *s = lookup(token);
+    if (!s || s->entry_count >= sizeof s->entries / sizeof *s->entries) return 0;
+    s->entries[s->entry_count++] = entry;
     return 1;
 }
 
@@ -342,11 +361,11 @@ uint32_t cb_instr(uint32_t token, unsigned op, uint32_t a, uint32_t b, uint32_t 
     case CC_INSTR_PATH: return cc_instr_path(k, a, b, c, d);
     case CC_INSTR_PATH_LAMBDA: return cc_instr_path_lambda(k, a, b);
     case CC_INSTR_PATH_APPLY: return cc_instr_path_apply(k, a, b, c);
-    case CC_INSTR_DEFINE: return cc_instr_define(k, a, b);
+    case CC_INSTR_DEFINE: return cc_instr_define(k, a);
     case CC_INSTR_LOOKUP: return cc_instr_lookup(k, a);
     case CC_INSTR_REFL: return cc_instr_refl(k, a);
     case CC_INSTR_STEP: return cc_instr_step(k, a, b, s->position, s->depth, (cc_step_rule)c);
-    case CC_INSTR_REPLACE: return cc_instr_replace(k, a, b, s->position, s->depth, c);
+    case CC_INSTR_REPLACE: return cc_instr_replace(k, a, b, s->position, s->depth, c, s->entries, s->entry_count);
     case CC_INSTR_ETA: return cc_instr_eta(k, a);
     case CC_INSTR_SIDE: return cc_instr_side(k, a, b);
     case CC_INSTR_SYMMETRY: return cc_instr_symmetry(k, a);
@@ -369,16 +388,17 @@ uint32_t cb_instr(uint32_t token, unsigned op, uint32_t a, uint32_t b, uint32_t 
     case CC_INSTR_GLUE_TERM_PIECE: return cc_instr_glue_term_piece(k, a, b, c);
     case CC_INSTR_GLUE_TERM: return cc_instr_glue_term(k, a);
     case CC_INSTR_UNGLUE: return cc_instr_unglue(k, a);
-    case CB_EXTEND: return cc_instr_extend(k, a, b);
+    case CB_EXTEND: return cc_instr_extend(k, a);
     case CB_DIMENSION: return cc_instr_dimension(k, a);
-    case CB_LEVEL: return cc_instr_level(k, a);
+    case CB_LEVEL: return cc_instr_level(k);
     case CC_INSTR_LEVEL_PI: return cc_instr_level_pi(k, a, b);
     case CC_INSTR_LEVEL_LAMBDA: return cc_instr_level_lambda(k, a, b);
     case CC_INSTR_LEVEL_APPLY: return cc_instr_level_apply(k, a, b);
-    /* Declared types (H1): SignatureBegin(former, modifier, sort symbol,
-     * recorded mask); SignatureConstructor(signature, type, symbol);
-     * SignatureClose(signature) gives the signature's index. */
-    case CC_INSTR_SIGNATURE_BEGIN: return cc_instr_signature_begin(k, a, b, c, d);
+    /* Declared types (H1): SignatureBegin(former, modifier, sort entry,
+     * recorded mask), its parameters' entries pushed; SignatureConstructor(
+     * signature, type, entry); SignatureClose(signature) gives the
+     * signature's index. */
+    case CC_INSTR_SIGNATURE_BEGIN: return cc_instr_signature_begin(k, a, b, s->entries, s->entry_count, c, d);
     case CC_INSTR_SIGNATURE_CONSTRUCTOR: return cc_instr_signature_constructor(k, a, b, c);
     case CC_INSTR_SIGNATURE_CLOSE: return cc_instr_signature_close(k, a);
     /* SortBegin(signature index); SortLevel(instance, level term);
@@ -418,16 +438,18 @@ uint32_t cb_arena(uint32_t token, unsigned field) {
     return (uint32_t)(field ? bytes : nodes);
 }
 
-/* A symbol id shared by no name the kernel or the page has given out. */
-uint32_t cb_fresh_symbol(uint32_t token) {
-    browser_session *s = lookup(token);
-    return s ? cc_kernel_fresh_symbol(s->kernel) : 0;
-}
-
-uint32_t cb_rename(uint32_t token, uint32_t term, unsigned dimension, uint32_t from, uint32_t to) {
+/* Syntax only: a term with a free dimension renamed. */
+uint32_t cb_rename(uint32_t token, uint32_t term, uint32_t from, uint32_t to) {
     browser_session *s = lookup(token);
     if (!s) return 0;
-    return cc_kernel_rename(s->kernel, term, dimension != 0, from, to);
+    return cc_kernel_rename(s->kernel, term, from, to);
+}
+
+/* Syntax only: a binder's body with its index 0 replaced by an entry. */
+uint32_t cb_instantiate(uint32_t token, uint32_t body, uint32_t entry) {
+    browser_session *s = lookup(token);
+    if (!s) return 0;
+    return cc_kernel_instantiate(s->kernel, body, entry);
 }
 
 /* Syntax only: Equiv(a, b) as the Glue rules state it. */
@@ -444,11 +466,14 @@ uint32_t cb_judgement_count(uint32_t token) {
 }
 
 /* Fields: 0 kind, 1 term, 2 other, 3 type, 4 rule, 5-8 premises, 9 entry,
- * 10-11 operands, 12 depth, and 13 + i the position's i-th child index. */
+ * 10-11 operands, 12 depth, 13 + i the position's i-th child index (below
+ * 13 + 1024), 2048 the count of its entries, and 2049 + i the i-th. */
 uint32_t cb_judgement(uint32_t token, uint32_t id, uint32_t field) {
     browser_session *s = lookup(token);
     cc_judgement_info j;
     if (!s || !cc_kernel_judgement(s->kernel, id, &j)) return 0;
+    if (field == 2048) return (uint32_t)j.entry_count;
+    if (field > 2048) return field - 2049 < j.entry_count ? j.entries[field - 2049] : 0;
     if (field >= 13) return field - 13 < j.depth ? j.position[field - 13] : 0;
     const uint32_t fields[] = {j.kind, j.term, j.other, j.type, (uint32_t)j.rule, j.premise[0], j.premise[1],
                                j.premise[2], j.premise[3], j.entry, j.operand[0], j.operand[1], (uint32_t)j.depth};
@@ -472,41 +497,41 @@ void cb_extensions(uint32_t token, unsigned flags) {
     if (s) cc_kernel_set_extensions(s->kernel, flags);
 }
 
-/* A signature's fields: 0 admitted, 1 experimental, 2 modifier, 3 sort
- * symbol, 4 universe parameters, 5 term parameters, 6 constructors,
- * 7 recorded mask, 8 former, 9 level; 10 + i its i-th parameter symbol. */
+/* A signature's fields, with no names: 0 admitted, 1 experimental,
+ * 2 modifier, 3 universe parameters, 4 term parameters, 5 constructors,
+ * 6 recorded mask, 7 former, 8 level. */
 uint32_t cb_signature(uint32_t token, uint32_t index, uint32_t field) {
     browser_session *s = lookup(token);
     cc_signature_info g;
-    if (!s || !cc_kernel_signature(s->kernel, index, &g)) return 0;
-    if (field >= 10) return cc_kernel_signature_symbol(s->kernel, index, field - 10);
-    const uint32_t fields[] = {g.admitted, g.experimental, g.modifier, g.sort_symbol, g.level_count,
+    if (!s || field > 8 || !cc_kernel_signature(s->kernel, index, &g)) return 0;
+    const uint32_t fields[] = {g.admitted, g.experimental, g.modifier, g.level_count,
                                g.parameter_count, g.constructor_count, g.recorded, g.former, g.level};
     return fields[field];
 }
 
-/* A constructor's fields: 0 symbol, 1 data, 2 positions, 3 dimensions,
- * 4 type, 5 generated. */
+/* A constructor's fields: 0 data, 1 positions, 2 dimensions, 3 type, closed
+ * over the admission telescope, 4 generated. */
 uint32_t cb_signature_constructor(uint32_t token, uint32_t index, uint32_t constructor, unsigned field) {
     browser_session *s = lookup(token);
     cc_constructor_info c;
-    if (!s || field > 5 || !cc_kernel_signature_constructor(s->kernel, index, constructor, &c)) return 0;
-    const uint32_t fields[] = {c.symbol, c.data, c.positions, c.dimensions, c.type, c.generated};
+    if (!s || field > 4 || !cc_kernel_signature_constructor(s->kernel, index, constructor, &c)) return 0;
+    const uint32_t fields[] = {c.data, c.positions, c.dimensions, c.type, c.generated};
     return fields[field];
 }
 
-/* Fields: 0 symbol (a dimension's index), 1 type, 2 dimension, 3 source. */
+/* Fields: 0 a dimension's index (0 for any other entry), 1 type,
+ * 2 dimension, 3 source. */
 uint32_t cb_entry(uint32_t token, uint32_t id, unsigned field) {
     browser_session *s = lookup(token);
-    uint32_t symbol;
+    uint32_t index;
     cc_term type;
     bool dimension;
     cc_judgement_id source;
-    if (!s || field > 8 || !cc_kernel_entry(s->kernel, id, &symbol, &type, &dimension, &source)) return 0;
+    if (!s || field > 8 || !cc_kernel_entry(s->kernel, id, &index, &type, &dimension, &source)) return 0;
     /* A face entry's clause, after the flag: each mask in two 32-bit halves. */
     cc_clause clause = {0};
     bool face = cc_kernel_entry_face(s->kernel, id, &clause);
-    const uint32_t fields[] = {symbol, type, dimension, source, face,
+    const uint32_t fields[] = {index, type, dimension, source, face,
         (uint32_t)clause.positive, (uint32_t)(clause.positive >> 32), (uint32_t)clause.negative, (uint32_t)(clause.negative >> 32)};
     return fields[field];
 }

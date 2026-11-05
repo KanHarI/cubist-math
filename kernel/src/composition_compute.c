@@ -191,28 +191,36 @@ cc_term ck_reduce_composition(cc_kernel *k, cc_term term) {
         cc_term first_line = ck_fill(k, dim, type.child[0], first_system, first_base, &r);
         cc_clear(&r);
         cc_term first = ck_make(k, CC_COMP, dim, type.child[0], first_system, first_base, 0);
-        cc_term second_family = ck_substitute(k, type.child[1], type.payload, first_line);
+        cc_term second_family = ck_instantiate(k, type.child[1], first_line);
         cc_term second_system = map_tubes(k, system, CC_SND, 0, 0);
         cc_term second_base = ck_make(k, CC_SND, 0, base, 0, 0, 0);
         cc_term second = ck_make(k, CC_COMP, dim, second_family, second_system, second_base, 0);
         cc_term target = ck_endpoint_term(k, family, dim, 1);
         return ck_make(k, CC_PAIR, 0, target, first, second, 0);
     }
+    /* The binder these build is opened at a level above every level the
+     * composition holds, and closed again (section 3.1). */
+    cc_opener opener = {0};
+    uint32_t opened = 0;
+    ck_opener_above(k, &opener, term);
     /* Composition at a level Π (G0 §2.11) is pointwise: levels never vary
      * along the interval, so no filling is needed.
      *   comp^i (Π (x < ω). B) [φ ↦ u] u0 ⟶ λ (y < ω). comp^i B[x := y] [φ ↦ u {y}] (u0 {y}) */
     if (type.kind == CC_LPI) {
-        uint32_t name = ck_fresh_symbol(k);
-        cc_term level = ck_var(k, name);
-        cc_term body_family = ck_substitute(k, type.child[1], type.payload, level);
+        if (!ck_opener_take(k, &opener, &opened))
+            return 0;
+        cc_term level = ck_make(k, CC_OPENED, opened, 0, 0, 0, 0);
+        cc_term body_family = level ? ck_instantiate(k, type.child[1], level) : 0;
         cc_term body_system = map_tubes(k, system, CC_LAPP, level, 0);
         cc_term body_base = ck_make(k, CC_LAPP, 0, base, level, 0, 0);
         cc_term body = ck_make(k, CC_COMP, dim, body_family, body_system, body_base, 0);
-        return ck_make(k, CC_LLAM, name, type.child[0], body, 0, 0);
+        body = body ? ck_close(k, body, opened) : 0;
+        return body ? ck_make(k, CC_LLAM, 0, type.child[0], body, 0, 0) : 0;
     }
     if (type.kind == CC_PI) {
-        uint32_t name = ck_fresh_symbol(k);
-        cc_term argument = ck_var(k, name);
+        if (!ck_opener_take(k, &opener, &opened))
+            return 0;
+        cc_term argument = ck_make(k, CC_OPENED, opened, 0, 0, 0, 0);
         cc_formula variable, backwards;
         cc_init(&variable, CC_INTERVAL);
         cc_init(&backwards, CC_INTERVAL);
@@ -227,12 +235,13 @@ cc_term ck_reduce_composition(cc_kernel *k, cc_term term) {
         cc_term line = ck_fill(k, dim, backwards_domain, 0, argument, &backwards);
         cc_clear(&variable);
         cc_clear(&backwards);
-        cc_term body_family = ck_substitute(k, type.child[1], type.payload, line);
+        cc_term body_family = line ? ck_instantiate(k, type.child[1], line) : 0;
         cc_term body_system = map_tubes(k, system, CC_APP, line, 0);
         cc_term body_base = app(k, base, ck_endpoint_term(k, line, dim, 0));
         cc_term body = ck_make(k, CC_COMP, dim, body_family, body_system, body_base, 0);
+        body = body ? ck_close(k, body, opened) : 0;
         cc_term domain = ck_endpoint_term(k, type.child[0], dim, 1);
-        return ck_make(k, CC_LAM, name, domain, body, 0, 0);
+        return body ? ck_make(k, CC_LAM, 0, domain, body, 0, 0) : 0;
     }
     if (type.kind == CC_PATH) {
         uint64_t avoid = ck_free_dims(k, term) | (UINT64_C(1) << dim) |

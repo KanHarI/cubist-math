@@ -9,6 +9,9 @@ cc_term cc_kernel_equiv_type(cc_kernel *k, cc_term a, cc_term b) {
     if (!k || !a || !b || a >= k->count || b >= k->count)
         return 0;
     ck_standalone(k);
+    /* The type's own binders would capture a loose index of an operand. */
+    if ((a && a < k->count && k->nodes[a].loose) || (b && b < k->count && k->nodes[b].loose))
+        return ck_fail(k, "An equivalence type's operands must be locally closed."), 0;
     return ck_equiv_type(k, a, b);
 }
 

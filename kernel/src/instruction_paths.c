@@ -18,11 +18,11 @@ cc_judgement_id cc_instr_path(cc_kernel *k, cc_entry_id dimension, cc_judgement_
     if (!ck_instr_entry(k, dimension, true, &i) || !ck_instr_premise(k, family_id, CC_FACT_TYPING, &a) ||
         !ck_instr_premise(k, left_id, CC_FACT_TYPING, &l) || !ck_instr_premise(k, right_id, CC_FACT_TYPING, &r) ||
         !ck_instr_universe(k, a.type, &level) ||
-        !ck_instr_same(k, l.type, ck_endpoint_term(k, a.term, i.symbol, 0), "The left endpoint has the wrong type.") ||
-        !ck_instr_same(k, r.type, ck_endpoint_term(k, a.term, i.symbol, 1), "The right endpoint has the wrong type.") ||
+        !ck_instr_same(k, l.type, ck_endpoint_term(k, a.term, i.index, 0), "The left endpoint has the wrong type.") ||
+        !ck_instr_same(k, r.type, ck_endpoint_term(k, a.term, i.index, 1), "The right endpoint has the wrong type.") ||
         !ck_instr_bind(k, a.context, dimension, &context) || !ck_instr_merge3(k, context, l.context, r.context, &context))
         return 0;
-    return ck_instr_typing(k, ck_instr_make(k, CC_PATH, i.symbol, a.term, l.term, r.term, 0), a.type, context);
+    return ck_instr_typing(k, ck_instr_make(k, CC_PATH, i.index, a.term, l.term, r.term, 0), a.type, context);
 }
 
 cc_judgement_id cc_instr_path_lambda(cc_kernel *k, cc_entry_id dimension, cc_judgement_id body_id) {
@@ -35,9 +35,9 @@ cc_judgement_id cc_instr_path_lambda(cc_kernel *k, cc_entry_id dimension, cc_jud
     if (!ck_instr_entry(k, dimension, true, &i) || !ck_instr_premise(k, body_id, CC_FACT_TYPING, &b) ||
         !ck_instr_bind(k, b.context, dimension, &context))
         return 0;
-    cc_term type = ck_instr_make(k, CC_PATH, i.symbol, b.type, ck_endpoint_term(k, b.term, i.symbol, 0),
-                        ck_endpoint_term(k, b.term, i.symbol, 1), 0);
-    return ck_instr_typing(k, ck_instr_make(k, CC_PLAM, i.symbol, b.type, b.term, 0, 0), type, context);
+    cc_term type = ck_instr_make(k, CC_PATH, i.index, b.type, ck_endpoint_term(k, b.term, i.index, 0),
+                        ck_endpoint_term(k, b.term, i.index, 1), 0);
+    return ck_instr_typing(k, ck_instr_make(k, CC_PLAM, i.index, b.type, b.term, 0, 0), type, context);
 }
 
 cc_judgement_id cc_instr_path_apply(cc_kernel *k, cc_judgement_id path_id, cc_entry_id dimension, unsigned endpoint) {
@@ -56,7 +56,7 @@ cc_judgement_id cc_instr_path_apply(cc_kernel *k, cc_judgement_id path_id, cc_en
         return ck_fail(k, "A path applies at a dimension, 0 or 1."), 0;
     cc_formula point;
     cc_init(&point, CC_INTERVAL);
-    cc_status status = dimension ? cc_generator(&point, i.symbol, true) : endpoint ? cc_one(&point) : CC_OK;
+    cc_status status = dimension ? cc_generator(&point, i.index, true) : endpoint ? cc_one(&point) : CC_OK;
     cc_formula_id argument = status == CC_OK ? ck_formula(k, &point) : 0;
     cc_term result = argument ? ck_dimension_substitute(k, type.child[0], type.payload, &point) : 0;
     cc_clear(&point);
@@ -81,7 +81,7 @@ cc_judgement_id cc_instr_endpoint(cc_kernel *k, cc_judgement_id id, cc_entry_id 
         return ck_fail(k, "An endpoint is 0 or 1."), 0;
     if (!ck_instr_discharge(k, t.context, &dimension, 1, &context))
         return 0;
-    return ck_instr_typing(k, ck_endpoint_term(k, t.term, i.symbol, endpoint), ck_endpoint_term(k, t.type, i.symbol, endpoint), context);
+    return ck_instr_typing(k, ck_endpoint_term(k, t.term, i.index, endpoint), ck_endpoint_term(k, t.type, i.index, endpoint), context);
 }
 
 /* Restrict: Γ ⊢ t : T on a clause φ gives Γ, φ ⊢ t|φ : T|φ, each of the
@@ -157,13 +157,13 @@ cc_judgement_id cc_instr_system(cc_kernel *k, cc_entry_id dimension, cc_judgemen
     uint32_t context = 0;
     if (!ck_instr_entry(k, dimension, true, &i) || !ck_instr_premise(k, family_id, CC_FACT_TYPING, &a) ||
         !ck_instr_premise(k, base_id, CC_FACT_TYPING, &b) || !ck_instr_universe(k, a.type, &level) ||
-        !ck_instr_same(k, b.type, ck_endpoint_term(k, a.term, i.symbol, 0), "The base is not in the family at 0.") ||
+        !ck_instr_same(k, b.type, ck_endpoint_term(k, a.term, i.index, 0), "The base is not in the family at 0.") ||
         !ck_instr_merge(k, a.context, b.context, &context))
         return 0;
-    if (ck_free_dims(k, b.term) & (UINT64_C(1) << i.symbol))
+    if (ck_free_dims(k, b.term) & (UINT64_C(1) << i.index))
         return ck_fail(k, "The base of a composition may not use its dimension."), 0;
-    cc_term comp = ck_instr_make(k, CC_COMP, i.symbol, a.term, 0, b.term, 0);
-    return comp ? ck_instr_publish(k, CC_FACT_SYSTEM, comp, 0, ck_endpoint_term(k, a.term, i.symbol, 1), context) : 0;
+    cc_term comp = ck_instr_make(k, CC_COMP, i.index, a.term, 0, b.term, 0);
+    return comp ? ck_instr_publish(k, CC_FACT_SYSTEM, comp, 0, ck_endpoint_term(k, a.term, i.index, 1), context) : 0;
 }
 
 cc_term ck_instr_append_tube(cc_kernel *k, cc_term tubes, cc_formula_id face, cc_term tube) {

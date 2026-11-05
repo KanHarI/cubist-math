@@ -35,10 +35,10 @@ static unsigned value(cc_term n) {
 }
 static void addition(void) {
     cc_judgement_id nat=OK(fixture_nat(k));
-    cc_entry_id a=OK(cc_instr_extend(k,nat,100)), b=OK(cc_instr_extend(k,nat,101));
-    cc_entry_id x=OK(cc_instr_extend(k,nat,102)), n=OK(cc_instr_extend(k,nat,103));
+    cc_entry_id a=OK(cc_instr_extend(k,nat)), b=OK(cc_instr_extend(k,nat));
+    cc_entry_id x=OK(cc_instr_extend(k,nat)), n=OK(cc_instr_extend(k,nat));
     cc_judgement_id motive=OK(cc_instr_lambda(k,x,nat)), at_n=apply(motive,var(n));
-    cc_entry_id h=OK(cc_instr_extend(k,at_n,104));
+    cc_entry_id h=OK(cc_instr_extend(k,at_n));
     cc_judgement_id ih=OK(cc_instr_convert(k,var(h),beta(at_n)));
     cc_judgement_id next=at_motive(OK(fixture_succ(k,ih)),motive,OK(fixture_succ(k,var(n))));
     cc_judgement_id step=OK(cc_instr_lambda(k,n,OK(cc_instr_lambda(k,h,next))));
@@ -47,7 +47,7 @@ static void addition(void) {
     elim=OK(cc_instr_eliminator_clause(k,elim,step));
     elim=OK(cc_instr_eliminator_close(k,elim));
     cc_judgement_id sum=OK(cc_instr_convert(k,apply(elim,var(b)),beta(apply(motive,var(b)))));
-    cc_judgement_id add=OK(cc_instr_define(k,105,OK(cc_instr_lambda(k,a,OK(cc_instr_lambda(k,b,sum))))));
+    cc_judgement_id add=OK(cc_instr_define(k,OK(cc_instr_lambda(k,a,OK(cc_instr_lambda(k,b,sum))))));
     cc_judgement_id five=apply(apply(add,numeral(2)),numeral(3));
     assert(info(five).type==term(nat));
     assert(value(cc_kernel_normalize(k,term(five)))==5);
@@ -60,26 +60,27 @@ static void addition(void) {
 static void trees(void) {
     cc_term l0=cc_kernel_term(k,CC_LCONST,0,0,0,0,0);
     cc_judgement_id u0=OK(cc_instr_universe(k,l0)), unit=OK(cc_instr_unit(k)), empty=OK(cc_instr_void(k));
-    cc_judgement_id sig=OK(cc_instr_signature_begin(k,u0,CC_UNTRUNCATED,200,0));
-    cc_entry_id s=OK(cc_instr_extend(k,u0,200)), label=OK(cc_instr_extend(k,unit,201));
-    cc_entry_id index=OK(cc_instr_extend(k,empty,202));
+    cc_entry_id s=OK(cc_instr_extend(k,u0)), label=OK(cc_instr_extend(k,unit));
+    cc_judgement_id sig=OK(cc_instr_signature_begin(k,u0,CC_UNTRUNCATED,NULL,0,s,0));
+    cc_entry_id index=OK(cc_instr_extend(k,empty));
     cc_judgement_id children_type=OK(cc_instr_pi(k,index,var(s)));
-    cc_entry_id children=OK(cc_instr_extend(k,children_type,203));
-    sig=OK(cc_instr_signature_constructor(k,sig,OK(cc_instr_pi(k,label,OK(cc_instr_pi(k,children,var(s))))),204));
+    cc_entry_id children=OK(cc_instr_extend(k,children_type));
+    cc_judgement_id sup_type=OK(cc_instr_pi(k,label,OK(cc_instr_pi(k,children,var(s)))));
+    sig=OK(cc_instr_signature_constructor(k,sig,sup_type,OK(cc_instr_extend(k,sup_type))));
     uint32_t signature=OK(cc_instr_signature_close(k,sig));
     cc_constructor_info constructor; assert(cc_kernel_signature_constructor(k,signature,0,&constructor));
     assert(constructor.data==1 && constructor.positions==1);
     cc_judgement_id tree=OK(cc_instr_sort_begin(k,signature)), sup=OK(cc_instr_construct(k,tree,0));
-    cc_entry_id v=OK(cc_instr_extend(k,empty,205));
+    cc_entry_id v=OK(cc_instr_extend(k,empty));
     cc_judgement_id impossible=OK(cc_instr_abort(k,tree,var(v)));
     cc_judgement_id leaf=apply(apply(sup,OK(cc_instr_point(k))),OK(cc_instr_lambda(k,v,impossible)));
     cc_judgement_id nat=OK(fixture_nat(k));
-    cc_entry_id t=OK(cc_instr_extend(k,tree,206));
+    cc_entry_id t=OK(cc_instr_extend(k,tree));
     cc_judgement_id motive=OK(cc_instr_lambda(k,t,nat));
-    cc_entry_id a=OK(cc_instr_extend(k,unit,207));
-    cc_entry_id f=OK(cc_instr_extend(k,OK(cc_instr_pi(k,index,tree)),208));
+    cc_entry_id a=OK(cc_instr_extend(k,unit));
+    cc_entry_id f=OK(cc_instr_extend(k,OK(cc_instr_pi(k,index,tree))));
     cc_judgement_id ih_type=OK(cc_instr_pi(k,index,apply(motive,apply(var(f),var(index)))));
-    cc_entry_id ih=OK(cc_instr_extend(k,ih_type,209));
+    cc_entry_id ih=OK(cc_instr_extend(k,ih_type));
     cc_judgement_id node=apply(apply(sup,var(a)),var(f));
     cc_judgement_id result=at_motive(numeral(2),motive,node);
     cc_judgement_id clause=OK(cc_instr_lambda(k,a,OK(cc_instr_lambda(k,f,OK(cc_instr_lambda(k,ih,result))))));
@@ -89,7 +90,7 @@ static void trees(void) {
 }
 static void retired_syntax(void) {
     const cc_term_kind retired[]={CC_NAT,CC_ZERO,CC_SUCC,CC_NATREC,CC_W,CC_SUP,CC_WREC,
-        CC_PUSHOUT,CC_PUSH_LEFT,CC_PUSH_RIGHT,CC_PUSH_PATH,CC_PUSH_ELIM};
+        CC_PUSHOUT,CC_PUSH_LEFT,CC_PUSH_RIGHT,CC_PUSH_PATH,CC_PUSH_ELIM,CC_VAR};
     for (unsigned i=0;i<sizeof retired/sizeof *retired;++i) {
         assert(!cc_kernel_term(k,retired[i],0,0,0,0,0));
         assert(cc_kernel_error(k)[0]); cc_kernel_clear_error(k);
@@ -98,6 +99,6 @@ static void retired_syntax(void) {
 int main(void) {
     k=cc_kernel_new(); assert(k); cc_kernel_set_extensions(k,CC_EXTENSION_H1);
     addition(); trees(); retired_syntax(); cc_kernel_free(k);
-    puts("Declared Nat and W instructions compute; retired Nat, W and pushout syntax is refused.");
+    puts("Declared Nat and W instructions compute; retired Nat, W, pushout and named-variable syntax is refused.");
     return 0;
 }
