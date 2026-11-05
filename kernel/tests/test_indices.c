@@ -448,7 +448,9 @@ static void capture_laws(void) {
         for (uint32_t count = 1; count <= 3; count += 2) {
             cc_term direct = ck_instantiate_all(k, t, values, count);
             assert(direct && !k->error[0]);
-            assert(scope.count == 0 && agrees(direct, t, 0, values, count));
+            assert(scope.count == 0);
+            bool agreed = agrees(direct, t, 0, values, count);
+            assert(agreed);
             renamed += !same(direct, instantiated(t, 0, values, count));
         }
     }
@@ -463,13 +465,15 @@ static void comparison_cases(void) {
     cc_term p = node(CC_VAR, 50, 0, 0, 0), at0 = node(CC_PAPP, ck_interval_variable(k, 0), p, 0, 0);
     cc_term at1 = node(CC_PAPP, ck_interval_variable(k, 1), p, 0, 0);
     cc_term t = node(CC_PLAM, 0, at0, bound(0), 0);
-    assert(agrees(node(CC_PLAM, 1, at1, at0, 0), t, 0, &at0, 1));
-    assert(!agrees(node(CC_PLAM, 0, at0, at0, 0), t, 0, &at0, 1));
-    assert(!agrees(node(CC_PLAM, 1, at0, at0, 0), t, 0, &at0, 1));
+    bool renamed = agrees(node(CC_PLAM, 1, at1, at0, 0), t, 0, &at0, 1);
+    bool captured = agrees(node(CC_PLAM, 0, at0, at0, 0), t, 0, &at0, 1);
+    bool unrenamed = agrees(node(CC_PLAM, 1, at0, at0, 0), t, 0, &at0, 1);
+    assert(renamed && !captured && !unrenamed);
     cc_term annotated = node(CC_PLAM, 0, unit, node(CC_PAPP, ck_interval_variable(k, 2), p, bound(0), 0), 0);
     cc_term good = node(CC_PLAM, 1, unit, node(CC_PAPP, ck_interval_variable(k, 2), p, at0, 0), 0);
     cc_term bad = node(CC_PLAM, 0, unit, node(CC_PAPP, ck_interval_variable(k, 2), p, at0, 0), 0);
-    assert(agrees(good, annotated, 0, &at0, 1) && !agrees(bad, annotated, 0, &at0, 1));
+    bool kept = agrees(good, annotated, 0, &at0, 1), lost = agrees(bad, annotated, 0, &at0, 1);
+    assert(kept && !lost);
     assert(scope.count == 0 && scope.barrier == 0);
 }
 
@@ -518,7 +522,8 @@ static void capture_scan(void) {
     for (unsigned i = 0; i < 3; ++i) {
         cc_term value = node(CC_PAPP, ck_interval_variable(k, high[i]), node(CC_VAR, 32, 0, 0, 0), 0, 0);
         cc_term over = node(CC_PLAM, high[i], unit, bound(0), 0), out = ck_instantiate(k, over, value);
-        assert(out && agrees(out, over, 0, &value, 1) && ck_free_dims(k, out) == UINT64_C(1) << high[i]);
+        bool agreed = out && agrees(out, over, 0, &value, 1);
+        assert(agreed && ck_free_dims(k, out) == UINT64_C(1) << high[i]);
         assert(!k->error[0]);
     }
     /* Beneath 256 term binders: the scan seeks index 256, and its frames
@@ -533,7 +538,8 @@ static void capture_scan(void) {
     assert(!strcmp(k->error, "Variable scan allocation failed."));
     cc_kernel_clear_error(k);
     cc_term out = ck_instantiate(k, deep, at);
-    assert(out && agrees(out, deep, 0, &at, 1) && ck_free_dims(k, out) == 1 && !k->error[0]);
+    bool agreed = out && agrees(out, deep, 0, &at, 1);
+    assert(agreed && ck_free_dims(k, out) == 1 && !k->error[0]);
 }
 
 /* Instantiation renames a dimension binder its value would be captured by,
