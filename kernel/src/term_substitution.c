@@ -605,21 +605,19 @@ static cc_term index_substitution(cc_kernel *k, substitution_kind kind, cc_term 
 
 /* `term` with CC_BOUND(d + i), under d of its binders, replaced by values[i]
  * for each i below `count`: one pass for a telescope, whose innermost entry
- * is index 0. Each value must be locally closed, so no binder of the term
- * can capture it; a dimension binder whose dimension a value mentions is
- * renamed, as substitution does. Several values are memoized by the list of
- * them, built for the key, so at most 511 can be given at once, by the
- * depth limit. */
+ * is index 0. Each value must be locally closed (loose == 0), so no binder
+ * of the term can capture it; the caller ensures it, as the callers of
+ * ck_substitute ensure its operands. A dimension binder whose dimension a
+ * value mentions is renamed, as substitution does. Several values are
+ * memoized by the list of them, built for the key, so at most 511 can be
+ * given at once, by the depth limit. */
 cc_term ck_instantiate_all(cc_kernel *k, cc_term term, const cc_term *values, uint32_t count) {
     if (k->error[0]) return 0;
-    if (!term || term >= k->count || !values || !count)
-        return ck_fail(k, "Invalid instantiation."), 0;
-    for (uint32_t i = 0; i < count; ++i) {
-        if (!values[i] || values[i] >= k->count)
-            return ck_fail(k, "Invalid instantiation value."), 0;
-        if (k->nodes[values[i]].loose)
-            return ck_fail(k, "An instantiation's value has loose indices."), 0;
+    for (uint32_t i = 0; i <= count; ++i) {
+        cc_term handle = i < count ? values[i] : term;
+        if (!handle || handle >= k->count) return ck_fail(k, "Invalid syntax child handle."), 0;
     }
+    if (!count) return term;
     index_operation op = {.operation = count == 1 ? MEMO_INSTANTIATE : MEMO_INSTANTIATE_ALL,
                           .values = values, .count = count};
     if (count == 1) op.key = values[0];
@@ -638,7 +636,7 @@ cc_term ck_instantiate(cc_kernel *k, cc_term term, cc_term value) {
  * skipped. */
 cc_term ck_abstract(cc_kernel *k, cc_term term, cc_entry_id entry) {
     if (k->error[0]) return 0;
-    if (!term || term >= k->count) return ck_fail(k, "Invalid abstraction."), 0;
+    if (!term || term >= k->count) return ck_fail(k, "Invalid syntax child handle."), 0;
     index_operation op = {.operation = MEMO_ABSTRACT, .key = entry, .reference = CC_CONTEXT, .payload = entry};
     return index_substitution(k, SUBSTITUTE_ABSTRACT, term, &op);
 }
@@ -657,7 +655,7 @@ cc_term ck_open(cc_kernel *k, cc_term body, uint32_t level) {
  * nodes that contain it. */
 cc_term ck_close(cc_kernel *k, cc_term term, uint32_t level) {
     if (k->error[0]) return 0;
-    if (!term || term >= k->count) return ck_fail(k, "Invalid abstraction."), 0;
+    if (!term || term >= k->count) return ck_fail(k, "Invalid syntax child handle."), 0;
     index_operation op = {.operation = MEMO_CLOSE, .key = level, .reference = CC_OPENED, .payload = level};
     return index_substitution(k, SUBSTITUTE_ABSTRACT, term, &op);
 }
@@ -671,10 +669,11 @@ void ck_opener_above(const cc_kernel *k, cc_opener *opener, cc_term operand) {
 }
 
 /* The next level, never one handed out before. Level UINT32_MAX would make a
- * node's `opened` wrap, so the counter's operation fails there instead. */
+ * node's `opened` wrap, so the counter's operation fails there instead, as
+ * the fresh symbols it replaces fail (ck_fresh_symbol). */
 bool ck_opener_take(cc_kernel *k, cc_opener *opener, uint32_t *level) {
     if (opener->next == UINT32_MAX)
-        return ck_fail_as(k, CC_ERROR_RESOURCE, "Opened level space exhausted.");
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "Fresh symbol space exhausted.");
     *level = opener->next++;
     return true;
 }

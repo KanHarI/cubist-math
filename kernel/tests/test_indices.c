@@ -152,11 +152,12 @@ static void bounds(void) {
     assert(k->nodes[lam(unit, largest)].loose == UINT32_MAX - 1);
     assert(k->nodes[lam(largest, unit)].loose == UINT32_MAX);
     assert(k->nodes[opened(UINT32_MAX - 1)].opened == UINT32_MAX);
+    /* Refused as a symbol of UINT32_MAX is (section 3.2). */
     assert(!ck_make(k, CC_BOUND, UINT32_MAX, 0, 0, 0, 0) && cc_kernel_error_kind(k) == CC_ERROR_RESOURCE);
-    assert(!strcmp(k->error, "Bound index space exhausted."));
+    assert(!strcmp(k->error, "Term symbol space exhausted."));
     cc_kernel_clear_error(k);
     assert(!ck_make(k, CC_OPENED, UINT32_MAX, 0, 0, 0, 0) && cc_kernel_error_kind(k) == CC_ERROR_RESOURCE);
-    assert(!strcmp(k->error, "Opened level space exhausted."));
+    assert(!strcmp(k->error, "Term symbol space exhausted."));
     cc_kernel_clear_error(k);
     /* None of the kernel's kinds is part of ABI 3. */
     const uint32_t payloads[] = {0, UINT32_MAX - 1, UINT32_MAX};
@@ -172,9 +173,10 @@ static void bounds(void) {
     cc_entry_id dimension = cc_instr_dimension(k, 0);
     assert(dimension);
     const uint32_t dead[] = {0, (uint32_t)dimension, (uint32_t)cc_kernel_entry_count(k)};
+    const char *refusals[] = {"Unknown context entry.", "Expected a term entry.", "Unknown context entry."};
     for (unsigned i = 0; i < 3; ++i) {
         assert(!ck_make(k, CC_CONTEXT, dead[i], 0, 0, 0, 0));
-        assert(!strcmp(k->error, "A context reference names no term or level entry."));
+        assert(!strcmp(k->error, refusals[i]));
         cc_kernel_clear_error(k);
     }
     /* An opener's counter fails rather than hand out UINT32_MAX. */
@@ -188,16 +190,15 @@ static void bounds(void) {
     ck_opener_above(k, &opener, opened(UINT32_MAX - 2));
     assert(ck_opener_take(k, &opener, &level) && level == UINT32_MAX - 1);
     assert(!ck_opener_take(k, &opener, &level) && cc_kernel_error_kind(k) == CC_ERROR_RESOURCE);
-    assert(!strcmp(k->error, "Opened level space exhausted."));
+    assert(!strcmp(k->error, "Fresh symbol space exhausted."));
     cc_kernel_clear_error(k);
     opener = (cc_opener){0};
     ck_opener_above(k, &opener, opened(UINT32_MAX - 1));
     assert(!ck_opener_take(k, &opener, &level) && cc_kernel_error_kind(k) == CC_ERROR_RESOURCE);
     cc_kernel_clear_error(k);
-    /* An instantiation's value is locally closed. */
-    assert(!ck_instantiate(k, lam(unit, bound(1)), bound(0)));
-    assert(!strcmp(k->error, "An instantiation's value has loose indices."));
-    cc_kernel_clear_error(k);
+    /* Instantiating no index is the identity. */
+    cc_term loose = bound(0);
+    assert(ck_instantiate_all(k, loose, NULL, 0) == loose && !k->error[0]);
 }
 
 /* The laws of section 7.1 on random terms. */
@@ -310,7 +311,7 @@ static void deep_and_wide(void) {
     assert(same(ck_open(k, t, m), chain(opened(m))));
     assert(same(ck_close(k, chain(opened(m)), m), t));
     assert(same(ck_abstract(k, chain(context(0)), entries[0]), t));
-    /* A value one node deep fits; two make syntax deeper than 512. */
+    /* A value one node deeper than the leaf fits; two deeper exceed 512. */
     assert(same(ck_instantiate(k, t, sum(unit, unit)), chain(sum(unit, unit))));
     assert(!ck_instantiate(k, t, sum(sum(unit, unit), unit)) && cc_kernel_error_kind(k) == CC_ERROR_RESOURCE);
     assert(!strcmp(k->error, "Native prototype syntax depth exceeds 512."));
@@ -326,9 +327,9 @@ static void deep_and_wide(void) {
     while (k->nodes[leftmost].kind == CC_SUM) leftmost = k->nodes[leftmost].child[0];
     assert(k->nodes[leftmost].kind == CC_APP && k->nodes[k->nodes[leftmost].child[0]].kind == CC_BOUND);
     out = ck_instantiate(k, level[0], unit);
-    leftmost = out;
-    while (k->nodes[leftmost].kind == CC_SUM) leftmost = k->nodes[leftmost].child[1];
-    assert(same(leftmost, app(unit, node(CC_VAR, 1000 + 4095, 0, 0, 0))));
+    cc_term rightmost = out;
+    while (k->nodes[rightmost].kind == CC_SUM) rightmost = k->nodes[rightmost].child[1];
+    assert(same(rightmost, app(unit, node(CC_VAR, 1000 + 4095, 0, 0, 0))));
 }
 
 /* An allocation fault or an exhausted budget gives no result and memoizes

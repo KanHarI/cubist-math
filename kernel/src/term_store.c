@@ -243,18 +243,19 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
     if ((kind == CC_PAPP || kind == CC_TUBE || kind == CC_GLUE_SYSTEM) &&
         !cc_kernel_get_formula(k, payload))
         return ck_fail(k, "A formula handle names no registered formula."), 0;
-    if ((kind == CC_VAR || ck_term_binder(kind)) && payload == UINT32_MAX)
+    /* A CC_BOUND's or CC_OPENED's counter is its payload plus one, which
+     * must not wrap to 0: the same refusal as a symbol's. */
+    if ((kind == CC_VAR || ck_term_binder(kind) || kind == CC_BOUND || kind == CC_OPENED) && payload == UINT32_MAX)
         return ck_fail_as(k, CC_ERROR_RESOURCE, "Term symbol space exhausted."), 0;
-    /* A leaf's counter is its payload plus one, which must not wrap to 0. */
-    if (kind == CC_BOUND && payload == UINT32_MAX)
-        return ck_fail_as(k, CC_ERROR_RESOURCE, "Bound index space exhausted."), 0;
-    if (kind == CC_OPENED && payload == UINT32_MAX)
-        return ck_fail_as(k, CC_ERROR_RESOURCE, "Opened level space exhausted."), 0;
     /* A context reference names a term or level entry of the judgement
-     * store, never a dimension or face entry, nor one truncated. */
-    if (kind == CC_CONTEXT && (!payload || payload >= k->entry_count || k->entries[payload].dimension ||
-                               k->entries[payload].face))
-        return ck_fail(k, "A context reference names no term or level entry."), 0;
+     * store, never a dimension or face entry, nor one truncated: the
+     * refusals of ck_instr_entry, but for level entries, which it allows. */
+    if (kind == CC_CONTEXT && (!payload || payload >= k->entry_count))
+        return ck_fail(k, "Unknown context entry."), 0;
+    if (kind == CC_CONTEXT && k->entries[payload].face)
+        return ck_fail(k, "A face entry is an assumption, not a variable or a dimension."), 0;
+    if (kind == CC_CONTEXT && k->entries[payload].dimension)
+        return ck_fail(k, "Expected a term entry."), 0;
     /* Identical syntax is one node. Every child and payload is compared after
      * hashing, so collisions affect performance, never term identity. A
      * node's counters, loose and opened, are functions of its kind, payload
