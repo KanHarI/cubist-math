@@ -343,6 +343,28 @@ uint64_t ck_free_dims(cc_kernel *, cc_term);
 unsigned ck_fresh_dimension(cc_kernel *, uint64_t avoid);
 cc_term ck_substitute(cc_kernel *, cc_term, uint32_t, cc_term);
 cc_term ck_dimension_substitute(cc_kernel *, cc_term, unsigned, const cc_formula *);
+/* The locally nameless primitives (term_substitution.c; section 3.3 of
+ * docs/roadmaps/kernel/locally-nameless-kernel.md), unused by the rules on
+ * ABI 3. Instantiate replaces index 0 of a binder's body by a locally closed
+ * value, and ck_instantiate_all indices 0 to count - 1 in one pass; abstract
+ * binds every CC_CONTEXT(entry) as the index of a binder put around the
+ * term; open and close are instantiation by CC_OPENED(level) and its
+ * abstraction. Each returns 0 on failure. */
+cc_term ck_instantiate(cc_kernel *, cc_term body, cc_term value);
+cc_term ck_instantiate_all(cc_kernel *, cc_term term, const cc_term *values, uint32_t count);
+cc_term ck_abstract(cc_kernel *, cc_term, cc_entry_id);
+cc_term ck_open(cc_kernel *, cc_term body, uint32_t level);
+cc_term ck_close(cc_kernel *, cc_term, uint32_t level);
+/* The levels an operation opens binders at (section 3.1): a counter local to
+ * the operation, passed to the helpers it calls, never a field of the
+ * kernel. Zero-initialized, raised above each operand's `opened` by
+ * ck_opener_above, it hands out each level once (ck_opener_take), and fails
+ * as a resource error rather than reach UINT32_MAX. */
+typedef struct {
+    uint32_t next;
+} cc_opener;
+void ck_opener_above(const cc_kernel *, cc_opener *, cc_term operand);
+bool ck_opener_take(cc_kernel *, cc_opener *, uint32_t *level);
 cc_term ck_restrict(cc_kernel *, cc_term, cc_clause);
 cc_term ck_whnf(cc_kernel *, cc_term);
 cc_term ck_expose(cc_kernel *, cc_term);
