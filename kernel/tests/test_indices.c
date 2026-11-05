@@ -436,7 +436,9 @@ static bool agrees(cc_term r, cc_term t, uint32_t depth, const cc_term *values, 
 static void capture_laws(void) {
     unsigned renamed = 0;
     for (unsigned i = 0; i < TERMS; ++i) {
-        cc_term t = random_term(4, false), values[3];
+        /* Half the terms carry indices near UINT32_MAX - 1, for the scan's
+         * index arithmetic. */
+        cc_term t = random_term(4, roll(2)), values[3];
         /* Half the values are path applications at dimension 0 or 1, free in
          * them, which the binders over 0 and 1 could capture. */
         for (unsigned j = 0; j < 3; ++j) {
@@ -510,6 +512,28 @@ static void capture_scan(void) {
     assert(renamed && k->nodes[renamed].payload != 0 && !k->error[0]);
     renamed = ck_instantiate(k, node(CC_PLAM, 0, unit, lam(unit, bound(1)), 0), at);
     assert(renamed && k->nodes[renamed].payload != 0 && ck_free_dims(k, renamed) == 1 && !k->error[0]);
+    /* Dimensions across the 64-bit masks, the highest included (review round
+     * 5): a binder over each, given a value mentioning it, is renamed. */
+    const unsigned high[] = {31, 32, 63};
+    for (unsigned i = 0; i < 3; ++i) {
+        cc_term value = node(CC_PAPP, ck_interval_variable(k, high[i]), node(CC_VAR, 32, 0, 0, 0), 0, 0);
+        cc_term over = node(CC_PLAM, high[i], unit, bound(0), 0), out = ck_instantiate(k, over, value);
+        assert(out && agrees(out, over, 0, &value, 1) && ck_free_dims(k, out) == UINT64_C(1) << high[i]);
+        assert(!k->error[0]);
+    }
+    /* Beneath 256 term binders: the scan seeks index 256, and its frames
+     * move to the heap, whose allocation failing fails the instantiation
+     * with no result. */
+    cc_term deep = bound(256);
+    for (unsigned i = 0; i < 256; ++i) deep = lam(unit, deep);
+    deep = node(CC_PLAM, 0, unit, deep, 0);
+    allocations = 0;
+    fail_on = 1;
+    assert(!ck_instantiate(k, deep, at) && !fail_on && cc_kernel_error_kind(k) == CC_ERROR_RESOURCE);
+    assert(!strcmp(k->error, "Variable scan allocation failed."));
+    cc_kernel_clear_error(k);
+    cc_term out = ck_instantiate(k, deep, at);
+    assert(out && agrees(out, deep, 0, &at, 1) && ck_free_dims(k, out) == 1 && !k->error[0]);
 }
 
 /* Instantiation renames a dimension binder its value would be captured by,
