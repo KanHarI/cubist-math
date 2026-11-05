@@ -80,9 +80,12 @@ export function openBody(kernel, body, entry) {
 // With `unfold`, a definition of `from` is read as its value where `to` has
 // something else there, as a normal form unfolds it: the names its binders
 // had where a normal form keeps the shape of what it computed, for display.
-export function carryBinderNames(kernel, from, to, unfold = false) {
+// Two terms that only share kinds, as a computed value and the definitions
+// that computed it may, pair up node by node without end: names are for
+// display, so the walk stops after `budget` pairs.
+export function carryBinderNames(kernel, from, to, unfold = false, budget = 100000) {
   const names = kernel.binderNames, seen = new Set(), pending = [from, to];
-  while (pending.length) {
+  while (pending.length && seen.size < budget) {
     const b = pending.pop();
     let a = pending.pop();
     if (a === b || !a || !b || seen.has(`${a},${b}`)) continue;

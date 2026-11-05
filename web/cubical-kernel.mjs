@@ -388,7 +388,7 @@ export class CubicalKernel {
     this.assertOpen();
     const id = this.withGrowingBudget(() => this.module._cb_head(this.handle, uint32(handle, "Term handle"))) >>> 0;
     if (!id) throw this.failure();
-    return this.named(handle, id);
+    return id;
   }
   // A term's application spine: its root node, read, and the handles of
   // the arguments applied to it, in order.
