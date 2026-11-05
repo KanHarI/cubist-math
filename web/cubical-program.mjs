@@ -35,6 +35,12 @@ function whenRead(object, key, compute) {
 // Imports are source, loaded on demand. Every module has its own environment;
 // closed native definitions have qualified names so shadowing cannot retarget
 // an earlier checked reference. Unsupported declarations never become axioms.
+// The names of a signature's admission telescope over which constructor
+// `index`'s type is closed: its levels, its parameters, its sort and the
+// constructors before it, outermost first (cc_kernel_signature_constructor).
+export const admissionTelescope = (admission, index) =>
+  [...admission.levels, ...admission.parameters, admission.sort, ...admission.constructors.slice(0, index)];
+
 export class CubicalProgram {
   constructor(module, readSource, options = {}) {
     const {onDeclarationStart,onDeclaration,collectReferences=true,collectScopes=false,collectGeneration=false,optimizations={},manageTransactions=true,
@@ -518,17 +524,19 @@ export class CubicalProgram {
     const record = this.kernel.signatures.get(binding);
     if (!record) return null;
     const info = this.kernel.signature(record.index), syntax = this.checker.syntax, { admission } = record;
-    // The sort and the earlier constructors appear in constructor types as
-    // the admission's variables, by the names its record keeps. They are
-    // shown as the sort and constructors they stand for, which print by their
-    // declared names: a variable named S1 would print as its stem S.
-    // Within the check that declares it, before its symbols are recorded, a
-    // type is named without its module.
+    // A constructor type is closed over the admission telescope (the levels,
+    // the parameters, the sort and the earlier constructors), decoded with
+    // the names the admission's record keeps for them. The sort and the
+    // earlier constructors are shown as the sort and constructors they stand
+    // for, which print by their declared names: a variable named S1 would
+    // print as its stem S. Within the check that declares it, before its
+    // symbols are recorded, a type is named without its module.
     const name = this.symbols[binding]?.name ?? localName(binding);
     const sort = T.sort(binding);
     const shown = [[admission.sort, sort], ...admission.constructors.map((variable, index) =>
       [variable, T.constructor(index, sort, record.constructors[index])])];
-    const display = term => shown.reduce((t, [from, to]) => substituteTerm(t, from, to), syntax.decode(term));
+    const display = (term, index) => shown.reduce((t, [from, to]) => substituteTerm(t, from, to),
+      syntax.decodeOver(term, admissionTelescope(admission, index)));
     // Universe parameters by their names in the declaration, where the
     // elaborator declared the type; their entries' names otherwise.
     const slots = this.checker.inductives?.get(binding)?.slots.filter(slot => slot.level !== undefined);
@@ -537,7 +545,7 @@ export class CubicalProgram {
       modifier: info.modifier === 0 ? "type" : info.modifier === 1 ? "prop" : info.modifier === 2 ? "set" : `trunc(${info.modifier - 2})`,
       recorded: levelNames.filter((_, j) => info.recorded >> j & 1),
       extensions: info.experimental ? ["H1"] : [],
-      constructors: info.constructors.map((c, index) => ({ name: record.constructors[index], type: display(c.type),
+      constructors: info.constructors.map((c, index) => ({ name: record.constructors[index], type: display(c.type, index),
         data: c.data, positions: c.positions, dimensions: c.dimensions, generated: c.generated })),
       eliminator: this.eliminator(binding, name) };
   }
@@ -569,8 +577,9 @@ export class CubicalProgram {
     // entries (the H1 specification's 5.2), and refuses one that mentions
     // an assumption (tests/inductive-declarations.test.mjs).
     const used = new Set([source, ...names, ...inductive.slots.map(slot => slot.source)].flatMap(printedForms));
-    const syntax = this.checker.syntax, info = this.kernel.signature(inductive.record.index);
-    for (const term of [info.former, ...info.constructors.map(c => c.type)].map(handle => syntax.decode(handle))) {
+    const syntax = this.checker.syntax, info = this.kernel.signature(inductive.record.index), { admission } = inductive.record;
+    for (const term of [syntax.decode(info.former), ...info.constructors.map((c, index) =>
+      syntax.decodeOver(c.type, admissionTelescope(admission, index)))]) {
       for (const label of printedLabels(term)) used.add(label);
       const visit = (t, seen = new WeakSet()) => {
         if (!t || typeof t !== "object" || seen.has(t)) return;

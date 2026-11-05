@@ -162,22 +162,28 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
     : standsIn(name) ? originalName(name) : `edited:${name}`, signatureName, freeVariableName: assumptionName });
   const toOriginal = mapDefinitions(name => standsIn(name) && views.has(originalName(name)) ? originalName(name) : name,
     signatureName, assumptionName);
-  // Close each constructor schema over its admission symbols before
+  // Close each constructor schema over its admission telescope before
   // hashing. In particular, boundaries refer to bound earlier constructors.
+  // The kernel reports each constructor type closed over the telescope
+  // (cc_kernel_signature_constructor), and the former's level over its
+  // prenex: each is decoded with the names the admission's record keeps.
   const signatureShape = (binding, hashChecked = null) => {
     const record = program.kernel.signatures.get(binding);
     if (!record) return null;
-    const info = program.kernel.signature(record.index), syntax = checker.syntax;
+    const info = program.kernel.signature(record.index), syntax = checker.syntax, {admission} = record;
     const former = syntax.decode(info.former), parameters = [];
-    let universe = former;
-    while (universe.tag === "LPi" || universe.tag === "Pi") { parameters.push(universe); universe = universe.body; }
+    const prenex = [...admission.levels, ...admission.parameters];
+    let node = program.kernel.node(info.former);
+    for (let j = 0; j < prenex.length; j++, node = program.kernel.node(node.children[1]))
+      parameters.push(node.kind === "LPi" ? {tag:"LPi",name:prenex[j]}
+        : {tag:"Pi",name:prenex[j],domain:syntax.decodeOver(node.children[0], prenex.slice(0, j))});
+    const universe = syntax.decodeOver(node.id, prenex);
     const hash = hashChecked ?? canonicalHasher({definitionName:name => standsIn(name) ? originalName(name) : name, signatureName});
     const earlier = [];
     // The admission's variables by the names its record keeps; the generated
     // squash, last, is no earlier constructor of any other.
-    const {admission} = record;
     const constructors = info.constructors.map((constructor, index) => {
-      const type = syntax.decode(constructor.type);
+      const type = syntax.decodeOver(constructor.type, [...prenex, admission.sort, ...admission.constructors.slice(0, index)]);
       let closed = type;
       for (const before of [...earlier].reverse()) closed = {tag:"Pi",name:before.name,domain:before.type,body:closed};
       closed = {tag:"Pi",name:admission.sort,domain:universe,body:closed};
