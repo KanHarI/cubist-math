@@ -308,6 +308,35 @@ static void laws(void) {
     printf("open, close, abstract and instantiate: laws hold on %u random terms (%u changed)\n", (unsigned)TERMS, changed);
 }
 
+/* Instantiation by values that mention dimensions, on random terms holding
+ * every dimension binder, tube lists, optional annotations and a node of
+ * four children, so that the capture scan reads every child position. The
+ * oracle is the kernel's named substitution, a separate traversal with its
+ * own capture avoidance: instantiating by fresh variables and substituting
+ * the values for them must give the same term up to dimension binder names,
+ * with the same free dimensions. */
+static void capture_laws(void) {
+    unsigned renamed = 0;
+    for (unsigned i = 0; i < TERMS; ++i) {
+        cc_term t = random_term(4, false), values[3], names[3];
+        for (unsigned j = 0; j < 3; ++j) {
+            do values[j] = random_term(3, false); while (k->nodes[values[j]].loose);
+            names[j] = node(CC_VAR, 40 + j, 0, 0, 0);
+        }
+        for (uint32_t count = 1; count <= 3; count += 2) {
+            cc_term direct = ck_instantiate_all(k, t, values, count);
+            cc_term named = ck_instantiate_all(k, t, names, count);
+            for (uint32_t j = 0; j < count && named; ++j) named = ck_substitute(k, named, 40 + j, values[j]);
+            assert(direct && named && !k->error[0]);
+            assert(ck_alpha_equal(k, direct, named) && ck_free_dims(k, direct) == ck_free_dims(k, named));
+            renamed += !same(direct, instantiated(t, 0, values, count));
+        }
+    }
+    assert(renamed > TERMS / 20);
+    printf("capture: instantiation by values with dimensions agrees with named substitution on %u random terms (%u renamed)\n",
+           (unsigned)TERMS, renamed);
+}
+
 /* Each term and level binder binds index 0 in its body only, and a path
  * abstraction binds none: the expected results written out. */
 static void binder_cases(void) {
@@ -522,6 +551,7 @@ int main(void) {
         binder_cases();
         serial_wrap();
         capture_scan();
+        capture_laws();
         dimension_capture();
         filter_collision();
         dag();
