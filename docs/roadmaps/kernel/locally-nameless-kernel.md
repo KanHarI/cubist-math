@@ -1548,7 +1548,14 @@ Each PR is verified locally first, opened as a draft, and keeps
    payload, as it compares `CC_DEFREF`. The primitives are two kinds of
    frame in `substitution`'s worklist, memoized as syntax memo operations
    7 to 10; the simultaneous form is keyed by a `CC_LIST` of its values, so
-   it takes at most 511. Tests: `kernel/tests/test_indices.c`.
+   it takes at most 511. Tests: `kernel/tests/test_indices.c`. PR 2 adds no
+   diagnostic code, so its refusals reuse registered messages ("Term symbol
+   space exhausted." for a `CC_BOUND` or `CC_OPENED` payload of
+   `UINT32_MAX`, "Fresh symbol space exhausted." for an opener's counter,
+   `ck_instr_entry`'s refusals for a `CC_CONTEXT` naming no live entry), and
+   instantiation does not check that its values are locally closed. PR 3,
+   which brings the callers, gives these refusals their own messages and
+   codes and adds that O(1) check (`loose == 0` for each value).
 3. **PR 3, the switch: term and level binders, ABI 4.** `CC_VAR` retired,
    `CC_BOUND` and `CC_CONTEXT` in; binders without payload; every change of
    sections 3.3 to 3.7, the freshness conditions of section 3.6 and the
