@@ -144,42 +144,61 @@ static uint32_t roll(uint32_t bound) {
 static uint32_t drawn(bool ends) {
     return ends && roll(2) ? UINT32_MAX - 1 - roll(3) : roll(4);
 }
+/* Every syntax kind but the retired ones and the kernel's own, as
+ * ck_arity lists them; tubes appear only in a composition's tube list. */
+static const cc_term_kind syntax_kinds[] = {
+    CC_DEFREF, CC_VAR, CC_UNIT, CC_POINT, CC_VOID, CC_LBOUND, CC_LCONST,
+    CC_U, CC_FST, CC_SND, CC_LSUCC, CC_CON,
+    CC_PI, CC_LAM, CC_APP, CC_SIGMA, CC_PLAM, CC_PAPP, CC_ABORT, CC_SUM, CC_INL, CC_INR,
+    CC_GLUE, CC_UNGLUE, CC_LMAX, CC_LPI, CC_LLAM, CC_LAPP, CC_SORT, CC_ELIM, CC_LIST,
+    CC_PAIR, CC_PATH, CC_COMP, CC_UNITREC, CC_GLUE_SYSTEM, CC_GLUE_TERM, CC_HCOMP, CC_TRANS,
+    CC_SUMREC,
+};
+/* The children ck_make lets be absent. */
+static bool optional_child(cc_term_kind kind, unsigned i) {
+    return (kind == CC_PAPP && i == 1) || ((kind == CC_COMP || kind == CC_HCOMP) && i == 1) ||
+           (kind == CC_GLUE && i == 1) || (kind == CC_GLUE_SYSTEM && i == 2) ||
+           (kind == CC_GLUE_TERM && i == 2) || kind == CC_SORT || (kind == CC_LIST && i == 1) ||
+           (kind == CC_ELIM && i == 1);
+}
+static bool dimension_binder(unsigned kind) {
+    return kind == CC_PATH || kind == CC_PLAM || kind == CC_COMP || kind == CC_HCOMP || kind == CC_TRANS;
+}
 static cc_term random_term(unsigned depth, bool ends);
 /* A composition's tube list: none, or faces with bodies. */
 static cc_term random_tubes(unsigned depth, bool ends) {
     if (!depth || !roll(3)) return 0;
-    return node(CC_TUBE, ck_endpoint_face(k, roll(2), roll(2)), random_term(depth - 1, ends),
+    return node(CC_TUBE, ck_endpoint_face(k, roll(3), roll(2)), random_term(depth - 1, ends),
                 random_tubes(depth - 1, ends), 0);
 }
-/* Random syntax over every term and level binder, every dimension binder
- * (path types and abstractions, compositions with their tube lists,
- * transport), path applications, a node of four children, and the leaves
- * the counters read. */
+/* Random syntax over every kind of syntax_kinds, each child present or,
+ * where ck_make allows, absent; compositions with tube lists; formulas over
+ * dimensions 0 to 2, binders over 0 and 1; and the leaves the counters read. */
 static cc_term random_term(unsigned depth, bool ends) {
-    static const cc_term_kind binders[] = {CC_PI, CC_LAM, CC_SIGMA, CC_LPI, CC_LLAM};
-    switch (depth ? roll(17) : roll(5)) {
+    switch (depth ? roll(8) : roll(5)) {
     case 0: return bound(drawn(ends));
     case 1: return opened(drawn(ends));
     case 2: return context(roll(3));
-    case 3: return node(CC_VAR, 1 + roll(3), 0, 0, 0);
-    case 4: return unit;
-    case 5: case 6: case 7:
-        return node(binders[roll(5)], 0, random_term(depth - 1, ends), random_term(depth - 1, ends), 0);
-    case 8: return app(random_term(depth - 1, ends), random_term(depth - 1, ends));
-    case 9: return node(CC_PAIR, 0, random_term(depth - 1, ends), random_term(depth - 1, ends),
-                        random_term(depth - 1, ends));
-    case 10: return node(CC_PLAM, roll(2), random_term(depth - 1, ends), random_term(depth - 1, ends), 0);
-    case 11: case 12:
-        return node(roll(2) ? CC_PATH : CC_TRANS, roll(2), random_term(depth - 1, ends),
-                    random_term(depth - 1, ends), random_term(depth - 1, ends));
-    case 13: case 14:
-        return node(roll(2) ? CC_COMP : CC_HCOMP, roll(2), random_term(depth - 1, ends),
-                    random_tubes(depth - 1, ends), random_term(depth - 1, ends));
-    case 15: return node4(CC_SUMREC, 0, random_term(depth - 1, ends), random_term(depth - 1, ends),
-                          random_term(depth - 1, ends), random_term(depth - 1, ends));
-    default: return node(CC_PAPP, ck_interval_variable(k, roll(2)), random_term(depth - 1, ends),
-                         roll(2) ? random_term(depth - 1, ends) : 0, 0);
+    case 3: if (!depth) return node(CC_VAR, 1 + roll(3), 0, 0, 0); break;
+    case 4: if (!depth) return unit; break;
+    default: break;
     }
+    /* Half the nodes are dimension binders or path applications, so that
+     * values with dimensions meet binders they could be captured by. */
+    static const cc_term_kind dimensional[] = {CC_PATH, CC_PLAM, CC_COMP, CC_HCOMP, CC_TRANS, CC_PAPP};
+    cc_term_kind kind;
+    do kind = depth && roll(2) ? dimensional[roll(6)] : syntax_kinds[roll(sizeof syntax_kinds / sizeof *syntax_kinds)];
+    while (!depth && ck_arity(kind));
+    uint32_t payload = kind == CC_PAPP ? ck_interval_variable(k, roll(3))
+        : kind == CC_GLUE_SYSTEM ? ck_endpoint_face(k, roll(3), roll(2))
+        : dimension_binder(kind) ? roll(2)
+        : binds(kind) || kind == CC_U ? 0
+        : kind == CC_VAR ? 1 + roll(3) : roll(3);
+    cc_term child[4] = {0};
+    for (unsigned i = 0; i < ck_arity(kind); ++i)
+        child[i] = i == 1 && (kind == CC_COMP || kind == CC_HCOMP) ? random_tubes(depth - 1, ends)
+                 : optional_child(kind, i) && !roll(3) ? 0 : random_term(depth - 1, ends);
+    return node4(kind, payload, child[0], child[1], child[2], child[3]);
 }
 /* A random locally closed term that mentions no dimension. */
 static cc_term random_value(void) {
@@ -308,33 +327,148 @@ static void laws(void) {
     printf("open, close, abstract and instantiate: laws hold on %u random terms (%u changed)\n", (unsigned)TERMS, changed);
 }
 
-/* Instantiation by values that mention dimensions, on random terms holding
- * every dimension binder, tube lists, optional annotations and a node of
- * four children, so that the capture scan reads every child position. The
- * oracle is the kernel's named substitution, a separate traversal with its
- * own capture avoidance: instantiating by fresh variables and substituting
- * the values for them must give the same term up to dimension binder names,
- * with the same free dimensions. */
+/* A comparison up to dimension binder names that shares no code with the
+ * kernel's: `r`, the kernel's instantiation, against `t` with its indices
+ * depth to depth + count - 1 standing for values. Every node, payload,
+ * annotation and formula is compared. The scope holds a pair per dimension
+ * binder crossed, the left's dimension and the right's; a dimension names
+ * the same thing on both sides when both are bound by one pair or both are
+ * free and equal. A value is compared behind a barrier: its own binders
+ * pair as usual, but no binder of `t` above it binds any of its
+ * dimensions, so a dimension the kernel let a binder capture shows. */
+enum { SCOPES = 1024 };
+static struct { unsigned left[SCOPES], right[SCOPES], count, barrier; } scope;
+
+/* The binder pair binding a dimension on one side, or -1 if it is free. */
+static int dimension_pair(bool right, unsigned name) {
+    for (unsigned p = scope.count; p-- > (right ? scope.barrier : 0);)
+        if ((right ? scope.right[p] : scope.left[p]) == name) return (int)p;
+    return -1;
+}
+/* Whether a dimension binder binds its dimension in child i, as the
+ * calculus says: a path type and transport in their family, a path
+ * abstraction in both children, a composition in its family and its tubes'
+ * bodies, hcomp only in its tubes' bodies. A tube's face is outside. */
+static bool binds_dimension(unsigned kind, unsigned i) {
+    return kind == CC_PATH || kind == CC_TRANS ? i == 0 : kind == CC_PLAM || kind == CC_COMP ? i <= 1
+         : kind == CC_HCOMP && i == 1;
+}
+/* A clause's generators, each named by the pair binding it (above every
+ * dimension) or, when free, by its dimension, sorted. */
+static unsigned clause_key(bool right, cc_clause c, unsigned *key) {
+    unsigned n = 0;
+    for (unsigned d = 0; d < CC_DIMENSIONS; ++d) {
+        if (!(((c.positive | c.negative) >> d) & 1)) continue;
+        int pair = dimension_pair(right, d);
+        unsigned name = pair >= 0 ? CC_DIMENSIONS + (unsigned)pair : d;
+        if ((c.positive >> d) & 1) key[n++] = 2 * name + 1;
+        if ((c.negative >> d) & 1) key[n++] = 2 * name;
+    }
+    for (unsigned i = 1; i < n; ++i)
+        for (unsigned j = i; j > 0 && key[j - 1] > key[j]; --j) {
+            unsigned swap = key[j]; key[j] = key[j - 1]; key[j - 1] = swap;
+        }
+    return n;
+}
+static bool formulas_agree(cc_formula_id left, cc_formula_id right) {
+    const cc_formula *x = cc_kernel_get_formula(k, left), *y = cc_kernel_get_formula(k, right);
+    if (!x || !y || x->sort != y->sort || x->length != y->length) return false;
+    for (size_t i = 0; i < x->length; ++i) {
+        unsigned a[2 * CC_DIMENSIONS], b[2 * CC_DIMENSIONS], n = clause_key(false, x->clauses[i], a);
+        bool found = false;
+        for (size_t j = 0; j < y->length && !found; ++j)
+            found = clause_key(true, y->clauses[j], b) == n && !memcmp(a, b, n * sizeof *a);
+        if (!found) return false;
+    }
+    return true;
+}
+static bool agrees(cc_term r, cc_term t, uint32_t depth, const cc_term *values, uint32_t count);
+/* A composition's tubes, its binder's pair innermost: each face compared
+ * outside it, each body under it. */
+static bool tubes_agree(cc_term r, cc_term t, uint32_t depth, const cc_term *values, uint32_t count) {
+    for (; r || t; r = k->nodes[r].child[1], t = k->nodes[t].child[1]) {
+        if (!r || !t || k->nodes[r].kind != CC_TUBE || k->nodes[t].kind != CC_TUBE) return false;
+        --scope.count;
+        bool face = formulas_agree(k->nodes[r].payload, k->nodes[t].payload);
+        ++scope.count;
+        if (!face || !agrees(k->nodes[r].child[0], k->nodes[t].child[0], depth, values, count)) return false;
+    }
+    return true;
+}
+static bool agrees(cc_term r, cc_term t, uint32_t depth, const cc_term *values, uint32_t count) {
+    if (!t) return !r;
+    cc_node tn = k->nodes[t];
+    if (tn.kind == CC_BOUND && tn.payload >= depth && tn.payload - depth < count) {
+        unsigned barrier = scope.barrier;
+        scope.barrier = scope.count;
+        bool equal = agrees(r, values[tn.payload - depth], 0, NULL, 0);
+        scope.barrier = barrier;
+        return equal;
+    }
+    if (!r) return false;
+    cc_node rn = k->nodes[r];
+    if (rn.kind != tn.kind) return false;
+    if (tn.kind == CC_PAPP || tn.kind == CC_GLUE_SYSTEM || tn.kind == CC_TUBE
+            ? !formulas_agree(rn.payload, tn.payload)
+            : !dimension_binder(tn.kind) && rn.payload != tn.payload)
+        return false;
+    for (unsigned i = 0; i < 4; ++i) {
+        bool bound = dimension_binder(tn.kind) && binds_dimension(tn.kind, i);
+        if (bound) {
+            assert(scope.count < SCOPES);
+            scope.left[scope.count] = rn.payload;
+            scope.right[scope.count++] = tn.payload;
+        }
+        bool equal = i == 1 && (tn.kind == CC_COMP || tn.kind == CC_HCOMP)
+            ? tubes_agree(rn.child[1], tn.child[1], depth, values, count)
+            : agrees(rn.child[i], tn.child[i], depth + (i == 1 && binds(tn.kind)), values, count);
+        if (bound) --scope.count;
+        if (!equal) return false;
+    }
+    return true;
+}
+
+/* Instantiation by values that mention dimensions, on random terms of every
+ * kind, so that the capture scan and the renaming read every child
+ * position, against the comparison above: the result must be the term with
+ * the values put in, no dimension of theirs captured and every binder's
+ * own dimension still bound by it, renamed or not. */
 static void capture_laws(void) {
     unsigned renamed = 0;
     for (unsigned i = 0; i < TERMS; ++i) {
-        cc_term t = random_term(4, false), values[3], names[3];
+        cc_term t = random_term(4, false), values[3];
+        /* Half the values are path applications at dimension 0 or 1, free in
+         * them, which the binders over 0 and 1 could capture. */
         for (unsigned j = 0; j < 3; ++j) {
             do values[j] = random_term(3, false); while (k->nodes[values[j]].loose);
-            names[j] = node(CC_VAR, 40 + j, 0, 0, 0);
+            if (roll(2)) values[j] = node(CC_PAPP, ck_interval_variable(k, roll(2)), values[j], 0, 0);
         }
         for (uint32_t count = 1; count <= 3; count += 2) {
             cc_term direct = ck_instantiate_all(k, t, values, count);
-            cc_term named = ck_instantiate_all(k, t, names, count);
-            for (uint32_t j = 0; j < count && named; ++j) named = ck_substitute(k, named, 40 + j, values[j]);
-            assert(direct && named && !k->error[0]);
-            assert(ck_alpha_equal(k, direct, named) && ck_free_dims(k, direct) == ck_free_dims(k, named));
+            assert(direct && !k->error[0]);
+            assert(scope.count == 0 && agrees(direct, t, 0, values, count));
             renamed += !same(direct, instantiated(t, 0, values, count));
         }
     }
     assert(renamed > TERMS / 20);
-    printf("capture: instantiation by values with dimensions agrees with named substitution on %u random terms (%u renamed)\n",
+    printf("capture: instantiation by values with dimensions on %u random terms of every kind (%u renamed)\n",
            (unsigned)TERMS, renamed);
+}
+
+/* The comparison itself: it tells a capture, a binder renamed without its
+ * occurrences, and a differing annotation from the expected term. */
+static void comparison_cases(void) {
+    cc_term p = node(CC_VAR, 50, 0, 0, 0), at0 = node(CC_PAPP, ck_interval_variable(k, 0), p, 0, 0);
+    cc_term at1 = node(CC_PAPP, ck_interval_variable(k, 1), p, 0, 0);
+    cc_term t = node(CC_PLAM, 0, at0, bound(0), 0);
+    assert(agrees(node(CC_PLAM, 1, at1, at0, 0), t, 0, &at0, 1));
+    assert(!agrees(node(CC_PLAM, 0, at0, at0, 0), t, 0, &at0, 1));
+    assert(!agrees(node(CC_PLAM, 1, at0, at0, 0), t, 0, &at0, 1));
+    cc_term annotated = node(CC_PLAM, 0, unit, node(CC_PAPP, ck_interval_variable(k, 2), p, bound(0), 0), 0);
+    cc_term good = node(CC_PLAM, 1, unit, node(CC_PAPP, ck_interval_variable(k, 2), p, at0, 0), 0);
+    cc_term bad = node(CC_PLAM, 0, unit, node(CC_PAPP, ck_interval_variable(k, 2), p, at0, 0), 0);
+    assert(agrees(good, annotated, 0, &at0, 1) && !agrees(bad, annotated, 0, &at0, 1));
+    assert(scope.count == 0 && scope.barrier == 0);
 }
 
 /* Each term and level binder binds index 0 in its body only, and a path
@@ -551,6 +685,7 @@ int main(void) {
         binder_cases();
         serial_wrap();
         capture_scan();
+        comparison_cases();
         capture_laws();
         dimension_capture();
         filter_collision();
