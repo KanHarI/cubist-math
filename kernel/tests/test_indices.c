@@ -52,6 +52,13 @@ static bool same(cc_term a, cc_term b) {
     return true;
 }
 
+/* The term and level binders, listed here rather than read from the
+ * kernel's ck_term_binder, so that the references below share nothing with
+ * the code they check. Each binds index 0 in its child 1. */
+static bool binds(unsigned kind) {
+    return kind == CC_PI || kind == CC_LAM || kind == CC_SIGMA || kind == CC_LPI || kind == CC_LLAM;
+}
+
 /* The counters' definitions by recursion (section 3.2), over 64 bits so
  * that no wrap can agree with a wrapped field. */
 static uint64_t loose_of(cc_term t) {
@@ -61,7 +68,7 @@ static uint64_t loose_of(cc_term t) {
     uint64_t result = 0;
     for (unsigned i = 0; i < ck_arity(n.kind); ++i) {
         uint64_t reach = loose_of(n.child[i]);
-        if (i == 1 && ck_term_binder(n.kind) && reach) --reach;
+        if (i == 1 && binds(n.kind) && reach) --reach;
         if (reach > result) result = reach;
     }
     return result;
@@ -87,6 +94,38 @@ static cc_term replace_opened(cc_term t, uint32_t level, cc_term value) {
     bool changed = false;
     for (unsigned i = 0; i < 4; ++i) {
         child[i] = replace_opened(n.child[i], level, value);
+        changed |= child[i] != n.child[i];
+    }
+    return changed ? node(n.kind, n.payload, child[0], child[1], child[2]) : t;
+}
+
+/* Instantiation and abstraction by recursion, apart from the kernel's
+ * worklist and its pruning, so that a subtree the kernel skips by mistake
+ * cannot pass: CC_BOUND(depth + i) replaced by values[i], and the reference
+ * (kind, payload) replaced by CC_BOUND(depth), where depth counts the term
+ * and level binders crossed. No index is shifted. The values drawn mention
+ * no dimension, so no binder renames. */
+static cc_term instantiated(cc_term t, uint32_t depth, const cc_term *values, uint32_t count) {
+    if (!t) return 0;
+    cc_node n = k->nodes[t];
+    if (n.kind == CC_BOUND)
+        return n.payload >= depth && n.payload - depth < count ? values[n.payload - depth] : t;
+    cc_term child[4] = {0};
+    bool changed = false;
+    for (unsigned i = 0; i < 4; ++i) {
+        child[i] = instantiated(n.child[i], depth + (i == 1 && binds(n.kind)), values, count);
+        changed |= child[i] != n.child[i];
+    }
+    return changed ? node(n.kind, n.payload, child[0], child[1], child[2]) : t;
+}
+static cc_term abstracted(cc_term t, uint32_t depth, unsigned kind, uint32_t payload) {
+    if (!t) return 0;
+    cc_node n = k->nodes[t];
+    if (n.kind == kind && n.payload == payload) return node(CC_BOUND, depth, 0, 0, 0);
+    cc_term child[4] = {0};
+    bool changed = false;
+    for (unsigned i = 0; i < 4; ++i) {
+        child[i] = abstracted(n.child[i], depth + (i == 1 && binds(n.kind)), kind, payload);
         changed |= child[i] != n.child[i];
     }
     return changed ? node(n.kind, n.payload, child[0], child[1], child[2]) : t;
@@ -219,6 +258,14 @@ static void laws(void) {
         cc_term instance = ck_instantiate(k, t, v);
         assert(instance && same(instance, replace_opened(body, m, v)));
         changed += instance != t;
+        /* Each operation against its reference by recursion. */
+        cc_term at = opened(m), three[] = {v, random_value(), random_value()};
+        uint32_t level = roll(4);
+        cc_entry_id e = entries[roll(3)];
+        assert(same(instance, instantiated(t, 0, &v, 1)) && same(body, instantiated(t, 0, &at, 1)));
+        assert(same(ck_instantiate_all(k, t, three, 3), instantiated(t, 0, three, 3)));
+        assert(same(ck_close(k, t, level), abstracted(t, 0, CC_OPENED, level)));
+        assert(same(ck_abstract(k, t, e), abstracted(t, 0, CC_CONTEXT, (uint32_t)e)) && !k->error[0]);
         /* Close then open is the identity on locally closed terms, and so
          * are abstracting an entry and instantiating by its reference. */
         if (!k->nodes[t].loose) {
@@ -239,6 +286,23 @@ static void laws(void) {
     }
     assert(changed > TERMS / 10);
     printf("open, close, abstract and instantiate: laws hold on %u random terms (%u changed)\n", (unsigned)TERMS, changed);
+}
+
+/* Each term and level binder binds index 0 in its body only, and a path
+ * abstraction binds none: the expected results written out. */
+static void binder_cases(void) {
+    const cc_term_kind kinds[] = {CC_PI, CC_LAM, CC_SIGMA, CC_LPI, CC_LLAM};
+    cc_term v = node(CC_VAR, 7, 0, 0, 0);
+    for (unsigned i = 0; i < 5; ++i) {
+        cc_term t = node(kinds[i], 0, bound(0), sum(bound(0), bound(1)), 0);
+        assert(same(ck_instantiate(k, t, v), node(kinds[i], 0, v, sum(bound(0), v), 0)));
+        cc_term open = node(kinds[i], 0, opened(2), sum(bound(0), opened(2)), 0);
+        assert(same(ck_open(k, t, 2), open) && same(ck_close(k, open, 2), t));
+        cc_term reference = node(kinds[i], 0, context(0), sum(bound(0), context(0)), 0);
+        assert(same(ck_abstract(k, reference, entries[0]), t) && !k->error[0]);
+    }
+    cc_term path = node(CC_PLAM, 0, bound(0), sum(bound(0), bound(1)), 0);
+    assert(same(ck_instantiate(k, path, v), node(CC_PLAM, 0, v, sum(v, bound(1)), 0)) && !k->error[0]);
 }
 
 /* Instantiation renames a dimension binder its value would be captured by,
@@ -316,6 +380,11 @@ static void deep_and_wide(void) {
     assert(!ck_instantiate(k, t, sum(sum(unit, unit), unit)) && cc_kernel_error_kind(k) == CC_ERROR_RESOURCE);
     assert(!strcmp(k->error, "Native prototype syntax depth exceeds 512."));
     cc_kernel_clear_error(k);
+    /* Several values whose result reaches the depth limit: the memo key adds
+     * no depth to theirs. */
+    cc_term deepest = chain(unit), pair[] = {unit, deepest};
+    assert(k->nodes[deepest].depth == 511 && !k->nodes[deepest].loose);
+    assert(same(ck_instantiate_all(k, sum(bound(0), bound(1)), pair, 2), sum(unit, deepest)) && !k->error[0]);
     /* 4,096 distinct leaves, each using the index. */
     cc_term level[4096];
     for (unsigned i = 0; i < 4096; ++i) level[i] = app(bound(0), node(CC_VAR, 1000 + i, 0, 0, 0));
@@ -360,6 +429,19 @@ static void failures(void) {
         }
 }
 
+/* A simultaneous instantiation's memo key is its call's serial. When the
+ * serial wraps, the memo is cleared, so an entry an earlier call left under
+ * the same key answers nothing. */
+static void serial_wrap(void) {
+    cc_term t = sum(bound(0), bound(1)), a = node(CC_VAR, 20, 0, 0, 0), b = node(CC_VAR, 21, 0, 0, 0);
+    cc_term first[] = {a, b}, second[] = {b, a};
+    k->instantiation_serial = 0;
+    assert(same(ck_instantiate_all(k, t, first, 2), sum(a, b)) && k->instantiation_serial == 1);
+    k->instantiation_serial = UINT32_MAX;
+    assert(same(ck_instantiate_all(k, t, second, 2), sum(b, a)) && k->instantiation_serial == 1);
+    assert(!k->error[0]);
+}
+
 /* The memo's first allocation failing fails the operation that needed it. */
 static void memo_failure(unsigned optimizations) {
     cc_kernel *fresh = cc_kernel_new();
@@ -393,6 +475,8 @@ int main(void) {
         metadata();
         bounds();
         laws();
+        binder_cases();
+        serial_wrap();
         dimension_capture();
         filter_collision();
         dag();

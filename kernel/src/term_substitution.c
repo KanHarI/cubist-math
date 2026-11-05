@@ -193,7 +193,7 @@ typedef enum {
  * Its results are memoized by the node, that number and `key`. */
 typedef struct {
     uint32_t operation; /* the syntax memo's operation */
-    cc_term key;        /* the value, the list of values, or the reference's payload */
+    cc_term key;        /* the value, the call's serial, or the reference's payload */
     /* Instantiation: values[i] replaces index i, each locally closed. Their
      * free dimensions are read at the first dimension binder met. */
     const cc_term *values;
@@ -608,9 +608,15 @@ static cc_term index_substitution(cc_kernel *k, substitution_kind kind, cc_term 
  * is index 0. Each value must be locally closed (loose == 0), so no binder
  * of the term can capture it; the caller ensures it, as the callers of
  * ck_substitute ensure its operands. A dimension binder whose dimension a
- * value mentions is renamed, as substitution does. Several values are
- * memoized by the list of them, built for the key, so at most 511 can be
- * given at once, by the depth limit. */
+ * value mentions is renamed, as substitution does.
+ *
+ * One value is memoized by its handle. Several are memoized under a serial
+ * of their own call, not by the values: a key made as syntax, a list of
+ * them, would be deeper than the deepest value, and refuse values whose
+ * result still fits the depth limit. So a call's entries serve its own
+ * traversal, which is the sharing a DAG needs, and no later call. When the
+ * serial wraps, the memo is cleared, so no entry of an earlier call can
+ * answer a later one; it is a cache, and clearing it changes no result. */
 cc_term ck_instantiate_all(cc_kernel *k, cc_term term, const cc_term *values, uint32_t count) {
     if (k->error[0]) return 0;
     for (uint32_t i = 0; i <= count; ++i) {
@@ -621,8 +627,13 @@ cc_term ck_instantiate_all(cc_kernel *k, cc_term term, const cc_term *values, ui
     index_operation op = {.operation = count == 1 ? MEMO_INSTANTIATE : MEMO_INSTANTIATE_ALL,
                           .values = values, .count = count};
     if (count == 1) op.key = values[0];
-    else for (uint32_t i = count; i-- > 0;)
-        if (!(op.key = ck_make(k, CC_LIST, 0, values[i], op.key, 0, 0))) return 0;
+    else {
+        if (++k->instantiation_serial == 0) {
+            if (k->syntax_memo) memset(k->syntax_memo, 0, CC_SYNTAX_MEMO_SIZE * sizeof *k->syntax_memo);
+            k->instantiation_serial = 1;
+        }
+        op.key = k->instantiation_serial;
+    }
     return index_substitution(k, SUBSTITUTE_INSTANTIATE, term, &op);
 }
 

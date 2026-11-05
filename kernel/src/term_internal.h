@@ -182,6 +182,10 @@ struct cc_kernel {
     cc_term *interned;
     size_t intern_capacity, intern_used;
     cc_syntax_memo *syntax_memo;
+    /* The memo key of the latest simultaneous instantiation
+     * (ck_instantiate_all): one per call, never reused while the memo can
+     * hold an entry under it. */
+    uint32_t instantiation_serial;
     cc_alpha_memo *alpha_memo;
     cc_alpha_scope *alpha_scopes;
     uint64_t next_alpha_scope;

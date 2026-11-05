@@ -1547,8 +1547,13 @@ Each PR is verified locally first, opened as a draft, and keeps
    `ck_abstract` reads. `ck_alpha_equal` compares the three leaves by
    payload, as it compares `CC_DEFREF`. The primitives are two kinds of
    frame in `substitution`'s worklist, memoized as syntax memo operations
-   7 to 10; the simultaneous form is keyed by a `CC_LIST` of its values, so
-   it takes at most 511. Tests: `kernel/tests/test_indices.c`. PR 2 adds no
+   7 to 10. The simultaneous form is keyed by a serial of its call
+   (`instantiation_serial`, the memo cleared when it wraps), not by its
+   values: a list of them as the key would be deeper than the deepest value
+   and refuse results that fit the depth limit. So its entries serve the
+   sharing within one call and no later call. Tests:
+   `kernel/tests/test_indices.c`, which checks every primitive against a
+   reference by recursion that shares no code with it. PR 2 adds no
    diagnostic code, so its refusals reuse registered messages ("Term symbol
    space exhausted." for a `CC_BOUND` or `CC_OPENED` payload of
    `UINT32_MAX`, "Fresh symbol space exhausted." for an opener's counter,
