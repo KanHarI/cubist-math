@@ -48,7 +48,7 @@ static cc_term numeral(unsigned n) {
 /* Nested applications of the identity on U0 exercise checking and reduction. */
 static cc_term doubled(unsigned n, unsigned base) {
     cc_term u0 = raw(CC_U, 0, raw(CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0);
-    cc_term identity = raw(CC_LAM, 1, u0, raw(CC_VAR, 1, 0, 0, 0, 0), 0, 0);
+    cc_term identity = raw(CC_LAM, 0, u0, raw(CC_BOUND, 0, 0, 0, 0, 0), 0, 0);
     cc_term value = numeral(base % 100);
     for (unsigned i = 0; i < 2 * n; ++i) value = raw(CC_APP, 0, identity, value, 0, 0);
     return value;
@@ -120,7 +120,7 @@ int main(void) {
     /* Budgeted instruction work: with a budget of one step, the entry step is
      * taken and the first step of the computation runs out. */
     cc_judgement_id typed = OK(cc_instr_unit(k));
-    cc_entry_id x = OK(cc_instr_extend(k, typed, 50));
+    cc_entry_id x = OK(cc_instr_extend(k, typed));
     cc_judgement_id identity = OK(cc_instr_lambda(k, x, OK(cc_instr_variable(k, x))));
     cc_judgement_id applied = OK(cc_instr_apply(k, identity, OK(cc_instr_point(k))));
     cc_judgement_id redex = OK(cc_instr_refl(k, applied));

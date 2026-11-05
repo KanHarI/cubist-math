@@ -1,13 +1,34 @@
 /* Syntactic comparison (ck_alpha_equal) on raw syntax, deliberately: a
- * successful comparison is not a typing certificate. Free and bound names
- * must remain distinct, and the memo must stay exact. */
+ * successful comparison is not a typing certificate. Free and bound
+ * variables must remain distinct, and the memo must stay exact. */
 #include "term_internal.h"
 #include <assert.h>
 #include <stdio.h>
 #include <time.h>
 
-static cc_term lambda(cc_kernel *k, uint32_t name, cc_term body) {
-    return ck_make(k, CC_LAM, name, ck_make(k, CC_U, 0, ck_make(k, CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0), body, 0, 0);
+static cc_term universe0(cc_kernel *k) {
+    return ck_make(k, CC_U, 0, ck_make(k, CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0);
+}
+static cc_term lambda(cc_kernel *k, cc_term body) {
+    return ck_make(k, CC_LAM, 0, universe0(k), body, 0, 0);
+}
+static cc_term bound(cc_kernel *k, uint32_t index) {
+    return ck_make(k, CC_BOUND, index, 0, 0, 0, 0);
+}
+/* A free variable: a new entry's reference. */
+static cc_term free_variable(cc_kernel *k) {
+    cc_entry_id entry = cc_instr_extend(k, cc_instr_unit(k));
+    assert(entry);
+    return ck_make(k, CC_CONTEXT, entry, 0, 0, 0, 0);
+}
+
+/* λ (x : Path(d. U0, tt, tt)). x: the identities on two path types that
+ * differ only in their dimension binder's name, so that they are two nodes,
+ * alpha-equal, as two term binder names made them in ABI 3. */
+static cc_term identity_over(cc_kernel *k, unsigned dimension) {
+    cc_term unit = ck_make(k, CC_UNIT, 0, 0, 0, 0, 0);
+    cc_term domain = ck_make(k, CC_PATH, dimension, universe0(k), unit, unit, 0);
+    return ck_make(k, CC_LAM, 0, domain, bound(k, 0), 0, 0);
 }
 
 /* A query has three outcomes: equal, different, or no answer. It never
@@ -15,7 +36,9 @@ static cc_term lambda(cc_kernel *k, uint32_t name, cc_term body) {
 static void comparison_query(void) {
     cc_kernel *k = cc_kernel_new();
     assert(k);
-    cc_term a = lambda(k, 10, ck_var(k, 10)), b = lambda(k, 20, ck_var(k, 20));
+    cc_term x = free_variable(k), y = free_variable(k);
+    cc_term a = identity_over(k, 0), b = identity_over(k, 1);
+    assert(a != b);
     bool answer = false;
     cc_kernel_set_step_budget(k, 1);
     assert(!cc_kernel_alpha_equal(k, a, b, &answer) && !answer);
@@ -23,12 +46,12 @@ static void comparison_query(void) {
     cc_kernel_clear_error(k);
     cc_kernel_set_step_budget(k, 10000);
     assert(cc_kernel_alpha_equal(k, a, b, &answer) && answer);
-    cc_term free = lambda(k, 20, ck_var(k, 10));
+    cc_term free = ck_make(k, CC_LAM, 0, k->nodes[a].child[0], x, 0, 0);
     assert(cc_kernel_alpha_equal(k, a, free, &answer) && !answer);
-    cc_term redex = ck_make(k, CC_APP, 0, a, ck_var(k, 30), 0, 0);
-    assert(cc_kernel_alpha_equal(k, redex, ck_var(k, 30), &answer) && !answer);
-    assert(cc_kernel_normalize(k, redex) == ck_var(k, 30));
-    assert(cc_kernel_alpha_equal(k, redex, ck_var(k, 30), &answer) && !answer);
+    cc_term redex = ck_make(k, CC_APP, 0, a, y, 0, 0);
+    assert(cc_kernel_alpha_equal(k, redex, y, &answer) && !answer);
+    assert(cc_kernel_normalize(k, redex) == y);
+    assert(cc_kernel_alpha_equal(k, redex, y, &answer) && !answer);
     cc_work_counters before, after;
     cc_kernel_work(k, &before);
     cc_kernel_set_step_budget(k, 1);
@@ -47,16 +70,18 @@ static void comparison_query(void) {
 }
 
 /* A different term can acquire the same numeric handle after a rollback;
- * a comparison remembered for the old one must not answer for it. */
+ * a comparison remembered for the old one must not answer for it. Sharing
+ * is off, so that the replacement equals the identity at another handle. */
 static void memo_survives_no_rollback(void) {
     cc_kernel *k = cc_kernel_new();
     assert(k);
-    cc_term identity = lambda(k, 10, ck_var(k, 10));
+    cc_kernel_set_optimizations(k, 0);
+    cc_term identity = lambda(k, bound(k, 0));
     cc_kernel_checkpoint(k);
-    cc_term old = lambda(k, 12, ck_var(k, 13));
+    cc_term old = lambda(k, bound(k, 1));
     assert(!ck_alpha_equal(k, old, identity));
     cc_kernel_rollback(k);
-    cc_term replacement = lambda(k, 12, ck_var(k, 12));
+    cc_term replacement = lambda(k, bound(k, 0));
     assert(replacement == old);
     assert(ck_alpha_equal(k, replacement, identity));
     /* Cumulativity raises a universe, and never lowers or identifies one. */
@@ -68,55 +93,72 @@ static void memo_survives_no_rollback(void) {
     cc_kernel_free(k);
 }
 
-/* A scan for free names cut short by the budget answers "not free" without
- * looking. The syntax memo records nothing while an error is set, so the same
- * question with budget enough gets the true answer, and substitution still
- * renames a binder that would capture. */
+/* A scan cut short by the budget answers "no" without looking. The syntax
+ * memo records nothing while an error is set, so the same question with
+ * budget enough gets the true answer: an entry mentioned, an index that
+ * occurs, a dimension free. Instantiation then still renames a dimension
+ * binder that would capture, and puts a value under a term binder as it
+ * is: a locally closed value has no index a binder could capture. */
 static void cut_short_scans_are_forgotten(void) {
     cc_kernel *k = cc_kernel_new();
     assert(k);
-    cc_term deep = ck_var(k, 7);
-    cc_term at_three = ck_make(k, CC_PAPP, ck_interval_variable(k, 3), ck_var(k, 8), 0, 0, 0);
+    cc_term deep = free_variable(k), indexed = bound(k, 0);
+    cc_entry_id entry = k->nodes[deep].payload;
+    cc_term at_three = ck_make(k, CC_PAPP, ck_interval_variable(k, 3), free_variable(k), 0, 0, 0);
+    cc_term unit = ck_make(k, CC_UNIT, 0, 0, 0, 0, 0);
     for (unsigned i = 0; i < 200; ++i) {
-        deep = ck_make(k, CC_SUM, 0, ck_make(k, CC_UNIT, 0, 0, 0, 0, 0), deep, 0, 0);
-        at_three = ck_make(k, CC_SUM, 0, ck_make(k, CC_UNIT, 0, 0, 0, 0, 0), at_three, 0, 0);
+        deep = ck_make(k, CC_SUM, 0, unit, deep, 0, 0);
+        indexed = ck_make(k, CC_SUM, 0, unit, indexed, 0, 0);
+        at_three = ck_make(k, CC_SUM, 0, unit, at_three, 0, 0);
     }
     k->budget = 50;
-    assert(!ck_term_free(k, deep, 7) && k->error[0]);
+    assert(!ck_mentions(k, deep, entry) && k->error[0]);
+    cc_kernel_clear_error(k);
+    k->budget = 50;
+    assert(!ck_index_occurs(k, indexed, 0) && k->error[0]);
     cc_kernel_clear_error(k);
     k->budget = 50;
     assert(ck_free_dims(k, at_three) == 0 && k->error[0]);
     cc_kernel_clear_error(k);
     k->budget = UINT64_C(1000000);
-    assert(ck_term_free(k, deep, 7));
+    assert(ck_mentions(k, deep, entry) && ck_index_occurs(k, indexed, 0));
     assert(ck_free_dims(k, at_three) == UINT64_C(1) << 3);
-    /* Substituting it under a binder named 7 renames the binder. */
-    cc_term binder = ck_make(k, CC_LAM, 7, ck_make(k, CC_U, 0, ck_make(k, CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0), ck_var(k, 9), 0, 0);
-    cc_term substituted = ck_substitute(k, binder, 9, deep);
-    assert(substituted && k->nodes[substituted].payload != 7);
+    /* Instantiating ⟨3⟩ (index 0) by it renames the path abstraction. */
+    cc_term path = ck_make(k, CC_PLAM, 3, unit, bound(k, 0), 0, 0);
+    cc_term renamed = ck_instantiate(k, path, at_three);
+    assert(renamed && k->nodes[renamed].payload != 3 && !k->error[0]);
+    /* Instantiating λ (y : U0). (index 1), a body whose binder a named
+     * variable could have been captured by, leaves the binder and puts the
+     * value in by handle. */
+    cc_term body = lambda(k, bound(k, 1));
+    cc_term instance = ck_instantiate(k, body, deep);
+    assert(instance && k->nodes[instance].payload == 0 && k->nodes[instance].child[1] == deep);
+    assert(k->nodes[instance].child[0] == k->nodes[body].child[0] && !k->error[0]);
     cc_kernel_free(k);
 }
 
-/* L(n + 1) = f (λ y. L(n)) (λ z. L(n)) at depth n; R the same with other
- * binder names. R(n) and L(n) are different nodes, alpha-equal, each
- * reached under 2^(40 - n) renamings. The comparison ignores a renaming
- * where neither side has its names free, so 40 levels compare in a few
- * thousand steps, not 2^40: #73's normal-form cache met this as a Convert
- * of two such types running out of budget. The names are picked so that
- * their bits collide with f's and x's, which only the exact check tells
- * apart. Where a name occurs free, the renaming still decides. */
-static cc_term graph(cc_kernel *k, cc_term bottom, uint32_t names, cc_term body_of(cc_kernel *, cc_term, uint32_t)) {
-    cc_term unit = ck_make(k, CC_UNIT, 0, 0, 0, 0, 0), f = ck_var(k, 20), t = bottom;
+/* L(n + 1) = f (⟨a⟩ L(n)) (⟨b⟩ L(n)) at depth n, over dimensions a and b;
+ * R the same over c and d. A term or level binder carries no name, so only
+ * dimension binders are renamed. R(n) and L(n) are different nodes,
+ * alpha-equal, each reached under 2^(40 - n) renamings. The comparison
+ * ignores a renaming where neither side has its dimensions free, so 40
+ * levels compare in a few thousand steps, not 2^40: #73's normal-form cache
+ * met this as a Convert of two such types running out of budget. Where a
+ * dimension occurs free, the renaming still decides. */
+static cc_term graph(cc_kernel *k, cc_term f, cc_term bottom, unsigned names,
+                     cc_term body_of(cc_kernel *, cc_term, unsigned)) {
+    cc_term unit = ck_make(k, CC_UNIT, 0, 0, 0, 0, 0), t = bottom;
     for (uint32_t n = 0; n < 40; ++n) {
-        cc_term first = ck_make(k, CC_LAM, names + 2 * n, unit, body_of(k, t, names + 2 * n), 0, 0);
-        cc_term second = ck_make(k, CC_LAM, names + 2 * n + 1, unit, body_of(k, t, names + 2 * n + 1), 0, 0);
+        cc_term first = ck_make(k, CC_PLAM, names, unit, body_of(k, t, names), 0, 0);
+        cc_term second = ck_make(k, CC_PLAM, names + 1, unit, body_of(k, t, names + 1), 0, 0);
         t = ck_make(k, CC_APP, 0, ck_make(k, CC_APP, 0, f, first, 0, 0), second, 0, 0);
     }
     return t;
 }
-static cc_term unused(cc_kernel *k, cc_term t, uint32_t name) { (void)k; (void)name; return t; }
-static cc_term paired(cc_kernel *k, cc_term t, uint32_t name) {
-    return ck_make(k, CC_APP, 0, t, ck_var(k, name), 0, 0);
+static cc_term unused(cc_kernel *k, cc_term t, unsigned name) { (void)k; (void)name; return t; }
+/* t @ a, under the binder of a. */
+static cc_term applied(cc_kernel *k, cc_term t, unsigned name) {
+    return ck_make(k, CC_PAPP, ck_interval_variable(k, name), t, 0, 0, 0);
 }
 static bool equal_within(cc_kernel *k, cc_term a, cc_term b, uint64_t steps) {
     cc_work_counters before, after;
@@ -132,19 +174,25 @@ static bool equal_within(cc_kernel *k, cc_term a, cc_term b, uint64_t steps) {
 static void renamings_share_work(void) {
     cc_kernel *k = cc_kernel_new();
     assert(k);
-    cc_term x = ck_var(k, 21);
-    cc_term left = graph(k, x, 100, unused), right = graph(k, x, 300, unused);
+    cc_term f = free_variable(k), x = free_variable(k), z = free_variable(k);
+    cc_term left = graph(k, f, x, 0, unused), right = graph(k, f, x, 2, unused);
     assert(left != right && equal_within(k, left, right, 10000));
     /* A difference at the bottom is found as fast. */
-    assert(!equal_within(k, left, graph(k, ck_var(k, 22), 500, unused), 10000));
-    /* Bodies that mention their binder, as t y: the renaming applies, and a
-     * variable bound on one side is not the same name free on the other. */
-    cc_term used = graph(k, x, 700, paired);
-    assert(equal_within(k, used, graph(k, x, 900, paired), 1000000));
+    assert(!equal_within(k, left, graph(k, f, z, 4, unused), 10000));
+    /* Bodies that mention their binder, as t @ a: the renaming applies, and
+     * a dimension bound on one side is not the same dimension free on the
+     * other. */
+    cc_term used = graph(k, f, x, 6, applied);
+    assert(equal_within(k, used, graph(k, f, x, 8, applied), 1000000));
     cc_term unit = ck_make(k, CC_UNIT, 0, 0, 0, 0, 0);
-    cc_term bound = ck_make(k, CC_LAM, 1100, unit, ck_make(k, CC_APP, 0, used, ck_var(k, 1100), 0, 0), 0, 0);
-    cc_term free_there = ck_make(k, CC_LAM, 1101, unit, ck_make(k, CC_APP, 0, used, ck_var(k, 1100), 0, 0), 0, 0);
-    assert(!equal_within(k, bound, free_there, 1000000));
+    cc_term bound_there = ck_make(k, CC_PLAM, 10, unit, applied(k, used, 10), 0, 0);
+    cc_term free_there = ck_make(k, CC_PLAM, 11, unit, applied(k, used, 10), 0, 0);
+    assert(!equal_within(k, bound_there, free_there, 1000000));
+    /* So for a term variable: bound by its λ, an index, it is not the free
+     * variable x. */
+    cc_term by_index = ck_make(k, CC_LAM, 0, unit, ck_make(k, CC_APP, 0, used, bound(k, 0), 0, 0), 0, 0);
+    cc_term by_entry = ck_make(k, CC_LAM, 0, unit, ck_make(k, CC_APP, 0, used, x, 0, 0), 0, 0);
+    assert(!equal_within(k, by_index, by_entry, 1000000));
     /* The first review of #77: a formula-bearing node made before its
      * formula exists would keep a mask without the formula's dimensions,
      * and a renaming of them could be dropped. Such a node is refused. */
@@ -165,25 +213,23 @@ int main(void) {
     cut_short_scans_are_forgotten();
     cc_kernel *k = cc_kernel_new();
     assert(k);
+    cc_term x = free_variable(k), p = free_variable(k);
     k->budget = UINT64_C(1000000);
-    cc_term nat = ck_make(k, CC_U, 0, ck_make(k, CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0);
+    cc_term nat = universe0(k);
     cc_term zero = ck_make(k, CC_UNIT, 0, 0, 0, 0, 0);
-    cc_term x = ck_var(k, 10);
-    cc_term y = ck_var(k, 11);
-    cc_term identity_x = lambda(k, 10, x);
-    cc_term identity_y = lambda(k, 11, y);
-    cc_term free_x = lambda(k, 11, x);
-    assert(ck_alpha_equal(k, identity_x, identity_y));
-    assert(!ck_alpha_equal(k, identity_x, free_x));
-    assert(!ck_alpha_equal(k, free_x, identity_x));
-    assert(ck_alpha_equal(k, identity_x, identity_y));
+    /* λ (x : U0). x and λ (y : U0). y are one node: a binder has no name. */
+    cc_term identity = lambda(k, bound(k, 0));
+    assert(lambda(k, bound(k, 0)) == identity);
+    cc_term free_x = lambda(k, x);
+    assert(ck_alpha_equal(k, identity, identity));
+    assert(!ck_alpha_equal(k, identity, free_x));
+    assert(!ck_alpha_equal(k, free_x, identity));
     assert(ck_alpha_equal(k, free_x, free_x));
-    assert(!ck_alpha_equal(k, lambda(k, 10, lambda(k, 11, x)),
-                            lambda(k, 11, lambda(k, 10, x))));
-    assert(ck_alpha_equal(k, lambda(k, 10, lambda(k, 10, x)),
-                           lambda(k, 11, lambda(k, 11, y))));
+    /* λ x. λ y. x against λ y. λ x. x: the outer binder's variable is not
+     * the inner one's. A loose index is no entry. */
+    assert(!ck_alpha_equal(k, lambda(k, lambda(k, bound(k, 1))), lambda(k, lambda(k, bound(k, 0)))));
+    assert(!ck_alpha_equal(k, bound(k, 0), x) && !ck_alpha_equal(k, bound(k, 0), bound(k, 1)));
 
-    cc_term p = ck_var(k, 12);
     cc_term p_type = ck_make(k, CC_PATH, 2, nat, zero, zero, 0);
     cc_term pi = ck_make(k, CC_PAPP, ck_interval_variable(k, 0), p, p_type, 0, 0);
     cc_term pj = ck_make(k, CC_PAPP, ck_interval_variable(k, 1), p, p_type, 0, 0);
@@ -216,11 +262,12 @@ int main(void) {
     cc_clear(&one);
 
     /* A closed shared sum DAG has 2^24 unfolded branches. Beneath
-     * differently named lambdas, its nodes are compared once per scope. */
+     * differently named path abstractions, its nodes are compared once per
+     * scope. */
     cc_term shared = zero;
     for (unsigned i = 0; i < 24; ++i)
         shared = ck_make(k, CC_SUM, 0, shared, shared, 0, 0);
-    assert(equal_within(k, lambda(k, 10, shared), lambda(k, 11, shared), 1000));
+    assert(equal_within(k, ck_make(k, CC_PLAM, 0, nat, shared, 0, 0), ck_make(k, CC_PLAM, 1, nat, shared, 0, 0), 1000));
     puts("Scoped comparison of a shared DAG takes fewer than 1,000 steps.");
     cc_kernel_free(k);
     return 0;

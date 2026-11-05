@@ -8,9 +8,14 @@
 
 static cc_kernel *k;
 
-enum { X = 1, Y, Z };
+/* The level variables X, Y and Z are level entries, made one after another,
+ * and referred to by CC_CONTEXT; a level binder's variable is CC_BOUND. */
+enum { X, Y, Z };
+static cc_entry_id variables[3], function; /* function, a term entry */
 static cc_term lconst(uint32_t tier, uint32_t n) { return ck_make(k, CC_LCONST, tier << 16 | n, 0, 0, 0, 0); }
-static cc_term var(uint32_t symbol) { return ck_var(k, symbol); }
+static cc_term reference(cc_entry_id entry) { return ck_make(k, CC_CONTEXT, entry, 0, 0, 0, 0); }
+static cc_term var(unsigned variable) { return reference(variables[variable]); }
+static cc_term bound_index(uint32_t index) { return ck_make(k, CC_BOUND, index, 0, 0, 0, 0); }
 static cc_term succ(cc_term level, uint32_t n) { return ck_make(k, CC_LSUCC, n, level, 0, 0, 0); }
 static cc_term lmax(cc_term a, cc_term b) { return ck_make(k, CC_LMAX, 0, a, b, 0, 0); }
 static cc_term canonical(cc_term level) { cc_term c = ck_level_canonical(k, level); assert(c); return c; }
@@ -68,41 +73,70 @@ static void canonical_forms(void) {
     assert(ck_level_max(k, lconst(0, 3), lconst(0, 5)) == lconst(0, 5));
     assert(ck_level_max(k, x, lconst(1, 0)) == lconst(1, 0));
     assert(canonical(succ(lmax(x, lconst(0, 2)), 1)) == lmax(succ(x, 1), lconst(0, 3)));
-    /* The limit of §2.7: ω when the variable occurs in the normal form. */
-    assert(ck_level_limit(k, X, succ(x, 1)) == lconst(1, 0));
-    assert(ck_level_limit(k, X, succ(y, 1)) == succ(y, 1));
-    assert(ck_level_limit(k, X, lmax(x, lconst(1, 2))) == lconst(1, 2));
-    assert(ck_level_limit(k, X, lconst(0, 0)) == lconst(0, 0));
+    /* The limit of §2.7: ω when the variable occurs in the normal form. A
+     * level entry's key is its id. */
+    assert(ck_level_limit(k, variables[X], succ(x, 1)) == lconst(1, 0));
+    assert(ck_level_limit(k, variables[X], succ(y, 1)) == succ(y, 1));
+    assert(ck_level_limit(k, variables[X], lmax(x, lconst(1, 2))) == lconst(1, 2));
+    assert(ck_level_limit(k, variables[X], lconst(0, 0)) == lconst(0, 0));
     /* Universes compare by level (U-Eq) and by order (U-Cum), across tiers. */
     assert(ck_alpha_equal(k, ck_universe(k, lmax(lconst(0, 1), lconst(0, 0))), ck_universe_at(k, 1)));
     assert(!ck_alpha_equal(k, ck_universe_at(k, 1), ck_universe_at(k, 2)));
     assert(ck_syntactic_cumulative(k, ck_universe_at(k, 7), ck_universe(k, lconst(1, 0))));
     assert(!ck_syntactic_cumulative(k, ck_universe(k, lconst(1, 0)), ck_universe_at(k, 7)));
-    /* Under level binders, levels compare through the renaming (G0 §2.9). */
+    /* Under level binders, a bound variable is an index, and levels compare
+     * by normal form, the index keyed by itself (G0 §2.9): λ (x < ω). U(x + 1)
+     * and λ (y < ω). U(y + 1) are one node. */
     cc_term bound = ck_make(k, CC_LBOUND, 1, 0, 0, 0, 0);
-    cc_term by_x = ck_make(k, CC_LLAM, X, bound, ck_universe(k, succ(x, 1)), 0, 0);
-    cc_term by_y = ck_make(k, CC_LLAM, Y, bound, ck_universe(k, succ(y, 1)), 0, 0);
-    cc_term free_x = ck_make(k, CC_LLAM, Y, bound, ck_universe(k, succ(x, 1)), 0, 0);
-    assert(ck_alpha_equal(k, by_x, by_y) && !ck_alpha_equal(k, by_x, free_x));
-    cc_term wide_bound = ck_make(k, CC_LLAM, X, ck_make(k, CC_LBOUND, 2, 0, 0, 0, 0), ck_universe(k, succ(x, 1)), 0, 0);
+    cc_term by_x = ck_make(k, CC_LLAM, 0, bound, ck_universe(k, succ(bound_index(0), 1)), 0, 0);
+    cc_term by_y = ck_make(k, CC_LLAM, 0, bound, ck_universe(k, succ(bound_index(0), 1)), 0, 0);
+    cc_term free_x = ck_make(k, CC_LLAM, 0, bound, ck_universe(k, succ(x, 1)), 0, 0);
+    assert(by_x == by_y && ck_alpha_equal(k, by_x, by_y) && !ck_alpha_equal(k, by_x, free_x));
+    cc_term wide_bound = ck_make(k, CC_LLAM, 0, ck_make(k, CC_LBOUND, 2, 0, 0, 0, 0), ck_universe(k, succ(bound_index(0), 1)), 0, 0);
     assert(!ck_alpha_equal(k, by_x, wide_bound));
     assert(!ck_alpha_equal(k, lconst(0, 1), lconst(0, 2)) && ck_alpha_equal(k, lmax(x, y), lmax(y, x)));
-    cc_term pair_xy = ck_make(k, CC_LLAM, X, bound, ck_make(k, CC_LLAM, Y, bound, ck_universe(k, lmax(x, y)), 0, 0), 0, 0);
-    cc_term pair_yx = ck_make(k, CC_LLAM, Y, bound, ck_make(k, CC_LLAM, X, bound, ck_universe(k, lmax(y, x)), 0, 0), 0, 0);
-    cc_term swapped = ck_make(k, CC_LLAM, Y, bound, ck_make(k, CC_LLAM, X, bound, ck_universe(k, lmax(x, succ(y, 1))), 0, 0), 0, 0);
-    assert(ck_alpha_equal(k, pair_xy, pair_yx) && !ck_alpha_equal(k, pair_xy, swapped));
-    cc_term f = var(20);
+    /* λ (x < ω). λ (y < ω). U(max(x, y)) and U(max(y, x)) are two nodes,
+     * equal; U(max(y, x + 1)) differs. */
+    cc_term pair_xy = ck_make(k, CC_LLAM, 0, bound, ck_make(k, CC_LLAM, 0, bound, ck_universe(k, lmax(bound_index(1), bound_index(0))), 0, 0), 0, 0);
+    cc_term pair_yx = ck_make(k, CC_LLAM, 0, bound, ck_make(k, CC_LLAM, 0, bound, ck_universe(k, lmax(bound_index(0), bound_index(1))), 0, 0), 0, 0);
+    cc_term swapped = ck_make(k, CC_LLAM, 0, bound, ck_make(k, CC_LLAM, 0, bound, ck_universe(k, lmax(bound_index(0), succ(bound_index(1), 1))), 0, 0), 0, 0);
+    assert(pair_xy != pair_yx && ck_alpha_equal(k, pair_xy, pair_yx) && !ck_alpha_equal(k, pair_xy, swapped));
+    cc_term f = reference(function);
     assert(ck_alpha_equal(k, ck_make(k, CC_LAPP, 0, f, lmax(lconst(0, 0), lconst(0, 0)), 0, 0),
                           ck_make(k, CC_LAPP, 0, f, lconst(0, 0), 0, 0)));                 /* Inst, S11 */
-    /* ∀-β substitutes, avoiding capture, and leaves levels in normal form;
-     * ∀-η contracts. */
+    /* ∀-β instantiates, leaving the inner binder as it is: y goes under it
+     * unchanged, and levels are left in normal form; ∀-η contracts. */
     cc_term instance = ck_whnf(k, ck_make(k, CC_LAPP, 0, pair_xy, y, 0, 0));
-    assert(k->nodes[instance].kind == CC_LLAM && k->nodes[instance].payload != Y);
+    cc_term expected = ck_canonical_levels(k, ck_universe(k, lmax(y, bound_index(0))));
+    assert(instance == ck_make(k, CC_LLAM, 0, bound, expected, 0, 0));
     cc_term at_zero = ck_whnf(k, ck_make(k, CC_LAPP, 0, instance, lconst(0, 0), 0, 0));
     assert(at_zero == ck_universe(k, y));                                                  /* S5 */
     assert(ck_canonical_levels(k, ck_universe(k, lmax(lconst(0, 1), lconst(0, 0)))) == ck_universe_at(k, 1));
-    cc_term eta = ck_make(k, CC_LLAM, 21, bound, ck_make(k, CC_LAPP, 0, f, var(21), 0, 0), 0, 0);
+    cc_term eta = ck_make(k, CC_LLAM, 0, bound, ck_make(k, CC_LAPP, 0, f, bound_index(0), 0, 0), 0, 0);
     assert(ck_whnf(k, eta) == f);
+    assert(!k->error[0]);
+}
+
+/* A level variable is keyed by its role (section 3.1 of
+ * docs/roadmaps/kernel/locally-nameless-kernel.md): an entry by its id, an
+ * opened binder above every entry, and a bound one above both, the outer of
+ * two bound variables first. An entry, an opened level and an index with one
+ * number are three variables, and the canonical node rebuilds each as the
+ * kind it was. */
+static void keys_by_role(void) {
+    uint32_t id = variables[X];
+    cc_term entry = var(X), opened = ck_make(k, CC_OPENED, id, 0, 0, 0, 0), index = bound_index(id);
+    assert(!ck_level_equal(k, entry, opened) && !ck_level_equal(k, entry, index));
+    assert(!ck_level_equal(k, opened, index) && ck_level_equal(k, index, bound_index(id)));
+    cc_term all = lmax(lmax(bound_index(0), bound_index(1)), lmax(opened, entry));
+    cc_level_nf nf;
+    assert(ck_level_normal(k, all, &nf) && nf.count == 4);
+    assert(nf.terms[0].key == id && nf.terms[1].key == CC_LEVEL_KEY_OPENED + id);
+    assert(nf.terms[2].key == CC_LEVEL_KEY_BOUND + UINT32_MAX - 1 && nf.terms[3].key == CC_LEVEL_KEY_BOUND + UINT32_MAX);
+    ck_level_nf_free(&nf);
+    assert(canonical(all) == lmax(entry, lmax(opened, lmax(bound_index(1), bound_index(0)))));
+    /* The limit over an entry ignores an index of the same number. */
+    assert(ck_level_limit(k, id, succ(index, 1)) == succ(index, 1));
     assert(!k->error[0]);
 }
 
@@ -152,8 +186,12 @@ static void shared_levels(unsigned optimizations) {
  * Caching must not impose that additional limit on equality/order queries. */
 static void wide_level_normal_form(void) {
     cc_term parts[1024];
-    for (unsigned i = 0; i < 1024; ++i)
-        parts[i] = var(1000 + i);
+    cc_entry_id entries[1024];
+    for (unsigned i = 0; i < 1024; ++i) {
+        entries[i] = cc_instr_level(k);
+        assert(entries[i]);
+        parts[i] = reference(entries[i]);
+    }
     for (unsigned n = 1024; n > 1; n /= 2)
         for (unsigned i = 0; i < n / 2; ++i)
             parts[i] = lmax(parts[2 * i], parts[2 * i + 1]);
@@ -161,7 +199,7 @@ static void wide_level_normal_form(void) {
     assert(ck_level_normal(k, parts[0], &nf));
     assert(!nf.tier && !nf.constant && nf.count == 1024);
     for (unsigned i = 0; i < 1024; ++i)
-        assert(nf.terms[i].key == 1000 + i && !nf.terms[i].offset);
+        assert(nf.terms[i].key == entries[i] && !nf.terms[i].offset);
     ck_level_nf_free(&nf);
 }
 
@@ -172,7 +210,9 @@ static ordinal evaluate(cc_term level, const uint32_t *rho) {
     cc_node node = k->nodes[level];
     switch (node.kind) {
     case CC_LCONST: return (ordinal){node.payload >> 16, node.payload & 0xffffu};
-    case CC_VAR: return (ordinal){0, rho[node.payload - X]};
+    case CC_CONTEXT:
+        assert(node.payload >= variables[X] && node.payload <= variables[Z]);
+        return (ordinal){0, rho[node.payload - variables[X]]};
     case CC_LSUCC: { ordinal v = evaluate(node.child[0], rho); v.n += node.payload; return v; }
     case CC_LMAX: {
         ordinal a = evaluate(node.child[0], rho), b = evaluate(node.child[1], rho);
@@ -235,7 +275,14 @@ static void property(void) {
 int main(void) {
     k = cc_kernel_new();
     assert(k);
+    for (unsigned i = X; i <= Z; ++i) {
+        variables[i] = cc_instr_level(k);
+        assert(variables[i] == variables[X] + i);
+    }
+    function = cc_instr_extend(k, cc_instr_unit(k));
+    assert(function);
     specification_cases();
+    keys_by_role();
     canonical_forms();
     bounds_and_malformed();
     shared_levels(CC_SHARE_SYNTAX);
