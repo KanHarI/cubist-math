@@ -414,6 +414,22 @@ static bool in_context(const cc_kernel *k, uint32_t set, cc_entry_id id) {
     return false;
 }
 
+/* Whether an entry of `set` other than the given ones depends on one of
+ * them: is one of them in its own context. */
+static bool keeps_dependent(const cc_kernel *k, uint32_t set, const cc_entry_id *entries, size_t count) {
+    cc_context_set s = k->context_sets[set];
+    for (uint32_t i = 0; i < s.count; ++i) {
+        cc_entry_id kept = k->context_items[s.offset + i];
+        bool given = false;
+        for (size_t b = 0; b < count && !given; ++b)
+            given = entries[b] == kept;
+        for (size_t b = 0; b < count && !given; ++b)
+            if (entries[b] && in_context(k, k->entries[kept].context, entries[b]))
+                return true;
+    }
+    return false;
+}
+
 /* The entries of a replacement (section 3.6): for each term or level binder
  * the position crosses, outermost first, an entry or 0. Each given entry is
  * of its binder's kind, new to the rewritten judgement's context, given once,
@@ -446,7 +462,7 @@ static bool binder_entries(cc_kernel *k, const crossing *crossed, size_t depth, 
             return ck_fail(k, "A replacement takes a level entry for a level binder, and a term entry for a term binder.");
         for (size_t other = 0; other < b; ++other)
             if (entries[other] == id)
-                return ck_fail(k, "One entry would be bound twice on the path.");
+                return ck_fail(k, "A replacement gives one entry to two of its binders.");
         if (in_context(k, rewritten, id))
             return ck_fail(k, "A replacement's entry for a binder is already in the rewritten judgement's context.");
         /* The domain, under the binders outside it, opened with what opens
@@ -459,7 +475,7 @@ static bool binder_entries(cc_kernel *k, const crossing *crossed, size_t depth, 
             return false;
         if (k->nodes[domain].opened)
             return ck_fail(k, "A replacement's entry for a binder has a type that needs an outer binder given no entry.");
-        if (!ck_instr_same(k, k->entries[id].type, domain, "The entry and the binder have different types."))
+        if (!ck_instr_same(k, k->entries[id].type, domain, "A replacement's entry for a binder is not at the binder's domain."))
             return false;
         values[b] = ck_make(k, CC_CONTEXT, id, 0, 0, 0, 0);
         if (!values[b])
@@ -511,7 +527,7 @@ cc_judgement_id cc_instr_replace(cc_kernel *k, cc_judgement_id id, unsigned side
     if (!target)
         goto done;
     if (k->nodes[target].opened) {
-        ck_fail(k, "The replacing equality lacks an entry for a bound name it uses.");
+        ck_fail(k, "A replacement gives no entry to a binder its occurrence uses.");
         goto done;
     }
     if (!ck_instr_same(k, target, inner.term, "The highlighted subterm is not the equality's left side."))
@@ -558,6 +574,12 @@ cc_judgement_id cc_instr_replace(cc_kernel *k, cc_judgement_id id, unsigned side
             replacement = ck_abstract_at(k, replacement, entries[b], (uint32_t)(count - 1 - b));
     if (!replacement)
         goto done;
+    /* No entry the equality keeps may depend on a binder's entry, which it
+     * discharges (section 3.6, condition 5). */
+    if (keeps_dependent(k, inner.context, entries, count)) {
+        ck_fail(k, "A replacement's equality keeps an entry that depends on a binder's entry.");
+        goto done;
+    }
     uint32_t context = 0;
     cc_term changed = rebuild(k, root, position, depth, replacement);
     if (!changed || !ck_instr_discharge(k, inner.context, removed, discharged, &context) || !ck_instr_merge(k, e.context, context, &context))
