@@ -96,6 +96,15 @@ export function carryBinderNames(kernel, from, to, unfold = false, budget = 1000
       a = kernel.definition(a).value;
       na = kernel.node(a);
     }
+    // A β-redex the computation contracted, as an ascription's
+    // (λ (a : A). a)(t) is: its result is in the λ's body or in the argument.
+    if (unfold && na.kind !== nb.kind && (na.kind === "App" || na.kind === "LApp")) {
+      let fn = na.children[0], nf = kernel.node(fn);
+      for (let guard = 0; nf.kind === "DefRef" && guard < 64; guard++) { fn = kernel.definition(fn).value; nf = kernel.node(fn); }
+      if (nf.kind === "Lam" || nf.kind === "LLam") pending.push(nf.children[1], b);
+      if (na.kind === "App") pending.push(na.children[1], b);
+      continue;
+    }
     if (na.kind !== nb.kind) continue;
     if (binders.has(na.kind) && names.has(a) && !names.has(b)) names.set(b, names.get(a));
     for (let i = 0; i < 4; i++) if (na.children[i] !== nb.children[i]) pending.push(na.children[i], nb.children[i]);

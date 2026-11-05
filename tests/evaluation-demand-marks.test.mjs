@@ -325,9 +325,7 @@ print(evaluate(!!far));
     // The data computes; the function stays named, its value no data, and
     // only !!! unfolds it.
     "(6, double)",
-    // A binder the normal form rebuilt is named by the driver: the kernel
-    // keeps no names (ABI 4), so it is x where the definition said n.
-    "(6, fun (x : UNat) => induction x return UNat { zero => x; succ h => succ(h); })",
+    "(6, fun (n : UNat) => induction n return UNat { zero => n; succ h => succ(h); })",
     "<type>",
     "<path>",
     // Eta makes the successor function the constructor, whose value it is,
