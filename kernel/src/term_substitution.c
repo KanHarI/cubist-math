@@ -127,7 +127,7 @@ typedef enum {
  * Its results are memoized by the node, that number and `key`. */
 typedef struct {
     uint32_t operation; /* the syntax memo's operation */
-    cc_term key;        /* the value, the call's serial, or the reference's payload */
+    cc_term key;        /* the value, the call's serial, an opening's count and level, or the reference's payload */
     /* Instantiation: values[i] replaces index i, each locally closed. Their
      * free dimensions are read at the first dimension binder met. */
     const cc_term *values;
@@ -139,7 +139,7 @@ typedef struct {
     uint32_t payload;
 } index_operation;
 enum { MEMO_INSTANTIATE = 7, MEMO_INSTANTIATE_ALL = 8, MEMO_ABSTRACT = 9, MEMO_CLOSE = 10, MEMO_INDEX_OCCURS = 11,
-       MEMO_MENTIONS = 12 };
+       MEMO_MENTIONS = 12, MEMO_OPEN_LOOSE = 13 };
 
 /* Whether a dimension binder binds its dimension in child i, 0 or 1 (child
  * 1 of a composition is its tube list, whose bodies it binds): the children
@@ -663,7 +663,10 @@ cc_term ck_close(cc_kernel *k, cc_term term, uint32_t level) {
 /* A loose term's indices 0 .. loose - 1 opened, index i at level
  * first + loose - 1 - i: its outermost index at `first`, as an opener that
  * opens binders from the outside in would. Each level is a node made, and
- * takes a step. */
+ * takes a step. The values are determined by `first` and the count, so
+ * where both fit in 16 bits the opening is memoized by them, and a term
+ * opened again from the same level, as each weak head query of one loose
+ * term is, finds it; otherwise by the call's serial (ck_instantiate_all). */
 cc_term ck_open_loose(cc_kernel *k, cc_term term, uint32_t first) {
     if (k->error[0]) return 0;
     if (!term || term >= k->count) return ck_fail(k, "Invalid syntax child handle."), 0;
@@ -677,7 +680,11 @@ cc_term ck_open_loose(cc_kernel *k, cc_term term, uint32_t first) {
     bool made = true;
     for (uint32_t i = 0; i < loose && made; ++i)
         made = ck_tick(k) && (values[i] = ck_make(k, CC_OPENED, first + loose - 1 - i, 0, 0, 0, 0)) != 0;
-    if (made) result = ck_instantiate_all(k, term, values, loose);
+    if (made && first <= UINT16_MAX && loose <= UINT16_MAX) {
+        index_operation op = {.operation = MEMO_OPEN_LOOSE, .values = values, .count = loose,
+                              .key = loose << 16 | first};
+        result = index_substitution(k, SUBSTITUTE_INSTANTIATE, term, &op, 0);
+    } else if (made) result = ck_instantiate_all(k, term, values, loose);
     free(values);
     return k->error[0] ? 0 : result;
 }
