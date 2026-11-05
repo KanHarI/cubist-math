@@ -568,6 +568,17 @@ static cc_term closed_type(cc_kernel *k, const cc_signature *s, cc_term type, ui
     return type;
 }
 
+/* An open signature's level, U's at the end of its former, over its
+ * parameters' entries: the stored level opened with them. */
+static cc_term open_level(cc_kernel *k, const cc_signature *s) {
+    uint32_t total = s->level_count + s->parameter_count;
+    cc_term values[CC_SIGNATURE_LEVELS + CC_SIGNATURE_PARAMETERS];
+    for (uint32_t m = 0; m < total; ++m)
+        if (!(values[m] = ck_make(k, CC_CONTEXT, s->entries[total - 1 - m], 0, 0, 0, 0)))
+            return 0;
+    return ck_instantiate_all(k, s->level, values, total);
+}
+
 cc_judgement_id cc_instr_signature_constructor(cc_kernel *k, cc_judgement_id signature_id, cc_judgement_id type_id,
                                                cc_entry_id entry) {
     if (!ck_instr_begin_stateful(k, (cc_derivation){.rule = CC_INSTR_SIGNATURE_CONSTRUCTOR,
@@ -578,7 +589,10 @@ cc_judgement_id cc_instr_signature_constructor(cc_kernel *k, cc_judgement_id sig
     cc_signature *s = NULL;
     if (!signature_fact(k, signature_id, &sf, &index, &s) || !ck_instr_premise(k, type_id, CC_FACT_TYPING, &tf))
         return 0;
-    if (node(k, tf.type).kind != CC_U || !ck_level_equal(k, node(k, tf.type).child[0], s->level)) {
+    cc_term level = open_level(k, s);
+    if (!level)
+        return 0;
+    if (node(k, tf.type).kind != CC_U || !ck_level_equal(k, node(k, tf.type).child[0], level)) {
         if (!k->error[0])
             fail(k, "A constructor type is derived in the signature's universe U(ℓ); lift it there first.");
         return 0;
