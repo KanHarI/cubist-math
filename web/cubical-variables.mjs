@@ -12,6 +12,7 @@
 // context entry e. Every name the driver shows is its own: a binder's is the
 // one it was encoded with (kernel.binderNames), or one made up.
 
+import { assumptionMark } from "./translator/names.mjs";
 export const termBinders = new Set(["Pi", "Lam", "Sigma"]);
 export const levelBinders = new Set(["LPi", "LLam"]);
 // Term and level binders form one chain of indices.
@@ -296,10 +297,12 @@ export class EntryNames {
   // The spelling of a new entry for `name`: the name itself where no live
   // entry is spelled so, unless the entry is to be `fresh`, and otherwise the
   // next variant, `stem'n` for a term entry and `stem'level n` for a level
-  // entry.
+  // entry. A variant of an assumption's name, the name of a binder that
+  // closed over it, drops the assumption mark, which only assumptions' names
+  // carry (web/translator/names.mjs, assumptionMark).
   spelling(name, { level = false, fresh = false } = {}) {
     if (!fresh && !this.holders.has(this.kernel.symbol(name))) return name;
-    const key = level ? `${name}'level` : `${name}'`;
+    const stem = name.replaceAll(assumptionMark, ""), key = level ? `${stem}'level` : `${stem}'`;
     for (let suffix = (this.variants.get(key) ?? 0) + 1; ; suffix++) {
       const variant = `${key}${suffix}`;
       if (this.holders.has(this.kernel.symbol(variant))) continue;

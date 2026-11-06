@@ -8,7 +8,7 @@
 // result under the declaration's name, for the syntax codec and inspection.
 import { InstructionDriver } from "./cubical-instruction-driver.mjs";
 import { CubicalSyntax } from "./cubical-syntax.mjs";
-import { signatureBegin, signatureConstructor, withEntry } from "./cubical-variables.mjs";
+import { carryBinderNames, signatureBegin, signatureConstructor, withEntry } from "./cubical-variables.mjs";
 
 // The modifier the kernel takes: 0 untruncated, n + 2 for trunc(n), for
 // n from -1 up to the kernel's bound, CC_TRUNCATION_MAX.
@@ -71,6 +71,7 @@ export function admitSignature(kernel, spec, { syntax = new CubicalSyntax(kernel
   const sort = driver.bind(sortSymbol, universe, scope), constructorEntries = [];
   scope = withEntry(scope, sortSymbol, sort);
   let signature = signatureBegin(g, former, modifierCode(spec.modifier), [...levelEntries, ...parameterEntries], sort, recorded);
+  const derivedTypes = [];
   for (const { name, type, display } of spec.constructors ?? []) {
     // A constructor's type lives in the sort's universe; one derived lower
     // is lifted to it. A refusal names the constructor.
@@ -78,6 +79,7 @@ export function admitSignature(kernel, spec, { syntax = new CubicalSyntax(kernel
       const derived = driver.convertTo(driver.derive(syntax.encode(type, new Map(), scope), scope), universe);
       const entry = driver.bind(kernel.symbol(name), derived, scope);
       signature = signatureConstructor(g, signature, derived, entry);
+      derivedTypes.push(g.judgement(derived).term);
       scope = withEntry(scope, kernel.symbol(name), entry);
       constructorEntries.push(entry);
     } catch (error) {
@@ -86,6 +88,12 @@ export function admitSignature(kernel, spec, { syntax = new CubicalSyntax(kernel
     }
   }
   const index = g.signatureClose(signature);
+  // A stored constructor type is closed over the telescope, its binders
+  // rebuilt: each takes the name of the binder in its place in the type as
+  // derived, so that its fields show their source names.
+  kernel.signature(index).constructors.forEach((constructor, i) => {
+    if (derivedTypes[i]) carryBinderNames(kernel, derivedTypes[i], constructor.type);
+  });
   const constructors = (spec.constructors ?? []).map(c => c.display ?? c.name);
   if (kernel.signature(index).constructors.length > constructors.length) constructors.push("squash");
   // The names the admission's entries are spelled by: the telescope's names,
