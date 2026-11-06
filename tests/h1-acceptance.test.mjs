@@ -26,7 +26,7 @@ const refused = (declaration, pattern) => {
   assert.match(declaration.reason, pattern);
 };
 test("R4: a kernel module of another ABI version is refused", () => {
-  assert.throws(() => new CubicalKernel({ _cb_abi_version: () => 2 }), /ABI version 2, but this code expects version 3/);
+  assert.throws(() => new CubicalKernel({ _cb_abi_version: () => 2 }), /ABI version 2, but this code expects version 4/);
 });
 
 // K6: transport of merid(a) @ r in Susp(A(i)) along ua of a closed

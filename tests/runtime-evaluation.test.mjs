@@ -208,8 +208,10 @@ const wide = "340282366920938463463374607431768211455";
 const undecided = {
   binary_integer_contracts: [`integer_equal( ${wide} * ${wide}, 115792089237316195423570985008687907852589419931798687112530834793049593217025 )`],
   binary_integer_domain_contracts: [],
-  binary_rational_contracts: [`binary_rational_equal( 18446744073709551615/${wide}, 1/18446744073709551617 )`,
-    `typed(BQ, 18446744073709551615/${wide})`, `bq_inv(-${wide}/18446744073709551615)`],
+  // binary_rational_equal( 18446744073709551615/wide, 1/18446744073709551617 )
+  // was undecided on ABI 3; on ABI 4 its full normal form is decided within
+  // the budget.
+  binary_rational_contracts: [`typed(BQ, 18446744073709551615/${wide})`, `bq_inv(-${wide}/18446744073709551615)`],
 };
 // The binary integer and rational contracts (tests/fixtures/contracts/), each
 // evaluated term printed in place of its directive, whose expected value

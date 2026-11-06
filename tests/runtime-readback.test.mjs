@@ -11,6 +11,7 @@ import { RuntimeQuery } from "../web/cubical-runtime.mjs";
 import { Translator } from "../web/translator/translate.mjs";
 import { valueForm } from "../web/translator/evaluation.mjs";
 import { checkProgram } from "./check-program.mjs";
+import { normalDigest } from "../tools/evaluation-baseline.mjs";
 import { watchReadbacks, disagreements } from "./runtime-readback-oracle.mjs";
 
 // Readback, W1 of docs/roadmaps/runtime/typed-readback.md: a runtime value
@@ -520,7 +521,10 @@ test("an instruction's verdict is the same with and without a readback before it
       let refused = null;
       try { graph.apply(fn, x); } catch (error) { refused = error.message; }
       const { term, type } = graph.judgement(graph.apply(fn, graph.convert(x, graph.step(graph.refl(typeOf), "other", [], "beta"))));
-      verdicts.push(JSON.stringify([refused, s.decoded(term), s.decoded(type)]));
+      // Up to the names of bound variables: a binder's name is the driver's
+      // record of its node, which a readback's normalization may give first
+      // (ABI 4).
+      verdicts.push(JSON.stringify([refused, normalDigest(s.decoded(term)), normalDigest(s.decoded(type))]));
     };
     if (readback === "between") round();
     if (readback) {
