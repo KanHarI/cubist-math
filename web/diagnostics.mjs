@@ -537,6 +537,7 @@ export const diagnostics = [
   ["E672", "A bound variable was derived outside its binder."],
   ["E673", "Too many entries."],
   ["E674", "A bound variable has no binder around it (index …)."],
+  ["E675", "The definition … is already registered with another value."],
   // Arguments and their inference
   ["E701", "… has no implicit parameters: give its arguments in parentheses, as …(…)."],
   ["E702", "… has … implicit parameter…, …; the double braces give …."],

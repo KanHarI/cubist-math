@@ -620,7 +620,15 @@ export class NativeCubicalElaborator {
     const driver = this.driver, graph = driver.graph;
     let reference;
     try {
-      reference = this.instructed(graph, () => graph.judgement(graph.define(name, driver.check(body, signature))).term);
+      reference = this.instructed(graph, () => {
+        const closed = driver.check(body, signature), known = this.kernel.definitions.get(name);
+        if (known === undefined) return graph.judgement(graph.define(name, closed)).term;
+        // The kernel keeps no names (ABI 4): a name defined again is the
+        // driver's to refuse, unless it is the same fact, as on ABI 3.
+        const { term, type } = graph.judgement(closed), defined = this.kernel.definition(known);
+        if (this.kernel.alphaEqual(term, defined.value) && this.kernel.alphaEqual(type, defined.type)) return known;
+        throw new Error(`The definition ${name} is already registered with another value.`);
+      });
     } catch (error) {
       if (isResourceLimit(error?.kind)) throw error;
       throw Object.assign(new Error(`Instruction kernel: ${error.message}`), { kind: error.kind ?? "other" });
