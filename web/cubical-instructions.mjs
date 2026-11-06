@@ -3,7 +3,7 @@
 // readers expose the judgement graph and its context entries. Instructions
 // check their side conditions in C; nothing here certifies anything.
 import { KernelError } from "./cubical-kernel.mjs";
-import { LEVEL as LEVEL_ENTRY, carryBinderNames } from "./cubical-variables.mjs";
+import { LEVEL as LEVEL_ENTRY, binders } from "./cubical-variables.mjs";
 
 // cc_instruction, in order.
 // An instruction's name at its opcode. null marks a retired instruction whose
@@ -235,7 +235,7 @@ export class InstructionGraph {
     const code = stepRules.indexOf(rule);
     if (code < 1) throw new TypeError(`Unknown step rule: ${rule}`);
     this.position(path);
-    return this.carried(judgement, this.issue("step", judgement, side(where), code), side(where));
+    return this.carried(judgement, this.issue("step", judgement, side(where), code), side(where), path);
   }
   // Replace the subterm at `path` in a side of a judgement by the right side
   // of the equality `by`, whose left side it is, opened with `entries`: one
@@ -244,15 +244,23 @@ export class InstructionGraph {
   replace(judgement, where, path, by, entries = []) {
     this.position(path);
     this.entries(entries);
-    return this.carried(judgement, this.issue("replace", judgement, side(where), by), side(where));
+    return this.carried(judgement, this.issue("replace", judgement, side(where), by), side(where), path);
   }
   // A step or a replacement rebuilds the binders above the place it
   // rewrites, which carry no names: each takes the name of the binder in its
-  // place before, as the source's names stayed in a binder's symbol on ABI 3
-  // (web/cubical-variables.mjs, carryBinderNames).
-  carried(before, after, index) {
-    const read = id => this.module._cb_judgement(this.kernel.handle, id, index + 1) >>> 0;
-    carryBinderNames(this.kernel, read(before), read(after));
+  // place before, as the source's names stayed in a binder's symbol on ABI 3.
+  // Only the nodes on the way down are rebuilt, so only they are read.
+  carried(before, after, index, path) {
+    const kernel = this.kernel, names = kernel.binderNames;
+    const read = id => this.module._cb_judgement(kernel.handle, id, index + 1) >>> 0;
+    let a = read(before), b = read(after);
+    for (let depth = 0; a && b && a !== b; depth++) {
+      const na = kernel.node(a), nb = kernel.node(b);
+      if (na.kind !== nb.kind) break;
+      if (binders.has(na.kind) && names.has(a) && !names.has(b)) names.set(b, names.get(a));
+      if (depth === path.length) break;
+      a = na.children[path[depth]]; b = nb.children[path[depth]];
+    }
     return after;
   }
   eta(typing) { return this.issue("eta", typing); }
