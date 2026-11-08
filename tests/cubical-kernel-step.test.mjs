@@ -25,7 +25,7 @@ function check(program, expression, type = unit, context = [], dimensions = []) 
 const step = (program, state, side, path, rule, budget) =>
   kernelStep(program, state.view, state.checked, side, path, rule, budget);
 const actions = (program, state, path = []) =>
-  kernelReductionActions(program.kernel, state.checked, "expression", path);
+  kernelReductionActions(program.kernel, state.checked, "expression", path, program.checker.syntax);
 
 // Host contracts for native Step (cubical_kernel.h): the retained judgement,
 // occurrence path and readback matter here, not only the final mathematical value.
@@ -33,8 +33,8 @@ test("native beta changes one shared occurrence and retains its instruction deri
   const program = await fixture(t);
   const shared = app(identity, point), type = { tag: "Sigma", name: "a", domain: unit, body: unit };
   const initial = check(program, { tag: "Pair", as: type, first: shared, second: shared }, type);
-  const first = kernelOccurrence(program.kernel, initial.checked, "expression", [1]).handle;
-  assert.equal(first, kernelOccurrence(program.kernel, initial.checked, "expression", [2]).handle);
+  const first = kernelOccurrence(program.kernel, initial.checked, "expression", [1], program.checker.syntax).handle;
+  assert.equal(first, kernelOccurrence(program.kernel, initial.checked, "expression", [2], program.checker.syntax).handle);
   const next = step(program, initial, "expression", [1], "beta");
   assert.equal(next.view.expression.first.tag, "Point");
   assert.equal(next.view.expression.second.tag, "App");
@@ -51,13 +51,13 @@ test("delta unfolds only the selected reference, then beta uses the resulting la
   const program = await fixture(t), view = program.inspect("reduction_demo__value");
   const initial = { view, checked: program.checker.checkView(view.expression, view.type,
     view.context.map(entry => [entry.name, entry.type]), new Map(view.dimensions)) };
-  const before = kernelOccurrence(program.kernel, initial.checked, "expression", [1, 0]);
+  const before = kernelOccurrence(program.kernel, initial.checked, "expression", [1, 0], program.checker.syntax);
   assert.equal(before.kind, "DefRef");
   const unfolded = step(program, initial, "expression", [1, 0], "delta");
-  assert.equal(kernelOccurrence(program.kernel, unfolded.checked, "expression", [1, 0]).kind, "Lam");
+  assert.equal(kernelOccurrence(program.kernel, unfolded.checked, "expression", [1, 0], program.checker.syntax).kind, "Lam");
   assert.equal(program.kernel.node(before.handle).kind, "DefRef", "the registry reference is unchanged");
   const reduced = step(program, unfolded, "expression", [1], "beta");
-  assert.equal(kernelOccurrence(program.kernel, reduced.checked, "expression", [1]).kind, "Con");
+  assert.equal(kernelOccurrence(program.kernel, reduced.checked, "expression", [1], program.checker.syntax).kind, "Con");
   assert.equal(reduced.checked.judgement > unfolded.checked.judgement, true);
   assert.equal(program.checker.driver.graph.judgement(reduced.checked.judgement).premises[0], unfolded.checked.judgement);
 });
@@ -173,28 +173,28 @@ test("partial tubes and Glue systems are navigable and retain their cubical cert
   const program = await fixture(t), dimensions = [["i", 62], ["j", 63]];
   const face = F.join(F.endpoint("i", 0), F.endpoint("j", 1));
   const initial = check(program, T.comp("k", unit, [{ face, term: app(identity, point) }], point), unit, [], dimensions);
-  const tube = kernelOccurrence(program.kernel, initial.checked, "expression", [1]);
+  const tube = kernelOccurrence(program.kernel, initial.checked, "expression", [1], program.checker.syntax);
   assert.equal(tube.kind, "Tube");
   const reduced = step(program, initial, "expression", [1, 0], "beta");
-  assert.equal(kernelOccurrence(program.kernel, reduced.checked, "expression", [1, 0]).kind, "Point");
+  assert.equal(kernelOccurrence(program.kernel, reduced.checked, "expression", [1, 0], program.checker.syntax).kind, "Point");
   // Checking has already separated disjunctive clauses. Split can still
   // remove a retained empty-face tube.
   const vacuous = check(program, T.comp("k", unit, [{ face: F.bottom, term: point }], point));
-  assert.equal(kernelOccurrence(program.kernel, vacuous.checked, "expression", [1]).kind, "Tube");
+  assert.equal(kernelOccurrence(program.kernel, vacuous.checked, "expression", [1], program.checker.syntax).kind, "Tube");
   const tubeActions = actions(program, vacuous, [1]);
   assert.ok(tubeActions.some(a => a.rule === "split" && a.path.length === 0));
   assert.ok(!tubeActions.some(a => ["whnf", "normalize"].includes(a.rule)), "a system cell is not a standalone term");
   const split = step(program, vacuous, "expression", [], "split");
-  assert.equal(kernelOccurrence(program.kernel, split.checked, "expression", []).children[1], 0);
+  assert.equal(kernelOccurrence(program.kernel, split.checked, "expression", [], program.checker.syntax).children[1], 0);
   const graph = program.checker.driver.graph;
   assert.deepEqual(graph.judgement(split.checked.judgement).context, graph.judgement(vacuous.checked.judgement).context);
 
   const phi = F.endpoint("i", 0);
   const glue = T.glueType(unit, [{ face: phi, type: unit, equiv: identityEquivalence(unit) }]);
   const glued = check(program, T.glue(glue, point, [{ face: phi, term: app(identity, point) }]), glue, [], [["i", 63]]);
-  assert.equal(kernelOccurrence(program.kernel, glued.checked, "expression", [0, 1]).kind, "GlueSystem");
+  assert.equal(kernelOccurrence(program.kernel, glued.checked, "expression", [0, 1], program.checker.syntax).kind, "GlueSystem");
   const piece = step(program, glued, "expression", [2, 0], "beta");
-  assert.equal(kernelOccurrence(program.kernel, piece.checked, "expression", [2, 0]).kind, "Point");
+  assert.equal(kernelOccurrence(program.kernel, piece.checked, "expression", [2, 0], program.checker.syntax).kind, "Point");
   const unglued = check(program, T.unglue(glue, glued.view.expression), unit, [], [["i", 63]]);
   assert.equal(step(program, unglued, "expression", [], "whnf").view.expression.tag, "Point");
   const eta = check(program, T.glue(glue, T.unglue(glue, variable("g")),

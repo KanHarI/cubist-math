@@ -4,7 +4,7 @@
 // and type handles lead into the syntax graph (the assembly view).
 import { InstructionDriver } from "./cubical-instruction-driver.mjs";
 import { ththNames } from "./cubical-instructions.mjs";
-import { binderName, binders, pushName } from "./cubical-variables.mjs";
+import { binders, pushName } from "./cubical-variables.mjs";
 
 // `expanded` holds definition references whose bodies are derived too: THTH
 // derived a DefLookup from the Def judgement that registered the definition,
@@ -14,8 +14,9 @@ export function judgementGraph(program, view, checked = null, {
 } = {}) {
   const kernel = program.kernel, checker = program.checker, dimensions = new Map(view.dimensions ?? []);
   const graph = driver.graph;
-  // `names` name a subterm's loose indices: the binders above it.
-  const decode = (handle, names = null) => checker.syntax.decode(handle, dimensions, names);
+  // `names` name a subterm's loose indices: the binders above it. Entries
+  // show their spellings, as the judgements' contexts show them (info.name).
+  const decode = (handle, names) => checker.syntax.decode(handle, dimensions, names, null);
   if (!root) {
     // The view's context's scope first, made by this graph's driver, and the
     // view's terms' syntax against it.
@@ -90,16 +91,19 @@ export function judgementGraph(program, view, checked = null, {
   const shownNames = new Map();
   // A dimension, or a face entry, its clause: shown without a type.
   const bare = item => item.dimension ? `${item.name} : 𝕀` : item.face ? `[${item.name}]` : null;
-  const text = (judgement, first, second = null, binderNames = null) => {
+  // `crossed`, for a subterm under binders, are the binders above it,
+  // outermost first, which bind its variables as in the whole term.
+  const text = (judgement, first, second = null, binderNames = null, crossed = []) => {
     const scope = new Map(), terms = [], dimensions = new Map();
     for (const entry of judgement.context) {
       const info = entries.get(entry);
       if (info.dimension) dimensions.set(info.name, dimensions.size);
-      if (!info.dimension && !info.face) { scope.set(info.name, decode(info.type)); terms.push(entry); }
+      if (!info.dimension && !info.face) { scope.set(info.name, decode(info.type, null)); terms.push(entry); }
     }
+    for (const binder of crossed) scope.set(binder.name, decode(binder.domain, binder.names));
     // The judgement's dimensions, which a definition shown by its label must
     // not read as (display-naming.mjs).
-    const shown = checker.displayGoal(scope, dimensions, decode(first, binderNames), second ? decode(second, binderNames) : null, { width: 240, kernel: true, reduce: false });
+    const shown = checker.displayGoal(scope, dimensions, decode(first, binderNames ?? null), second ? decode(second, binderNames ?? null) : null, { width: 240, kernel: true, reduce: false });
     terms.forEach((entry, index) => { if (!shownNames.has(entry)) shownNames.set(entry, shown.locals[index]?.name); });
     const names = judgement.context.map(entry => {
       const info = entries.get(entry), index = terms.indexOf(entry);
@@ -127,14 +131,21 @@ export function judgementGraph(program, view, checked = null, {
       // pieces) highlights the term the system belongs to.
       // A subterm under binders is shown with their names.
       let handle = premise[j.side === "term" ? "term" : j.side === "other" ? "other" : "type"], shown = handle;
-      let names = null, shownNames = null;
+      let names = null, shownNames = null, crossed = [], shownCrossed = [];
       for (const child of j.position) {
         const node = kernel.node(handle);
-        if (child === 1 && binders.has(node.kind)) names = pushName(binderName(kernel, handle), names);
+        // Each binder as the premise's decoding names it (binderShownName),
+        // its entries by their spellings, as the context shows them.
+        if (child === 1 && binders.has(node.kind)) {
+          const name = checker.syntax.binderShownName(handle, names, null);
+          crossed = [...crossed, { name, domain: node.children[0], names }];
+          names = pushName(name, names);
+        }
         handle = node.children[child];
-        if (!["Tube", "GlueSystem"].includes(kernel.node(handle).kind)) { shown = handle; shownNames = names; }
+        if (!["Tube", "GlueSystem"].includes(kernel.node(handle).kind)) { shown = handle; shownNames = names; shownCrossed = crossed; }
       }
-      row.highlight = { side: j.side, position: j.position, rule: j.stepRule ?? "replace", text: text(premise, shown, null, shownNames).first };
+      row.highlight = { side: j.side, position: j.position, rule: j.stepRule ?? "replace",
+        text: text(premise, shown, null, shownNames, shownCrossed).first };
     }
     return row;
   });
@@ -144,7 +155,7 @@ export function judgementGraph(program, view, checked = null, {
     if (info.dimension || info.face) { info.fragment = [bare(info)]; continue; }
     const source = judgements.get(info.source);
     const needed = (source?.context ?? []).map(entry => entries.get(entry) ?? graph.entry(entry));
-    const scope = new Map([...needed.filter(item => !bare(item)), info].map(item => [item.name, decode(item.type)]));
+    const scope = new Map([...needed.filter(item => !bare(item)), info].map(item => [item.name, decode(item.type, null)]));
     // Its dimensions, as a judgement's are.
     const dimensions = new Map(needed.filter(item => item.dimension).map((item, index) => [item.name, index]));
     const shown = checker.displayGoal(scope, dimensions, { tag: "Unit" }, null, { width: 240, kernel: true, reduce: false });

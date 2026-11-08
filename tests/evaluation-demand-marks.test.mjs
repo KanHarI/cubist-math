@@ -47,7 +47,7 @@ function recordedProgram(t) {
     // while the term's handles are live.
     if (latest && !latest.normalized && !("displayed" in latest)) {
       latest.displayed = term;
-      try { latest.root = checker.decoded(kernel.spine(head.call(kernel, latest.handle)).root.id); }
+      try { latest.root = checker.decoded(kernel.spine(head.call(kernel, latest.handle)).root.id, null); }
       catch { latest.root = null; }
     }
     return displayText.call(this, term, ...rest);
@@ -70,7 +70,7 @@ function recordedProgram(t) {
   const normalizing = (query, folded) => function (handle) {
     asked.push({ query, handle });
     const result = query === "normalize" ? normalize.call(this, handle) : normalizeFolded.call(this, handle);
-    if (evaluations.at(-1)?.handle === handle) Object.assign(evaluations.at(-1), { normalized: true, folded, normal: checker.decoded(result) });
+    if (evaluations.at(-1)?.handle === handle) Object.assign(evaluations.at(-1), { normalized: true, folded, normal: checker.decoded(result, null) });
     return result;
   };
   kernel.normalize = normalizing("normalize", false);
@@ -354,7 +354,7 @@ def grow(n : UNat) : Tree := match n {
 def wide := node(grow(12), 7, grow(12));`, { module });
   const { checker } = program, kernel = checker.kernel;
   const at = { head: handle => checker.derivedHead(handle), spine: handle => kernel.spine(handle),
-    constructor: handle => checker.shownConstructor(handle),
+    constructor: handle => checker.shownConstructor(handle, null),
     fieldOrder: constructor => checker.displayNames[constructor.sort.signature]?.constructors?.[constructor.index]?.order ?? null };
   const { expression } = checker.evaluated({ tag: "DefRef", name: "main__wide" });
   const form = valueForm(expression, at, null);
@@ -523,8 +523,8 @@ test("normalize accepts the data parts of a derived handle's weak head, and only
   checker.derivedHead(kernel.term("Pair", 0, annotation, first, second));
   assert.throws(() => kernel.normalize(first), /instruction derived/);
   assert.deepEqual(kernel.node(checker.derivedHead(expression)).children.slice(0, 3), [annotation, first, second]);
-  assert.equal(checker.displayText(checker.normalForm(first), []), "unat.(3)");
-  assert.equal(checker.normalForm(second).tag, "Lam");
+  assert.equal(checker.displayText(checker.normalForm(first, null), []), "unat.(3)");
+  assert.equal(checker.normalForm(second, null).tag, "Lam");
   // Nothing below the data parts is admitted: not a lambda's domain or body,
   // even once the lambda's own head is asked, nor the parts of a part,
   // until that part's own head is asked.
@@ -534,7 +534,7 @@ test("normalize accepts the data parts of a derived handle's weak head, and only
   const [inner] = kernel.spine(kernel.head(first)).args;
   assert.throws(() => kernel.normalize(inner), /instruction derived/);
   assert.equal(kernel.spine(checker.derivedHead(first)).args[0], inner);
-  assert.equal(checker.displayText(checker.normalForm(inner), []), "unat.(2)");
+  assert.equal(checker.displayText(checker.normalForm(inner, null), []), "unat.(2)");
 });
 
 test("normalize accepts no annotation of a derived handle's weak head that was not derived already", async t => {
@@ -553,7 +553,7 @@ def nested_ : ((UNat and UNat) or Unit) and UNat := (left((1, 2)), 2 + 1);`, { m
   assert.deepEqual([injection.kind, inner.kind, constructor.kind], ["Inl", "Pair", "Con"]);
   for (const annotation of [injection.children[0], inner.children[0], constructor.children[0]])
     assert.throws(() => kernel.normalize(annotation), /instruction derived/);
-  assert.equal(checker.displayText(checker.normalForm(inner.children[1]), []), "unat.(1)");
+  assert.equal(checker.displayText(checker.normalForm(inner.children[1], null), []), "unat.(1)");
 });
 
 test("the head of a derived path or level lambda admits nothing under its binder", async t => {
@@ -805,7 +805,7 @@ test("each value form the runtime computes reads back to the kernel's normal for
 // dimensions and the slots the kernel gives them, and no further, across
 // programs as well as within one.
 const digested = (program, value) => {
-  const decoded = program.checker.syntax.decode(value, program.checker.dimensions);
+  const decoded = program.checker.syntax.decode(value, program.checker.dimensions, null, null);
   return { shared: sharedNormalDigest(decoded).digest, decoded: normalDigest(decoded) };
 };
 const definitionValue = (program, name, owner = "main") => program.kernel.definition(program.kernel.definitions.get(`${owner}__${name}`)).value;
@@ -983,7 +983,7 @@ test("the report's digest reads every part decoding reads", async t => {
   const digests = Object.fromEntries(Object.entries(terms).map(([name, value]) => [name, digested(program, value)]));
   // It counts every distinct object of the decoding, arrays among them.
   for (const [name, value] of Object.entries(terms)) {
-    const decoded = syntax.decode(value, program.checker.dimensions);
+    const decoded = syntax.decode(value, program.checker.dimensions, null, null);
     assert.equal(sharedNormalDigest(decoded).objects, distinctObjects(decoded), `${name} counts its objects`);
   }
   const names = Object.keys(digests);
@@ -1014,7 +1014,7 @@ test("the report's digest reads every part decoding reads", async t => {
   // would make the two disagree on some change.
   let changes = 0;
   for (const [name, value] of Object.entries(terms)) {
-    const decoded = syntax.decode(value, program.checker.dimensions), shared = sharedNormalDigest(decoded).digest, reference = normalDigest(decoded);
+    const decoded = syntax.decode(value, program.checker.dimensions, null, null), shared = sharedNormalDigest(decoded).digest, reference = normalDigest(decoded);
     for (const changed of oneChange(decoded)) {
       // A change no decoding gives, as a system that is no list, both refuse.
       const attempt = digest => { try { return digest(changed); } catch (error) { return error; } };
@@ -1037,7 +1037,7 @@ test("the report's digest reads every part decoding reads", async t => {
   // the digest it has under another binding.
   let contexts = 0;
   for (const [name, value] of Object.entries(terms)) {
-    const decoded = syntax.decode(value, program.checker.dimensions), { terms: termNames, dims: dimensionNames } = namesIn(decoded);
+    const decoded = syntax.decode(value, program.checker.dimensions, null, null), { terms: termNames, dims: dimensionNames } = namesIn(decoded);
     const binders = [...new Set([...termNames, ...dimensionNames, "fresh′"])].flatMap(bound => [
       part => ({ tag: "Lam", name: bound, domain: { tag: "Var", name: "A" }, body: part }),
       part => ({ tag: "PLam", dim: bound, family: { tag: "Var", name: "A" }, body: part })]);

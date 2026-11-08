@@ -141,7 +141,7 @@ test("an entry found again after a reset is the one kept judgements use, whateve
   const contextOf = id => checker.driver.graph.judgement(id).context;
   const first = infer(x, context(0)), kept = infer(x, context(1));
   assert.deepEqual(contextOf(kept), contextOf(first));
-  const shadowing = infer(lam("x", syntax.decode(at(1)), x), context(1));
+  const shadowing = infer(lam("x", syntax.decode(at(1), new Map(), null, null), x), context(1));
   assert.ok(!contextOf(kept).includes(discharged(checker.driver.graph, shadowing)[0]));
   kernel.instructionDriver = null;
   const g = checker.driver.graph, again = infer(x, context(1));
@@ -206,7 +206,7 @@ test("definitions are named by index: shared or not, relocated, and freed at a r
     const reference = kernel.definitions.get("main__one"), index = kernel.node(reference).payload;
     const copy = kernel.term("DefRef", index);
     assert.equal(copy === reference, shareSyntax);
-    for (const handle of [reference, copy]) assert.deepEqual(checker.syntax.decode(handle), { tag: "DefRef", name: "main__one" });
+    for (const handle of [reference, copy]) assert.deepEqual(checker.syntax.decode(handle, new Map(), null, null), { tag: "DefRef", name: "main__one" });
     // A definition rolled back leaves no name, and the next one at its index
     // is named by its own.
     const transaction = new CubicalDeclarationTransaction(kernel, checker);
@@ -220,7 +220,7 @@ test("definitions are named by index: shared or not, relocated, and freed at a r
     next.finish(true);
     const real = kernel.definitions.get("main__real");
     assert.equal(kernel.node(real).payload, freed);
-    assert.deepEqual(checker.syntax.decode(real), { tag: "DefRef", name: "main__real" });
+    assert.deepEqual(checker.syntax.decode(real, new Map(), null, null), { tag: "DefRef", name: "main__real" });
   }
 });
 
@@ -241,7 +241,7 @@ def pick(s : B) : A := match s {
 def picked : A := pick(b);
 `, "main");
   assert.deepEqual(result.gaps, []);
-  const value = name => checker.syntax.decode(kernel.definition(kernel.definitions.get(name)).value);
+  const value = name => checker.syntax.decode(kernel.definition(kernel.definitions.get(name)).value, new Map(), null, null);
   const constructors = [];
   const visit = term => {
     if (!term || typeof term !== "object") return;

@@ -536,12 +536,12 @@ export class CubicalProgram {
     const shown = [[admission.sort, sort], ...admission.constructors.map((variable, index) =>
       [variable, T.constructor(index, sort, record.constructors[index])])];
     const display = (term, index) => shown.reduce((t, [from, to]) => substituteTerm(t, from, to),
-      syntax.decodeOver(term, admissionTelescope(admission, index)));
+      syntax.decodeOver(term, admissionTelescope(admission, index), new Map(), null));
     // Universe parameters by their names in the declaration, where the
     // elaborator declared the type; their entries' names otherwise.
     const slots = this.checker.inductives?.get(binding)?.slots.filter(slot => slot.level !== undefined);
     const levelNames = slots?.length === info.levels ? slots.map(slot => slot.source) : admission.levels;
-    return { name, binding, former: syntax.decode(info.former),
+    return { name, binding, former: syntax.decode(info.former, new Map(), null, null),
       modifier: info.modifier === 0 ? "type" : info.modifier === 1 ? "prop" : info.modifier === 2 ? "set" : `trunc(${info.modifier - 2})`,
       recorded: levelNames.filter((_, j) => info.recorded >> j & 1),
       extensions: info.experimental ? ["H1"] : [],
@@ -578,8 +578,8 @@ export class CubicalProgram {
     // an assumption (tests/inductive-declarations.test.mjs).
     const used = new Set([source, ...names, ...inductive.slots.map(slot => slot.source)].flatMap(printedForms));
     const syntax = this.checker.syntax, info = this.kernel.signature(inductive.record.index), { admission } = inductive.record;
-    for (const term of [syntax.decode(info.former), ...info.constructors.map((c, index) =>
-      syntax.decodeOver(c.type, admissionTelescope(admission, index)))]) {
+    for (const term of [syntax.decode(info.former, new Map(), null, null), ...info.constructors.map((c, index) =>
+      syntax.decodeOver(c.type, admissionTelescope(admission, index), new Map(), null))]) {
       for (const label of printedLabels(term)) used.add(label);
       const visit = (t, seen = new WeakSet()) => {
         if (!t || typeof t !== "object" || seen.has(t)) return;
@@ -787,7 +787,7 @@ export class CubicalProgram {
     // longer mention the declared type it computed through.
     const extensions = this.checker.extensionsOf(checked.term, checked.type, ...context.map(([, type]) => type));
     // A normal form on request, stuck definitions folded (folded-normal-forms.md).
-    if (normalize) checked.term = this.checker.syntax.decode(this.kernel.normalizeFolded(checked.expression), dimensions);
+    if (normalize) checked.term = this.checker.syntax.decode(this.kernel.normalizeFolded(checked.expression), dimensions, null, checked.naming);
     const bindings = this.declarationBindings.get(binding) ?? [];
     const aliases = local?.aliases ?? [];
     const symbols = { ...this.symbols, ...this.localSymbols, ...this.generatedSymbols(), ...this.assumptionSymbols() };

@@ -59,7 +59,7 @@ test("the kernel derives an application and leaves reduction explicit", t => {
   assert.throws(() => k.normalize(application), /an instruction derived/);
   const result = derive(k, application, syntax.encode(two));
   assert.equal(k.node(result.expression).kind, "App");
-  assert.deepEqual(syntax.decode(k.normalize(result.expression)), right);
+  assert.deepEqual(syntax.decode(k.normalize(result.expression), new Map(), null, null), right);
   assert.throws(() => derive(k, application, k.term("Unit")));
 });
 
@@ -181,7 +181,7 @@ test("the kernel computes transport through Glue without a univalence axiom", t 
   elaborate(k, ua, T.path("i", T.universe(0), two, two));
   const moved = T.comp("j", T.at(ua, I.variable("j")), [], right);
   const checked = elaborate(k, moved, two);
-  assert.deepEqual(syntax.decode(k.normalize(checked.expression)), right);
+  assert.deepEqual(syntax.decode(k.normalize(checked.expression), new Map(), null, null), right);
   const forged = T.glueType(two, [{ face: F.top, type: two, equiv: T.lam("x", two, T.variable("x")) }]);
   assert.throws(() => elaborate(k, forged), /Type mismatch/);
 });
@@ -299,7 +299,7 @@ test("checked path applications retain annotations through unused dimension cont
     assert.doesNotThrow(() => checker.nf(checked.term, context, dimensions));
     // A decode-cache hit in another context encodes back to the node too.
     const extended = new Map(dimensions).set("also_unused", 1);
-    const again = syntax.decode(checked.expression, extended);
+    const again = syntax.decode(checked.expression, extended, null, null);
     assert.equal(again, checked.term);
     assert.equal(encode(again, extended), checked.expression);
     assert.doesNotThrow(() => checker.nf(again, context, extended));
@@ -307,11 +307,11 @@ test("checked path applications retain annotations through unused dimension cont
     if (arg === I.zero) continue;
     const moved = new Map([["unused", 0], ["i", 2]]);
     assert.notEqual(encode(again, moved), checked.expression);
-    assert.deepEqual(syntax.decode(encode(again, moved), moved), again);
+    assert.deepEqual(syntax.decode(encode(again, moved), moved, null, null), again);
     // Inspection can omit a free index and use its fallback spelling for
     // another slot. That is not the checked node's original context.
     const incomplete = new Map([["d63", 0]]);
-    const shown = syntax.decode(checked.expression, incomplete);
+    const shown = syntax.decode(checked.expression, incomplete, null, null);
     assert.deepEqual(shown.arg, I.variable("d63"));
     assert.notEqual(encode(shown, incomplete), checked.expression);
   }
@@ -425,18 +425,18 @@ test("G0: the module's ABI version is checked, and a universe carries its level 
   const u3 = syntax.encode({ tag: "U", level: 3 }), uu3 = { tag: "U", level: { tag: "LConst", tier: 1, value: 3 } };
   assert.equal(k.node(u3).payload, 0);
   assert.equal(k.node(k.node(u3).children[0]).kind, "LConst");
-  assert.deepEqual(syntax.decode(u3), { tag: "U", level: 3 });
-  assert.deepEqual(syntax.decode(syntax.encode(uu3)), uu3);
+  assert.deepEqual(syntax.decode(u3, new Map(), null, null), { tag: "U", level: 3 });
+  assert.deepEqual(syntax.decode(syntax.encode(uu3), new Map(), null, null), uu3);
   assert.throws(() => k.term("U", 3), /payload must be zero/);
   // The instruction kernel takes a level to normal form: U(max(1, 0)) is U1.
   const g = new InstructionGraph(k), one = syntax.encodeLevel(1);
   const max = syntax.encodeLevel({ tag: "LMax", left: 1, right: 0 });
   const u1 = g.judgement(g.universe(one));
   assert.equal(g.judgement(g.universe(max)).term, u1.term);
-  assert.deepEqual(syntax.decode(u1.type), { tag: "U", level: 2 });
+  assert.deepEqual(syntax.decode(u1.type, new Map(), null, null), { tag: "U", level: 2 });
   // Cumulativity crosses tiers: Unit : U0 ≤ UU0, but UU0 is not in U5.
   const uu0 = g.universe(syntax.encodeLevel({ tag: "LConst", tier: 1, value: 0 }));
-  assert.deepEqual(syntax.decode(g.judgement(g.lift(g.unit(), uu0)).type), { tag: "U", level: { tag: "LConst", tier: 1, value: 0 } });
+  assert.deepEqual(syntax.decode(g.judgement(g.lift(g.unit(), uu0)).type, new Map(), null, null), { tag: "U", level: { tag: "LConst", tier: 1, value: 0 } });
   assert.throws(() => g.lift(uu0, g.universe(syntax.encodeLevel(5))), /not included/);
   assert.throws(() => g.universe(syntax.encodeLevel(0xffff)), /exceeds the kernel's bound/);
   // Levels print in kernel and source notation.
@@ -454,15 +454,15 @@ test("G0: level entries and level quantification through the instruction wrapper
   assert.throws(() => g.variable(x), /not a term/);
   // λ (x < ω). U(x) : Π (x < ω). U(x + 1), and its instance at 2 is U(2) : U(3).
   const family = g.levelLambda(x, ux);
-  assert.deepEqual(syntax.decode(g.judgement(family).term),
+  assert.deepEqual(syntax.decode(g.judgement(family).term, new Map(), null, null),
     { tag: "LLam", name: "x", body: { tag: "U", level: { tag: "Var", name: "x" } } });
   const atTwo = g.judgement(g.levelApply(family, syntax.encodeLevel(2)));
-  assert.deepEqual(syntax.decode(atTwo.type), { tag: "U", level: 3 });
+  assert.deepEqual(syntax.decode(atTwo.type, new Map(), null, null), { tag: "U", level: 3 });
   assert.throws(() => g.levelApply(family, syntax.encodeLevel({ tag: "LConst", tier: 1, value: 0 })), /finite/);
   // Π (x < ω). U(x) lives in UU0.
   const statement = g.judgement(g.levelPi(x, ux));
   assert.equal(statement.context.length, 0);
-  assert.deepEqual(syntax.decode(statement.type), { tag: "U", level: { tag: "LConst", tier: 1, value: 0 } });
+  assert.deepEqual(syntax.decode(statement.type, new Map(), null, null), { tag: "U", level: { tag: "LConst", tier: 1, value: 0 } });
   const generic = { tag: "LPi", name: "y", body: { tag: "U", level: { tag: "LSucc", count: 1, level: { tag: "Var", name: "y" } } } };
-  assert.deepEqual(syntax.decode(syntax.encode(generic)), generic);
+  assert.deepEqual(syntax.decode(syntax.encode(generic), new Map(), null, null), generic);
 });

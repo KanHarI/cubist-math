@@ -135,7 +135,8 @@ export function reduceView(program, view, side, kind, path = null) {
     const reference = program.kernel.definitions.get(name);
     if (!reference) throw new Error(`No checked definition for ${name}.`);
     // Read the kernel's closed body, including explicit assumption parameters.
-    return program.checker.syntax.decode(program.kernel.definition(reference).value, new Map(view.dimensions ?? []));
+    // A definition's value is closed: no binders around it, no entries to name.
+    return program.checker.syntax.decode(program.kernel.definition(reference).value, new Map(view.dimensions ?? []), null, null);
   };
   const proposal = path === null ? reductionStep(view[side], kind, definition)
     : reductionAt(view[side], kind, path, definition);

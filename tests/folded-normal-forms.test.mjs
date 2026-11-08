@@ -38,7 +38,7 @@ test("a rational's folded normal form names its certificate", async t => {
   const { checker, folded: result } = folded(program, "two_thirds");
   // Its full normal form is 3.5M ticks and 97,457 nodes.
   assert.ok(program.kernel.work().querySteps - before < 1000000);
-  const text = checker.displayText(checker.syntax.decode(result, checker.dimensions), checker.dimensions, { width: 1000, limit: 1000, reduce: 0 });
+  const text = checker.displayText(checker.syntax.decode(result, checker.dimensions, null, null), checker.dimensions, { width: 1000, limit: 1000, reduce: 0 });
   assert.equal(text, "class((class((bnat.(2), bnat.(0))), class((bnat.(3), bnat.(0))), rat_succ_nonzero(bnat.(2))))");
 });
 
@@ -203,18 +203,18 @@ def constant(n : N) := match n return zero = zero { zero => refl(zero); succ(k) 
   for (const name of ["f", "computes_f", "shift", "halves", "constant"]) assert.equal(verdicts[name], true, name);
   const { kernel, checker } = program;
   const value = name => kernel.definition(kernel.definitions.get(`main__${name}`));
-  const domain = checker.syntax.decode(value("f").type).domain, x = { tag: "Var", name: "x" };
+  const domain = checker.syntax.decode(value("f").type, new Map(), null, null).domain, x = { tag: "Var", name: "x" };
   // The root of an application, level application, projection or path
   // application spine.
   const root = handle => {
-    let term = checker.syntax.decode(handle, new Map([["i", 0]]));
+    let term = checker.syntax.decode(handle, new Map([["i", 0]]), null, null);
     while (["App", "LApp", "Fst", "Snd", "PApp"].includes(term.tag)) term = term.fn ?? term.pair ?? term.path;
     return term.tag;
   };
   const at = name => ({ tag: "App", fn: { tag: "DefRef", name: `main__${name}` }, arg: x });
   // f(x) itself, and a match by cases on zero that computes f, applied to x:
   // another eliminator at the root, even of the same kind, is no rebuild.
-  const computed = { tag: "App", fn: checker.syntax.decode(value("computes_f").value), arg: x };
+  const computed = { tag: "App", fn: checker.syntax.decode(value("computes_f").value, new Map(), null, null), arg: x };
   const terms = [at("f"), computed, { tag: "App", fn: at("shift"), arg: x },
     { tag: "Fst", pair: at("halves") }, { tag: "Snd", pair: at("halves") }, { tag: "PApp", path: at("constant"), arg: [["i:1"]] }];
   for (const term of terms) {
@@ -225,12 +225,12 @@ def constant(n : N) := match n return zero = zero { zero => refl(zero); succ(k) 
   }
   // shift's eliminator stuck on f(x), applied to x: the step rebuilt it in
   // place, its scrutinee reduced, so f(x) stays as written there.
-  const shifted = checker.syntax.decode(value("shift").value);
+  const shifted = checker.syntax.decode(value("shift").value, new Map(), null, null);
   const eliminator = shifted.tag === "Lam" && shifted.body.tag === "App" ? shifted.body.fn : shifted;
   assert.equal(eliminator.tag, "Elim");
   const stuck = { tag: "App", fn: { tag: "App", fn: eliminator, arg: at("f") }, arg: x };
   const { expression } = checker.checkSyntax(stuck, null, new Map([["x", domain]]), new Map());
-  const scrutinee = handle => checker.syntax.decode(handle).fn.arg;
+  const scrutinee = handle => checker.syntax.decode(handle, new Map(), null, null).fn.arg;
   assert.equal(scrutinee(kernel.normalizeFolded(expression)).fn.tag, "DefRef");
   assert.equal(scrutinee(kernel.normalize(expression)).fn.tag, "Elim");
 });
@@ -252,7 +252,7 @@ def f(s : Box) := match s return Unit -> Unit { box(g) => g; };
 `, "main");
     assert.deepEqual(result.gaps, []);
     const { kernel, checker } = program, f = kernel.definition(kernel.definitions.get("main__f"));
-    const domain = checker.syntax.decode(f.type).domain, value = checker.syntax.decode(f.value);
+    const domain = checker.syntax.decode(f.type, new Map(), null, null).domain, value = checker.syntax.decode(f.value, new Map(), null, null);
     const eliminator = value.tag === "Lam" && value.body.tag === "App" ? value.body.fn : value;
     assert.equal(eliminator.tag, "Elim");
     const x = { tag: "Var", name: "x" };
@@ -262,7 +262,7 @@ def f(s : Box) := match s return Unit -> Unit { box(g) => g; };
     // Up to the names of bound variables: a binder's name is the driver's
     // record of its node (ABI 4), and without interning the normal form's
     // nodes are not the definition's.
-    const normal = checker.syntax.decode(kernel.normalizeFolded(expression));
+    const normal = checker.syntax.decode(kernel.normalizeFolded(expression), new Map(), null, null);
     shown.push({ digest: normalDigest(normal), text: checker.displayText(normal, [], { width: 1000, limit: 1000, notation: {}, reduce: 0 }) });
   }
   assert.equal(shown[0].digest, shown[1].digest, `${shown[0].text} against ${shown[1].text}`);

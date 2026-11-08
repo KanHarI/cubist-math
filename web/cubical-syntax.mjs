@@ -52,6 +52,12 @@ export function freeDimensionMask(kernel, id, memo, annotated = false) {
 // rollback leaves where they are. The settled tier is kept from one
 // declaration to the next, and the rest dropped (CubicalSyntax.reset). An
 // entry is settled when every handle in it is: `id` is the largest.
+// What a decoding's names depend on, each given by its caller: an argument
+// left out is an error, not a default.
+function required(decoder, args) {
+  for (const [name, value] of Object.entries(args))
+    if (value === undefined) throw new TypeError(`${decoder} takes ${name}: null for none, never left out.`);
+}
 class NodeCache {
   constructor(kernel, weak = false) {
     Object.assign(this, { kernel, weak, settled: weak ? new WeakMap() : new Map() });
@@ -305,7 +311,10 @@ export class CubicalSyntax {
       default: throw new Error("Expected a universe level.");
     }
   }
-  decodeLevel(id, names = null, naming = null) {
+  // A level, under the binders `names` and with its entries named by
+  // `naming`, both required, as decode's.
+  decodeLevel(id, names, naming) {
+    required("decodeLevel", { names, naming });
     const node = this.kernel.node(id), { kind, payload, children } = node;
     switch (kind) {
       case "LConst": return payload <= 0xffff ? payload : { tag: "LConst", tier: payload >>> 16, value: payload & 0xffff };
@@ -329,16 +338,39 @@ export class CubicalSyntax {
   }
   // A term closed over a telescope, as a signature's constructor types are,
   // decoded with the telescope's names, `telescope` outermost first.
-  decodeOver(id, telescope, dimensions = new Map(), naming = null) {
+  decodeOver(id, telescope, dimensions, naming) {
+    required("decodeOver", { dimensions, naming });
     let names = null;
     for (const name of telescope) names = pushName(name, names);
     return this.decode(id, dimensions, names, naming);
   }
+  // The name a binder node shows under the binders `names`, its entries
+  // named by `naming`: its own (binderName), unless that would capture a
+  // variable its body refers to otherwise, an outer binder's, by the body's
+  // loose indices past its own, or an entry's. The one source of binder
+  // names: decode names binders by it, and so does every traversal that
+  // names the binders above a subterm (kernelOccurrence, the graph view's
+  // highlights, the workbench's operands), so that a subterm's variables
+  // read as the whole term's do.
+  binderShownName(id, names, naming) {
+    required("binderShownName", { names, naming });
+    const body = this.kernel.node(id).children[1], avoid = new Set();
+    let binder = names;
+    for (let i = 0; i < this.looseOf(body) - 1 && binder; i++, binder = binder.next) avoid.add(binder.name);
+    for (const entry of this.entriesOf(body)) avoid.add(variableName(this.kernel, { kind: "Context", payload: entry }, null, naming));
+    this.kernel.binderNames.shown(id);
+    return shownBinderName(this.kernel, id, avoid);
+  }
   // `names` are the binders around the node, a chain {name, next} innermost
   // first, which name its loose indices, and `naming` the names a view
   // shows entries by, a map from entries to names, each other entry shown by
-  // its spelling (web/cubical-variables.mjs, variableName).
-  decode(id, dimensions = new Map(), names = null, naming = null) {
+  // its spelling (web/cubical-variables.mjs, variableName). Each is
+  // required: a caller says null for no binders around, and null for the
+  // session's spellings, as a closed term or a term in no view takes, so
+  // that one decoding an open term without its view's naming is found
+  // (required).
+  decode(id, dimensions, names, naming) {
+    required("decode", { dimensions, names, naming });
     // A binder shown unnamed has since been named: no decoding kept shows it.
     const { epoch } = this.kernel.binderNames;
     if (epoch !== this.namesEpoch) {
@@ -374,12 +406,7 @@ export class CubicalSyntax {
     // A binder's own name, unless it would capture a variable its body refers
     // to otherwise: an outer binder's, by the body's loose indices past its
     // own, or an entry's.
-    const binder = () => {
-      const avoid = new Set(stack.slice(0, Math.max(0, this.looseOf(c[1]) - 1)));
-      for (const entry of this.entriesOf(c[1])) avoid.add(variableName(this.kernel, { kind: "Context", payload: entry }, null, naming));
-      this.kernel.binderNames.shown(id);
-      return shownBinderName(this.kernel, id, avoid);
-    };
+    const binder = () => this.binderShownName(id, names, naming);
     let bound;
     const body = i => this.decode(c[i], dimensions, pushName(bound, names), naming);
     let dim = `d${payload}`;

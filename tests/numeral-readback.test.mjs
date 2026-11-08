@@ -216,7 +216,7 @@ test("terms shown after checking print in the checked module's scope", async () 
     assert.ok(result.complete, JSON.stringify(result.gaps));
     const { checker } = program;
     const { expression } = checker.checkSyntax({ tag: "DefRef", name: "main__big" }, null, new Map(), new Map());
-    const text = checker.displayText(checker.normalForm(expression), []);
+    const text = checker.displayText(checker.normalForm(expression, null), []);
     assert.equal(text, "bnat.(18446744073709551616)");
     const again = await withChecked(`import nat;\ndef big_again : Nat := ${text};\ndef same : big_again = nat.(18446744073709551616) := refl(big_again);\n`,
       (_, read) => read.outputs.every(output => output.verified));
@@ -264,7 +264,7 @@ test("terms shown after checking keep the openings of the module's uses", async 
       assert.deepEqual(result.gaps, [], JSON.stringify(result.gaps));
       const { checker } = program;
       const { expression } = checker.checkSyntax({ tag: "DefRef", name: "main__three" }, null, new Map(), new Map());
-      const text = checker.displayText(checker.normalForm(expression), []);
+      const text = checker.displayText(checker.normalForm(expression, null), []);
       assert.equal(text, expected, tail);
       assert.ok(await withChecked(`${declarations}${tail}def three_again : three = ${text} := refl(three);\n`,
         (_, again) => again.outputs.every(output => output.verified)), tail);
@@ -424,7 +424,7 @@ def f : ${type} := fun (h : Unit -> BNat -> Unit, x : Unit, p : x = x) => path i
       assert.deepEqual(result.gaps, [], JSON.stringify(result.gaps));
       const { checker } = program;
       const { expression } = checker.checkSyntax({ tag: "DefRef", name: "main__f" }, null, new Map(), new Map());
-      const text = checker.displayText(checker.normalForm(expression), []);
+      const text = checker.displayText(checker.normalForm(expression, null), []);
       assert.equal(text, `fun (h : Unit -> BNat -> Unit, x : Unit, p : x = x) => path i => h(p @ i, ${expected})`);
       await withChecked(`${source}def again : ${type} := ${text};\n`, (_, again) =>
         assert.deepEqual(again.outputs.filter(output => output.name === "again").map(output => [output.verified, output.reason ?? null]), [[true, null]]));

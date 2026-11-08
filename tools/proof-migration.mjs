@@ -171,19 +171,19 @@ export async function verifyMigration({ modules, readOriginal, readEdited, level
     const record = program.kernel.signatures.get(binding);
     if (!record) return null;
     const info = program.kernel.signature(record.index), syntax = checker.syntax, {admission} = record;
-    const former = syntax.decode(info.former), parameters = [];
+    const former = syntax.decode(info.former, new Map(), null, null), parameters = [];
     const prenex = [...admission.levels, ...admission.parameters];
     let node = program.kernel.node(info.former);
     for (let j = 0; j < prenex.length; j++, node = program.kernel.node(node.children[1]))
       parameters.push(node.kind === "LPi" ? {tag:"LPi",name:prenex[j]}
-        : {tag:"Pi",name:prenex[j],domain:syntax.decodeOver(node.children[0], prenex.slice(0, j))});
-    const universe = syntax.decodeOver(node.id, prenex);
+        : {tag:"Pi",name:prenex[j],domain:syntax.decodeOver(node.children[0], prenex.slice(0, j), new Map(), null)});
+    const universe = syntax.decodeOver(node.id, prenex, new Map(), null);
     const hash = hashChecked ?? canonicalHasher({definitionName:name => standsIn(name) ? originalName(name) : name, signatureName});
     const earlier = [];
     // The admission's variables by the names its record keeps; the generated
     // squash, last, is no earlier constructor of any other.
     const constructors = info.constructors.map((constructor, index) => {
-      const type = syntax.decodeOver(constructor.type, [...prenex, admission.sort, ...admission.constructors.slice(0, index)]);
+      const type = syntax.decodeOver(constructor.type, [...prenex, admission.sort, ...admission.constructors.slice(0, index)], new Map(), null);
       let closed = type;
       for (const before of [...earlier].reverse()) closed = {tag:"Pi",name:before.name,domain:before.type,body:closed};
       closed = {tag:"Pi",name:admission.sort,domain:universe,body:closed};

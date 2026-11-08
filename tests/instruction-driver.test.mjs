@@ -434,7 +434,7 @@ def beta(A, B : U0, e : Equiv(U0, A, B), x : A) := UnivalenceBeta(U0, A, B, e, x
   // Built as named syntax, read from that body, and encoded: a binder is
   // put around parts read under other binders, which the encoder indexes.
   const generic = kernel.definition(kernel.definitions.get("builtin__ua")).value, syntax = new CubicalSyntax(kernel);
-  let body = syntax.decode(kernel.head(kernel.term("LApp", 0, generic, kernel.term("LConst", 0))));
+  let body = syntax.decode(kernel.head(kernel.term("LApp", 0, generic, kernel.term("LConst", 0))), new Map(), null, null);
   const binders = [];
   while (body.tag === "Lam") { binders.push(body); body = body.body; }
   const line = body, glue = line.body, [first, second] = glue.system, a = { tag: "Var", name: "glued_a" };
@@ -465,10 +465,10 @@ test("G0: the driver derives universe-generic terms, and compares levels by norm
   const idType = { tag: "LPi", name: "y", body: { tag: "Pi", name: "B", domain: U(v("y")), body: { tag: "Pi", name: "b", domain: v("B"), body: v("B") } } };
   const checked = derive(id, idType);
   assert.equal(checked.context.length, 0);
-  assert.deepEqual(syntax.decode(checked.term), id);
+  assert.deepEqual(syntax.decode(checked.term, new Map(), null, null), id);
   // The same definition at level 1: id {1} U0 Unit : U0.
   const atOne = { tag: "App", fn: { tag: "App", fn: { tag: "LApp", fn: id, level: 1 }, arg: U(0) }, arg: { tag: "Unit" } };
-  assert.deepEqual(syntax.decode(derive(atOne, U(0)).type), U(0));
+  assert.deepEqual(syntax.decode(derive(atOne, U(0)).type, new Map(), null, null), U(0));
   // The expected type (λ (x < ω). U(x)) {1} is U(1) by a level Beta step.
   const family = { tag: "LApp", fn: { tag: "LLam", name: "x", body: U(v("x")) }, level: 1 };
   assert.equal(derive(U(0), family).rule, "convert");
@@ -554,7 +554,7 @@ test("a derivation in one context is not reused in another that types a variable
   const x = { tag: "Var", name: "x" }, unit = { tag: "Unit" }, bool = { tag: "Sum", left: unit, right: unit };
   // The context's scope first, then the variable's syntax against it.
   const scopeOf = type => driver.extendScope(driver.emptyScope(0n), kernel.symbol("x"), syntax.encode(type));
-  const typeIn = type => syntax.decode(graph.judgement(driver.derive(syntax.encode(x, new Map(), scopeOf(type)), scopeOf(type))).type);
+  const typeIn = type => syntax.decode(graph.judgement(driver.derive(syntax.encode(x, new Map(), scopeOf(type)), scopeOf(type))).type, new Map(), null, null);
   assert.deepEqual(typeIn(bool), bool);
   // Each context's scope is its own memo key, including its assumptions.
   assert.deepEqual(typeIn(unit), unit);

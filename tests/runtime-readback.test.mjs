@@ -47,7 +47,7 @@ async function setup(t, source) {
   };
   // The value form's walk, as print(evaluate(e)) takes it (valueFormOf in
   // web/translator/translate.mjs), and the handles it observed.
-  const quiet = { spend() {} }, kernelAt = Translator.prototype.demandQueries.call({ checker }, quiet, () => "");
+  const quiet = { spend() {} }, kernelAt = Translator.prototype.demandQueries.call({ checker }, quiet, () => "", null);
   const walk = runtime => {
     const at = Translator.prototype.runtimeQueries.call({ checker }, quiet, runtime, kernelAt), observed = [], head = at.head;
     at.head = handle => { observed.push(handle); return head(handle); };
@@ -55,7 +55,7 @@ async function setup(t, source) {
     return observed;
   };
   const same = (a, b) => kernel.alphaEqual(a, b);
-  return { program, kernel, checker, graph, define, judgement, term, query, walk, same, decoded: handle => checker.decoded(handle),
+  return { program, kernel, checker, graph, define, judgement, term, query, walk, same, decoded: handle => checker.decoded(handle, null),
     normal: handle => kernel.normalize(handle), folded: handle => kernel.normalizeFolded(handle) };
 }
 // Kernel syntax as the encoder takes it (web/cubical-syntax.mjs).

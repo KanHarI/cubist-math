@@ -79,7 +79,7 @@ export async function traceSources(program, payload) {
 // Read only a small part of the native DAG. In particular, do not decode a
 // large term, normalize it, or serialize a shared graph as an expanded tree.
 export function traceSnapshot(program, state, side, path, limit = 16) {
-  const kernel = program.kernel, selected = kernelOccurrence(kernel, state.checked, side, path);
+  const kernel = program.kernel, selected = kernelOccurrence(kernel, state.checked, side, path, program.checker.syntax);
   const pending = [selected.handle], seen = new Set(), nodes = [];
   for (let i = 0; i < pending.length && nodes.length < limit; i++) {
     const handle = pending[i];

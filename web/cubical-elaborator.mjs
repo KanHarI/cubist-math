@@ -161,7 +161,7 @@ export class NativeCubicalElaborator {
   }
   // An admitted signature's former, Π (xs < ω). Π (ps : Ps). U(ℓ), as syntax,
   // and the kernel extensions its admission carries.
-  signatureFormer(record) { return this.syntax.decode(this.kernel.signature(record.index).former); }
+  signatureFormer(record) { return this.syntax.decode(this.kernel.signature(record.index).former, new Map(), null, null); }
   signatureExtensions(record) { return this.kernel.signature(record.index).experimental ? ["H1"] : []; }
   // Whether one level lies within another at every assignment (G0 §2.4,
   // Lemma 2): coefficient by coefficient. For messages only; the kernel
@@ -237,7 +237,8 @@ export class NativeCubicalElaborator {
       // Both types named together, once, so that a variable and a dimension
       // read alike in each, apart from every label either prints.
       const [found, expected] = this.displayTexts([error.mismatch.found, error.mismatch.expected]
-        .map(handle => this.syntax.decode(handle, dimensions)), dimensions);
+        // The failure's scope is gone: entries show the session's spellings.
+        .map(handle => this.syntax.decode(handle, dimensions, null, null)), dimensions);
       error.message = `Type mismatch: found ${found}, expected ${expected}.`;
     } catch { /* Keep the kernel's message. */ }
     return error;
@@ -266,7 +267,7 @@ export class NativeCubicalElaborator {
       const key = `${which} ${name}`;
       if (!decoded.has(key)) {
         const reference = this.kernel.definitions.get(name);
-        decoded.set(key, reference ? this.syntax.decode(this.kernel.definition(reference)[which]) : null);
+        decoded.set(key, reference ? this.syntax.decode(this.kernel.definition(reference)[which], new Map(), null, null) : null);
       }
       return decoded.get(key);
     };
@@ -605,7 +606,7 @@ export class NativeCubicalElaborator {
     }
     this.definitionViews.set(name, { term, type, assumptions, admission, ...(parameters ? { parameters } : {}) });
     this.definitionExtensions.set(name, this.extensionsOf(term, type, ...assumptions.values()));
-    let result = this.syntax.decode(reference);
+    let result = this.syntax.decode(reference, new Map(), null, null);
     for (const parameter of assumptions.keys()) result = { tag: "App", fn: result, arg: { tag: "Var", name: parameter } };
     return result;
   }
@@ -681,7 +682,7 @@ export class NativeCubicalElaborator {
 
   verify(term, expected = null, assumptions = []) {
     const checked = this.evaluated(term, expected, assumptions);
-    return { ...checked, normal: this.normalForm(checked.expression) };
+    return { ...checked, normal: this.normalForm(checked.expression, checked.naming) };
   }
   // A term checked for evaluation, with its assumptions and kernel
   // extensions, and nothing computed: `expression` is the derived handle
@@ -696,9 +697,12 @@ export class NativeCubicalElaborator {
   // (docs/roadmaps/historical/folded-normal-forms.md).
   // Its binders are named as the term's and the definitions it unfolds named
   // them (CubicalKernel.named).
-  normalForm(handle, { full = false } = {}) {
+  // `naming` names the entries the handle mentions, the view's that derived
+  // it (viewOfJudgement), and is required, as decode's is.
+  normalForm(handle, naming, { full = false } = {}) {
+    if (naming === undefined) throw new TypeError("normalForm takes the naming of the handle's view: null for none, never left out.");
     const normal = full ? this.kernel.normalize(handle) : this.kernel.normalizeFolded(handle);
-    return this.syntax.decode(normal, this.dimensions);
+    return this.syntax.decode(normal, this.dimensions, null, naming);
   }
   // The weak head of a handle, computed once a declaration, as nf's are. The
   // head of a derived handle, and its data parts (a pair's components, an
@@ -726,7 +730,8 @@ export class NativeCubicalElaborator {
     return head;
   }
   // A handle's term as the kernel holds it, nothing reduced.
-  decoded(handle) { return this.syntax.decode(handle, this.dimensions); }
+  // A handle an answer computed, with its view's naming, required.
+  decoded(handle, naming) { return this.syntax.decode(handle, this.dimensions, null, naming); }
   // A constructor as a display shows it: its name and its declared type's
   // signature, without the type's parameters, which no display of the
   // constructor shows and which can be large, unreduced, and deep.
@@ -741,9 +746,9 @@ export class NativeCubicalElaborator {
     }
     return system;
   }
-  shownConstructor(handle) {
+  shownConstructor(handle, naming) {
     const node = this.kernel.node(handle), sort = this.kernel.node(node.children[0]);
-    if (sort.kind !== "Sort") return this.decoded(handle);
+    if (sort.kind !== "Sort") return this.decoded(handle, naming);
     return this.shownConstructorOf(sort.payload, node.payload);
   }
   // The constructor at `index` of the signature at kernel index `signature`,
