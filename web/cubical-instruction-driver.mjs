@@ -198,6 +198,7 @@ export class InstructionDriver {
     this.scopeKeys = new WeakMap();
     this.scopeEntries = new WeakMap();
     this.scopeOccupants = new WeakMap();
+    this.dependencies = new Map();
     this.bound = new Map();
     this.mentions = new WeakMap();
     this.dimensionedIn = new WeakMap();
@@ -416,6 +417,21 @@ export class InstructionDriver {
     if (found) return found;
     return this.graph.level(name, variant ? names.spelling(spelledAs(name), { level: true }) : spelledAs(name));
   }
+  // The entries an entry's type depends on, transitively: its type
+  // judgement's context, which holds those of every entry it holds (none
+  // for a level entry, whose type is a bound, or a dimension or face entry).
+  dependenciesOf(entry) {
+    let found = this.dependencies.get(entry);
+    if (!found) {
+      // Of a term entry, the term and level entries its type's judgement
+      // holds: a dimension or a face entry is no variable a binder takes.
+      const field = (id, index) => this.kernel.module._cb_entry(this.kernel.handle, id, index) >>> 0;
+      const source = field(entry, 2) || field(entry, 4) ? 0 : field(entry, 3);
+      found = source ? this.statement(source).context.filter(id => !field(id, 2) && !field(id, 4)) : [];
+      this.dependencies.set(entry, found);
+    }
+    return found;
+  }
   // The entries a scope holds, shown or hidden (HIDDEN), by the names a
   // binder takes them by: each term or level entry's name and its spelling
   // (EntryNames).
@@ -483,9 +499,15 @@ export class InstructionDriver {
   // never at an entry the scope holds, shown or hidden: so an entry of the
   // scope that a binder of the term could take, one made for the binder's
   // name, is hidden in the narrowed scope (occupants, HIDDEN), and the binder
-  // takes an entry of its own (bind). Then the derivation in the narrowed
-  // scope is the one the whole scope would give, and as each judgement's
-  // context is the union of its premises', it combines with any around it.
+  // takes an entry of its own (bind). The names a term's binders go by are
+  // those of its nodes before opening, and a body opened may meet a node
+  // keyed otherwise (binderKey): so the narrowed scope also holds, hidden
+  // where it shows them by no name, the entries the types of the entries it
+  // keeps depend on, which no binder of the term may take, whatever its key,
+  // as discharging it would leave a kept entry depending on it. Then the
+  // derivation in the narrowed scope is the one the whole scope would give,
+  // and as each judgement's context is the union of its premises', it
+  // combines with any around it.
   // Faces are rare (onFace's retry), and kept whole. A narrowed scope is made
   // once per content: a memo key, as any scope is (scopeKey).
   narrow(handle, scope) {
@@ -507,8 +529,11 @@ export class InstructionDriver {
       if (entry !== undefined) { entries += `,${symbol}:${entry}`; shown.add(entry); }
     }
     // An entry the term refers to that the scope does not show stays held,
-    // hidden: no binder of the term takes it.
+    // hidden: no binder of the term takes it; and so does each entry the
+    // type of a kept one depends on.
     const occupants = this.occupants(scope), hidden = new Set(unshown.filter(entry => !shown.has(entry)));
+    for (const entry of [...free, ...shown])
+      for (const dependency of this.dependenciesOf(entry)) if (!shown.has(dependency)) hidden.add(dependency);
     if (occupants.size) {
       const bound = this.boundSymbols(handle);
       for (const name of bound.size < occupants.size ? bound : occupants.keys())
