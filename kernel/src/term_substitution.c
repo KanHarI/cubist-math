@@ -674,7 +674,11 @@ cc_term ck_open_loose(cc_kernel *k, cc_term term, uint32_t first) {
     if (!loose) return term;
     if (first > UINT32_MAX - loose)
         return ck_fail_as(k, CC_ERROR_RESOURCE, "An operation opened more binders than the kernel's bound."), 0;
-    cc_term *values = (size_t)loose <= SIZE_MAX / sizeof *values ? malloc((size_t)loose * sizeof *values) : NULL;
+    /* The count as a size_t of its own: the bound matters where size_t is 32
+     * bits (WASM), and comparing the widened uint32_t to it is always true
+     * where it is 64, which GCC's -Wtype-limits refuses. */
+    size_t count = loose;
+    cc_term *values = count <= SIZE_MAX / sizeof *values ? malloc(count * sizeof *values) : NULL;
     if (!values) return ck_fail_as(k, CC_ERROR_RESOURCE, "Opening allocation failed."), 0;
     cc_term result = 0;
     bool made = true;

@@ -496,8 +496,12 @@ cc_judgement_id cc_instr_signature_begin(cc_kernel *k, cc_judgement_id former_id
         --k->signature_count;
         return ck_fail_as(k, CC_ERROR_RESOURCE, "Signature allocation failed."), 0;
     }
-    memcpy(s->entries, parameters, total * sizeof *parameters);
-    memcpy(s->parameter_types, types, parameter_count * sizeof *types);
+    /* A signature without parameters may come with null arrays, which memcpy
+     * may not be passed even for no bytes. */
+    if (total)
+        memcpy(s->entries, parameters, total * sizeof *parameters);
+    if (parameter_count)
+        memcpy(s->parameter_types, types, parameter_count * sizeof *types);
     s->modifier = modifier;
     s->sort_entry = sort;
     s->level_count = levels;
