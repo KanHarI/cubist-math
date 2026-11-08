@@ -91,7 +91,8 @@ export class WorkbenchSession {
     // A partial-system cell has no standalone type, but its operands do. Keep
     // it inspectable without pretending that it is a term in the outer context.
     let text = label(node.handle);
-    if (["LConst", "LSucc", "LMax"].includes(node.kind)) text = levelText(checker.syntax.decodeLevel(node.handle));
+    // A level under level binders names their variables as a term does.
+    if (["LConst", "LSucc", "LMax"].includes(node.kind)) text = levelText(checker.syntax.decodeLevel(node.handle, node.names, checked.naming));
     else if (!["Tube", "GlueSystem", "List", "LBound"].includes(node.kind)) {
       const dimensions = new Map(view.dimensions ?? []), term = checker.syntax.decode(node.handle, dimensions, node.names, checked.naming);
       text = checker.displayGoal(new Map(view.context.map(x => [x.name, x.type])),

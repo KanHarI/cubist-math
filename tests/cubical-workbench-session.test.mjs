@@ -91,6 +91,27 @@ test("native previews handle universe operands and terms under a path binder", a
   assert.equal(body.kind, "PApp"); assert.match(body.text, /at\(p,/);
 });
 
+// A level beneath level binders refers to them by index (ABI 4): its
+// occurrence names them as the binders around it do, a successor's and a
+// maximum's alike, and so does each operand it shows.
+test("a level beneath level binders is shown by the names of its binders", async t => {
+  const session = new WorkbenchSession(module);
+  t.after(() => session.dispose());
+  const source = "def universe(U < UU0) : next(U) := U;\ndef both(U, V < UU0) : next(max(U, V)) := max(U, V);";
+  const universe = await session.load({ ...payload, source, binding: "workbench__universe", side: "expression" });
+  const successor = session.occurrence(universe.id, "type", [1, 0]);
+  assert.equal(successor.kind, "LSucc");
+  assert.match(successor.text, /U/);
+  const both = await session.load({ ...payload, source, binding: "workbench__both", side: "expression" });
+  // next(max(U, V)) is max(next(U), next(V)) in canonical form.
+  const maximum = session.occurrence(both.id, "type", [1, 1, 0]);
+  assert.equal(maximum.kind, "LMax");
+  assert.match(maximum.text, /^max\(U\w* \+ 1, V\w* \+ 1\)$/);
+  const [left, right] = [0, 1].map(child => session.occurrence(both.id, "type", [1, 1, 0, child]));
+  assert.deepEqual([left.kind, right.kind], ["LSucc", "LSucc"]);
+  assert.deepEqual([left.operands[0].label, right.operands[0].label], ["U", "V"]);
+});
+
 test("subtree records expose native operands and math reductions publish checked snapshots", async t => {
   const { session, initial } = await fixture(t);
   const tree = await session.handle("subtree", { state: initial.id, side: "expression", path: [] });
