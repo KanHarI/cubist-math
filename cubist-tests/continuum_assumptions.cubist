@@ -5,8 +5,8 @@
 // axioms each result lists are stated in tests/fixtures/contracts/continuum_axiom_contracts.cubist.
 import continuum_axioms;
 
-// Output: forall U < UU0. forall X : next(U). IsSet(next(U), X) -> CardinalLT(next(U), Nat, X) and
-//   CardinalLT(next(U), X, PowerSet(U, Nat)) -> Void
+// Output: forall U < UU0. forall x : next(U). IsSet(next(U), x) -> CardinalLT(next(U), Nat, x) and
+//   CardinalLT(next(U), x, PowerSet(U, Nat)) -> Void
 print(typeof(CH));
 
 // Output: forall U < UU0. forall A : U. IsSet(U, A) -> CardinalLE(U, Nat, A) ->

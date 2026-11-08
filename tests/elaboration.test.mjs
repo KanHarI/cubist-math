@@ -52,7 +52,10 @@ test("the elaboration view shows each declaration's type, term and the kernel's 
   // refl(succ(n)) proves succ(0) + n = succ(n) by computing the addition.
   assert.ok(ltSucc.some(step => /^\d+ Iota\(\d+\) at the other \[1, 0, 1\]: UNat\.elim\(/.test(step)));
   assert.ok(ltSucc.some(step => /^\d+ Conv\(\d+, \d+\) \/\/ \{n : UNat\} ⊢ refl\(succ\(n\)\) : \(add\(1, n\) =\[/.test(step)));
-  assert.ok(ltSucc.some(step => /^\d+ SigmaIntro\(\d+, \d+, \d+\) \/\/ \{n : UNat\} ⊢ \(0 , refl\(succ\(n\)\)\) : Σ \(k : UNat\)/.test(step)));
+  // The Σ is lt's unfolded, a binder the kernel rebuilt, which carries no
+  // name (ABI 4): it shows the driver's x, and lt's k after a follow-up.
+  assert.ok(ltSucc.some(step => /^\d+ SigmaIntro\(\d+, \d+, \d+\) \/\/ \{n : UNat\} ⊢ \(0 , refl\(succ\(n\)\)\) : Σ \(x : UNat\)/.test(step)),
+    ltSucc.filter(step => /SigmaIntro/.test(step)).join("\n"));
   assert.ok(ltSucc.some(step => /^\d+ Conv\(\d+, \d+\) \/\/ \{n : UNat\} ⊢ \(0 , refl\(succ\(n\)\)\) : lt\(n, succ\(n\)\)$/.test(step)));
   // exact's ascription is the elaborator's, and marked; the proof is not.
   assert.ok(ltSucc.some(step => /PiIntro.*λ \(ascription : lt\(n, succ\(n\)\)\)\. ascription.*\[elaborator\]$/.test(step)));

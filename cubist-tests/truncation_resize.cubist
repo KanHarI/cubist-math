@@ -3,8 +3,8 @@
 import h1_zorn_step;
 def resized(P : U1, prop_ : IsProp(U1, P)) : PropResize(P) := resize_prop(P, prop_);
 
-// Error: E606: Type mismatch: found forall x1 : StrictlyAbove(A, le, x). forall y :
-//   StrictlyAbove(A, le, x). forall p : x1 = y. forall q : x1 = y. p = q, expected forall x1 :
-//   StrictlyAbove(A, le, x). forall y : StrictlyAbove(A, le, x). x1 = y.
+// Error: E606: Type mismatch: found forall x1 : StrictlyAbove(A, le, x). forall x2 :
+//   StrictlyAbove(A, le, x). forall x3 : x1 = x2. forall x4 : x1 = x2. x3 = x4, expected forall x1
+//   : StrictlyAbove(A, le, x). forall x2 : StrictlyAbove(A, le, x). x1 = x2.
 def rejected(A : U1, le : OrderRelation(A), laws : PartialOrderLaws(A, le), x : A) :=
   resize_prop(StrictlyAbove(A, le, x), strict_above_is_set(A, le, laws, x));

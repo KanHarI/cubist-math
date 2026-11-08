@@ -177,7 +177,10 @@ test("printed induction preserves source field order and emits with", async t =>
     // A function's full normal form: its value form is <fun>.
     const { result } = await checkProgram(t, declarations + examples + `print(evaluate(!!${name}));`);
     const printed = result.prints[0].text;
-    assert.match(printed, /node\(l, datum, r\) with \w+, \w+/);
+    // The clause's binders are the kernel's, which carry no names (ABI 4),
+    // and show the driver's generated names: a follow-up names them after
+    // the constructor's fields, l, datum and r, and this asks for those again.
+    assert.match(printed, /node\(\w+, \w+, \w+\) with \w+, \w+/);
     const { result: readback } = await checkProgram(t, declarations + examples + `def again := ${printed}; def same : ${name} = again { rfl; }`);
     assert.equal(readback.complete, true, JSON.stringify(readback.gaps));
   }

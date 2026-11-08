@@ -22,8 +22,9 @@ def glued_ends(A : U0) :
   A = A := path i => Glue(A, face_when(on(i, 0) or on(i, 1), A, id_contr_equiv(U0, A)));
 
 // Refused: the function is no equivalence, though it is the identity.
-// Error: E606: Type mismatch: found A -> A, expected exists x : A -> A. forall x1 : A. exists x2 :
-//   exists x2 : A. x1 = x(x2). forall x3 : exists x3 : A. x1 = x(x3). x2 = x3.
+// Error: E606: Type mismatch: found A -> A, expected exists function : A -> A. forall target : A.
+//   exists center : exists preimage : A. target = function(preimage). forall point : exists
+//   preimage : A. target = fun….
 def not_an_equivalence(A : U0) :
   A = A := path i => Glue(A, face(i, 0, A, fun (x : A) => x), face(i, 1, A, id_contr_equiv(U0, A)));
 

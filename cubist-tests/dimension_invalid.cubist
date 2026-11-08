@@ -18,9 +18,9 @@ def wrong_scalar_degree(K : AlgebraicField) :
   exact identity_extension_degree(K);
 }
 
-// Error: E606: Type mismatch: found exists f : (Fin(m) -> af_carrier(K)) -> Fin(n) ->
-//   af_carrier(K). exists g : (Fin(n) -> af_carrier(K)) -> Fin(m) -> af_carrier(K). (forall x :
-//   Fin(m) -> af_carr…, expected exists f : exists f : vector_carrier(K, CoordinateSpace(K, m)) ->
+// Error: E606: Type mismatch: found exists x : (Fin(m) -> af_carrier(K)) -> Fin(n) ->
+//   af_carrier(K). exists x1 : (Fin(n) -> af_carrier(K)) -> Fin(m) -> af_carrier(K). (forall x2 :
+//   Fin(m) -> af_ca…, expected exists x : exists x : vector_carrier(K, CoordinateSpace(K, m)) ->
 //   vector_carrier(K, CoordinateSpace(K, n)). LinearLaws(K, CoordinateSpace(K, m), CoordinateSpac….
 def arbitrary_bijection_is_linear(
   K : AlgebraicField, m : UNat, n : UNat,
