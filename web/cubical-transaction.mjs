@@ -49,12 +49,15 @@ export class CubicalDeclarationTransaction {
         const handle=kernel.definitions.get(name);
         kernel.definitions.set(name,kernel.module._cb_relocated(kernel.handle,handle));
       }
-      // A binder kept by the commit keeps the name it was encoded with.
-      const moved = [...kernel.binderNames].filter(([handle]) => handle >= this.nodes);
-      for (const [handle] of moved) kernel.binderNames.delete(handle);
-      for (const [handle, name] of moved) {
-        const kept = kernel.module._cb_relocated(kernel.handle, handle) >>> 0;
-        if (kept && !kernel.binderNames.has(kept)) kernel.binderNames.set(kept, name);
+      // A binder kept by the commit keeps the name it was encoded with, and
+      // the key its entries are chosen by.
+      for (const map of [kernel.binderNames, kernel.binderKeys]) {
+        const moved = [...map].filter(([handle]) => handle >= this.nodes);
+        for (const [handle] of moved) map.delete(handle);
+        for (const [handle, name] of moved) {
+          const kept = kernel.module._cb_relocated(kernel.handle, handle) >>> 0;
+          if (kept && !map.has(kept)) map.set(kept, name);
+        }
       }
     } else {
       kernel.module._cb_rollback(kernel.handle);
@@ -63,7 +66,8 @@ export class CubicalDeclarationTransaction {
       }
       for (const collection of this.sizes.keys())
         for (const key of this.added(collection)) collection.delete(key);
-      for (const handle of kernel.binderNames.keys()) if (handle >= this.nodes) kernel.binderNames.delete(handle);
+      for (const map of [kernel.binderNames, kernel.binderKeys])
+        for (const handle of map.keys()) if (handle >= this.nodes) map.delete(handle);
     }
     // Handles from here on are new nodes, none of them shown yet.
     for (const handle of kernel.binderNames.shownUnnamed ?? []) if (handle >= this.nodes) kernel.binderNames.shownUnnamed.delete(handle);

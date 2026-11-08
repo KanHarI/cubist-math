@@ -149,6 +149,11 @@ export class CubicalKernel {
     // rollback drops those of nodes made since its checkpoint
     // (CubicalDeclarationTransaction.finish).
     this.binderNames = new BinderNames();
+    // The name each binder's entries are chosen by, fixed at its first use
+    // (web/cubical-variables.mjs, binderKey), and the serial of the keys of
+    // binders the kernel built.
+    this.binderKeys = new Map();
+    this.binderKeySerial = 0;
     // What node(id) read of each node: nodes do not change, but a
     // declaration's commit or rollback moves them, so the transaction that
     // ends one forgets these (forgetNodes).

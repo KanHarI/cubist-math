@@ -51,11 +51,22 @@ export const UNNAMED = "x";
 export const binderName = (kernel, handle) => kernel.binderNames.get(handle) ?? UNNAMED;
 // The name a binder's variable is bound by in the driver's scopes: its own,
 // or for a binder the kernel built, which has none, a name of its node,
-// x@handle, as the kernel's fresh symbols were on ABI 3. Its entries are
-// then its own: a term met under it never binds that name again, so a
-// narrowed scope never holds them for it (InstructionDriver.narrow), however
-// many binders the kernel built around it. They are spelled as x (spelledAs).
-export const binderKey = (kernel, handle) => kernel.binderNames.get(handle) ?? `${UNNAMED}@${handle}`;
+// x@n, as the kernel's fresh symbols were on ABI 3. Its entries are then its
+// own: a term met under it never binds that name again, so a narrowed scope
+// never holds them for it (InstructionDriver.narrow), however many binders
+// the kernel built around it. They are spelled as x (spelledAs).
+//
+// A binder's key is fixed the first time it is asked for: a source encoding
+// that names the node later names it for display only. Otherwise the scopes,
+// the narrowings and the derivations memoized under the old key would
+// disagree with the new one, and a binder could take an entry its narrowed
+// scope no longer held. The keys live with the names, relocated at a commit
+// and dropped at a rollback (CubicalDeclarationTransaction.finish).
+export function binderKey(kernel, handle) {
+  let key = kernel.binderKeys.get(handle);
+  if (key === undefined) kernel.binderKeys.set(handle, key = kernel.binderNames.get(handle) ?? `${UNNAMED}@${++kernel.binderKeySerial}`);
+  return key;
+}
 // The name an entry made for a binder's key is spelled from.
 export const spelledAs = name => name.includes("@") ? UNNAMED : name;
 

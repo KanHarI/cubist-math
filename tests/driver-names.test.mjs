@@ -275,3 +275,27 @@ test("a declaration's universe levels are compared as written, for E514", async 
   assert.equal(failure.code, "E514");
   assert.match(failure.reason, /pack's argument x lives in a universe above Bad's declared one/);
 });
+
+// A binder the kernel built, with no name, binds entries of its own node
+// (binderKey). Encoding the same node later with a source name names it for
+// display, and must not change the name its entries are chosen by: in
+// A : U0, B : A → U0, x : A, y : B(x), the unnamed λ (_ : A). y derived, then
+// written λ (x : A). y, derives again with one more live dimension as a
+// fresh driver derives it, not at x's entry, on which y's depends.
+test("a binder's key for its entries stays what it was when a source name names it later", async t => {
+  const program = fresh(t), { kernel, checker } = program, driver = checker.driver, syntax = checker.syntax;
+  const encode = (term, scope) => syntax.encode(term, new Map(), scope);
+  const A = { tag: "Var", name: "A" }, B = { tag: "Var", name: "B" }, y = { tag: "Var", name: "y" };
+  const context = [["A", { tag: "U", level: 0 }], ["B", { tag: "Pi", name: "_", domain: A, body: { tag: "U", level: 0 } }],
+    ["x", A], ["y", { tag: "App", fn: B, arg: x }]];
+  const scopeOf = (driver, dimensions) => driver.scopeOf(context.map(([name, type]) => [kernel.symbol(name), type]), dimensions, encode);
+  const scope = scopeOf(driver, 0n);
+  const unnamed = kernel.term("Lam", 0, encode(A, scope), encode(y, scope));
+  assert.ok(!kernel.binderNames.has(unnamed));
+  driver.derive(unnamed, scope);
+  assert.equal(encode(lam("x", A, y), scope), unnamed, "the source term is the same node");
+  const warm = driver.graph.judgement(driver.derive(unnamed, scopeOf(driver, 1n)));
+  const other = new InstructionDriver(kernel), cold = other.graph.judgement(other.derive(unnamed, scopeOf(other, 1n)));
+  assert.equal(warm.term, cold.term);
+  assert.deepEqual(warm.context, cold.context);
+});
