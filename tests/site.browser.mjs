@@ -591,7 +591,9 @@ export default async options => {
   assert.match(await derivation.textContent(), /\/\/ \{n : UNat\}\s*\d+ CtxExt\(2\)/);
   assert.ok(await elaboration.locator(".derivation-scaffold").count() > 0);
   await page.goto(new URL("reference/kernel-terms.html", base).href);
-  assert.equal(await page.locator("#opcodes tbody tr").count(), 53);
+  // A row per kind, 1 to 55 on ABI 4: CC_VAR's row says it is retired, and
+  // CC_BOUND and CC_CONTEXT are the last two.
+  assert.equal(await page.locator("#opcodes tbody tr").count(), 55);
   console.log("PASS elaboration panel and the kernel terms table");
   await page.goto(new URL("workbench.html", base).href);
   await page.waitForFunction(() => document.querySelector("#status")?.textContent.includes("checked"));

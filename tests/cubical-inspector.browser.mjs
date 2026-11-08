@@ -676,7 +676,12 @@ theory Parent(U < UU0) { M : U;
   assert.equal(selectedInner.fn.tag, "Lam");
   assert.deepEqual(selectedInner.arg, zero);
   await reductionBench.locator("#back").click(); await settled(reductionBench);
-  assert.deepEqual(JSON.parse(await reductionBench.locator("#syntax").inputValue()), nestedBeta);
+  // The identity at Nat is one node with the elaborator's ascription at Nat,
+  // as binders carry no names (ABI 4), and it shows the name it was first
+  // encoded with, the ascription's: a follow-up keeps the source's x here.
+  const restored = JSON.parse(await reductionBench.locator("#syntax").inputValue());
+  const shown = { ...identity, name: restored.fn.name, body: { tag: "Var", name: restored.fn.name } };
+  assert.deepEqual(restored, { tag: "App", fn: shown, arg: { tag: "App", fn: shown, arg: zero } });
   await reductionBench.locator("#syntax").fill(JSON.stringify(repeated)); await settled(reductionBench);
   await reductionBench.locator("#check").click(); await settled(reductionBench);
   await reductionBench.locator("#delta-expression").click(); await settled(reductionBench);
