@@ -133,9 +133,11 @@ class HandleMap extends Map {
     this.#from = Infinity; this.#made.clear();
     if (relocated) for (const [handle, value] of moved) {
       const kept = relocated(handle);
-      if (kept && !this.has(kept)) super.set(kept, value);
+      if (kept && !this.has(kept)) this.placed(kept, value);
     }
   }
+  // A value placed where a commit relocated its handle.
+  placed(handle, value) { super.set(handle, value); }
 }
 // The driver's names of binder nodes (web/cubical-variables.mjs, binderName).
 // A binder the kernel built goes by UNNAMED, and is shown by it or by a
@@ -148,15 +150,25 @@ class HandleMap extends Map {
 // moves `epoch`, at which the codec drops the decodings it kept that show a
 // binder unnamed (CubicalSyntax.decode). A relocated name names a new node,
 // none of them shown yet (HandleMap.finish).
+// #354's codec made every decoding anew at each naming of a binder shown
+// unnamed, whatever the name, and at each name a commit relocated onto the
+// handle of one: `renamings` counts these, at which the display's renaming
+// of made-up names reads the stems again, as it did on #354's new
+// decodings (cubical-elaborator.mjs, SourceNames).
 const SHOWN_APART = null;
 class BinderNames extends HandleMap {
   set(handle, name) {
     const shown = this.shownUnnamed.get(handle);
     if (shown !== undefined) {
       this.shownUnnamed.delete(handle);
+      this.renamings++;
       if (name !== UNNAMED && name !== shown) this.epoch++;
     }
     return super.set(handle, name);
+  }
+  placed(handle, name) {
+    if (this.shownUnnamed.delete(handle)) this.renamings++;
+    super.placed(handle, name);
   }
   shown(handle, name) {
     if (this.has(handle)) return;
@@ -165,6 +177,7 @@ class BinderNames extends HandleMap {
   }
   shownUnnamed = new HandleMap();
   epoch = 0;
+  renamings = 0;
 }
 
 export class CubicalKernel {

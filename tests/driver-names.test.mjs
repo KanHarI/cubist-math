@@ -450,3 +450,47 @@ test("a variant's stem, recorded for binders, is never recorded again", async t 
   assert.equal(kernel.entryNames.spelled(entry), "x'1");
   assert.equal(under(new CubicalSyntax(kernel), second, "x'1"), under(syntax, second, "x'1"));
 });
+
+// The display's renaming of made-up names reads the stems as they stand,
+// and keeps what it made of a decoding until #354's codec would have made
+// the decoding anew (BinderNames.renamings), as the codec keeps decodings
+// longer. From the third review of this change: λ (x'1 : Unit). x'1,
+// settled, shown while x'1 is no variant, its entry rolled back; then a
+// fresh x spelled x'1, a variant of x; and a binder shown unnamed before,
+// named. Shown again, the λ reads as a session that met the variant first
+// shows it, as on #354: fun (x : Unit) => x.
+function renamedAfter(t, name) {
+  const lambda = lam("x'1", unit, { tag: "Var", name: "x'1" });
+  const session = warm => {
+    const program = fresh(t), { kernel, checker } = program, syntax = checker.syntax;
+    const unitType = syntax.encode(unit), type = () => checker.driver.asType(checker.driver.infer(unitType));
+    const shown = () => checker.displayText(checker.checkSyntax(lambda, null, new Map(), new Map()).term, new Map());
+    checker.driver.freshEntry(type(), "y");
+    let unnamed = 0, before = null;
+    if (warm) {
+      syntax.encode(lambda);
+      unnamed = kernel.term("Sigma", 0, unitType, unitType);
+      assert.ok(!kernel.binderNames.has(unnamed));
+      syntax.decode(unnamed, new Map(), null, null);
+      new CubicalDeclarationTransaction(kernel, checker).finish(false);
+      const transaction = new CubicalDeclarationTransaction(kernel, checker);
+      before = shown();
+      transaction.finish(false);
+    }
+    checker.driver.freshEntry(type(), "x");
+    assert.equal(kernel.entryNames.stems.get("x'1"), "x");
+    if (warm) kernel.binderNames.set(unnamed, name);
+    return [before, shown()];
+  };
+  return { cold: session(false), warm: session(true) };
+}
+test("a view after a binder shown unnamed is named reads the stems again", async t => {
+  const { cold, warm } = renamedAfter(t, "z");
+  assert.deepEqual([cold[1], warm], ["fun (x : Unit) => x", ["fun (x' : Unit) => x'", "fun (x : Unit) => x"]]);
+});
+// The same where the binder is named x, its name unnamed: the codec keeps
+// the decodings that show it, and #354's made them anew.
+test("a view after a binder shown unnamed is named as it was shown reads the stems again", async t => {
+  const { cold, warm } = renamedAfter(t, "x");
+  assert.deepEqual([cold[1], warm], ["fun (x : Unit) => x", ["fun (x' : Unit) => x'", "fun (x : Unit) => x"]]);
+});
