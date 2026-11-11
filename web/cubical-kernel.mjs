@@ -1,7 +1,7 @@
 // Integer-handle interface to the C kernel, usable in a browser worker or
 // Node. Building syntax never certifies it: only an instruction derives a
 // judgement (web/cubical-instructions.mjs).
-import { EntryNames, carryBinderNames } from "./cubical-variables.mjs";
+import { EntryNames, UNNAMED, carryBinderNames } from "./cubical-variables.mjs";
 // A term kind's name at its number. null marks a retired kind whose number
 // stays reserved, the named variable's of ABI 3, Nat's, W's and pushouts'
 // (kernel/include/cubical_kernel.h). A variable is Bound, by de Bruijn index,
@@ -138,19 +138,30 @@ class HandleMap extends Map {
   }
 }
 // The driver's names of binder nodes (web/cubical-variables.mjs, binderName).
-// A binder the kernel built is shown as x until an encoding of the same node
-// names it, which may come after a decoding showed it: so each binder shown
-// unnamed is noted (`shownUnnamed`), and naming one of them moves `epoch`,
-// at which the codec drops the decodings it kept (CubicalSyntax.decode). A
-// relocated name names a new node, none of them shown yet (HandleMap.finish).
+// A binder the kernel built goes by UNNAMED, and is shown by it or by a
+// variant apart from what it would capture, until an encoding of the same
+// node names it, which may come after a decoding showed it. Naming it
+// UNNAMED changes no decoding, and naming it by the one name it was shown
+// by changes none either, as that name captures nothing where it was shown:
+// so each binder shown unnamed is noted with the name it was shown by
+// (`shownUnnamed`, SHOWN_APART for more than one), and naming one otherwise
+// moves `epoch`, at which the codec drops the decodings it kept that show a
+// binder unnamed (CubicalSyntax.decode). A relocated name names a new node,
+// none of them shown yet (HandleMap.finish).
+const SHOWN_APART = null;
 class BinderNames extends HandleMap {
   set(handle, name) {
-    if (this.shownUnnamed.delete(handle)) this.epoch++;
+    const shown = this.shownUnnamed.get(handle);
+    if (shown !== undefined) {
+      this.shownUnnamed.delete(handle);
+      if (name !== UNNAMED && name !== shown) this.epoch++;
+    }
     return super.set(handle, name);
   }
-  shown(handle) {
+  shown(handle, name) {
     if (this.has(handle)) return;
-    this.shownUnnamed.set(handle, true);
+    const before = this.shownUnnamed.get(handle);
+    this.shownUnnamed.set(handle, before === undefined || before === name ? name : SHOWN_APART);
   }
   shownUnnamed = new HandleMap();
   epoch = 0;
