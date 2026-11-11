@@ -477,14 +477,14 @@ export class CubicalSyntax {
     return context;
   }
   // The names a set of entries takes in `naming`, in the entries' order, as
-  // one key: read once for each set a naming meets, as entriesOf shares
-  // them.
+  // one key, whatever characters they hold: read once for each set a naming
+  // meets, as entriesOf shares them.
   shownEntries(entries, naming) {
     if (!this.entryNamings.has(naming ?? NO_NAMING)) this.entryNamings.set(naming ?? NO_NAMING, new WeakMap());
     const known = this.entryNamings.get(naming ?? NO_NAMING);
     let shown = known.get(entries);
     if (shown === undefined) {
-      shown = [...entries].sort((a, b) => a - b).map(entry => variableName(this.kernel, { kind: "Context", payload: entry }, null, naming)).join("\0");
+      shown = JSON.stringify([...entries].sort((a, b) => a - b).map(entry => variableName(this.kernel, { kind: "Context", payload: entry }, null, naming)));
       known.set(entries, shown);
     }
     return shown;

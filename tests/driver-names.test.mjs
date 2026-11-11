@@ -396,3 +396,21 @@ test("a name read as its own stem is never made a variant's", async t => {
   assert.equal(under(syntax, second, "y"), "y1");
   assert.equal(under(new CubicalSyntax(kernel), first, "y1"), under(syntax, first, "y1"));
 });
+
+// The names a node's entries take are one key, whatever characters they
+// hold (CubicalSyntax.shownEntries). From the first review of this change:
+// a(c), its entries named a\0b and c, then a and b\0c.
+test("entries named apart are decoded apart, whatever characters their names hold", async t => {
+  const program = fresh(t), { kernel, checker } = program, syntax = checker.syntax;
+  const A = { tag: "Var", name: "A" };
+  const context = [["A", { tag: "U", level: 0 }], ["a", A], ["c", A]].map(([name, type]) => [kernel.symbol(name), type]);
+  const scope = checker.driver.scopeOf(context, 0n, (type, inner) => syntax.encode(type, new Map(), inner));
+  const [a, c] = ["a", "c"].map(name => scope.get(kernel.symbol(name)));
+  const term = syntax.encode({ tag: "App", fn: { tag: "Var", name: "a" }, arg: { tag: "Var", name: "c" } }, new Map(), scope);
+  const shown = (first, second) => {
+    const decoded = syntax.decode(term, new Map(), null, new Map([[a, first], [c, second]]));
+    return [decoded.fn.name, decoded.arg.name];
+  };
+  assert.deepEqual(shown("a\u0000b", "c"), ["a\u0000b", "c"]);
+  assert.deepEqual(shown("a", "b\u0000c"), ["a", "b\u0000c"]);
+});
