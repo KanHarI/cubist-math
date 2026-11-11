@@ -464,16 +464,21 @@ export class CubicalKernel {
   }
   node(id) {
     this.assertOpen();
-    let read = id < this.settled ? this.settledNodes.get(id) : this.nodes.get(id);
-    if (!read) {
-      uint32(id, "Node handle");
-      const values = Array.from({ length: 6 }, (_, field) => this.module._cb_node(this.handle, id, field) >>> 0);
-      if (!values[0]) throw new Error("Unknown cubical node handle.");
-      // The read itself is returned, frozen: a node is read many times a
-      // declaration, and a copy each time was a twentieth of a check's time.
-      read = Object.freeze({ id, kind: cubicalKinds[values[0]], payload: values[1], children: Object.freeze(values.slice(2)) });
-      (id < this.settled ? this.settledNodes : this.nodes).set(id, read);
-    }
+    return (id < this.settled ? this.settledNodes.get(id) : this.nodes.get(id)) ?? this.readNode(id);
+  }
+  // A node not read yet, field by field through the bridge (cb_node), and
+  // kept. The read itself is returned, frozen: a node is read many times a
+  // declaration, and a copy each time was a twentieth of a check's time.
+  // Reading builds no array but its children's: ABI 4 reads several times
+  // the nodes ABI 3 did, as each opening and step makes new ones.
+  readNode(id) {
+    uint32(id, "Node handle");
+    const { module, handle } = this, field = index => module._cb_node(handle, id, index) >>> 0;
+    const kind = field(0);
+    if (!kind) throw new Error("Unknown cubical node handle.");
+    const read = Object.freeze({ id, kind: cubicalKinds[kind], payload: field(1),
+      children: Object.freeze([field(2), field(3), field(4), field(5)]) });
+    (id < this.settled ? this.settledNodes : this.nodes).set(id, read);
     return read;
   }
   // Node handles move when a declaration's checkpoint is committed or
