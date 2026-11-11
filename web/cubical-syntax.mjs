@@ -52,12 +52,6 @@ export function freeDimensionMask(kernel, id, memo, annotated = false) {
 // rollback leaves where they are. The settled tier is kept from one
 // declaration to the next, and the rest dropped (CubicalSyntax.reset). An
 // entry is settled when every handle in it is: `id` is the largest.
-// What a decoding's names depend on, each given by its caller: an argument
-// left out is an error, not a default.
-function required(decoder, args) {
-  for (const [name, value] of Object.entries(args))
-    if (value === undefined) throw new TypeError(`${decoder} takes ${name}: null for none, never left out.`);
-}
 class NodeCache {
   constructor(kernel, weak = false) {
     Object.assign(this, { kernel, weak, settled: weak ? new WeakMap() : new Map() });
@@ -76,12 +70,68 @@ class NodeCache {
     tier.get(term).set(key, id);
   }
 }
+// What a decoding's names depend on, each given by its caller: an argument
+// left out is an error, not a default.
+function required(decoder, args) {
+  for (const [name, value] of Object.entries(args))
+    if (value === undefined) throw new TypeError(`${decoder} takes ${name}: null for none, never left out.`);
+}
+// What a node is decoded in: the names its dimensions take (`dimensions`,
+// and `key`, their context key), those of the binders around it (`names`,
+// a chain {name, next} innermost first, one object for each chain:
+// CubicalSyntax.binder) and those its entries take (`naming`). What is
+// decoded in it is kept by the node alone, and so are the contexts its
+// parts are decoded in, each made once from this one: so a part met again
+// is found without reading its names again. Contexts hold node handles,
+// and are dropped with the decodings (CubicalSyntax.reset and decode).
+class DecodingContext {
+  constructor(syntax, dimensions, key, names, naming) {
+    Object.assign(this, { syntax, dimensions, key, names, naming });
+    this.assigned = [...dimensions.values()].reduce((mask, index) => mask | 1n << BigInt(index), 0n);
+    this.decodings = new Map();
+    this.restrictions = new Map(); this.bodies = new Map(); this.dimensionBinders = new Map();
+  }
+  // The context with only the dimensions in `free`, a node's free mask.
+  restrictedTo(free) {
+    if (!(this.assigned & ~free)) return this;
+    const kept = this.assigned & free;
+    let context = this.restrictions.get(kept);
+    if (!context) {
+      const dimensions = new Map([...this.dimensions].filter(([, index]) => free & 1n << BigInt(index)));
+      this.restrictions.set(kept, context = new DecodingContext(this.syntax, dimensions, dimensionContextKey(dimensions), this.names, this.naming));
+    }
+    return context;
+  }
+  // A binder's body: one more binder around it, shown as `name`.
+  under(name) {
+    let context = this.bodies.get(name);
+    if (!context) this.bodies.set(name, context = new DecodingContext(this.syntax, this.dimensions, this.key, this.syntax.binder(name, this.names), this.naming));
+    return context;
+  }
+  // A dimension binder's: the name it shows dimension `index` by, d`index`
+  // apart from the names in scope, and the context of its parts.
+  dimensionBinder(index) {
+    let binder = this.dimensionBinders.get(index);
+    if (!binder) {
+      let name = `d${index}`;
+      while (this.dimensions.has(name)) name += "_";
+      const dimensions = new Map(this.dimensions).set(name, index);
+      binder = { name, context: new DecodingContext(this.syntax, dimensions, dimensionContextKey(dimensions), this.names, this.naming) };
+      this.dimensionBinders.set(index, binder);
+    }
+    return binder;
+  }
+}
 export class CubicalSyntax {
   constructor(kernel) {
     this.kernel = kernel;
     this.encoded = new NodeCache(kernel, true);
     this.decoded = new NodeCache(kernel);
     this.namesEpoch = kernel.binderNames.epoch;
+    // The contexts decodings start in, by their naming (NO_NAMING for none),
+    // their dimensions and their binders (contextOf); the names each set of
+    // entries a naming meets takes there (shownEntries).
+    this.contexts = new WeakMap(); this.entryNamings = new WeakMap();
     this.free = new NodeCache(kernel);
     // Each term's head normal form, by its node (cubical-elaborator.mjs).
     this.heads = new NodeCache(kernel);
@@ -94,7 +144,10 @@ export class CubicalSyntax {
   }
   // Handles made since a checkpoint move when it is committed or rolled
   // back: what was read of them is dropped then.
-  reset() { for (const cache of [this.encoded, this.decoded, this.free, this.heads, this.loose, this.mentioned]) cache.drop(); }
+  reset() {
+    for (const cache of [this.encoded, this.decoded, this.free, this.heads, this.loose, this.mentioned]) cache.drop();
+    this.contexts = new WeakMap(); this.entryNamings = new WeakMap();
+  }
   // A node's loose range, as the kernel's `loose` (term_internal.h): one
   // more than its greatest loose Bound index, 0 when locally closed.
   looseOf(id) {
@@ -259,12 +312,28 @@ export class CubicalSyntax {
     return number;
   }
   // The chain of binders around a part with one more, innermost: one object
-  // for each chain, so that its id keys the encoding cache.
+  // for each chain, so that its id keys the encoding cache, and the
+  // decoding's (prefix).
   binder(name, next) {
     const key = `${next?.id ?? 0} ${name}`;
     let chain = this.chains.get(key);
-    if (!chain) this.chains.set(key, chain = { name, next, id: this.chains.size + 1 });
+    if (!chain) this.chains.set(key, chain = { name, next, id: this.chains.size + 1, length: (next?.length ?? 0) + 1 });
     return chain;
+  }
+  // A chain {name, next} as the one object for it (binder).
+  interned(names) {
+    if (!names) return null;
+    const key = `${names.next?.id ?? 0} ${names.name}`;
+    return this.chains.get(key) === names ? names : this.binder(names.name, this.interned(names.next));
+  }
+  // The innermost `length` binders of a chain, as a chain: what names a
+  // node's loose indices, when `length` is its loose range.
+  prefix(chain, length) {
+    if (!chain || !length) return null;
+    if (chain.length <= length) return chain;
+    let prefix = (chain.prefixes ??= new Map()).get(length);
+    if (prefix === undefined) chain.prefixes.set(length, prefix = this.binder(chain.name, this.prefix(chain.next, length - 1)));
+    return prefix;
   }
   // The kernel's List cells for a sequence, in order.
   list(items, encode) {
@@ -375,44 +444,72 @@ export class CubicalSyntax {
     const { epoch } = this.kernel.binderNames;
     if (epoch !== this.namesEpoch) {
       this.decoded = new NodeCache(this.kernel);
+      this.contexts = new WeakMap();
       this.namesEpoch = epoch;
     }
-    const encodingKey = dimensionContextKey(dimensions);
+    return this.decodeIn(id, this.contextOf(dimensions, names, naming));
+  }
+  // The context a decoding starts in (DecodingContext): one for each
+  // naming, binders and dimensions in their order.
+  contextOf(dimensions, names, naming) {
+    const chain = this.interned(names);
+    if (!this.contexts.has(naming ?? NO_NAMING)) this.contexts.set(naming ?? NO_NAMING, new Map());
+    const contexts = this.contexts.get(naming ?? NO_NAMING), key = `${chain?.id ?? 0} ${JSON.stringify([...dimensions])}`;
+    let context = contexts.get(key);
+    if (!context) contexts.set(key, context = new DecodingContext(this, new Map(dimensions), dimensionContextKey(dimensions), chain, naming));
+    return context;
+  }
+  // The names a set of entries takes in `naming`, in the entries' order, as
+  // one key: read once for each set a naming meets, as entriesOf shares
+  // them.
+  shownEntries(entries, naming) {
+    if (!this.entryNamings.has(naming ?? NO_NAMING)) this.entryNamings.set(naming ?? NO_NAMING, new WeakMap());
+    const known = this.entryNamings.get(naming ?? NO_NAMING);
+    let shown = known.get(entries);
+    if (shown === undefined) {
+      shown = [...entries].sort((a, b) => a - b).map(entry => variableName(this.kernel, { kind: "Context", payload: entry }, null, naming)).join("\0");
+      known.set(entries, shown);
+    }
+    return shown;
+  }
+  // A node decoded in a context: found by the node there, or decoded.
+  decodeIn(id, context) {
+    let result = context.decodings.get(id);
+    if (result === undefined) context.decodings.set(id, result = this.decodeNode(id, context));
+    return result;
+  }
+  decodeNode(id, context) {
     // A node's decoding depends on the names of its free dimensions, on the
     // names its loose indices take and on those its entries take, so it is
     // decoded, and cached, under those alone. A binder
     // inside may then reuse the name of a dimension the node does not
     // mention.
-    const free = this.freeDimensions(id);
-    const assigned = [...dimensions.values()].reduce((mask, index) => mask | 1n << BigInt(index), 0n);
-    const completeContext = (free & ~assigned) === 0n;
-    if ([...dimensions.values()].some(index => !(free & 1n << BigInt(index))))
-      dimensions = new Map([...dimensions].filter(([, index]) => free & 1n << BigInt(index)));
+    const free = this.freeDimensions(id), completeContext = (free & ~context.assigned) === 0n;
+    const within = context.restrictedTo(free), { dimensions, names, naming } = within;
     const loose = this.looseOf(id), entries = this.entriesOf(id);
-    // The names its loose indices take, and those its entries take.
-    const stack = [];
-    for (let binder = names, i = 0; i < loose; i++, binder = binder?.next) stack.push(binder?.name);
-    const shown = [...entries].sort((a, b) => a - b).map(entry => variableName(this.kernel, { kind: "Context", payload: entry }, null, naming));
-    // In no dimension context, as most nodes are, and closed, the node alone.
-    const cacheKey = dimensions.size || loose || shown.length
-      ? JSON.stringify([id, dimensionContextKey(dimensions), stack, shown]) : id;
-    if (this.decoded.has(cacheKey)) {
-      const result = this.decoded.get(cacheKey);
-      if (completeContext && this.closed(result)) this.encoded.setNode(result, encodingKey, id);
-      return result;
+    // In no dimension context, as most nodes are, and closed, the node alone;
+    // otherwise also the names its loose indices take (the binders around it
+    // that name them) and those its entries take.
+    const cacheKey = dimensions.size || loose || entries.size
+      ? `${id}\0${within.key}\0${this.prefix(names, loose)?.id ?? 0}\0${this.shownEntries(entries, naming)}` : id;
+    const known = this.decoded.get(cacheKey);
+    if (known !== undefined) {
+      if (completeContext && this.closed(known)) this.encoded.setNode(known, context.key, id);
+      return known;
     }
     const node = this.kernel.node(id), { kind: tag, payload, children: c } = node;
-    const child = i => this.decode(c[i], dimensions, names, naming);
+    // A part of the node, decoded in the context it is under.
+    const part = (handle, inner) => this.decodeIn(handle, inner);
+    const child = i => part(c[i], within);
     // A binder's own name, unless it would capture a variable its body refers
     // to otherwise: an outer binder's, by the body's loose indices past its
     // own, or an entry's.
     const binder = () => this.binderShownName(id, names, naming);
     let bound;
-    const body = i => this.decode(c[i], dimensions, pushName(bound, names), naming);
-    let dim = `d${payload}`;
-    while (dimensions.has(dim)) dim += "_";
-    const inner = new Map(dimensions).set(dim, payload);
-    const boundChild = i => this.decode(c[i], inner, names, naming);
+    const body = i => part(c[i], within.under(bound));
+    // A dimension binder's dimension, and its parts.
+    const dimensionBinder = () => within.dimensionBinder(payload);
+    const boundChild = i => part(c[i], dimensionBinder().context);
     let result = { tag };
     switch (tag) {
       case "DefRef": result.name = this.kernel.definitionName(id); break;
@@ -428,13 +525,13 @@ export class CubicalSyntax {
       case "App": Object.assign(result, { fn: child(0), arg: child(1) }); break;
       case "Pair": Object.assign(result, { as: child(0), first: child(1), second: child(2) }); break;
       case "Fst": case "Snd": result.pair = child(0); break;
-      case "Path": Object.assign(result, { dim, family: boundChild(0), left: child(1), right: child(2) }); break;
-      case "PLam": Object.assign(result, { dim, family: boundChild(0), body: boundChild(1) }); break;
+      case "Path": Object.assign(result, { dim: dimensionBinder().name, family: boundChild(0), left: child(1), right: child(2) }); break;
+      case "PLam": Object.assign(result, { dim: dimensionBinder().name, family: boundChild(0), body: boundChild(1) }); break;
       case "PApp": Object.assign(result, { path: child(0), arg: this.decodeFormula(payload, dimensions), ...c[1] ? { pathType: child(1) } : {} }); break;
       case "Trans": {
         const descriptor = this.kernel.node(c[1]);
         if (descriptor.kind !== "Tube" || descriptor.children[1]) throw new Error("Invalid transport face descriptor.");
-        Object.assign(result, { dim, family: boundChild(0), face: this.decodeFormula(descriptor.payload, dimensions), base: child(2) });
+        Object.assign(result, { dim: dimensionBinder().name, family: boundChild(0), face: this.decodeFormula(descriptor.payload, dimensions), base: child(2) });
         break;
       }
       case "Comp": case "HComp": {
@@ -442,10 +539,10 @@ export class CubicalSyntax {
         for (let tube = c[1]; tube;) {
           const n = this.kernel.node(tube);
           if (n.kind !== "Tube") throw new Error("Invalid cubical tube list.");
-          system.push({ face: this.decodeFormula(n.payload, dimensions), term: this.decode(n.children[0], inner, names, naming) });
+          system.push({ face: this.decodeFormula(n.payload, dimensions), term: part(n.children[0], dimensionBinder().context) });
           tube = n.children[1];
         }
-        Object.assign(result, { dim, family: tag === "HComp" ? child(0) : boundChild(0), system, base: child(2) }); break;
+        Object.assign(result, { dim: dimensionBinder().name, family: tag === "HComp" ? child(0) : boundChild(0), system, base: child(2) }); break;
       }
       case "Abort": Object.assign(result, { as: child(0), impossible: child(1) }); break;
       case "Sum": Object.assign(result, { left: child(0), right: child(1) }); break;
@@ -454,15 +551,15 @@ export class CubicalSyntax {
       case "UnitRec": Object.assign(result, { motive: child(0), point: child(1), value: child(2) }); break;
       case "Glue": case "GlueTerm": {
         const system = [];
-        for (let part = c[tag === "Glue" ? 1 : 2]; part;) {
-          const n = this.kernel.node(part), face = this.decodeFormula(n.payload, dimensions);
+        for (let link = c[tag === "Glue" ? 1 : 2]; link;) {
+          const n = this.kernel.node(link), face = this.decodeFormula(n.payload, dimensions);
           if (tag === "Glue") {
             if (n.kind !== "GlueSystem") throw new Error("Invalid cubical Glue system.");
-            system.push({ face, type: this.decode(n.children[0], dimensions, names, naming), equiv: this.decode(n.children[1], dimensions, names, naming) });
-            part = n.children[2];
+            system.push({ face, type: part(n.children[0], within), equiv: part(n.children[1], within) });
+            link = n.children[2];
           } else {
             if (n.kind !== "Tube") throw new Error("Invalid cubical Glue element system.");
-            system.push({ face, term: this.decode(n.children[0], dimensions, names, naming) }); part = n.children[1];
+            system.push({ face, term: part(n.children[0], within) }); link = n.children[1];
           }
         }
         Object.assign(result, tag === "Glue" ? { base: child(0), system } : { as: child(0), base: child(1), system }); break;
@@ -470,7 +567,7 @@ export class CubicalSyntax {
       case "Unglue": Object.assign(result, { as: child(0), value: child(1) }); break;
       case "Sort":
         Object.assign(result, { signature: this.signatureRecord(payload).name,
-          parameters: this.items(c[0]).map(item => this.decode(item, dimensions, names, naming)),
+          parameters: this.items(c[0]).map(item => part(item, within)),
           levels: this.items(c[1]).map(level => this.decodeLevel(level, names, naming)) });
         break;
       case "Con": {
@@ -481,7 +578,7 @@ export class CubicalSyntax {
       }
       case "Elim":
         Object.assign(result, { signature: this.signatureRecord(payload).name, motive: child(0),
-          clauses: this.items(c[1]).map(item => this.decode(item, dimensions, names, naming)) });
+          clauses: this.items(c[1]).map(item => part(item, within)) });
         break;
       default: throw new Error(`Unsupported cubical node: ${tag}`);
     }
@@ -501,8 +598,8 @@ export class CubicalSyntax {
     // An inspection context can omit indices and use fallback names; those
     // names need not encode back to the original slots.
     if (this.closed(result)) {
-      this.encoded.setNode(result, dimensionContextKey(dimensions), id);
-      if (completeContext) this.encoded.setNode(result, encodingKey, id);
+      this.encoded.setNode(result, within.key, id);
+      if (completeContext) this.encoded.setNode(result, context.key, id);
     }
     this.decoded.set(cacheKey, result, id);
     return result;
@@ -510,3 +607,5 @@ export class CubicalSyntax {
   // Whether syntax has no free variable, and so encodes alike in every scope.
   closed(term) { return !isTerm(term) || !freeNames(term).size; }}
 const NONE = Object.freeze(new Set());
+// The key of no naming, in the maps kept by naming.
+const NO_NAMING = Object.freeze({});
