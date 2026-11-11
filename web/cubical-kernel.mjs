@@ -111,20 +111,48 @@ function uint32(value, label) {
   return value;
 }
 
+// What the driver keeps by node handle, with the handles a declaration made
+// noted apart: those from its checkpoint's first node on, which its commit
+// moves and its rollback drops (CubicalDeclarationTransaction.finish). So a
+// declaration's end walks the handles it made, not all the session holds.
+class HandleMap extends Map {
+  #from = Infinity;
+  #made = new Set();
+  set(handle, value) {
+    if (handle >= this.#from) this.#made.add(handle);
+    return super.set(handle, value);
+  }
+  // A declaration's checkpoint, whose first node is `from`.
+  checkpoint(from) { this.#from = from; this.#made.clear(); }
+  // Its end: each handle it made goes, and at a commit comes back where the
+  // kernel relocates it (`relocated`, 0 for a node the commit drops), with
+  // the same value, unless another value is kept there.
+  finish(relocated = null) {
+    const moved = [...this.#made].filter(handle => this.has(handle)).map(handle => [handle, this.get(handle)]);
+    for (const [handle] of moved) this.delete(handle);
+    this.#from = Infinity; this.#made.clear();
+    if (relocated) for (const [handle, value] of moved) {
+      const kept = relocated(handle);
+      if (kept && !this.has(kept)) super.set(kept, value);
+    }
+  }
+}
 // The driver's names of binder nodes (web/cubical-variables.mjs, binderName).
 // A binder the kernel built is shown as x until an encoding of the same node
 // names it, which may come after a decoding showed it: so each binder shown
 // unnamed is noted (`shownUnnamed`), and naming one of them moves `epoch`,
-// at which the codec drops the decodings it kept (CubicalSyntax.decode).
-class BinderNames extends Map {
+// at which the codec drops the decodings it kept (CubicalSyntax.decode). A
+// relocated name names a new node, none of them shown yet (HandleMap.finish).
+class BinderNames extends HandleMap {
   set(handle, name) {
-    if (this.shownUnnamed?.delete(handle)) this.epoch++;
+    if (this.shownUnnamed.delete(handle)) this.epoch++;
     return super.set(handle, name);
   }
   shown(handle) {
-    if (super.has(handle)) return;
-    (this.shownUnnamed ??= new Set()).add(handle);
+    if (this.has(handle)) return;
+    this.shownUnnamed.set(handle, true);
   }
+  shownUnnamed = new HandleMap();
   epoch = 0;
 }
 
@@ -152,7 +180,7 @@ export class CubicalKernel {
     // The name each binder's entries are chosen by, fixed at its first use
     // (web/cubical-variables.mjs, binderKey), and the serial of the keys of
     // binders the kernel built.
-    this.binderKeys = new Map();
+    this.binderKeys = new HandleMap();
     this.binderKeySerial = 0;
     // What node(id) read of each node: nodes do not change, but a
     // declaration's commit or rollback moves them, so the transaction that
