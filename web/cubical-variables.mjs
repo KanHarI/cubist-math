@@ -261,27 +261,36 @@ export class EntryNames {
     // The last variant number of each name: a spelling is never made again, so
     // a variant names one stem for ever, as its display reads it (stems).
     this.variants = new Map();
-    // Each variant's stem, and the names whose stem was read as their own
-    // (stemOf): a name's stem is fixed at its first use.
+    // Each variant's stem, as the elaborator's display renaming reads it
+    // (cubical-elaborator.mjs, SourceNames): the record #354 kept, where a
+    // variant made again records the stem it was made from last. What the
+    // renaming shows so depends on what was made before it, as on #354; the
+    // display-names follow-up settles that.
     this.stems = new Map();
+    // The stems binders' variants read (stemOf), fixed at a name's first
+    // use: each variant's, recorded once, and the names read as their own.
+    this.binderStems = new Map();
     this.ownStems = new Set();
     this.likenesses = new Map();
   }
-  // The stem a name was made from: a variant's, recorded when it was made
-  // (variantOf), and otherwise the name itself. A name's stem is fixed at its
-  // first use, as a binder's key is (binderKey): once read as its own, the
-  // name is never recorded as a variant, and a variant's stem is recorded
-  // once. So a binder's variant, which reads it (shownBinderName), is the
-  // same whatever is shown after it, as CubicalSyntax.decode keeps it.
+  // The stem a binder's variant reads for a name: a variant's, recorded
+  // when it was made (variantOf), and otherwise the name itself. It is fixed
+  // at the name's first use, as a binder's key is (binderKey): once read as
+  // its own, the name is never recorded as a variant, and a variant's stem
+  // is recorded once. So a binder's variant, which reads it
+  // (shownBinderName), is the same whatever is made after it, as
+  // CubicalSyntax.decode keeps it.
   stemOf(name) {
-    const stem = this.stems.get(name);
+    const stem = this.binderStems.get(name);
     if (stem !== undefined) return stem;
     this.ownStems.add(name);
     return name;
   }
-  // A variant made from `stem`, unless the name was used before.
+  // A variant `name` made from `stem`: in the elaborator's record, as made,
+  // and in the binders', unless the name was used there before.
   variantOf(name, stem) {
-    if (!this.stems.has(name) && !this.ownStems.has(name)) this.stems.set(name, stem);
+    this.stems.set(name, stem);
+    if (!this.binderStems.has(name) && !this.ownStems.has(name)) this.binderStems.set(name, stem);
   }
   // A live entry made for `name` at `type`, a type's term handle or LEVEL,
   // that `excluded` does not refuse: the first made of those at a type

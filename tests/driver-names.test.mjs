@@ -414,3 +414,39 @@ test("entries named apart are decoded apart, whatever characters their names hol
   assert.deepEqual(shown("a\u0000b", "c"), ["a\u0000b", "c"]);
   assert.deepEqual(shown("a", "b\u0000c"), ["a", "b\u0000c"]);
 });
+
+// The elaborator's display renaming reads the stems as #354 recorded them
+// (EntryNames.stems), apart from the stems binders' variants read, fixed at
+// first use (stemOf). From the second review of this change: a binder x'1
+// decoded under an outer x'1 reads x'1 as its own stem; a fresh x entry is
+// then spelled x'1, a variant of x for the display; and the first check of
+// λ (x'1 : Unit). x'1 shows it by x, as on #354.
+test("the display renames a variant spelling to its stem, whatever a binder read before", async t => {
+  const program = fresh(t), { kernel, checker } = program, syntax = checker.syntax, driver = checker.driver;
+  const unitType = syntax.encode(unit), binder = kernel.term("Lam", 0, unitType, kernel.term("Bound", 1));
+  kernel.binderNames.set(binder, "x'1");
+  assert.equal(syntax.decode(binder, new Map(), pushName("x'1", null), null).name, "x'1_1");
+  const entry = driver.freshEntry(driver.asType(driver.infer(unitType)), "x");
+  assert.equal(kernel.entryNames.spelled(entry), "x'1");
+  const view = checker.checkSyntax(lam("x'1", unit, { tag: "Var", name: "x'1" }), null, new Map(), new Map());
+  assert.equal(checker.displayText(view.term, new Map()), "fun (x : Unit) => x");
+});
+
+// A variant's stem, recorded for binders, is recorded once. From the
+// second review of this change: a binder x' shown under x' as x'1 makes
+// x'1 a variant of x'; a binder x'1 shown under x'1 is then x'2; and a fresh
+// x entry spelled x'1 leaves x'1 a variant of x' for binders, so that a
+// codec of its own decodes the second as the kept decoding shows it.
+test("a variant's stem, recorded for binders, is never recorded again", async t => {
+  const program = fresh(t), { kernel, checker } = program, syntax = checker.syntax, driver = checker.driver;
+  const unitType = syntax.encode(unit), outer = kernel.term("Bound", 1);
+  const first = kernel.term("Sigma", 0, unitType, outer), second = kernel.term("Lam", 0, unitType, outer);
+  kernel.binderNames.set(first, "x'");
+  kernel.binderNames.set(second, "x'1");
+  const under = (codec, handle, name) => codec.decode(handle, new Map(), pushName(name, null), null).name;
+  assert.equal(under(syntax, first, "x'"), "x'1");
+  assert.equal(under(syntax, second, "x'1"), "x'2");
+  const entry = driver.freshEntry(driver.asType(driver.infer(unitType)), "x");
+  assert.equal(kernel.entryNames.spelled(entry), "x'1");
+  assert.equal(under(new CubicalSyntax(kernel), second, "x'1"), under(syntax, second, "x'1"));
+});
