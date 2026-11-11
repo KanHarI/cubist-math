@@ -132,14 +132,19 @@ test("an entry found again after a reset is the one kept judgements use, whateve
   // and a Transitivity with the judgement kept from before the reset meets.
   const program = fresh(t), { kernel, checker } = program, syntax = checker.syntax;
   const u0 = syntax.encode({ tag: "U", level: 0 }), at = dimension => kernel.term("Path", dimension, u0, syntax.encode(unit), syntax.encode(unit));
-  const variable = kernel.term("Var", kernel.symbol("x")), context = dimension => [[kernel.symbol("x"), at(dimension)]];
+  // A term in a context: encoded against the context's scope, made first.
+  const context = dimension => [[kernel.symbol("x"), at(dimension)]];
+  const infer = (term, context) => {
+    const scope = checker.driver.contextScope(context, 0n);
+    return checker.driver.derive(syntax.encode(term, new Map(), scope), scope);
+  };
   const contextOf = id => checker.driver.graph.judgement(id).context;
-  const first = checker.driver.infer(variable, context(0)), kept = checker.driver.infer(variable, context(1));
+  const first = infer(x, context(0)), kept = infer(x, context(1));
   assert.deepEqual(contextOf(kept), contextOf(first));
-  const shadowing = checker.driver.infer(kernel.term("Lam", kernel.symbol("x"), at(1), variable), context(1));
+  const shadowing = infer(lam("x", syntax.decode(at(1), new Map(), null, null), x), context(1));
   assert.ok(!contextOf(kept).includes(discharged(checker.driver.graph, shadowing)[0]));
   kernel.instructionDriver = null;
-  const g = checker.driver.graph, again = checker.driver.infer(variable, context(1));
+  const g = checker.driver.graph, again = infer(x, context(1));
   assert.deepEqual(g.judgement(again).context, g.judgement(kept).context);
   assert.ok(g.transitivity(g.refl(kept), g.refl(again)));
 });
@@ -177,12 +182,15 @@ test("a type handle met in a rolled-back declaration is forgotten with it", asyn
   // it: x at that type, Unit → Unit, is another entry.
   const program = fresh(t), { kernel, checker } = program, syntax = checker.syntax, symbol = kernel.symbol("x");
   const u0 = syntax.encode({ tag: "U", level: 0 }), at = dimension => kernel.term("Path", dimension, u0, syntax.encode(unit), syntax.encode(unit));
-  const contextOf = type => checker.driver.graph.judgement(checker.driver.infer(kernel.term("Var", symbol), [[symbol, type]])).context;
+  const contextOf = type => {
+    const scope = checker.driver.contextScope([[symbol, type]], 0n);
+    return checker.driver.graph.judgement(checker.driver.derive(syntax.encode(x, new Map(), scope), scope)).context;
+  };
   const [entry] = contextOf(at(0));
   const transaction = new CubicalDeclarationTransaction(kernel, checker), transient = at(1);
   assert.deepEqual(contextOf(transient), [entry]);
   transaction.finish(false);
-  const function_ = kernel.term("Pi", kernel.symbol("_"), syntax.encode(unit), syntax.encode(unit));
+  const function_ = kernel.term("Pi", 0, syntax.encode(unit), syntax.encode(unit));
   assert.equal(function_, transient, "the freed handle is made again");
   assert.notDeepEqual(contextOf(function_), [entry]);
 });
@@ -198,7 +206,7 @@ test("definitions are named by index: shared or not, relocated, and freed at a r
     const reference = kernel.definitions.get("main__one"), index = kernel.node(reference).payload;
     const copy = kernel.term("DefRef", index);
     assert.equal(copy === reference, shareSyntax);
-    for (const handle of [reference, copy]) assert.deepEqual(checker.syntax.decode(handle), { tag: "DefRef", name: "main__one" });
+    for (const handle of [reference, copy]) assert.deepEqual(checker.syntax.decode(handle, new Map(), null, null), { tag: "DefRef", name: "main__one" });
     // A definition rolled back leaves no name, and the next one at its index
     // is named by its own.
     const transaction = new CubicalDeclarationTransaction(kernel, checker);
@@ -212,7 +220,7 @@ test("definitions are named by index: shared or not, relocated, and freed at a r
     next.finish(true);
     const real = kernel.definitions.get("main__real");
     assert.equal(kernel.node(real).payload, freed);
-    assert.deepEqual(checker.syntax.decode(real), { tag: "DefRef", name: "main__real" });
+    assert.deepEqual(checker.syntax.decode(real, new Map(), null, null), { tag: "DefRef", name: "main__real" });
   }
 });
 
@@ -233,7 +241,7 @@ def pick(s : B) : A := match s {
 def picked : A := pick(b);
 `, "main");
   assert.deepEqual(result.gaps, []);
-  const value = name => checker.syntax.decode(kernel.definition(kernel.definitions.get(name)).value);
+  const value = name => checker.syntax.decode(kernel.definition(kernel.definitions.get(name)).value, new Map(), null, null);
   const constructors = [];
   const visit = term => {
     if (!term || typeof term !== "object") return;
@@ -266,4 +274,28 @@ test("a declaration's universe levels are compared as written, for E514", async 
   const failure = result.outputs.find(output => output.name === "Bad");
   assert.equal(failure.code, "E514");
   assert.match(failure.reason, /pack's argument x lives in a universe above Bad's declared one/);
+});
+
+// A binder the kernel built, with no name, binds entries of its own node
+// (binderKey). Encoding the same node later with a source name names it for
+// display, and must not change the name its entries are chosen by: in
+// A : U0, B : A → U0, x : A, y : B(x), the unnamed λ (_ : A). y derived, then
+// written λ (x : A). y, derives again with one more live dimension as a
+// fresh driver derives it, not at x's entry, on which y's depends.
+test("a binder's key for its entries stays what it was when a source name names it later", async t => {
+  const program = fresh(t), { kernel, checker } = program, driver = checker.driver, syntax = checker.syntax;
+  const encode = (term, scope) => syntax.encode(term, new Map(), scope);
+  const A = { tag: "Var", name: "A" }, B = { tag: "Var", name: "B" }, y = { tag: "Var", name: "y" };
+  const context = [["A", { tag: "U", level: 0 }], ["B", { tag: "Pi", name: "_", domain: A, body: { tag: "U", level: 0 } }],
+    ["x", A], ["y", { tag: "App", fn: B, arg: x }]];
+  const scopeOf = (driver, dimensions) => driver.scopeOf(context.map(([name, type]) => [kernel.symbol(name), type]), dimensions, encode);
+  const scope = scopeOf(driver, 0n);
+  const unnamed = kernel.term("Lam", 0, encode(A, scope), encode(y, scope));
+  assert.ok(!kernel.binderNames.has(unnamed));
+  driver.derive(unnamed, scope);
+  assert.equal(encode(lam("x", A, y), scope), unnamed, "the source term is the same node");
+  const warm = driver.graph.judgement(driver.derive(unnamed, scopeOf(driver, 1n)));
+  const other = new InstructionDriver(kernel), cold = other.graph.judgement(other.derive(unnamed, scopeOf(other, 1n)));
+  assert.equal(warm.term, cold.term);
+  assert.deepEqual(warm.context, cold.context);
 });

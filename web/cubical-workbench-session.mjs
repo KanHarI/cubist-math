@@ -7,7 +7,7 @@ import { kernelOccurrence, kernelReductionActions, kernelStep } from "./cubical-
 import { judgementGraph } from "./cubical-graph-view.mjs";
 import { checkReduction, reduceView } from "./cubical-reduction.mjs";
 import { levelText } from "./cubical-levels.mjs";
-import { variableName } from "./cubical-variables.mjs";
+import { binders, pushName, variableName } from "./cubical-variables.mjs";
 import { safeTrace, traceSources, traceSnapshot, traceCounters, traceCost } from "./cubical-workbench-trace.mjs";
 
 // A transfer's sources are text, which no reader placed: `fromLibrary` says
@@ -74,16 +74,16 @@ export class WorkbenchSession {
   }
   occurrence(id, side, path) {
     const { view, checked } = this.state(id), { kernel, checker } = this.program;
-    const node = kernelOccurrence(kernel, checked, side, path);
-    const label = handle => {
+    const node = kernelOccurrence(kernel, checked, side, path, checker.syntax);
+    const label = (handle, names = node.names) => {
       if (!handle) return "unused";
       const n = kernel.node(handle);
       if (n.kind === "DefRef") {
         const { name } = kernel.definition(handle);
         return view.symbols[name]?.name ?? name;
       }
-      if (n.kind === "Var") {
-        const name = variableName(kernel, n);
+      if (n.kind === "Context" || n.kind === "Bound") {
+        const name = variableName(kernel, n, names, checked.naming);
         return view.symbols[name]?.name ?? name;
       }
       return opcodeName(n.kind);
@@ -91,16 +91,23 @@ export class WorkbenchSession {
     // A partial-system cell has no standalone type, but its operands do. Keep
     // it inspectable without pretending that it is a term in the outer context.
     let text = label(node.handle);
-    if (["LConst", "LSucc", "LMax"].includes(node.kind)) text = levelText(checker.syntax.decodeLevel(node.handle));
+    // A level under level binders names their variables as a term does.
+    if (["LConst", "LSucc", "LMax"].includes(node.kind)) text = levelText(checker.syntax.decodeLevel(node.handle, node.names, checked.naming));
     else if (!["Tube", "GlueSystem", "List", "LBound"].includes(node.kind)) {
-      const dimensions = new Map(view.dimensions ?? []), term = checker.syntax.decode(node.handle, dimensions);
-      text = checker.displayGoal(new Map(view.context.map(x => [x.name, x.type])),
-        dimensions, term, null, { width: 180, kernel: true, reduce: false }).goal;
+      const dimensions = new Map(view.dimensions ?? []), term = checker.syntax.decode(node.handle, dimensions, node.names, checked.naming);
+      // The binders above the occurrence bind its variables, as in the whole
+      // term: shown under them, a variable keeps the name the full view gives.
+      const context = new Map(view.context.map(x => [x.name, x.type]));
+      for (const binder of node.crossed) context.set(binder.name, checker.syntax.decode(binder.domain, dimensions, binder.names, checked.naming));
+      text = checker.displayGoal(context, dimensions, term, null, { width: 180, kernel: true, reduce: false }).goal;
     }
     return { ...node, text, label: label(node.handle),
-      actions: kernelReductionActions(kernel, checked, side, path),
+      actions: kernelReductionActions(kernel, checked, side, path, checker.syntax),
       operands: node.children.map((handle, index) => ({ handle, index,
-        role: operandNames[node.kind]?.[index] ?? "unused", label: label(handle),
+        // A binder's body is under its binder, whose variable is its index 0.
+        role: operandNames[node.kind]?.[index] ?? "unused",
+        label: label(handle, binders.has(node.kind) && index === 1
+          ? pushName(checker.syntax.binderShownName(node.handle, node.names, checked.naming), node.names) : node.names),
         kind: handle ? kernel.node(handle).kind : null })) };
   }
   async handle(command, args) {
@@ -115,7 +122,7 @@ export class WorkbenchSession {
     }
     if (command === "occurrence") return this.occurrence(args.state, args.side, args.path);
     if (command === "subtree") {
-      const node = kernelOccurrence(this.program.kernel, checked, args.side, args.path);
+      const node = kernelOccurrence(this.program.kernel, checked, args.side, args.path, this.program.checker.syntax);
       // One level only. Expanding a branch requests its children separately;
       // shared handles are still displayed at their distinct operand paths.
       const listing = kernelAssembly(this.program, view, checked, {
@@ -153,7 +160,8 @@ export class WorkbenchSession {
           view.context.map(x => [x.name, x.type]), dimensions);
         // Folded, as every normal form shown on request is; checkReduction
         // checks it by conversion, as it would the full one.
-        const term = this.program.checker.syntax.decode(this.program.kernel.normalizeFolded(original.expression), dimensions);
+        // Named as the view's context names its entries, which recheck it.
+        const term = this.program.checker.syntax.decode(this.program.kernel.normalizeFolded(original.expression), dimensions, null, original.naming);
         result = { ...checkReduction(this.program, view, side, term), change: { rule: "Normalized", name: side } };
       } else result = reduceView(this.program, view, side, kind, path);
       if (!result.change) return { change: null };

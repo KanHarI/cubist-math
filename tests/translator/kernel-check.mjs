@@ -39,7 +39,7 @@ export function checkKernel(term, expected = null, assumptions = [], { normalize
     const steps = () => { const work = kernel.work(); return work.instructionSteps + work.querySteps; }, before = steps();
     const checked = elaborator.checkSyntax(references(term), expected && references(expected), context, elaborator.dimensions);
     const result = { ok: true, term: shown(checked.term), type: shown(checked.type), arenaNodes: checked.arenaNodes, steps: steps() - before };
-    if (normalize) result.normal = shown(elaborator.syntax.decode(kernel.normalize(checked.expression), elaborator.dimensions));
+    if (normalize) result.normal = shown(elaborator.syntax.decode(kernel.normalize(checked.expression), elaborator.dimensions, null, null));
     return result;
   } catch (error) {
     return { ok: false, error: error.message };

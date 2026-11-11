@@ -210,8 +210,7 @@ const shown = async t => {
   const texts = new Map(cases.map(([name], index) => [name, result.prints[index].text]));
   return { program, texts };
 };
-const typeOf = (program, name) => program.checker.displayText(program.checker.syntax.decode(
-  program.kernel.definition(program.kernel.definitions.get(`main__${name}`)).type), [], { width: 1000, limit: 1000 });
+const typeOf = (program, name) => program.checker.displayText(program.checker.syntax.decode(program.kernel.definition(program.kernel.definitions.get(`main__${name}`)).type, new Map(), null, null), [], { width: 1000, limit: 1000 });
 
 test("each folded normal form reads back as the same function, and computes alike", async t => {
   const { program, texts } = await shown(t);
@@ -232,7 +231,7 @@ test("shown where the context names a dimension, each reads back bound by it", a
     const context = new Map([[dimension, 0]]);
     for (const [name] of cases) {
       const { expression } = checker.checkSyntax({ tag: "DefRef", name: `main__${name}` }, null, new Map(), context);
-      const text = checker.displayText(checker.syntax.decode(kernel.normalizeFolded(expression), context), context, { width: 4000 });
+      const text = checker.displayText(checker.syntax.decode(kernel.normalizeFolded(expression), context, null, null), context, { width: 4000 });
       back.push(`def ${dimension}_${name} : ${name} = ${name} := path ${dimension} => ${text};`);
     }
   }
@@ -317,8 +316,8 @@ def famP : PathP(fun (k : Interval) => (op @ k) -> U0, F, F) := path k => F;
   assert.equal(program.inspect("main__f", { normalize: true }).expressionText, "λ (x′ : (U0 → U0)). (x , x′)");
   // The kernel's bound dimension is d0, as the definition d0 is labeled.
   assert.equal(program.inspect("main__p", { normalize: true }).expressionText, "path(λ d0. (main__d0 , at(loop, d0:1)))");
-  const typeOfDefinition = name => checker.syntax.decode(kernel.definition(kernel.definitions.get(`main__${name}`)).type);
-  const folded = (term, dimensions) => checker.syntax.decode(kernel.normalizeFolded(checker.checkSyntax(term, null, new Map(), dimensions).expression), dimensions);
+  const typeOfDefinition = name => checker.syntax.decode(kernel.definition(kernel.definitions.get(`main__${name}`)).type, new Map(), null, null);
+  const folded = (term, dimensions) => checker.syntax.decode(kernel.normalizeFolded(checker.checkSyntax(term, null, new Map(), dimensions).expression), dimensions, null, null);
   const both_ = (term, shown) => {
     assert.equal(checker.displayText(term, [], { width: 1000, limit: 1000 }), shown);
     assert.equal(checker.displayGoal(new Map(), [], term, null, { width: 1000 }).goal, shown);
@@ -431,8 +430,10 @@ def h(k : UNat) : forall q : k = k. Unit := induction k as m return forall q : m
   assert.deepEqual(result.gaps, []);
   const { kernel, checker } = program;
   for (const [name, spelled, type] of [["f", /induction n as k return forall k1 : k = k\. k1 = k1 /, "n = n. q = q"],
-    ["g", /induction n as k return /, "n = n. Unit"], ["h", /induction k as k1 return /, "k = k. Unit"]]) {
-    const value = checker.syntax.decode(kernel.definition(kernel.definitions.get(`main__${name}`)).value);
+    // h's value is one node with g's, alpha-equal to it, and shows the names
+    // g's encoding gave it: binders carry no names (ABI 4).
+    ["g", /induction n as k return /, "n = n. Unit"], ["h", /induction n as k return /, "k = k. Unit"]]) {
+    const value = checker.syntax.decode(kernel.definition(kernel.definitions.get(`main__${name}`)).value, new Map(), null, null);
     const shown = sourceText(forSource([value], bare)[0], {}, 4000, { selection: "unat" });
     assert.match(shown, spelled, shown);
     const { result: back } = await checkProgram(t, `${declarations}def back : forall ${name === "h" ? "k" : "n"} : UNat. forall q : ${type} := ${shown};
@@ -563,12 +564,14 @@ def h : f = f := path j => (fun (p : f = f) => p)(refl(f)) @ j;
   // h's value, f in it as its folded normal form, whose edge clause is
   // eta-reduced.
   const { expression } = checker.checkSyntax({ tag: "DefRef", name: "main__f" }, null, new Map(), new Map());
-  const folded = checker.syntax.decode(kernel.normalizeFolded(expression), new Map());
+  const folded = checker.syntax.decode(kernel.normalizeFolded(expression), new Map(), null, null);
   const inline = t => !t || typeof t !== "object" ? t : t.tag === "DefRef" && t.name === "main__f" ? folded
     : Array.isArray(t) ? t.map(inline) : Object.fromEntries(Object.entries(t).map(([key, value]) => [key, inline(value)]));
-  const value = inline(checker.syntax.decode(kernel.definition(kernel.definitions.get("main__h")).value));
+  const value = inline(checker.syntax.decode(kernel.definition(kernel.definitions.get("main__h")).value, new Map(), null, null));
   const texts = [0, 256].map(reduce => checker.displayText(value, [], { width: 4000, reduce }));
-  assert.equal(texts[1], "refl(fun (x : S) => match x return Circle { pt => base; edge(u) @ j => loop @ j; })");
+  // The edge clause's λ is one the normal form rebuilt, which carries no
+  // name (ABI 4): the driver shows it as x, apart from the x around it.
+  assert.equal(texts[1], "refl(fun (x : S) => match x return Circle { pt => base; edge(x1) @ j => loop @ j; })");
   for (const text of texts) {
     const { result: back } = await checkProgram(t, `${source}def back : f = f := ${text};\n`, { module });
     assert.deepEqual(back.gaps, [], text);
@@ -602,9 +605,9 @@ def line : (fun (w : B(Unit)) => U0) = (fun (w : B(Unit)) => U0) := refl(fun (w 
     const { program, result } = await checkProgram(t, source(motive), { module });
     assert.deepEqual(result.gaps, []);
     const { kernel, checker } = program;
-    const value = name => checker.syntax.decode(kernel.definition(kernel.definitions.get(name)).value);
+    const value = name => checker.syntax.decode(kernel.definition(kernel.definitions.get(name)).value, new Map(), null, null);
     const { expression } = checker.checkSyntax({ tag: "DefRef", name: "main__f" }, null, new Map(), new Map());
-    let folded = checker.syntax.decode(kernel.normalizeFolded(expression), new Map());
+    let folded = checker.syntax.decode(kernel.normalizeFolded(expression), new Map(), null, null);
     if (replace) {
       assert.equal(folded.motive.tag, "Elim");
       folded = { ...folded, motive: { ...folded.motive, motive: replace(value, folded.motive.motive) } };
@@ -637,8 +640,10 @@ test("a definition named as a dimension of the context is shown qualified", asyn
   const values = [
     ["def q(r : base = base) : base = base := path f => r @ ~f;\ndef g : base = base := q(typed(base = base, path e => loop @ e));",
       ascribed(`main::q(${ascribed("path i => loop @ i")})`)],
+    // The ascription's λ is one node with q's λ (r : base = base). r, which
+    // was encoded first and so names it: binders carry no names (ABI 4).
     ["def q : base = base := (fun (u : Unit) => fun (r : base = base) => r)(tt, path e => loop @ e);\ndef g : base = base := path j => q @ ~j;",
-      ascribed("path i => main::q @ ~i")],
+      "(fun (r : base = base) => r)(path i => main::q @ ~i)"],
     ["def q(r : base = base) : base = base := path f => r @ ~f;\ndef g : base = base := path k => (fun (p : base = base) => q(p))(path j => loop @ j) @ k;",
       ascribed("path i => (fun (p : base = base) => main::q(p))(path i => loop @ i) @ i")],
     // No definition is named so: the display's beta reduction alone.
@@ -649,7 +654,7 @@ test("a definition named as a dimension of the context is shown qualified", asyn
   for (const [index, [definitions, unreduced]] of values.entries()) await t.test(`value ${index + 1}`, async t => {
     const { program, result } = await checkProgram(t, `${circle}${definitions}\n`, { module });
     assert.deepEqual(result.gaps, []);
-    const { kernel, checker } = program, value = checker.syntax.decode(kernel.definition(kernel.definitions.get("main__g")).value);
+    const { kernel, checker } = program, value = checker.syntax.decode(kernel.definition(kernel.definitions.get("main__g")).value, new Map(), null, null);
     const texts = [0, 256].map(reduce => checker.displayText(value, ["q"], { width: 4000, reduce }));
     assert.equal(texts[0], unreduced);
     for (const text of texts) {
@@ -673,7 +678,7 @@ def g : S -> Circle := fun (s : S) => match s return Circle { pt => base; edge(u
       const { kernel, checker } = program, context = new Map([["q", 0]]);
       const { expression } = checker.checkSyntax({ tag: "DefRef", name: "main__g" }, null, new Map(), context);
       for (const reduce of [0, 256]) {
-        const text = checker.displayText(checker.syntax.decode(kernel.normalizeFolded(expression), context), context, { width: 4000, reduce });
+        const text = checker.displayText(checker.syntax.decode(kernel.normalizeFolded(expression), context, null, null), context, { width: 4000, reduce });
         assert.match(text, shown, text);
         const { result: back } = await checkProgram(t, `${edges}def back : g = g := path q => ${text};\n`, { module });
         assert.deepEqual(back.gaps, [], text);
@@ -691,7 +696,7 @@ def g : S -> Circle := fun (s : S) => match s return Circle { pt => base; edge(u
     const { program, result } = await checkProgram(t, `${definitions}\n`, { module });
     assert.deepEqual(result.gaps, []);
     const { kernel, checker } = program;
-    const text = checker.displayText(checker.syntax.decode(kernel.definition(kernel.definitions.get("main__g")).value), ["q"]);
+    const text = checker.displayText(checker.syntax.decode(kernel.definition(kernel.definitions.get("main__g")).value, new Map(), null, null), ["q"]);
     assert.equal(text, shown);
     const { result: back } = await checkProgram(t, `${definitions}\ndef back : g = g := path q => ${text};\n`, { module });
     assert.deepEqual(back.gaps, [], text);
@@ -709,7 +714,7 @@ def g : S -> Circle := fun (s : S) => match s return Circle { pt => base; edge(u
     const reader = (name, importer) => name === "a__b" ? "def q : Unit := tt;\n" : library(name, importer);
     const { program, result } = await checkProgram(t, `${definitions}\n`, { module, reader });
     assert.deepEqual(result.gaps, []);
-    const { kernel, checker } = program, value = checker.syntax.decode(kernel.definition(kernel.definitions.get("main__g")).value);
+    const { kernel, checker } = program, value = checker.syntax.decode(kernel.definition(kernel.definitions.get("main__g")).value, new Map(), null, null);
     for (const reduce of [0, 256]) {
       const text = checker.displayText(value, [dimension], { width: 4000, reduce });
       assert.equal(text, reduce ? shown : `(fun (ascription : ${type}) => ascription)(${shown})`);

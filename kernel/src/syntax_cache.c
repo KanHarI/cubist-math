@@ -4,11 +4,12 @@
 #include "term_internal.h"
 
 static size_t slot(uint32_t operation, cc_term term, uint32_t name, cc_term value) {
-    uint64_t hash = term;
+    uint64_t hash = UINT64_C(14695981039346656037);
+    hash = (hash ^ term) * UINT64_C(1099511628211);
     hash = (hash ^ name) * UINT64_C(1099511628211);
     hash = (hash ^ value) * UINT64_C(1099511628211);
     hash = (hash ^ operation) * UINT64_C(1099511628211);
-    return (size_t)(hash % CC_SYNTAX_MEMO_SIZE);
+    return (size_t)((hash ^ hash >> 32) % CC_SYNTAX_MEMO_SIZE);
 }
 
 bool ck_memo_get(cc_kernel *k, uint32_t operation, cc_term term, uint32_t name,

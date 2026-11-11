@@ -31,15 +31,23 @@ static void resource(cc_kernel *k, const char *message) {
     k->budget = 1000000;
 }
 
-/* The outer name occurs beneath every inner binder, so pruning cannot hide
- * stale scope links after a frame-array move. Domains use the previous
- * binder; the innermost use distinguishes its binding from its parent. */
-static cc_term scoped(cc_kernel *k, unsigned names, bool wrong) {
+/* Only dimension binders keep names, and so scopes, in the comparison: term
+ * and level binders bind indices. So the chain is of path abstractions, 200
+ * deep, the outermost over dimension `outer` and the others cycling through
+ * the 31 above it. The outer dimension occurs beneath every inner binder,
+ * so pruning cannot hide stale scope links after a frame-array move.
+ * Families use the previous binder's dimension; the innermost use
+ * distinguishes its binding from its parent. */
+static unsigned dimension_at(unsigned outer, unsigned i) { return i ? outer + 1 + i % 31 : outer; }
+static cc_term at(cc_kernel *k, unsigned dimension) {
+    return node(k, CC_PAPP, ck_interval_variable(k, dimension), node(k, CC_POINT, 0, 0, 0, 0), 0, 0);
+}
+static cc_term scoped(cc_kernel *k, unsigned outer, bool wrong) {
     cc_term unit = node(k, CC_UNIT, 0, 0, 0, 0);
-    cc_term t = node(k, CC_SUM, 0, ck_var(k, names), ck_var(k, names + (wrong ? 198 : 199)), 0);
+    cc_term t = node(k, CC_SUM, 0, at(k, outer), at(k, dimension_at(outer, wrong ? 198 : 199)), 0);
     for (unsigned i = 200; i-- > 0;) {
-        cc_term domain = i ? node(k, CC_SUM, 0, unit, ck_var(k, names + i - 1), 0) : unit;
-        t = node(k, CC_LAM, names + i, domain, t, 0);
+        cc_term family = i ? node(k, CC_SUM, 0, unit, at(k, dimension_at(outer, i - 1)), 0) : unit;
+        t = node(k, CC_PLAM, dimension_at(outer, i), family, t, 0);
     }
     return t;
 }
@@ -47,7 +55,7 @@ static void comparisons(unsigned optimizations) {
     cc_kernel *k = cc_kernel_new();
     assert(k);
     cc_kernel_set_optimizations(k, optimizations);
-    cc_term left = scoped(k, 100, false), right = scoped(k, 1000, false), wrong = scoped(k, 2000, true);
+    cc_term left = scoped(k, 0, false), right = scoped(k, 32, false), wrong = scoped(k, 32, true);
     fail_malloc = 1;
     assert(!ck_alpha_equal(k, left, right) && !fail_malloc);
     resource(k, "Alpha-comparison stack allocation failed.");
@@ -67,7 +75,7 @@ static void comparisons(unsigned optimizations) {
 
 static cc_term composition(cc_kernel *k, unsigned direction, bool wrong_face) {
     cc_term unit = node(k, CC_UNIT, 0, 0, 0, 0);
-    cc_term body = node(k, CC_PAPP, ck_interval_variable(k, direction), ck_var(k, 10), 0, 0);
+    cc_term body = node(k, CC_PAPP, ck_interval_variable(k, direction), node(k, CC_POINT, 0, 0, 0, 0), 0, 0);
     cc_term tubes = 0;
     for (unsigned i = 0; i < 450; ++i) {
         cc_formula_id face = ck_endpoint_face(k, wrong_face && i == 0 ? 3 : 2, 0);
@@ -93,10 +101,16 @@ static void tube_scopes(unsigned optimizations) {
     cc_kernel_free(k);
 }
 
-static cc_term arithmetic(cc_kernel *k, bool deep_right) {
-    cc_term t = ck_var(k, 7);
+/* A level variable: a new level entry's reference. */
+static cc_term level_variable(cc_kernel *k) {
+    cc_entry_id entry = cc_instr_level(k);
+    assert(entry);
+    return node(k, CC_CONTEXT, entry, 0, 0, 0);
+}
+static cc_term arithmetic(cc_kernel *k, cc_term first, cc_term second, bool deep_right) {
+    cc_term t = first;
     for (unsigned i = 0; i < 200; ++i) {
-        cc_term deeper = node(k, CC_LSUCC, 1, t, 0, 0), variable = ck_var(k, 8);
+        cc_term deeper = node(k, CC_LSUCC, 1, t, 0, 0), variable = second;
         t = node(k, CC_LMAX, 0, deep_right ? variable : deeper, deep_right ? deeper : variable, 0);
     }
     return t;
@@ -105,7 +119,8 @@ static void arithmetic_failures(unsigned optimizations, bool deep_right) {
     cc_kernel *k = cc_kernel_new();
     assert(k);
     cc_kernel_set_optimizations(k, optimizations);
-    cc_term term = arithmetic(k, deep_right);
+    cc_term first = level_variable(k), second = level_variable(k);
+    cc_term term = arithmetic(k, first, second, deep_right);
     cc_level_nf nf;
     fail_malloc = 1;
     assert(!ck_level_normal(k, term, &nf) && !nf.terms && !fail_malloc);
@@ -125,8 +140,8 @@ static void arithmetic_failures(unsigned optimizations, bool deep_right) {
     k->budget = 1000000;
     assert(ck_level_normal(k, term, &nf) && !k->error[0]);
     assert(nf.tier == 0 && nf.constant == 200 && nf.count == 2);
-    assert(nf.terms[0].key == 7 && nf.terms[0].offset == 200);
-    assert(nf.terms[1].key == 8 && nf.terms[1].offset == 199);
+    assert(nf.terms[0].key == k->nodes[first].payload && nf.terms[0].offset == 200);
+    assert(nf.terms[1].key == k->nodes[second].payload && nf.terms[1].offset == 199);
     ck_level_nf_free(&nf);
     /* The query-local memo can fail after both children own normal forms. */
     fail_calloc = 1;
@@ -141,7 +156,7 @@ static void canonical_failures(unsigned optimizations) {
     cc_kernel *k = cc_kernel_new();
     assert(k);
     cc_kernel_set_optimizations(k, optimizations);
-    cc_term unit = node(k, CC_UNIT, 0, 0, 0, 0), variable = ck_var(k, 7);
+    cc_term unit = node(k, CC_UNIT, 0, 0, 0, 0), variable = level_variable(k);
     cc_term t = node(k, CC_U, 0, node(k, CC_LMAX, 0, variable, variable, 0), 0, 0);
     for (unsigned i = 0; i < 450; ++i) t = node(k, CC_SUM, 0, t, unit, 0);
     fail_malloc = 1;
@@ -164,7 +179,7 @@ static void canonical_failures(unsigned optimizations) {
     }
     assert(k->nodes[out].kind == CC_U);
     cc_node level = k->nodes[k->nodes[out].child[0]];
-    assert(level.kind == CC_VAR && level.payload == 7);
+    assert(level.kind == CC_CONTEXT && level.payload == k->nodes[variable].payload);
     k->budget = 0;
     assert(ck_canonical_levels(k, t) == whole && !k->error[0]);
     cc_kernel_free(k);
@@ -177,8 +192,8 @@ static void cumulative(unsigned optimizations) {
     cc_term lower = ck_universe_at(k, 0), upper = ck_universe_at(k, 1);
     cc_term unit = node(k, CC_UNIT, 0, 0, 0, 0);
     for (unsigned i = 0; i < 200; ++i) {
-        lower = node(k, CC_PI, 100 + i, unit, lower, 0);
-        upper = node(k, CC_PI, 1000 + i, unit, upper, 0);
+        lower = node(k, CC_PI, 0, unit, lower, 0);
+        upper = node(k, CC_PI, 0, unit, upper, 0);
     }
     assert(ck_syntactic_cumulative(k, lower, upper));
     assert(!ck_syntactic_cumulative(k, upper, lower) && !k->error[0]);

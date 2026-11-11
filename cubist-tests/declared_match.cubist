@@ -1059,8 +1059,8 @@ def count_steps_two : count_steps(next_(next_(stop)), zero) = point(succ(succ(ze
 // Refused: the squash clause recurses with succ(b) on one side and b on the other,
 // so it is no path between the recursive results at its ends.
 // Error: E606: Type mismatch: found Steps -> Steps -> (forall x_rec : N -> Trunc(__U, N). forall
-//   y_rec : N -> Trunc(__U, N). (fun (b : N) => squash(x_rec(succ(b)), y_rec(b)) @ 0) = (fun (b :
-//   N) =…, expected Steps -> Steps -> (forall x2 : N -> Trunc(__U, N). forall x3 : N -> Trunc(__U,
+//   y_rec : N -> Trunc(__U, N). (fun (x1 : N) => squash(x_rec(succ(x1)), y_rec(x1)) @ 0) = (fun (x1
+//   : …, expected Steps -> Steps -> (forall x2 : N -> Trunc(__U, N). forall x3 : N -> Trunc(__U,
 //   N). x2 = x3).
 def skewed(s : Steps, b : N) : Trunc(U0, N) := match s {
     stop => point(b);

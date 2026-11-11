@@ -42,6 +42,9 @@ static cc_term context(unsigned entry) { return node(CC_CONTEXT, (uint32_t)entri
 static cc_term lam(cc_term domain, cc_term body) { return node(CC_LAM, 0, domain, body, 0); }
 static cc_term sum(cc_term a, cc_term b) { return node(CC_SUM, 0, a, b, 0); }
 static cc_term app(cc_term f, cc_term x) { return node(CC_APP, 0, f, x, 0); }
+/* A closed leaf told apart by its payload, which no primitive touches: a
+ * definition's reference, never looked up here. */
+static cc_term atom(uint32_t payload) { return node(CC_DEFREF, payload, 0, 0, 0); }
 
 /* Equal syntax, compared by structure: with sharing off, equal terms are
  * distinct handles. */
@@ -144,10 +147,10 @@ static uint32_t roll(uint32_t bound) {
 static uint32_t drawn(bool ends) {
     return ends && roll(2) ? UINT32_MAX - 1 - roll(3) : roll(4);
 }
-/* Every syntax kind but the retired ones and the kernel's own, as
- * ck_arity lists them; tubes appear only in a composition's tube list. */
+/* Every syntax kind but the retired ones and the variables, as ck_arity
+ * lists them; tubes appear only in a composition's tube list. */
 static const cc_term_kind syntax_kinds[] = {
-    CC_DEFREF, CC_VAR, CC_UNIT, CC_POINT, CC_VOID, CC_LBOUND, CC_LCONST,
+    CC_DEFREF, CC_UNIT, CC_POINT, CC_VOID, CC_LBOUND, CC_LCONST,
     CC_U, CC_FST, CC_SND, CC_LSUCC, CC_CON,
     CC_PI, CC_LAM, CC_APP, CC_SIGMA, CC_PLAM, CC_PAPP, CC_ABORT, CC_SUM, CC_INL, CC_INR,
     CC_GLUE, CC_UNGLUE, CC_LMAX, CC_LPI, CC_LLAM, CC_LAPP, CC_SORT, CC_ELIM, CC_LIST,
@@ -179,7 +182,7 @@ static cc_term random_term(unsigned depth, bool ends) {
     case 0: return bound(drawn(ends));
     case 1: return opened(drawn(ends));
     case 2: return context(roll(3));
-    case 3: if (!depth) return node(CC_VAR, 1 + roll(3), 0, 0, 0); break;
+    case 3: if (!depth) return atom(1 + roll(3)); break;
     case 4: if (!depth) return unit; break;
     default: break;
     }
@@ -192,8 +195,7 @@ static cc_term random_term(unsigned depth, bool ends) {
     uint32_t payload = kind == CC_PAPP ? ck_interval_variable(k, roll(3))
         : kind == CC_GLUE_SYSTEM ? ck_endpoint_face(k, roll(3), roll(2))
         : dimension_binder(kind) ? roll(2)
-        : binds(kind) || kind == CC_U ? 0
-        : kind == CC_VAR ? 1 + roll(3) : roll(3);
+        : binds(kind) || kind == CC_U ? 0 : roll(3);
     cc_term child[4] = {0};
     for (unsigned i = 0; i < ck_arity(kind); ++i)
         child[i] = i == 1 && (kind == CC_COMP || kind == CC_HCOMP) ? random_tubes(depth - 1, ends)
@@ -230,31 +232,43 @@ static void bounds(void) {
     assert(k->nodes[lam(unit, largest)].loose == UINT32_MAX - 1);
     assert(k->nodes[lam(largest, unit)].loose == UINT32_MAX);
     assert(k->nodes[opened(UINT32_MAX - 1)].opened == UINT32_MAX);
-    /* Refused as a symbol of UINT32_MAX is (section 3.2). */
+    /* Refused at UINT32_MAX, as a resource bound (section 3.2). */
+    const char *bound_exceeded = "A variable's index exceeds the kernel's bound.";
     assert(!ck_make(k, CC_BOUND, UINT32_MAX, 0, 0, 0, 0) && cc_kernel_error_kind(k) == CC_ERROR_RESOURCE);
-    assert(!strcmp(k->error, "Term symbol space exhausted."));
+    assert(!strcmp(k->error, bound_exceeded));
     cc_kernel_clear_error(k);
     assert(!ck_make(k, CC_OPENED, UINT32_MAX, 0, 0, 0, 0) && cc_kernel_error_kind(k) == CC_ERROR_RESOURCE);
-    assert(!strcmp(k->error, "Term symbol space exhausted."));
+    assert(!strcmp(k->error, bound_exceeded));
     cc_kernel_clear_error(k);
-    /* None of the kernel's kinds is part of ABI 3. */
+    /* CC_BOUND and CC_CONTEXT are part of ABI 4, under the same bounds;
+     * CC_OPENED, the kernel's own, is not. */
+    cc_term public_largest = cc_kernel_term(k, CC_BOUND, UINT32_MAX - 1, 0, 0, 0, 0);
+    assert(public_largest && k->nodes[public_largest].loose == UINT32_MAX);
+    /* Not closed to the queries either, alone or under a binder, which
+     * lowers its counter by one. */
+    const cc_term open_ends[] = {public_largest, lam(unit, public_largest)};
+    for (unsigned j = 0; j < 2; ++j) {
+        assert(!cc_kernel_normalize(k, open_ends[j]));
+        assert(!strcmp(cc_kernel_error(k), "Normalization reached a term with a loose bound variable."));
+        cc_kernel_clear_error(k);
+    }
+    assert(!cc_kernel_term(k, CC_BOUND, UINT32_MAX, 0, 0, 0, 0) && cc_kernel_error_kind(k) == CC_ERROR_RESOURCE);
+    assert(!strcmp(cc_kernel_error(k), bound_exceeded));
+    cc_kernel_clear_error(k);
+    assert(same(cc_kernel_term(k, CC_CONTEXT, (uint32_t)entries[0], 0, 0, 0, 0), context(0)) && !k->error[0]);
     const uint32_t payloads[] = {0, UINT32_MAX - 1, UINT32_MAX};
-    const cc_term_kind kinds[] = {CC_BOUND, CC_CONTEXT, CC_OPENED};
-    for (unsigned i = 0; i < 3; ++i)
-        for (unsigned j = 0; j < 3; ++j) {
-            uint32_t payload = kinds[i] == CC_CONTEXT ? (uint32_t)entries[0] : payloads[j];
-            assert(!cc_kernel_term(k, kinds[i], payload, 0, 0, 0, 0));
-            assert(!strcmp(cc_kernel_error(k), "Unknown term constructor."));
-            cc_kernel_clear_error(k);
-        }
+    for (unsigned j = 0; j < 3; ++j) {
+        assert(!cc_kernel_term(k, CC_OPENED, payloads[j], 0, 0, 0, 0));
+        assert(!strcmp(cc_kernel_error(k), "Unknown term constructor."));
+        cc_kernel_clear_error(k);
+    }
     /* A context reference names a live term or level entry. */
     cc_entry_id dimension = cc_instr_dimension(k, 0);
     assert(dimension);
     const uint32_t dead[] = {0, (uint32_t)dimension, (uint32_t)cc_kernel_entry_count(k)};
-    const char *refusals[] = {"Unknown context entry.", "Expected a term entry.", "Unknown context entry."};
     for (unsigned i = 0; i < 3; ++i) {
         assert(!ck_make(k, CC_CONTEXT, dead[i], 0, 0, 0, 0));
-        assert(!strcmp(k->error, refusals[i]));
+        assert(!strcmp(k->error, "A context reference names no live term or level entry."));
         cc_kernel_clear_error(k);
     }
     /* An opener's counter fails rather than hand out UINT32_MAX. */
@@ -268,7 +282,7 @@ static void bounds(void) {
     ck_opener_above(k, &opener, opened(UINT32_MAX - 2));
     assert(ck_opener_take(k, &opener, &level) && level == UINT32_MAX - 1);
     assert(!ck_opener_take(k, &opener, &level) && cc_kernel_error_kind(k) == CC_ERROR_RESOURCE);
-    assert(!strcmp(k->error, "Fresh symbol space exhausted."));
+    assert(!strcmp(k->error, "An operation opened more binders than the kernel's bound."));
     cc_kernel_clear_error(k);
     opener = (cc_opener){0};
     ck_opener_above(k, &opener, opened(UINT32_MAX - 1));
@@ -462,7 +476,7 @@ static void capture_laws(void) {
 /* The comparison itself: it tells a capture, a binder renamed without its
  * occurrences, and a differing annotation from the expected term. */
 static void comparison_cases(void) {
-    cc_term p = node(CC_VAR, 50, 0, 0, 0), at0 = node(CC_PAPP, ck_interval_variable(k, 0), p, 0, 0);
+    cc_term p = atom(50), at0 = node(CC_PAPP, ck_interval_variable(k, 0), p, 0, 0);
     cc_term at1 = node(CC_PAPP, ck_interval_variable(k, 1), p, 0, 0);
     cc_term t = node(CC_PLAM, 0, at0, bound(0), 0);
     bool renamed = agrees(node(CC_PLAM, 1, at1, at0, 0), t, 0, &at0, 1);
@@ -481,7 +495,7 @@ static void comparison_cases(void) {
  * abstraction binds none: the expected results written out. */
 static void binder_cases(void) {
     const cc_term_kind kinds[] = {CC_PI, CC_LAM, CC_SIGMA, CC_LPI, CC_LLAM};
-    cc_term v = node(CC_VAR, 7, 0, 0, 0);
+    cc_term v = atom(7);
     for (unsigned i = 0; i < 5; ++i) {
         cc_term t = node(kinds[i], 0, bound(0), sum(bound(0), bound(1)), 0);
         assert(same(ck_instantiate(k, t, v), node(kinds[i], 0, v, sum(bound(0), v), 0)));
@@ -502,14 +516,14 @@ static void binder_cases(void) {
 static void capture_scan(void) {
     cc_term every = unit;
     for (unsigned d = 0; d < CC_DIMENSIONS; ++d)
-        every = sum(every, node(CC_PAPP, ck_interval_variable(k, d), node(CC_VAR, 30, 0, 0, 0), 0, 0));
+        every = sum(every, node(CC_PAPP, ck_interval_variable(k, d), atom(30), 0, 0));
     assert(ck_free_dims(k, every) == UINT64_MAX && !k->nodes[every].loose);
     cc_term point = node(CC_POINT, 0, 0, 0, 0), values[] = {point, every};
     cc_term t = node(CC_PLAM, 0, unit, bound(0), 0);
     assert(same(ck_instantiate_all(k, t, values, 2), node(CC_PLAM, 0, unit, point, 0)) && !k->error[0]);
     cc_term outer = node(CC_PLAM, 0, unit, bound(1), 0);
     assert(same(ck_instantiate(k, outer, every), outer) && !k->error[0]);
-    cc_term at = node(CC_PAPP, ck_interval_variable(k, 0), node(CC_VAR, 31, 0, 0, 0), 0, 0);
+    cc_term at = node(CC_PAPP, ck_interval_variable(k, 0), atom(31), 0, 0);
     assert(same(ck_instantiate(k, node(CC_HCOMP, 0, bound(0), 0, unit), at), node(CC_HCOMP, 0, at, 0, unit)));
     assert(!k->error[0]);
     cc_term renamed = ck_instantiate(k, node(CC_COMP, 0, bound(0), 0, unit), at);
@@ -520,7 +534,7 @@ static void capture_scan(void) {
      * 5): a binder over each, given a value mentioning it, is renamed. */
     const unsigned high[] = {31, 32, 63};
     for (unsigned i = 0; i < 3; ++i) {
-        cc_term value = node(CC_PAPP, ck_interval_variable(k, high[i]), node(CC_VAR, 32, 0, 0, 0), 0, 0);
+        cc_term value = node(CC_PAPP, ck_interval_variable(k, high[i]), atom(32), 0, 0);
         cc_term over = node(CC_PLAM, high[i], unit, bound(0), 0), out = ck_instantiate(k, over, value);
         bool agreed = out && agrees(out, over, 0, &value, 1);
         assert(agreed && ck_free_dims(k, out) == UINT64_C(1) << high[i]);
@@ -580,8 +594,10 @@ static void boundaries(void) {
      * 63, each beside the entries 256 and 65,536 above it; the abstractions
      * of one term are memoized apart. */
     cc_judgement_id type = cc_instr_unit(k);
-    /* Their symbols, 5000 on, stay below every symbol of the syntax below. */
-    for (uint32_t symbol = 5000; k->entry_count <= 65536 + 320; ++symbol) assert(cc_instr_extend(k, type, symbol));
+    while (k->entry_count <= 65536 + 320) {
+        cc_entry_id entry = cc_instr_extend(k, type);
+        assert(entry);
+    }
     const uint32_t ids[] = {256, 287, 288, 319};
     for (unsigned i = 0; i < 4; ++i) {
         uint32_t e = ids[i], near = e + 256, far = e + 65536;
@@ -594,7 +610,7 @@ static void boundaries(void) {
     }
     /* Vectors of 257 and 65,537 values, indices across 255/256 and
      * 65535/65536, at the root and under a binder. */
-    for (uint32_t i = 0; i < WIDE; ++i) wide[i] = node(CC_VAR, 2000000 + i, 0, 0, 0);
+    for (uint32_t i = 0; i < WIDE; ++i) wide[i] = atom(2000000 + i);
     cc_term t = sum(sum(bound(0), bound(255)), sum(sum(bound(256), bound(65535)), bound(65536)));
     cc_term under = lam(unit, sum(sum(bound(256), bound(257)), sum(bound(65536), bound(65537))));
     const uint32_t counts[] = {257, WIDE};
@@ -608,7 +624,7 @@ static void boundaries(void) {
      * values ends seeking index 65536 in `low_absent`, absent, and the next one first
      * seeks index 0 there, present, whose value must rename the binder. */
     cc_term low_absent = sum(bound(0), bound(65537)), over_y = node(CC_PLAM, 0, unit, low_absent, 0);
-    cc_term captured = node(CC_PAPP, ck_interval_variable(k, 0), node(CC_VAR, 800010, 0, 0, 0), 0, 0);
+    cc_term captured = node(CC_PAPP, ck_interval_variable(k, 0), atom(800010), 0, 0);
     cc_term kept = wide[65536];
     wide[65536] = captured;
     cc_term out_y = ck_instantiate_all(k, over_y, wide, WIDE);
@@ -622,7 +638,7 @@ static void boundaries(void) {
      * seeks it there. */
     const uint32_t far[] = {256, 65536};
     for (unsigned i = 0; i < 2; ++i) {
-        cc_term saved = wide[far[i]], p = node(CC_VAR, 800000, 0, 0, 0);
+        cc_term saved = wide[far[i]], p = atom(800000);
         wide[far[i]] = node(CC_PAPP, ck_interval_variable(k, 0), p, 0, 0);
         cc_term over = node(CC_PLAM, 0, unit, sum(bound(far[i]), bound(1)), 0);
         cc_term out = ck_instantiate_all(k, over, wide, WIDE);
@@ -633,15 +649,15 @@ static void boundaries(void) {
     /* Memo keys agreeing in their low bits. A subterm met at depth 1 and at
      * depth 257 within one instantiation, holding an index each replaces: */
     cc_term x = sum(bound(1), bound(257)), twice = sum(lam(unit, x), binders_over(257, x));
-    cc_term one = node(CC_VAR, 800001, 0, 0, 0);
+    cc_term one = atom(800001);
     assert(same(ck_instantiate(k, twice, one), instantiated(twice, 0, &one, 1)));
     /* two values whose handles differ by 65,536: */
-    cc_term y = sum(bound(0), node(CC_VAR, 800002, 0, 0, 0)), first = node(CC_VAR, 800003, 0, 0, 0);
-    for (uint32_t filler = 0; k->count < (size_t)first + 65536; ++filler) node(CC_VAR, 3000000 + filler, 0, 0, 0);
-    cc_term second = node(CC_VAR, 800004, 0, 0, 0);
+    cc_term y = sum(bound(0), atom(800002)), first = atom(800003);
+    for (uint32_t filler = 0; k->count < (size_t)first + 65536; ++filler) atom(3000000 + filler);
+    cc_term second = atom(800004);
     assert(second == first + 65536);
-    assert(same(ck_instantiate(k, y, first), sum(first, node(CC_VAR, 800002, 0, 0, 0))));
-    assert(same(ck_instantiate(k, y, second), sum(second, node(CC_VAR, 800002, 0, 0, 0))));
+    assert(same(ck_instantiate(k, y, first), sum(first, atom(800002))));
+    assert(same(ck_instantiate(k, y, second), sum(second, atom(800002))));
     /* and two serials 65,536 apart. */
     cc_term pair[] = {first, second}, swapped[] = {second, first}, z = sum(bound(0), bound(1));
     k->instantiation_serial = 0;
@@ -657,11 +673,11 @@ static void boundaries(void) {
         cc_kernel_clear_error(k);
     }
     /* A context reference names a level entry, never a face entry. */
-    cc_entry_id level = cc_instr_level(k, 900000);
+    cc_entry_id level = cc_instr_level(k);
     assert(level && ck_make(k, CC_CONTEXT, level, 0, 0, 0, 0) && !k->error[0]);
     cc_entry_id face = ck_instr_face_entry(k, (cc_clause){.positive = 1});
     assert(face && !ck_make(k, CC_CONTEXT, face, 0, 0, 0, 0));
-    assert(!strcmp(k->error, "A face entry is an assumption, not a variable or a dimension."));
+    assert(!strcmp(k->error, "A context reference names no live term or level entry."));
     cc_kernel_clear_error(k);
     /* Comparison reads the new leaves' payloads: equal leaves are equal
      * whatever their handles, unequal ones are not. */
@@ -677,8 +693,8 @@ static void boundaries(void) {
 /* Instantiation renames a dimension binder its value would be captured by,
  * as term substitution does (SUBSTITUTE_RENAME_DIMENSION). */
 static void dimension_capture(void) {
-    cc_term value = node(CC_PAPP, ck_interval_variable(k, 0), node(CC_VAR, 10, 0, 0, 0), 0, 0);
-    cc_term at = node(CC_PAPP, ck_interval_variable(k, 0), node(CC_VAR, 11, 0, 0, 0), 0, 0);
+    cc_term value = node(CC_PAPP, ck_interval_variable(k, 0), atom(10), 0, 0);
+    cc_term at = node(CC_PAPP, ck_interval_variable(k, 0), atom(11), 0, 0);
     cc_term t = node(CC_PLAM, 0, unit, sum(bound(0), at), 0);
     cc_term out = ck_instantiate(k, t, value);
     assert(out && k->nodes[out].kind == CC_PLAM && k->nodes[out].payload != 0);
@@ -694,6 +710,135 @@ static void filter_collision(void) {
     cc_term t = lam(unit, app(context(65), bound(0)));
     assert(ck_abstract(k, t, entries[1]) == t && !k->error[0]);
     assert(same(ck_abstract(k, t, entries[65]), lam(unit, app(bound(1), bound(0)))));
+    /* So does the query whether a term mentions an entry. */
+    bool other = ck_mentions(k, t, entries[1]), own = ck_mentions(k, t, entries[65]);
+    assert(!other && own && !k->error[0]);
+}
+
+/* The primitives of operations on a loose term (cc_kernel_whnf, Step and
+ * Replace under binders): abstraction and closing at a base, a term's loose
+ * indices opened and closed back, and the occurrence queries. Their
+ * references, by recursion: whether CC_CONTEXT(entry) occurs; whether
+ * CC_BOUND(index) does, the index raised under each term or level binder,
+ * over 64 bits so that no wrap can agree with a wrapped index; and the
+ * levels first .. first + count - 1 closed, level first + j becoming the
+ * index count - 1 - j beneath the binders crossed. */
+static bool mentions_of(cc_term t, uint32_t entry) {
+    if (!t) return false;
+    cc_node n = k->nodes[t];
+    if (n.kind == CC_CONTEXT) return n.payload == entry;
+    for (unsigned i = 0; i < 4; ++i)
+        if (mentions_of(n.child[i], entry)) return true;
+    return false;
+}
+static bool occurs_of(cc_term t, uint64_t index) {
+    if (!t) return false;
+    cc_node n = k->nodes[t];
+    if (n.kind == CC_BOUND) return n.payload == index;
+    for (unsigned i = 0; i < 4; ++i)
+        if (occurs_of(n.child[i], index + (i == 1 && binds(n.kind)))) return true;
+    return false;
+}
+static cc_term closed_loose(cc_term t, uint32_t depth, uint32_t first, uint32_t count) {
+    if (!t) return 0;
+    cc_node n = k->nodes[t];
+    if (n.kind == CC_OPENED && n.payload >= first && n.payload - first < count)
+        return bound(depth + count - 1 - (n.payload - first));
+    cc_term child[4] = {0};
+    bool changed = false;
+    for (unsigned i = 0; i < 4; ++i) {
+        child[i] = closed_loose(n.child[i], depth + (i == 1 && binds(n.kind)), first, count);
+        changed |= child[i] != n.child[i];
+    }
+    return changed ? node4(n.kind, n.payload, child[0], child[1], child[2], child[3]) : t;
+}
+
+static void loose_laws(void) {
+    unsigned mentioned = 0, occurring = 0, loose_terms = 0;
+    for (unsigned i = 0; i < TERMS; ++i) {
+        cc_term t = random_term(4, false);
+        /* A base of a few binders, or across 255/256 and 65535/65536. */
+        uint32_t base = roll(2) ? 1 + roll(3) : roll(2) ? 256 : 65536, level = roll(4);
+        cc_entry_id e = entries[roll(4) ? roll(3) : 65];
+        assert(same(ck_abstract_at(k, t, e, base), abstracted(t, base, CC_CONTEXT, (uint32_t)e)));
+        assert(same(ck_close_at(k, t, level, base), abstracted(t, base, CC_OPENED, level)));
+        bool found = ck_mentions(k, t, e);
+        assert(found == mentions_of(t, (uint32_t)e));
+        mentioned += found;
+        uint32_t index = roll(5);
+        found = ck_index_occurs(k, t, index);
+        assert(found == occurs_of(t, index));
+        occurring += found;
+        /* On a term with indices near the bound, at an index near it too. */
+        cc_term far = random_term(4, true);
+        index = drawn(true);
+        found = ck_index_occurs(k, far, index);
+        assert(found == occurs_of(far, index));
+        /* Opening the loose indices above every level the term holds, the
+         * innermost at the highest, and closing them back is the identity. */
+        uint32_t loose = k->nodes[t].loose, first = k->nodes[t].opened + roll(3);
+        cc_term levels[8] = {0};
+        assert(loose <= 8);
+        for (uint32_t j = 0; j < loose; ++j) levels[j] = opened(first + loose - 1 - j);
+        cc_term open = ck_open_loose(k, t, first);
+        assert(open && !k->nodes[open].loose && same(open, instantiated(t, 0, levels, loose)));
+        assert(same(ck_close_loose(k, open, first, loose), t));
+        loose_terms += loose != 0;
+        /* Closing levels the term holds, whatever opened them. */
+        uint32_t count = 1 + roll(3);
+        assert(same(ck_close_loose(k, t, level, count), closed_loose(t, 0, level, count)) && !k->error[0]);
+    }
+    assert(mentioned > TERMS / 10 && occurring > TERMS / 10 && loose_terms > TERMS / 10);
+    printf("abstract and close at a base, open and close loose indices, mentions and occurrences: "
+           "%u random terms agree with their references\n", (unsigned)TERMS);
+}
+
+/* The same primitives written out, and their bounds. */
+static void loose_cases(void) {
+    /* λ y. e y abstracted two binders out: e under λ y is index 3. */
+    cc_term t = lam(unit, app(context(0), bound(0)));
+    assert(same(ck_abstract_at(k, t, entries[0], 2), lam(unit, app(bound(3), bound(0)))));
+    assert(same(ck_close_at(k, lam(unit, app(opened(5), bound(0))), 5, 2), lam(unit, app(bound(3), bound(0)))));
+    /* (index 0, λ y. index 2): index 0 opens at the higher level, 8, and
+     * index 1 at 7. */
+    cc_term loose = sum(bound(0), lam(unit, bound(2)));
+    assert(k->nodes[loose].loose == 2);
+    cc_term open = ck_open_loose(k, loose, 7);
+    assert(same(open, sum(opened(8), lam(unit, opened(7)))));
+    assert(same(ck_close_loose(k, open, 7, 2), loose) && !k->error[0]);
+    assert(ck_open_loose(k, unit, 7) == unit && ck_close_loose(k, unit, 7, 2) == unit);
+    /* The levels reach UINT32_MAX - 1, the largest; beyond it, the opening
+     * fails as a resource error, with no result. */
+    open = ck_open_loose(k, loose, UINT32_MAX - 2);
+    assert(same(open, sum(opened(UINT32_MAX - 1), lam(unit, opened(UINT32_MAX - 2)))) && !k->error[0]);
+    assert(!ck_open_loose(k, loose, UINT32_MAX - 1) && cc_kernel_error_kind(k) == CC_ERROR_RESOURCE);
+    assert(!strcmp(k->error, "An operation opened more binders than the kernel's bound."));
+    cc_kernel_clear_error(k);
+    /* Mentions and occurrences, under binders: index 1 beneath λ is index 0
+     * outside it. */
+    bool mentioned = ck_mentions(k, t, entries[0]), absent = ck_mentions(k, t, entries[2]);
+    assert(mentioned && !absent);
+    bool outer = ck_index_occurs(k, lam(unit, bound(1)), 0), own = ck_index_occurs(k, lam(unit, bound(0)), 0);
+    assert(outer && !own && !k->error[0]);
+}
+
+/* Instantiation needs locally closed values: a value's loose index would
+ * be captured by the binders it is put under. A value with one, alone or
+ * among closed values, is refused, with no result, though the term has no
+ * index to replace; an opened level is locally closed. */
+static void loose_values(void) {
+    const char *refusal = "Instantiation needs locally closed values.";
+    cc_term t = lam(unit, sum(bound(1), bound(0))), values[] = {unit, bound(0)};
+    const cc_term refused[] = {bound(0), lam(unit, bound(1)), sum(unit, bound(UINT32_MAX - 1))};
+    for (unsigned i = 0; i < 3; ++i) {
+        assert(!ck_instantiate(k, t, refused[i]) && !strcmp(k->error, refusal));
+        cc_kernel_clear_error(k);
+        assert(!ck_instantiate(k, unit, refused[i]) && !strcmp(k->error, refusal));
+        cc_kernel_clear_error(k);
+    }
+    assert(!ck_instantiate_all(k, t, values, 2) && !strcmp(k->error, refusal));
+    cc_kernel_clear_error(k);
+    assert(same(ck_instantiate(k, t, opened(0)), lam(unit, sum(opened(0), bound(0)))) && !k->error[0]);
 }
 
 /* A closed graph of 2^40 paths costs no step; one with a loose index costs a
@@ -756,7 +901,7 @@ static void deep_and_wide(void) {
     assert(same(ck_instantiate_all(k, sum(bound(0), bound(1)), pair, 2), sum(unit, deepest)) && !k->error[0]);
     /* 4,096 distinct leaves, each using the index. */
     cc_term level[4096];
-    for (unsigned i = 0; i < 4096; ++i) level[i] = app(bound(0), node(CC_VAR, 1000 + i, 0, 0, 0));
+    for (unsigned i = 0; i < 4096; ++i) level[i] = app(bound(0), atom(1000 + i));
     for (unsigned width = 4096; width > 1; width /= 2)
         for (unsigned i = 0; i < width / 2; ++i) level[i] = sum(level[2 * i], level[2 * i + 1]);
     cc_term out = ck_instantiate(k, lam(unit, level[0]), unit);
@@ -767,7 +912,7 @@ static void deep_and_wide(void) {
     out = ck_instantiate(k, level[0], unit);
     cc_term rightmost = out;
     while (k->nodes[rightmost].kind == CC_SUM) rightmost = k->nodes[rightmost].child[1];
-    assert(same(rightmost, app(unit, node(CC_VAR, 1000 + 4095, 0, 0, 0))));
+    assert(same(rightmost, app(unit, atom(1000 + 4095))));
 }
 
 /* An allocation fault or an exhausted budget gives no result and memoizes
@@ -778,7 +923,7 @@ static void failures(void) {
      * Each run has operands of its own, so no memo entry answers it. */
     for (unsigned operation = 0; operation < 3; ++operation)
         for (unsigned fault = 1; fault <= 3; ++fault) {
-            cc_term value = node(CC_VAR, 500 + fault, 0, 0, 0);
+            cc_term value = atom(500 + fault);
             cc_term input = operation == 0 ? t : chain(operation == 1 ? context(fault) : opened(fault));
             uint64_t budget = k->budget;
             if (fault < 3) {
@@ -802,7 +947,7 @@ static void failures(void) {
  * serial wraps, the memo is cleared, so an entry an earlier call left under
  * the same key answers nothing. */
 static void serial_wrap(void) {
-    cc_term t = sum(bound(0), bound(1)), a = node(CC_VAR, 20, 0, 0, 0), b = node(CC_VAR, 21, 0, 0, 0);
+    cc_term t = sum(bound(0), bound(1)), a = atom(20), b = atom(21);
     cc_term first[] = {a, b}, second[] = {b, a};
     k->instantiation_serial = 0;
     assert(same(ck_instantiate_all(k, t, first, 2), sum(a, b)) && k->instantiation_serial == 1);
@@ -838,7 +983,7 @@ int main(void) {
         /* Term entries, the last sharing the second's filter bit. */
         cc_judgement_id type = cc_instr_unit(k);
         for (unsigned i = 0; i < 66; ++i) {
-            entries[i] = cc_instr_extend(k, type, 100 + i);
+            entries[i] = cc_instr_extend(k, type);
             assert(entries[i]);
         }
         metadata();
@@ -852,6 +997,9 @@ int main(void) {
         boundaries();
         dimension_capture();
         filter_collision();
+        loose_laws();
+        loose_cases();
+        loose_values();
         dag();
         deep_and_wide();
         failures();

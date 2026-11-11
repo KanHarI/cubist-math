@@ -9,6 +9,8 @@ import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { InstructionGraph } from "../web/cubical-instructions.mjs";
 import { ReplSession } from "../web/repl-session.mjs";
+import { namedTerms } from "./named-terms.mjs";
+import { binderTerm } from "../web/cubical-variables.mjs";
 
 async function setup(t) {
   const kernel = new CubicalKernel(await createCubical());
@@ -46,10 +48,14 @@ test("normal forms shared beneath different unused binders compare by graph size
 // it. Two paths to the preceding type per level, under different binders,
 // and its domain a third: 3^40 paths, a few nodes a level. Each case counts
 // the instructions it issues, and stops at a bound a path-by-path
-// derivation passes within the first levels.
+// derivation passes within the first levels. Binders carry no names
+// (ABI 4): the two binders of a level are a Π and a Σ, which hash-consing
+// keeps apart, each with its own name in the driver's record (binderTerm),
+// as encoding a source term gives them. Binders of one name take entries
+// apart, which narrow keeps (occupants).
 test("a graph shared beneath different binders is derived once per node", async t => {
   const { kernel, driver, term } = await setup(t), graph = driver.graph;
-  const levels = 40, unit = term("Unit"), symbol = name => kernel.symbol(name), v = name => term("Var", symbol(name));
+  const levels = 40, unit = term("Unit"), symbol = name => kernel.symbol(name);
   const issue = graph.issue.bind(graph);
   let issued = 0;
   graph.issue = (...operands) => {
@@ -58,7 +64,7 @@ test("a graph shared beneath different binders is derived once per node", async 
   };
   const doubled = (type, tag) => {
     for (let i = 0; i < levels; i++)
-      type = term("Sum", 0, term("Pi", symbol(`${tag}a${i}`), type, type), term("Pi", symbol(`${tag}b${i}`), type, type));
+      type = term("Sum", 0, binderTerm(kernel, "Pi", `${tag}a${i}`, type, type), binderTerm(kernel, "Sigma", `${tag}b${i}`, type, type));
     return type;
   };
   // Closed: each level is derived once, in the scope with nothing in it.
@@ -69,8 +75,9 @@ test("a graph shared beneath different binders is derived once per node", async 
   // Open: each level mentions x, in a path type, so its scope keeps x's
   // entry, and nothing of the binders it does not mention.
   issued = 0;
-  const open = doubled(term("Path", 0, unit, v("x"), v("x")), "o");
-  const judgement = graph.judgement(driver.infer(open, [[symbol("x"), unit]]));
+  const context = [[symbol("x"), unit]], x = term("Context", driver.contextScope(context, 0n).get(symbol("x")));
+  const open = doubled(term("Path", 0, unit, x, x), "o");
+  const judgement = graph.judgement(driver.infer(open, context));
   assert.equal(graph.entry(judgement.context[0]).name, "x");
   assert.ok(driver.alpha(judgement.term, open));
   assert.ok(closedIssued < 10 * levels && issued < 10 * levels, `issued ${closedIssued} and ${issued} instructions`);
@@ -114,30 +121,32 @@ test("an exact expected value on a rational derives its folded normal form by it
   assert.match(answers[0].text, /^class\(\(class\(\(bnat\.\(1\), bnat\.\(0\)\)\), class\(\(bnat\.\(2\), bnat\.\(0\)\)\), /);
 });
 
+// Terms written with names (tests/named-terms.mjs): a bound name is its
+// binder's index and a free one an entry, so these hold by the terms the
+// names make, as the kernel's alpha-equality finds them.
 test("pruned term scopes preserve free names, shadowing and binder domains", async t => {
-  const { driver, term } = await setup(t);
-  const unit = term("Unit"), v = name => term("Var", name);
-  const pi = (name, body, domain = unit) => term("Pi", name, domain, body);
+  const { kernel, driver, term: handle } = await setup(t), { term, bind, v, realize } = namedTerms(kernel);
+  const unit = handle("Unit"), compare = (x, y) => driver.alpha(realize(x), realize(y));
+  const pi = (name, body, domain = unit) => bind("Pi", name, domain, body);
   const sum = name => term("Sum", 0, v(name), unit);
-  assert.ok(driver.alpha(pi(10, v(10)), pi(20, v(20))));
-  assert.ok(!driver.alpha(pi(10, v(10)), pi(20, v(10))), "bound versus free on the right");
-  assert.ok(!driver.alpha(pi(10, v(11)), pi(11, v(11))), "free versus bound on the right");
+  assert.ok(compare(pi(10, v(10)), pi(20, v(20))));
+  assert.ok(!compare(pi(10, v(10)), pi(20, v(10))), "bound versus free on the right");
+  assert.ok(!compare(pi(10, v(11)), pi(11, v(11))), "free versus bound on the right");
   // Non-leaf bodies reach scope pruning before the variable comparison.
-  assert.ok(!driver.alpha(pi(10, sum(11)), pi(11, sum(11))), "retain a binding used only on the right");
-  assert.ok(!driver.alpha(pi(11, sum(11)), pi(10, sum(11))), "retain a binding used only on the left");
-  assert.ok(driver.alpha(pi(10, pi(10, v(10))), pi(20, pi(21, v(21)))), "nearest binder wins");
-  assert.ok(!driver.alpha(pi(10, pi(10, v(10))), pi(20, pi(21, v(20)))), "outer and inner binders differ");
-  assert.ok(!driver.alpha(pi(10, v(10), v(10)), pi(20, v(20), v(20))), "a binder does not scope its own domain");
-  assert.ok(driver.alpha(pi(10, pi(11, v(11), v(10))), pi(20, pi(21, v(21), v(20)))), "outer binders scope inner domains");
-  assert.ok(!driver.alpha(pi(10, pi(11, v(11), v(10))), pi(20, pi(21, v(21), v(10)))), "a free name in a domain stays free");
+  assert.ok(!compare(pi(10, sum(11)), pi(11, sum(11))), "retain a binding used only on the right");
+  assert.ok(!compare(pi(11, sum(11)), pi(10, sum(11))), "retain a binding used only on the left");
+  assert.ok(compare(pi(10, pi(10, v(10))), pi(20, pi(21, v(21)))), "nearest binder wins");
+  assert.ok(!compare(pi(10, pi(10, v(10))), pi(20, pi(21, v(20)))), "outer and inner binders differ");
+  assert.ok(!compare(pi(10, v(10), v(10)), pi(20, v(20), v(20))), "a binder does not scope its own domain");
+  assert.ok(compare(pi(10, pi(11, v(11), v(10))), pi(20, pi(21, v(21), v(20)))), "outer binders scope inner domains");
+  assert.ok(!compare(pi(10, pi(11, v(11), v(10))), pi(20, pi(21, v(21), v(10)))), "a free name in a domain stays free");
   // The inner binder shadows the outer one in its body, but its own domain
   // still uses the outer binding, even when their symbols are identical.
-  assert.ok(driver.alpha(pi(10, pi(10, unit, v(10))), pi(20, pi(20, unit, v(20)))), "shadowing leaves the domain under the outer binder");
-  assert.ok(!driver.alpha(pi(10, pi(10, unit, v(10))), pi(20, pi(20, unit, v(10)))), "a shadowing binder cannot capture its domain");
-  // Populate and reuse comparison caches under distinct, explicit scopes.
-  assert.ok(driver.alpha(sum(10), sum(20), { left: 10, right: 20, next: null }));
-  assert.ok(!driver.alpha(sum(10), sum(20), { left: 10, right: 21, next: null }));
-  assert.ok(!driver.alpha(sum(10), sum(20)));
+  assert.ok(compare(pi(10, pi(10, unit, v(10))), pi(20, pi(20, unit, v(20)))), "shadowing leaves the domain under the outer binder");
+  assert.ok(!compare(pi(10, pi(10, unit, v(10))), pi(20, pi(20, unit, v(10)))), "a shadowing binder cannot capture its domain");
+  // Two free names are two entries, which no renaming relates.
+  assert.ok(compare(sum(10), sum(10)));
+  assert.ok(!compare(sum(10), sum(20)));
 });
 
 // A composition's faces lie outside its binder, under the binders around
@@ -151,8 +160,9 @@ test("dimension pruning keeps the renamings a system's faces read", async t => {
   const unit = term("Unit"), point = term("Point");
   const at0 = dim => kernel.formula("face", [[0n, 1n << BigInt(dim)]]);
   const line = (bound, faced) => term("PLam", bound, unit, term("Comp", 5, unit, term("Tube", at0(faced), point, 0), point));
+  const equiv = namedTerms(kernel).realize(namedTerms(kernel).v("e"));
   const glued = (bound, faced) => term("PLam", bound, term("U", 0, term("LConst", 0)),
-    term("Glue", 0, unit, term("GlueSystem", at0(faced), unit, term("Var", kernel.symbol("e")), 0)));
+    term("Glue", 0, unit, term("GlueSystem", at0(faced), unit, equiv, 0)));
   for (const shape of [line, glued]) {
     assert.ok(driver.alpha(shape(2, 2), shape(1, 1)), shape.name);
     assert.equal(kernel.alphaEqual(shape(2, 2), shape(1, 1)), true, shape.name);
@@ -170,9 +180,13 @@ test("dimension pruning keeps the renamings a system's faces read", async t => {
 test("a composition's faces are read under the binders around it, each by its own identity", async t => {
   const { kernel, driver, term } = await setup(t);
   const at0 = dim => kernel.formula("face", [[0n, 1n << BigInt(dim)]]);
-  const symbol = name => kernel.symbol(name), v = name => term("Var", symbol(name));
-  const source = term("PLam", 0, v("X"), term("Comp", 0, v("X"), term("Tube", at0(0), v("a"), 0), v("a")));
-  const derived = driver.graph.judgement(driver.infer(source, [[symbol("X"), term("U", 0, term("LConst", 0))], [symbol("a"), v("X")]])).term;
+  // X and a are entries of a scope made first (section 5.3 of the locally
+  // nameless design), a's type over X's entry.
+  const symbol = name => kernel.symbol(name), universe = [symbol("X"), term("U", 0, term("LConst", 0))];
+  const X = term("Context", driver.contextScope([universe], 0n).get(symbol("X")));
+  const context = [universe, [symbol("a"), X]], a = term("Context", driver.contextScope(context, 0n).get(symbol("a")));
+  const source = term("PLam", 0, X, term("Comp", 0, X, term("Tube", at0(0), a, 0), a));
+  const derived = driver.graph.judgement(driver.infer(source, context)).term;
   assert.ok(kernel.alphaEqual(derived, source) && kernel.alphaEqual(source, derived));
   assert.ok(driver.alpha(derived, source), "the derived term against its source");
   assert.ok(driver.alpha(source, derived), "the source against its derived term");
@@ -196,25 +210,28 @@ test("a variable the term binds again no longer mentions its type's dimensions u
   const { kernel, driver, term } = await setup(t);
   const unit = term("Unit"), point = term("Point"), symbol = name => kernel.symbol(name);
   const universe = term("U", 0, term("LConst", 0)), i = kernel.formula("interval", [[1n, 0n]]);
-  const context = [[symbol("p"), term("Path", 1, universe, unit, unit)], [symbol("x"), term("PApp", i, term("Var", symbol("p")))]];
+  const paths = [[symbol("p"), term("Path", 1, universe, unit, unit)]], p = term("Context", driver.contextScope(paths, 0n).get(symbol("p")));
+  const context = [...paths, [symbol("x"), term("PApp", i, p)]];
   let body = point, type = unit;
   for (let level = 0; level < 64; level++) [body, type] = [term("PLam", 0, type, body), term("Path", 0, type, body, body)];
-  const lambda = term("Lam", symbol("x"), unit, body);
+  // The λ binds x again: its name is the driver's record (binderTerm).
+  const lambda = binderTerm(kernel, "Lam", "x", unit, body);
   const judgement = driver.graph.judgement(driver.infer(lambda, context, 1n));
   assert.ok(driver.alpha(judgement.term, lambda), "each path binder kept its index");
 });
 
 test("term-scope pruning retains level variables and annotation dependencies", async t => {
-  const { driver, term } = await setup(t);
-  const v = name => term("Var", name), unit = term("Unit"), bound = term("LBound", 1);
-  const family = name => term("Sum", 0, term("U", 0, v(name)), unit);
-  const level = (name, used) => term("LLam", name, bound, family(used));
-  assert.ok(driver.alpha(level(10, 10), level(20, 20)));
-  assert.ok(!driver.alpha(level(10, 10), level(20, 10)));
+  const { kernel, driver } = await setup(t), { term, bind, v, lv, realize } = namedTerms(kernel);
+  const alpha = (x, y) => driver.alpha(realize(x), realize(y));
+  const unit = term("Unit"), bound = term("LBound", 1);
+  const family = name => term("Sum", 0, term("U", 0, lv(name)), unit);
+  const level = (name, used) => bind("LLam", name, bound, family(used));
+  assert.ok(alpha(level(10, 10), level(20, 20)));
+  assert.ok(!alpha(level(10, 10), level(20, 10)));
   const annotated = name => term("Inl", 0, term("Sum", 0, v(name), unit), term("Point"));
-  const lam = (name, used) => term("Lam", name, term("U", 0, term("LConst", 0)), annotated(used));
-  assert.ok(driver.alpha(lam(10, 10), lam(20, 20)));
-  assert.ok(!driver.alpha(lam(10, 10), lam(20, 10)));
+  const lam = (name, used) => bind("Lam", name, term("U", 0, term("LConst", 0)), annotated(used));
+  assert.ok(alpha(lam(10, 10), lam(20, 20)));
+  assert.ok(!alpha(lam(10, 10), lam(20, 10)));
 });
 
 test("normalization compares closed graphs natively and reuses that answer", async t => {
@@ -237,8 +254,9 @@ test("normal-form comparison preserves outer renamings and recovers from query e
   const a = graph.extend(unit, "a"), b = graph.extend(unit, "b");
   const focus = judgement => driver.focus(graph.refl(judgement), "other");
   const left = focus(graph.variable(a)), right = focus(graph.variable(b));
-  assert.ok(driver.normalizeBoth(left, right, { left: graph.entry(a).symbol, right: graph.entry(b).symbol, next: null }, null));
-  assert.ok(!driver.normalizeBoth(left, right, null, null), "free names differ without the outer renaming");
+  // Two entries are two variables: no renaming of terms relates them (ABI 4).
+  assert.ok(driver.normalizeBoth(left, focus(graph.variable(a)), null, null));
+  assert.ok(!driver.normalizeBoth(left, right, null, null), "free names differ");
 
   const i = graph.dimension(0), j = graph.dimension(1), point = graph.point();
   const p = graph.variable(graph.extend(graph.path(i, unit, point, point), "p"));

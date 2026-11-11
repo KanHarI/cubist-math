@@ -80,14 +80,16 @@ cc_term ck_telescope(cc_kernel *k, cc_term type, uint32_t count) {
     if (pi.kind != CC_PI)
         return ck_fail(k, "A constructor's type has fewer arguments than its application."), 0;
     cc_term rest = ck_telescope(k, pi.child[1], count - 1);
-    return rest ? ck_make(k, CC_SIGMA, pi.payload, pi.child[0], rest, 0, 0) : 0;
+    /* Π and Σ both bind index 0 of their body: the telescope's indices are
+     * the constructor type's. */
+    return rest ? ck_make(k, CC_SIGMA, 0, pi.child[0], rest, 0, 0) : 0;
 }
 
 cc_term ck_tuple(cc_kernel *k, cc_term telescope, const cc_term *arguments, uint32_t count) {
     if (!count)
         return ck_make(k, CC_POINT, 0, 0, 0, 0, 0);
     cc_node sigma = k->nodes[telescope];
-    cc_term rest = ck_tuple(k, ck_substitute(k, sigma.child[1], sigma.payload, arguments[0]), arguments + 1, count - 1);
+    cc_term rest = ck_tuple(k, ck_instantiate(k, sigma.child[1], arguments[0]), arguments + 1, count - 1);
     return rest ? ck_make(k, CC_PAIR, 0, telescope, arguments[0], rest, 0) : 0;
 }
 

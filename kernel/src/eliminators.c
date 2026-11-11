@@ -3,15 +3,25 @@
  * reduction: displayed types over the constructor's cube, whose boundaries
  * show each position by its displayed variable and each earlier constructor
  * by its clause. Iota reuses the same display, with each position shown by
- * its value λ ys. elim^C(q(ys)), and instantiates it at the arguments. */
+ * its value λ ys. elim^C(q(ys)), and instantiates it at the arguments.
+ *
+ * The constructor's arguments, the displayed positions and the arity
+ * binders are placeholders while the display is built: CC_OPENED levels of
+ * one opener, started above every operand the display combines them with
+ * (the instance, the motive, the clauses, and in Iota the eliminator and the
+ * arguments), each closed before the binder over it is built, or, in Iota,
+ * closed and instantiated at the actual arguments (section 3.1 of
+ * docs/roadmaps/kernel/locally-nameless-kernel.md). A boundary's head is
+ * recognized as a position by its placeholder, before any argument is put
+ * in, as main recognized it by its fresh variable. */
 #include "term_internal.h"
 
 static cc_term app(cc_kernel *k, cc_term f, cc_term x) {
     return ck_make(k, CC_APP, 0, f, x, 0, 0);
 }
 
-static cc_term var(cc_kernel *k, uint32_t symbol) {
-    return ck_var(k, symbol);
+static cc_term opened(cc_kernel *k, uint32_t level) {
+    return ck_make(k, CC_OPENED, level, 0, 0, 0, 0);
 }
 
 /* t with the dimension from renamed to the dimension to. */
@@ -26,7 +36,8 @@ static cc_term rename_dimension(cc_kernel *k, cc_term t, unsigned from, unsigned
 
 /* The display of 3.6 at an instance: the positions of one constructor, each
  * shown by a term (a displayed variable, or in Iota its value), and the
- * clauses of the earlier constructors. */
+ * clauses of the earlier constructors. Positions are known by the levels
+ * of their placeholders. */
 typedef struct {
     cc_kernel *k;
     const cc_signature *signature;
@@ -34,23 +45,28 @@ typedef struct {
     const cc_term *clauses;
     uint64_t avoid;                       /* the motive's and clauses' free dimensions */
     uint32_t earlier, positions;
-    uint32_t position_symbols[CC_CONSTRUCTOR_ARGUMENTS];
+    uint32_t position_levels[CC_CONSTRUCTOR_ARGUMENTS];
     cc_term shown[CC_CONSTRUCTOR_ARGUMENTS];
+    cc_opener *opener;
 } display;
 
 static cc_term displayed(display *d, cc_term cube, cc_term y, unsigned depth);
 static cc_term shown_boundary(display *d, cc_term e, unsigned depth);
 
-/* ⟦E⟧': under a positional argument's arity binders. */
+/* ⟦E⟧': under a positional argument's arity binders, each opened at a level
+ * of the display's opener: a clause shown under it may mention its own. */
 static cc_term shown_positional(display *d, cc_term e, unsigned depth) {
     cc_kernel *k = d->k;
     cc_node n = k->nodes[e];
     if (n.kind != CC_LAM)
         return shown_boundary(d, e, depth + 1);
-    /* A fresh binder: a clause shown under it may mention its symbol. */
-    uint32_t fresh = ck_fresh_symbol(k);
-    cc_term body = shown_positional(d, ck_substitute(k, n.child[1], n.payload, var(k, fresh)), depth + 1);
-    return body ? ck_make(k, CC_LAM, fresh, n.child[0], body, 0, 0) : 0;
+    uint32_t level = 0;
+    if (!ck_opener_take(k, d->opener, &level))
+        return 0;
+    cc_term inner = ck_open(k, n.child[1], level);
+    cc_term body = inner ? shown_positional(d, inner, depth + 1) : 0;
+    body = body ? ck_close(k, body, level) : 0;
+    return body ? ck_make(k, CC_LAM, 0, n.child[0], body, 0, 0) : 0;
 }
 
 /* ⟦E⟧: q_j(us) is q̄_j(us), c_m(us, Es') is m_m(us, Es', ⟦Es'⟧'), and path
@@ -87,9 +103,9 @@ static cc_term shown_boundary(display *d, cc_term e, unsigned depth) {
         head = k->nodes[head].child[0];
     }
     cc_node h = k->nodes[head];
-    if (h.kind == CC_VAR)
+    if (h.kind == CC_OPENED)
         for (uint32_t j = 0; j < d->positions; ++j)
-            if (d->position_symbols[j] == h.payload) {
+            if (d->position_levels[j] == h.payload) {
                 cc_term result = d->shown[j];
                 for (uint32_t a = count; a-- > 0 && result;)
                     result = app(k, result, arguments[a]);
@@ -134,34 +150,49 @@ static cc_term displayed(display *d, cc_term cube, cc_term y, unsigned depth) {
     return family && left && right ? ck_make(k, CC_PATH, fresh, family, left, right, 0) : 0;
 }
 
-/* The parts of ClauseType_k over variables: the arguments ts, qs, the
- * displayed positions q̄s and the displayed result R̄(c). */
+/* The parts of ClauseType_k over placeholders: the arguments ts, qs, the
+ * displayed positions q̄s and the displayed result R̄(c). The arguments'
+ * levels are consecutive, from `first`. */
 typedef struct {
     uint32_t count, data, positions, dimensions;
-    uint32_t symbols[CC_CONSTRUCTOR_ARGUMENTS];
+    uint32_t first;
+    uint32_t levels[CC_CONSTRUCTOR_ARGUMENTS];
     cc_term domains[CC_CONSTRUCTOR_ARGUMENTS];
-    uint32_t shown_symbols[CC_CONSTRUCTOR_ARGUMENTS];
+    uint32_t shown_levels[CC_CONSTRUCTOR_ARGUMENTS];
     cc_term shown_domains[CC_CONSTRUCTOR_ARGUMENTS];
     cc_term cube;        /* R */
     cc_term constructed; /* c_k(as)(ts, qs) */
 } clause_parts;
 
-/* A position's type Π (ys : As). C: its arity binders, renamed fresh, since a
- * motive or clause put under them may mention theirs, and its cube. */
-static uint32_t arity(cc_kernel *k, cc_term type, uint32_t *symbols, cc_term *domains, cc_term *cube) {
+/* A position's type Π (ys : As). C: its arity binders, each opened at a
+ * level of the opener, since a motive or clause put under them may mention
+ * theirs, and its cube. */
+static uint32_t arity(cc_kernel *k, cc_opener *opener, cc_term type, uint32_t *levels, cc_term *domains,
+                      cc_term *cube) {
     uint32_t n = 0;
-    while (k->nodes[type].kind == CC_PI && n < CC_CONSTRUCTOR_ARGUMENTS && type) {
+    while (type && k->nodes[type].kind == CC_PI && n < CC_CONSTRUCTOR_ARGUMENTS) {
         cc_node pi = k->nodes[type];
-        symbols[n] = ck_fresh_symbol(k);
+        if (!ck_opener_take(k, opener, &levels[n]))
+            return 0;
         domains[n++] = pi.child[0];
-        type = ck_substitute(k, pi.child[1], pi.payload, var(k, symbols[n - 1]));
+        type = ck_open(k, pi.child[1], levels[n - 1]);
     }
     *cube = type;
     return n;
 }
 
-static bool parts(cc_kernel *k, display *d, cc_term instance, cc_term motive, const cc_term *clauses,
-                  uint32_t constructor, clause_parts *out) {
+/* λ (ys : As). body, or Π, over arity placeholders, innermost first. */
+static cc_term over(cc_kernel *k, cc_term_kind kind, const uint32_t *levels, const cc_term *domains, uint32_t n,
+                    cc_term body) {
+    for (uint32_t a = n; a-- > 0 && body;) {
+        body = ck_close(k, body, levels[a]);
+        body = body ? ck_make(k, kind, 0, domains[a], body, 0, 0) : 0;
+    }
+    return body;
+}
+
+static bool parts(cc_kernel *k, display *d, cc_opener *opener, cc_term instance, cc_term motive,
+                  const cc_term *clauses, uint32_t constructor, clause_parts *out) {
     const cc_signature *s = ck_instance_signature(k, instance);
     if (!s)
         return false;
@@ -171,61 +202,72 @@ static bool parts(cc_kernel *k, display *d, cc_term instance, cc_term motive, co
     cc_term type = ck_constructor_type(k, instance, constructor);
     if (!type)
         return false;
+    ck_opener_above(k, opener, type);
     *out = (clause_parts){.count = c->data + c->positions, .data = c->data, .positions = c->positions,
-                          .dimensions = c->dimensions};
+                          .dimensions = c->dimensions, .first = opener->next};
     cc_term constructed = ck_make(k, CC_CON, constructor, instance, 0, 0, 0);
-    /* The arguments as fresh variables: the motive, the clauses and later
-     * the actual arguments may mention the constructor type's own binders,
-     * which Iota's instantiation must not touch. */
+    /* The arguments as placeholders: the motive, the clauses and later the
+     * actual arguments may hold other levels, which Iota's instantiation must
+     * not touch. */
     for (uint32_t m = 0; m < out->count && type; ++m) {
         cc_node pi = k->nodes[type];
         if (pi.kind != CC_PI)
             return ck_fail(k, "A constructor's type has fewer arguments than it takes.");
-        out->symbols[m] = ck_fresh_symbol(k);
+        if (!ck_opener_take(k, opener, &out->levels[m]))
+            return false;
         out->domains[m] = pi.child[0];
-        constructed = app(k, constructed, var(k, out->symbols[m]));
-        type = ck_substitute(k, pi.child[1], pi.payload, var(k, out->symbols[m]));
+        constructed = app(k, constructed, opened(k, out->levels[m]));
+        type = ck_open(k, pi.child[1], out->levels[m]);
     }
     if (!type)
         return false;
     out->cube = type;
     out->constructed = constructed;
     *d = (display){.k = k, .signature = s, .instance = instance, .motive = motive, .clauses = clauses,
-                   .avoid = ck_free_dims(k, motive), .earlier = constructor, .positions = c->positions};
+                   .avoid = ck_free_dims(k, motive), .earlier = constructor, .positions = c->positions,
+                   .opener = opener};
     for (uint32_t m = 0; m < constructor; ++m)
         d->avoid |= ck_free_dims(k, clauses[m]);
     for (uint32_t j = 0; j < c->positions; ++j) {
-        d->position_symbols[j] = out->symbols[c->data + j];
-        out->shown_symbols[j] = ck_fresh_symbol(k);
-        d->shown[j] = var(k, out->shown_symbols[j]);
+        d->position_levels[j] = out->levels[c->data + j];
+        if (!ck_opener_take(k, opener, &out->shown_levels[j]))
+            return false;
+        d->shown[j] = opened(k, out->shown_levels[j]);
     }
     /* Q̄_j := Π (ys : As). C̄_j(q_j(ys)). */
     for (uint32_t j = 0; j < c->positions && !k->error[0]; ++j) {
         uint32_t ys[CC_CONSTRUCTOR_ARGUMENTS];
         cc_term as[CC_CONSTRUCTOR_ARGUMENTS], cube = 0;
-        uint32_t n = arity(k, out->domains[c->data + j], ys, as, &cube);
-        cc_term y = var(k, d->position_symbols[j]);
+        uint32_t n = arity(k, opener, out->domains[c->data + j], ys, as, &cube);
+        cc_term y = opened(k, d->position_levels[j]);
         for (uint32_t a = 0; a < n; ++a)
-            y = app(k, y, var(k, ys[a]));
-        cc_term shown = displayed(d, cube, y, 0);
-        for (uint32_t a = n; a-- > 0 && shown;)
-            shown = ck_make(k, CC_PI, ys[a], as[a], shown, 0, 0);
-        out->shown_domains[j] = shown;
+            y = app(k, y, opened(k, ys[a]));
+        cc_term shown = cube ? displayed(d, cube, y, 0) : 0;
+        out->shown_domains[j] = over(k, CC_PI, ys, as, n, shown);
     }
     return !k->error[0];
+}
+
+/* The opener of a clause type: above the instance, the motive and the
+ * clauses given (section 3.1). */
+static void clause_opener(cc_kernel *k, cc_opener *opener, cc_term instance, cc_term motive, const cc_term *clauses,
+                          uint32_t constructor) {
+    ck_opener_above(k, opener, instance);
+    ck_opener_above(k, opener, motive);
+    for (uint32_t m = 0; m < constructor; ++m)
+        ck_opener_above(k, opener, clauses[m]);
 }
 
 cc_term ck_clause_type(cc_kernel *k, cc_term instance, cc_term motive, const cc_term *clauses, uint32_t constructor) {
     display d;
     clause_parts p;
-    if (!parts(k, &d, instance, motive, clauses, constructor, &p))
+    cc_opener opener = {0};
+    clause_opener(k, &opener, instance, motive, clauses, constructor);
+    if (!parts(k, &d, &opener, instance, motive, clauses, constructor, &p))
         return 0;
     cc_term type = displayed(&d, p.cube, p.constructed, 0);
-    for (uint32_t j = p.positions; j-- > 0 && type;)
-        type = ck_make(k, CC_PI, p.shown_symbols[j], p.shown_domains[j], type, 0, 0);
-    for (uint32_t m = p.count; m-- > 0 && type;)
-        type = ck_make(k, CC_PI, p.symbols[m], p.domains[m], type, 0, 0);
-    return type;
+    type = over(k, CC_PI, p.shown_levels, p.shown_domains, p.positions, type);
+    return over(k, CC_PI, p.levels, p.domains, p.count, type);
 }
 
 /* elim^C(y), with D = C̄(y): elim(y) over the sort, and ⟨i⟩ elim^{C'}(y @ i)
@@ -241,6 +283,17 @@ static cc_term lifted(cc_kernel *k, cc_term eliminator, cc_term instance, cc_ter
     cc_term at = ck_make(k, CC_PAPP, ck_interval_variable(k, s.payload), y, cube, 0, 0);
     cc_term body = inner ? lifted(k, eliminator, instance, inner, s.child[0], at) : 0;
     return body ? ck_make(k, CC_PLAM, s.payload, s.child[0], body, 0, 0) : 0;
+}
+
+/* A term over the arguments' placeholders, levels first .. first + count - 1,
+ * at the actual arguments: the levels closed to indices, the last argument at
+ * index 0, and those instantiated in one pass. */
+static cc_term at_arguments(cc_kernel *k, cc_term term, uint32_t first, const cc_term *arguments, uint32_t count) {
+    cc_term values[CC_CONSTRUCTOR_ARGUMENTS] = {0};
+    for (uint32_t i = 0; i < count; ++i)
+        values[i] = arguments[count - 1 - i];
+    term = term ? ck_close_loose(k, term, first, count) : 0;
+    return term ? ck_instantiate_all(k, term, values, count) : 0;
 }
 
 /* elim_{M, ms}(c_k(as)(ts, qs) @ rs) ⟶ m_k(ts, qs, q̄s) @ rs (3.7), with
@@ -291,40 +344,43 @@ cc_term ck_eliminate(cc_kernel *k, cc_term eliminator, cc_term argument, bool we
         return app(k, eliminator, value);
     display d;
     clause_parts p;
-    if (!parts(k, &d, instance, e.child[0], clauses, constructor, &p))
+    /* The opener starts above the eliminator, which holds the motive and the
+     * clauses, and the argument, which holds the instance and the actual
+     * arguments (section 3.1). */
+    cc_opener opener = {0};
+    ck_opener_above(k, &opener, eliminator);
+    ck_opener_above(k, &opener, value);
+    if (!parts(k, &d, &opener, instance, e.child[0], clauses, constructor, &p))
         return 0;
     /* The lifted positions put the whole eliminator under their binders. */
     d.avoid |= ck_free_dims(k, eliminator);
     if (count != p.count || depth != p.dimensions)
         return app(k, eliminator, value);
-    /* The positions shown by their values, over the argument variables. */
+    /* The positions shown by their values, over the arguments' placeholders. */
     for (uint32_t j = 0; j < p.positions; ++j) {
         uint32_t ys[CC_CONSTRUCTOR_ARGUMENTS];
         cc_term as[CC_CONSTRUCTOR_ARGUMENTS], cube = 0;
-        uint32_t n = arity(k, p.domains[p.data + j], ys, as, &cube);
-        cc_term y = var(k, d.position_symbols[j]);
+        uint32_t n = arity(k, &opener, p.domains[p.data + j], ys, as, &cube);
+        cc_term y = opened(k, d.position_levels[j]);
         for (uint32_t a = 0; a < n; ++a)
-            y = app(k, y, var(k, ys[a]));
-        cc_term shown = displayed(&d, cube, y, 0);
+            y = app(k, y, opened(k, ys[a]));
+        cc_term shown = cube ? displayed(&d, cube, y, 0) : 0;
         cc_term value_j = shown ? lifted(k, eliminator, instance, cube, shown, y) : 0;
-        for (uint32_t a = n; a-- > 0 && value_j;)
-            value_j = ck_make(k, CC_LAM, ys[a], as[a], value_j, 0, 0);
+        value_j = over(k, CC_LAM, ys, as, n, value_j);
         if (!value_j)
             return 0;
         d.shown[j] = value_j;
     }
     cc_term reduct = clauses[constructor];
     for (uint32_t m = 0; m < p.count; ++m)
-        reduct = app(k, reduct, var(k, p.symbols[m]));
+        reduct = app(k, reduct, opened(k, p.levels[m]));
     for (uint32_t j = 0; j < p.positions; ++j)
         reduct = app(k, reduct, d.shown[j]);
     cc_term type = depth ? displayed(&d, p.cube, p.constructed, 0) : 0;
-    /* At the arguments: the variables are the constructor type's own, fresh. */
-    for (uint32_t m = 0; m < p.count && reduct; ++m) {
-        reduct = ck_substitute(k, reduct, p.symbols[m], arguments[m]);
-        if (depth)
-            type = type ? ck_substitute(k, type, p.symbols[m], arguments[m]) : 0;
-    }
+    /* At the arguments: the placeholders are the constructor type's own. */
+    reduct = at_arguments(k, reduct, p.first, arguments, p.count);
+    if (depth)
+        type = at_arguments(k, type, p.first, arguments, p.count);
     if (!reduct || (depth && !type))
         return 0;
     *reduced = true;
@@ -362,8 +418,8 @@ static cc_term expected(cc_kernel *k, cc_term instance, cc_term motive, const cc
         return 0;
     if (given < s->constructor_count)
         return ck_clause_type(k, instance, motive, clauses, given);
-    uint32_t z = ck_fresh_symbol(k);
-    return ck_make(k, CC_PI, z, instance, app(k, motive, var(k, z)), 0, 0);
+    /* Built directly: the motive is locally closed, and z is index 0. */
+    return ck_make(k, CC_PI, 0, instance, app(k, motive, ck_make(k, CC_BOUND, 0, 0, 0, 0, 0)), 0, 0);
 }
 
 static cc_judgement_id in_progress(cc_kernel *k, cc_term instance, cc_term motive, cc_term reversed, uint32_t given,

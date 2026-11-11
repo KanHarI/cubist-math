@@ -1,8 +1,9 @@
 /* Universe levels (G0 specification, §2.3–2.4), decided by arithmetic.
  *
  * A level is an ordinal below ω²: a constant ω·tier + n (LConst), a
- * successor ℓ + n (LSucc), a maximum (LMax), or a variable (Var) that ranges
- * over the natural numbers. Its normal form is either finite, (c, m): a
+ * successor ℓ + n (LSucc), a maximum (LMax), or a variable that ranges over
+ * the natural numbers: a level entry (Context), a level binder's (Bound), or
+ * one an operation opened (term_internal.h's Opened). Its normal form is either finite, (c, m): a
  * tier-0 constant c and an offset m(x) ≤ c for finitely many variables x,
  * denoting max(c, max over x of x + m(x)); or a constant of tier 1 or above,
  * which absorbs every variable, since every finite value lies below it.
@@ -172,6 +173,14 @@ static bool level_ready(cc_kernel *k, cc_term level, cc_level_nf *out,
         level = k->nodes[level].child[0];
     }
     cc_node n = k->nodes[level];
+    if (n.kind == CC_OPENED) {
+        if (!reserve_terms(k, out, 1)) return false;
+        out->tier = out->constant = 0;
+        out->count = 1;
+        out->terms[0] = (cc_level_term){ck_level_key(CC_OPENED, n.payload), 0};
+        add(k, out, f->successors);
+        return false;
+    }
     switch (n.kind) {
     case CC_LCONST:
         if ((n.payload >> 16) > CC_TIER_MAX) { ck_fail_as(k, CC_ERROR_RESOURCE, bound_exceeded); return false; }
@@ -179,11 +188,11 @@ static bool level_ready(cc_kernel *k, cc_term level, cc_level_nf *out,
         out->constant = n.payload & 0xffffu;
         out->count = 0;
         break;
-    case CC_VAR:
+    case CC_BOUND: case CC_CONTEXT:
         if (!reserve_terms(k, out, 1)) return false;
         out->tier = out->constant = 0;
         out->count = 1;
-        out->terms[0] = (cc_level_term){n.payload, 0};
+        out->terms[0] = (cc_level_term){ck_level_key(n.kind, n.payload), 0};
         break;
     case CC_LMAX:
         f->left = n.child[0]; f->right = n.child[1];
@@ -268,6 +277,22 @@ cc_term ck_level_constant(cc_kernel *k, uint32_t tier, uint32_t value) {
     return ck_make(k, CC_LCONST, tier << 16 | value, 0, 0, 0, 0);
 }
 
+/* A level variable's key: its reference by its role (term_internal.h). */
+uint64_t ck_level_key(cc_term_kind kind, uint32_t payload) {
+    if (kind == CC_OPENED) return CC_LEVEL_KEY_OPENED | payload;
+    if (kind == CC_BOUND) return CC_LEVEL_KEY_BOUND | (UINT32_MAX - payload);
+    return payload;
+}
+
+/* The variable a key names, rebuilt as the kind it was read from. */
+static cc_term key_variable(cc_kernel *k, uint64_t key) {
+    if (key >= CC_LEVEL_KEY_BOUND)
+        return ck_make(k, CC_BOUND, UINT32_MAX - (uint32_t)(key - CC_LEVEL_KEY_BOUND), 0, 0, 0, 0);
+    if (key >= CC_LEVEL_KEY_OPENED)
+        return ck_make(k, CC_OPENED, (uint32_t)(key - CC_LEVEL_KEY_OPENED), 0, 0, 0, 0);
+    return ck_make(k, CC_CONTEXT, (uint32_t)key, 0, 0, 0, 0);
+}
+
 /* The canonical node of a normal form: a constant; or the maximum, nested to
  * the right in key order, of each x + m(x), followed by the constant c when
  * it is larger than every offset or there are no variables. */
@@ -280,9 +305,7 @@ cc_term ck_level_build(cc_kernel *k, const cc_level_nf *nf) {
             top = nf->terms[i].offset;
     cc_term result = !nf->count || nf->constant > top ? ck_level_constant(k, 0, nf->constant) : 0;
     for (uint32_t i = nf->count; i-- > 0;) {
-        if (nf->terms[i].key > UINT32_MAX)
-            return ck_fail(k, "A level variable's key is not a symbol."), 0;
-        cc_term part = ck_var(k, (uint32_t)nf->terms[i].key);
+        cc_term part = key_variable(k, nf->terms[i].key);
         if (part && nf->terms[i].offset)
             part = ck_make(k, CC_LSUCC, nf->terms[i].offset, part, 0, 0, 0);
         result = result ? ck_make(k, CC_LMAX, 0, part, result, 0, 0) : part;
@@ -388,15 +411,15 @@ cc_term ck_level_max(cc_kernel *k, cc_term a, cc_term b) {
 }
 
 
-/* lim_x(ℓ) (§2.7): ω when x occurs in nf(ℓ), and nf(ℓ) otherwise. It is the
- * level of Π (x < ω). B when B's level is ℓ. */
-cc_term ck_level_limit(cc_kernel *k, uint32_t symbol, cc_term level) {
+/* lim_x(ℓ) (§2.7): ω when x, the variable of `key`, occurs in nf(ℓ), and
+ * nf(ℓ) otherwise. It is the level of Π (x < ω). B when B's level is ℓ. */
+cc_term ck_level_limit(cc_kernel *k, uint64_t key, cc_term level) {
     cc_level_nf nf;
     if (!ck_level_normal(k, level, &nf))
         return 0;
     bool occurs = false;
     for (uint32_t i = 0; i < nf.count; ++i)
-        occurs |= nf.terms[i].key == symbol;
+        occurs |= nf.terms[i].key == key;
     cc_term result = occurs ? ck_level_constant(k, 1, 0) : ck_level_build(k, &nf);
     ck_level_nf_free(&nf);
     return result;
@@ -490,11 +513,12 @@ cc_term ck_canonical_levels(cc_kernel *k, cc_term term) {
     return k->error[0] ? 0 : result;
 }
 
-/* Level substitution (§2.8): capture-avoiding, since level and term
- * variables share one name supply, then every level taken to normal form, so
- * that an instance is the term a direct derivation would give. */
-cc_term ck_level_instantiate(cc_kernel *k, cc_term body, uint32_t symbol, cc_term level) {
-    return ck_canonical_levels(k, ck_substitute(k, body, symbol, level));
+/* Level substitution (§2.8): the binder's index instantiated, then every
+ * level taken to normal form, so that an instance is the term a direct
+ * derivation would give. */
+cc_term ck_level_instantiate(cc_kernel *k, cc_term body, cc_term level) {
+    cc_term instance = ck_instantiate(k, body, level);
+    return instance ? ck_canonical_levels(k, instance) : 0;
 }
 
 cc_term ck_universe(cc_kernel *k, cc_term level) {

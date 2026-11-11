@@ -5,20 +5,23 @@
 // shows.
 import glue_;
 
-// Output: fun (A : U0) => path i => Glue(A, face(i, 0, A, (fun (x : A) => x, fun (y : A) => ((y,
-//   refl(y)), fun (p : exists x : A. y = x) => path i => (p.2 @ i, path j => p.2 @ i & j)))),
-//   face(i, 1, A, (fun (x : A) => x, fun (y : A) => ((y, refl(y)), fun (p : exists x : A. y = x) =>
-//   path i => (p.2 @ i, path j => p.2 @ i & j)))))
+// Output: fun (A : U0) => path i => Glue(A, face(i, 0, A, (fun (x : A) => x, fun (x : A) => ((x,
+//   refl(x)), fun (x1 : exists x1 : A. x = x1) => path i => (x1.2 @ i, path j => x1.2 @ i & j)))),
+//   face(i, 1, A, (fun (x : A) => x, fun (x : A) => ((x, refl(x)), fun (x1 : exists x1 : A. x = x1)
+//   => path i => (x1.2 @ i, path j => x1.2 @ i & j)))))
 print(evaluate(!!!glued_line));
 
+// The print's binders are the normal form's, which carry no names (ABI 4),
+// and show the driver's: a follow-up names them after the definitions'.
 def again : forall A : U0. A = A := fun (A : U0) => path i => Glue(
   A,
   face(
     i, 0, A,
     (
       fun (x : A) => x,
-      fun (y : A) => (
-        (y, refl(y)), fun (p : exists x : A. y = x) => path i => (p.2 @ i, path j => p.2 @ i & j)
+      fun (x : A) => (
+        (x, refl(x)),
+        fun (x1 : exists x1 : A. x = x1) => path i => (x1.2 @ i, path j => x1.2 @ i & j)
       )
     )
   ),
@@ -26,8 +29,9 @@ def again : forall A : U0. A = A := fun (A : U0) => path i => Glue(
     i, 1, A,
     (
       fun (x : A) => x,
-      fun (y : A) => (
-        (y, refl(y)), fun (p : exists x : A. y = x) => path i => (p.2 @ i, path j => p.2 @ i & j)
+      fun (x : A) => (
+        (x, refl(x)),
+        fun (x1 : exists x1 : A. x = x1) => path i => (x1.2 @ i, path j => x1.2 @ i & j)
       )
     )
   )

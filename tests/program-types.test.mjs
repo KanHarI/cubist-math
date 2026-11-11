@@ -56,11 +56,12 @@ test("the producer refuses the reserved primitive syntax and instruction slots",
   const {program,result}=await check(t,"def retained : Unit := tt;");
   ok(result);
   // The retired kinds and instructions have no names, and their numbers
-  // stay reserved: the C kernel refuses each.
-  for(const kind of ["UNat","Zero","Succ","NatRec","W","Sup","WRec","Pushout","PushLeft","PushRight","PushPath","PushElim"])
+  // stay reserved: the C kernel refuses each. Var retired with ABI 4, its
+  // variables bound indices and context entries since.
+  for(const kind of ["Var","UNat","Zero","Succ","NatRec","W","Sup","WRec","Pushout","PushLeft","PushRight","PushPath","PushElim"])
     assert.throws(()=>program.kernel.term(kind),/Unsupported cubical constructor/);
   const kinds=cubicalKinds.flatMap((name,tag)=>name===null?[tag]:[]);
-  assert.equal(kinds.length,12);
+  assert.equal(kinds.length,13);
   for(const tag of kinds) {
     assert.equal(module._cb_term(program.kernel.handle,tag,0,0,0,0,0),0,`kind ${tag}`);
     assert.match(program.kernel.error(),/Unknown term constructor/);

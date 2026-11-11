@@ -3,6 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
+import { ReplSession } from "../web/repl-session.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 
 const literal = n => `0b${n.toString(2)}`;
@@ -79,6 +80,49 @@ test("binary arithmetic and comparison agree with independent integer results", 
   assert.ok(result.complete, JSON.stringify(result.gaps));
   assert.equal(result.outputs.length, proofs.length);
   assert.ok(result.outputs.every(output => output.verified && !output.axioms.length));
+});
+
+// Multiplication recurses on its first operand and adds its second, a term
+// still to be computed when it is a recursive value, as factorial's step
+// multiplies n by the factorial below it. Each addition substitutes the
+// operand's parts under binders. On ABI 3 the kernel checked each binder's
+// name against them, searching the operand's syntax for it, so a product
+// nested to the right cost its term's size at every substitution:
+// factorial(60) took 137,752,410 ticks, factorial(100) passed 10,000,000 in
+// one query (K338), and 7^60 nested to the right 45,712,445, against 770,518
+// nested to the left. A binder binds an index now, and instantiation visits
+// only the nodes whose loose indices reach the one it replaces, so a closed
+// operand is never searched (section 3.3 of
+// docs/roadmaps/kernel/locally-nameless-kernel.md). The bounds are the
+// stopgap's (branch kernel-fast-multiplication), unchanged. On the kernel's
+// path alone, as the value form computes once the runtime is gone.
+test("a product with a large operand still to be computed costs its arithmetic on the kernel's path", async t => {
+  const program = new CubicalProgram(await createCubical(), sourceReader(), { collectReferences: false, runtimeEvaluation: false });
+  t.after(() => program.dispose());
+  const session = new ReplSession(program);
+  const prepared = await session.run("import nat; use nat;");
+  assert.deepEqual(prepared.filter(result => result.kind === "error").map(result => result.text), []);
+  program.kernel.maxQuerySteps = 10000000n;
+  const evaluated = async entry => {
+    const before = program.kernel.work().querySteps;
+    const [answer] = await session.run(`evaluate ${entry};`);
+    assert.equal(answer.kind, "value", `${entry}: ${answer.text}`);
+    return { text: answer.text, ticks: Number(program.kernel.work().querySteps - before) };
+  };
+  const factorial = n => { let f = 1n; for (let i = 2n; i <= n; i++) f *= i; return f; };
+  const sixty = await evaluated("factorial(60)");
+  assert.equal(sixty.text, String(factorial(60n)));
+  assert.ok(sixty.ticks < 4000000, `factorial(60) took ${sixty.ticks} ticks`);
+  // 100! has 525 bits, past the value form's display, which shows its low
+  // bits: 2^97 divides it, and 2^98 does not.
+  const hundred = await evaluated("factorial(100)");
+  assert.ok(hundred.text.startsWith(`b_positive(${"bp_even(".repeat(97)}bp_odd(`), hundred.text.slice(0, 120));
+  assert.ok(hundred.ticks < 12000000, `factorial(100) took ${hundred.ticks} ticks`);
+  const nested = order => { let s = "1"; for (let i = 0; i < 60; i++) s = order === "right" ? `7 * (${s})` : `(${s}) * 7`; return s; };
+  const right = await evaluated(nested("right")), left = await evaluated(nested("left"));
+  assert.equal(right.text, String(7n ** 60n));
+  assert.equal(left.text, String(7n ** 60n));
+  assert.ok(right.ticks < 3 * left.ticks, `7^60 took ${right.ticks} ticks nested to the right, ${left.ticks} to the left`);
 });
 
 test("the complete binary core loads without unary naturals", async t => {

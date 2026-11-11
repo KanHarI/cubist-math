@@ -1,7 +1,10 @@
-/* Capture-avoiding substitution. Term variables and dimensions are separate
- * namespaces; a Path binds its dimension in the family, not in its endpoints.
- * A composition binds its direction in the family and tube terms, but not in
- * the face formulas or starting lid. These distinctions are trusted rules. */
+/* Substitution. Term and level variables are locally nameless (section 3 of
+ * docs/roadmaps/kernel/locally-nameless-kernel.md): a binder binds index 0 of
+ * its body, so instantiation needs no capture check and no renaming.
+ * Dimensions keep their names: a Path binds its dimension in the family, not
+ * in its endpoints. A composition binds its direction in the family and tube
+ * terms, but not in the face formulas or starting lid. These distinctions are
+ * trusted rules. */
 #include "term_internal.h"
 
 bool ck_term_binder(cc_term_kind kind) {
@@ -10,74 +13,6 @@ bool ck_term_binder(cc_term_kind kind) {
 
 bool ck_dim_binder(cc_term_kind kind) {
     return kind == CC_PATH || kind == CC_PLAM || kind == CC_COMP || kind == CC_HCOMP || kind == CC_TRANS;
-}
-
-bool ck_term_free(cc_kernel *k, cc_term term, uint32_t name) {
-    typedef struct {
-        cc_term term;
-        unsigned next;
-        bool waiting;
-    } frame;
-    frame local[32], *frames = local;
-    size_t count = 1;
-    bool result = false;
-    frames[0] = (frame){term, UINT_MAX, false};
-    while (count && !k->error[0]) {
-        frame *f = &frames[count - 1];
-        cc_node n = f->term ? k->nodes[f->term] : (cc_node){0};
-        if (f->next == UINT_MAX) {
-            uint64_t cached;
-            if (f->term && !(n.symbols & (UINT64_C(1) << (name % 64)))) {
-                result = false;
-                --count;
-                continue;
-            }
-            if (ck_memo_get(k, 1, f->term, name, 0, &cached)) {
-                result = cached != 0;
-                --count;
-                continue;
-            }
-            if (!f->term) {
-                result = false;
-                goto done;
-            }
-            if (!ck_tick(k)) break;
-            if (n.kind == CC_VAR) {
-                result = n.payload == name;
-                goto done;
-            }
-            f->next = 0;
-        }
-        if (f->waiting) {
-            if (result) goto done;
-            f->waiting = false;
-        }
-        if (f->next == ck_arity(n.kind)) {
-            result = false;
-            goto done;
-        }
-        unsigned i = f->next++;
-        if (i == 1 && ck_term_binder(n.kind) && n.payload == name)
-            continue;
-        f->waiting = true;
-        if (frames == local && count == sizeof local / sizeof *local) {
-            size_t capacity = k->nodes[term].depth + (size_t)1;
-            frames = capacity <= SIZE_MAX / sizeof *frames ? malloc(capacity * sizeof *frames) : NULL;
-            if (!frames) {
-                frames = local;
-                ck_fail_as(k, CC_ERROR_RESOURCE, "Variable scan allocation failed.");
-                break;
-            }
-            memcpy(frames, local, sizeof local);
-        }
-        frames[count++] = (frame){n.child[i], UINT_MAX, false};
-        continue;
-done:
-        ck_memo_put(k, 1, f->term, name, 0, result);
-        --count;
-    }
-    if (frames != local) free(frames);
-    return !k->error[0] && result;
 }
 
 static uint64_t formula_names(const cc_formula *f) {
@@ -173,17 +108,16 @@ unsigned ck_fresh_dimension(cc_kernel *k, uint64_t avoid) {
     return CC_DIMENSIONS;
 }
 
-/* Term substitution can rename a dimension, and renaming a term binder is
- * itself a substitution. Keep all three traversals in one continuation loop
- * so capture avoidance does not reintroduce native recursion. The locally
- * nameless primitives (below) are two more traversals of the same loop:
- * instantiation renames a dimension binder as term substitution does. */
+/* Instantiation can rename a dimension, and renaming a dimension binder is
+ * itself a substitution. Keep the traversals in one continuation loop so
+ * capture avoidance does not reintroduce native recursion: dimension
+ * substitution, its tube lists, and the locally nameless primitives below,
+ * instantiation and abstraction. */
 typedef enum {
-    SUBSTITUTE_TERM, SUBSTITUTE_DIMENSION, SUBSTITUTE_TUBES, SUBSTITUTE_INSTANTIATE, SUBSTITUTE_ABSTRACT
+    SUBSTITUTE_DIMENSION, SUBSTITUTE_TUBES, SUBSTITUTE_INSTANTIATE, SUBSTITUTE_ABSTRACT
 } substitution_kind;
 typedef enum {
-    SUBSTITUTE_PREPARE, SUBSTITUTE_RENAME_DIMENSION, SUBSTITUTE_RENAME_TERM,
-    SUBSTITUTE_AFTER_RENAME_TERM, SUBSTITUTE_CHILDREN, SUBSTITUTE_TUBE_TAIL,
+    SUBSTITUTE_PREPARE, SUBSTITUTE_RENAME_DIMENSION, SUBSTITUTE_START, SUBSTITUTE_CHILDREN, SUBSTITUTE_TUBE_TAIL,
     SUBSTITUTE_FINISH, SUBSTITUTE_DELEGATED
 } substitution_stage;
 
@@ -193,7 +127,7 @@ typedef enum {
  * Its results are memoized by the node, that number and `key`. */
 typedef struct {
     uint32_t operation; /* the syntax memo's operation */
-    cc_term key;        /* the value, the call's serial, or the reference's payload */
+    cc_term key;        /* the value, the call's serial, an opening's count and level, or the reference's payload */
     /* Instantiation: values[i] replaces index i, each locally closed. Their
      * free dimensions are read at the first dimension binder met. */
     const cc_term *values;
@@ -204,7 +138,8 @@ typedef struct {
     unsigned reference;
     uint32_t payload;
 } index_operation;
-enum { MEMO_INSTANTIATE = 7, MEMO_INSTANTIATE_ALL = 8, MEMO_ABSTRACT = 9, MEMO_CLOSE = 10, MEMO_INDEX_OCCURS = 11 };
+enum { MEMO_INSTANTIATE = 7, MEMO_INSTANTIATE_ALL = 8, MEMO_ABSTRACT = 9, MEMO_CLOSE = 10, MEMO_INDEX_OCCURS = 11,
+       MEMO_MENTIONS = 12, MEMO_OPEN_LOOSE = 13 };
 
 /* Whether a dimension binder binds its dimension in child i, 0 or 1 (child
  * 1 of a composition is its tube list, whose bodies it binds): the children
@@ -284,7 +219,7 @@ done:
 typedef struct {
     substitution_kind kind;
     substitution_stage stage;
-    cc_term term, value;
+    cc_term term;
     uint32_t name, fresh;
     cc_node node;
     /* Descriptors are copied; immutable formula clauses outlive this query.
@@ -304,7 +239,7 @@ static bool index_mentioned(const cc_kernel *k, const substitution_frame *f) {
     const cc_node *n = &k->nodes[f->term];
     if (f->kind == SUBSTITUTE_INSTANTIATE) return n->loose > f->name;
     if (f->index->reference == CC_OPENED) return n->opened > f->index->payload;
-    return (n->symbols >> (f->index->payload % 64)) & 1;
+    return (n->contexts >> (f->index->payload % 64)) & 1;
 }
 
 /* As term_substitution_ready: a node unchanged, memoized or a leaf needs no
@@ -370,25 +305,6 @@ static uint64_t inserted_dims(cc_kernel *k, const substitution_frame *f) {
 /* Most external requests are cached or leave their input untouched. Keep
  * them outside the continuation machinery, using these same entry checks
  * for child requests. Only a request that will traverse needs a frame. */
-static bool term_substitution_ready(cc_kernel *k, cc_term term, uint32_t name, cc_term value,
-                                    cc_term *result, bool *cache) {
-    uint64_t cached;
-    *cache = false;
-    if (!term) { *result = 0; return false; }
-    if (ck_memo_get(k, 3, term, name, value, &cached)) {
-        *result = ck_tick(k) ? (cc_term)cached : 0;
-        return false;
-    }
-    if (!ck_tick(k)) { *result = 0; return false; }
-    *cache = true;
-    if (!ck_term_free(k, term, name)) { *result = term; return false; }
-    if (k->nodes[term].kind == CC_VAR && k->nodes[term].payload == name) {
-        *result = value;
-        return false;
-    }
-    return true;
-}
-
 static bool dimension_substitution_ready(cc_kernel *k, cc_term term, unsigned dim,
                                          const cc_formula *value, cc_term *result,
                                          cc_formula_id *formula, bool *cache) {
@@ -433,12 +349,7 @@ static bool substitution_push(cc_kernel *k, substitution_frame **frames, size_t 
                               size_t count, substitution_frame *local, substitution_frame child,
                               cc_term *result) {
     if (k->error[0]) return false;
-    if (child.kind == SUBSTITUTE_TERM) {
-        if (!term_substitution_ready(k, child.term, child.name, child.value, result, &child.cache)) {
-            if (*result && child.cache) ck_memo_put(k, 3, child.term, child.name, child.value, *result);
-            return false;
-        }
-    } else if (child.kind == SUBSTITUTE_DIMENSION) {
+    if (child.kind == SUBSTITUTE_DIMENSION) {
         if (!dimension_substitution_ready(k, child.term, child.name,
                 child.has_interval ? &child.interval : NULL, result, &child.formula, &child.cache))
             return false;
@@ -522,11 +433,10 @@ static cc_term substitution(cc_kernel *k, substitution_frame root) {
                 ck_fail(k, "Dimension binder outside native range.");
                 break;
             }
-            f->stage = SUBSTITUTE_RENAME_TERM;
+            f->stage = SUBSTITUTE_START;
             /* Abstraction puts in a CC_BOUND, which mentions no dimension. */
             if (ck_dim_binder(f->node.kind) && f->node.payload < CC_DIMENSIONS && f->kind != SUBSTITUTE_ABSTRACT) {
-                uint64_t value_dims = f->kind == SUBSTITUTE_TERM ? ck_free_dims(k, f->value)
-                    : f->kind == SUBSTITUTE_INSTANTIATE ? inserted_dims(k, f)
+                uint64_t value_dims = f->kind == SUBSTITUTE_INSTANTIATE ? inserted_dims(k, f)
                     : formula_names(&f->interval);
                 if ((f->kind != SUBSTITUTE_DIMENSION || f->node.payload != f->name) &&
                     (value_dims & (UINT64_C(1) << f->node.payload))) {
@@ -552,7 +462,7 @@ static cc_term substitution(cc_kernel *k, substitution_frame root) {
             unsigned i = f->next++;
             if (i == 2) {
                 f->node.payload = f->fresh;
-                f->stage = SUBSTITUTE_RENAME_TERM;
+                f->stage = SUBSTITUTE_START;
                 break;
             }
             bool tube = i == 1 && (f->node.kind == CC_COMP || f->node.kind == CC_HCOMP);
@@ -564,17 +474,7 @@ static cc_term substitution(cc_kernel *k, substitution_frame root) {
             if (substitution_push(k, &frames, &capacity, count, local, child, &result)) ++count;
             break;
         }
-        case SUBSTITUTE_RENAME_TERM:
-            if (f->kind == SUBSTITUTE_TERM && ck_term_binder(f->node.kind) &&
-                f->node.payload != f->name && ck_term_free(k, f->value, f->node.payload)) {
-                f->fresh = ck_fresh_symbol(k);
-                substitution_frame child = {.kind = SUBSTITUTE_TERM, .term = f->node.child[1],
-                                             .name = f->node.payload, .value = ck_var(k, f->fresh)};
-                f->stage = SUBSTITUTE_AFTER_RENAME_TERM;
-                f->waiting = 2;
-                if (substitution_push(k, &frames, &capacity, count, local, child, &result)) ++count;
-                break;
-            }
+        case SUBSTITUTE_START:
             f->next = 0;
             f->stage = SUBSTITUTE_CHILDREN;
             if (f->kind == SUBSTITUTE_DIMENSION && f->node.kind == CC_TUBE) {
@@ -583,11 +483,6 @@ static cc_term substitution(cc_kernel *k, substitution_frame root) {
                 if (substitution_push(k, &frames, &capacity, count, local, child, &result)) ++count;
             }
             break;
-        case SUBSTITUTE_AFTER_RENAME_TERM:
-            f->node.payload = f->fresh;
-            f->next = 0;
-            f->stage = SUBSTITUTE_CHILDREN;
-            break;
         case SUBSTITUTE_CHILDREN: {
             if (f->next == ck_arity(f->node.kind)) {
                 f->stage = SUBSTITUTE_FINISH;
@@ -595,11 +490,7 @@ static cc_term substitution(cc_kernel *k, substitution_frame root) {
             }
             unsigned i = f->next++;
             substitution_frame child;
-            if (f->kind == SUBSTITUTE_TERM) {
-                if (i == 1 && ck_term_binder(f->node.kind) && f->node.payload == f->name) break;
-                child = (substitution_frame){.kind = SUBSTITUTE_TERM, .term = f->node.child[i],
-                                             .name = f->name, .value = f->value};
-            } else if (f->kind == SUBSTITUTE_INSTANTIATE || f->kind == SUBSTITUTE_ABSTRACT) {
+            if (f->kind == SUBSTITUTE_INSTANTIATE || f->kind == SUBSTITUTE_ABSTRACT) {
                 /* A term or level binder's body is one binder deeper. */
                 child = (substitution_frame){.kind = f->kind, .term = f->node.child[i], .index = f->index,
                                              .name = f->name + (i == 1 && ck_term_binder(f->node.kind))};
@@ -646,23 +537,11 @@ complete:
         if (result && f->cache && !k->error[0] && (f->kind == SUBSTITUTE_INSTANTIATE || f->kind == SUBSTITUTE_ABSTRACT))
             ck_memo_put(k, f->index->operation, f->term, f->name, f->index->key, result);
         else if (result && f->cache && !k->error[0])
-            ck_memo_put(k, f->kind == SUBSTITUTE_TERM ? 3 : 6, f->term, f->name,
-                        f->kind == SUBSTITUTE_TERM ? f->value : f->formula, result);
+            ck_memo_put(k, 6, f->term, f->name, f->formula, result);
         --count;
     }
     if (frames != local) free(frames);
     return k->error[0] ? 0 : result;
-}
-
-cc_term ck_substitute(cc_kernel *k, cc_term term, uint32_t name, cc_term value) {
-    cc_term result;
-    bool cache;
-    if (!term_substitution_ready(k, term, name, value, &result, &cache)) {
-        if (result && cache) ck_memo_put(k, 3, term, name, value, result);
-        return k->error[0] ? 0 : result;
-    }
-    return substitution(k, (substitution_frame){.kind = SUBSTITUTE_TERM, .stage = SUBSTITUTE_PREPARE,
-                                                .term = term, .name = name, .value = value, .cache = true});
 }
 
 cc_term ck_dimension_substitute(cc_kernel *k, cc_term term, unsigned dim, const cc_formula *value) {
@@ -680,7 +559,7 @@ cc_term ck_dimension_substitute(cc_kernel *k, cc_term term, unsigned dim, const 
 }
 
 /* The locally nameless primitives (section 3.3 of docs/roadmaps/kernel/
- * locally-nameless-kernel.md), unused by the rules on ABI 3. Each is one
+ * locally-nameless-kernel.md). Each is one
  * traversal of the substitution worklist, a step per node it visits, which
  * visits only the nodes it can change, and memoizes its results by node,
  * binder depth and operand. On any failure it returns 0 with the error
@@ -690,11 +569,12 @@ cc_term ck_dimension_substitute(cc_kernel *k, cc_term term, unsigned dim, const 
  * the binders above each occurrence. So closing after opening at a level
  * above the term's `opened` is the identity on any term, and opening after
  * closing is the identity on a locally closed one. */
-static cc_term index_substitution(cc_kernel *k, substitution_kind kind, cc_term term, index_operation *op) {
-    substitution_frame root = {.kind = kind, .stage = SUBSTITUTE_PREPARE, .term = term, .index = op};
+static cc_term index_substitution(cc_kernel *k, substitution_kind kind, cc_term term, index_operation *op,
+                                  uint32_t base) {
+    substitution_frame root = {.kind = kind, .stage = SUBSTITUTE_PREPARE, .term = term, .index = op, .name = base};
     cc_term result;
     if (!index_ready(k, &root, &result)) {
-        if (result && root.cache) ck_memo_put(k, op->operation, term, 0, op->key, result);
+        if (result && root.cache) ck_memo_put(k, op->operation, term, base, op->key, result);
         return k->error[0] ? 0 : result;
     }
     return substitution(k, root);
@@ -703,9 +583,9 @@ static cc_term index_substitution(cc_kernel *k, substitution_kind kind, cc_term 
 /* `term` with CC_BOUND(d + i), under d of its binders, replaced by values[i]
  * for each i below `count`: one pass for a telescope, whose innermost entry
  * is index 0. Each value must be locally closed (loose == 0), so no binder
- * of the term can capture it; the caller ensures it, as the callers of
- * ck_substitute ensure its operands. A dimension binder whose dimension a
- * value mentions is renamed, as substitution does.
+ * of the term can capture it: an O(1) check of each, refused otherwise. A
+ * dimension binder whose dimension a value mentions is renamed, as
+ * dimension substitution does.
  *
  * One value is memoized by its handle. Several are memoized under a serial
  * of their own call, not by the values: a key made as syntax, a list of
@@ -721,6 +601,8 @@ cc_term ck_instantiate_all(cc_kernel *k, cc_term term, const cc_term *values, ui
     if (!term || term >= k->count) return ck_fail(k, "Invalid syntax child handle."), 0;
     for (uint32_t i = 0; i < count; ++i)
         if (!values[i] || values[i] >= k->count) return ck_fail(k, "Invalid syntax child handle."), 0;
+    for (uint32_t i = 0; i < count; ++i)
+        if (k->nodes[values[i]].loose) return ck_fail(k, "Instantiation needs locally closed values."), 0;
     if (!count) return term;
     index_operation op = {.operation = count == 1 ? MEMO_INSTANTIATE : MEMO_INSTANTIATE_ALL,
                           .values = values, .count = count};
@@ -732,7 +614,7 @@ cc_term ck_instantiate_all(cc_kernel *k, cc_term term, const cc_term *values, ui
         }
         op.key = k->instantiation_serial;
     }
-    return index_substitution(k, SUBSTITUTE_INSTANTIATE, term, &op);
+    return index_substitution(k, SUBSTITUTE_INSTANTIATE, term, &op, 0);
 }
 
 /* A binder's body, `term`, with its index 0 replaced by `value`. */
@@ -741,13 +623,18 @@ cc_term ck_instantiate(cc_kernel *k, cc_term term, cc_term value) {
 }
 
 /* `term` with each CC_CONTEXT(entry) replaced by the CC_BOUND that a binder
- * put around `term` would bind. Nodes whose filter lacks the entry's bit are
- * skipped. */
-cc_term ck_abstract(cc_kernel *k, cc_term term, cc_entry_id entry) {
+ * put around `term` would bind, with `base` more binders between them: so
+ * an occurrence under d of the term's binders becomes CC_BOUND(base + d).
+ * Nodes whose filter lacks the entry's bit are skipped. */
+cc_term ck_abstract_at(cc_kernel *k, cc_term term, cc_entry_id entry, uint32_t base) {
     if (k->error[0]) return 0;
     if (!term || term >= k->count) return ck_fail(k, "Invalid syntax child handle."), 0;
     index_operation op = {.operation = MEMO_ABSTRACT, .key = entry, .reference = CC_CONTEXT, .payload = entry};
-    return index_substitution(k, SUBSTITUTE_ABSTRACT, term, &op);
+    return index_substitution(k, SUBSTITUTE_ABSTRACT, term, &op, base);
+}
+
+cc_term ck_abstract(cc_kernel *k, cc_term term, cc_entry_id entry) {
+    return ck_abstract_at(k, term, entry, 0);
 }
 
 /* A binder's body opened at `level`: its index 0 replaced by
@@ -762,11 +649,130 @@ cc_term ck_open(cc_kernel *k, cc_term body, uint32_t level) {
  * entry. Only nodes whose `opened` exceeds the level are visited: when the
  * openers close in the reverse order of opening, those are exactly the
  * nodes that contain it. */
-cc_term ck_close(cc_kernel *k, cc_term term, uint32_t level) {
+cc_term ck_close_at(cc_kernel *k, cc_term term, uint32_t level, uint32_t base) {
     if (k->error[0]) return 0;
     if (!term || term >= k->count) return ck_fail(k, "Invalid syntax child handle."), 0;
     index_operation op = {.operation = MEMO_CLOSE, .key = level, .reference = CC_OPENED, .payload = level};
-    return index_substitution(k, SUBSTITUTE_ABSTRACT, term, &op);
+    return index_substitution(k, SUBSTITUTE_ABSTRACT, term, &op, base);
+}
+
+cc_term ck_close(cc_kernel *k, cc_term term, uint32_t level) {
+    return ck_close_at(k, term, level, 0);
+}
+
+/* A loose term's indices 0 .. loose - 1 opened, index i at level
+ * first + loose - 1 - i: its outermost index at `first`, as an opener that
+ * opens binders from the outside in would. Each level is a node made, and
+ * takes a step. The values are determined by `first` and the count, so
+ * where both fit in 16 bits the opening is memoized by them, and a term
+ * opened again from the same level, as each weak head query of one loose
+ * term is, finds it; otherwise by the call's serial (ck_instantiate_all). */
+cc_term ck_open_loose(cc_kernel *k, cc_term term, uint32_t first) {
+    if (k->error[0]) return 0;
+    if (!term || term >= k->count) return ck_fail(k, "Invalid syntax child handle."), 0;
+    uint32_t loose = k->nodes[term].loose;
+    if (!loose) return term;
+    if (first > UINT32_MAX - loose)
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "An operation opened more binders than the kernel's bound."), 0;
+    /* The count as a size_t of its own: the bound matters where size_t is 32
+     * bits (WASM), and comparing the widened uint32_t to it is always true
+     * where it is 64, which GCC's -Wtype-limits refuses. */
+    size_t count = loose;
+    cc_term *values = count <= SIZE_MAX / sizeof *values ? malloc(count * sizeof *values) : NULL;
+    if (!values) return ck_fail_as(k, CC_ERROR_RESOURCE, "Opening allocation failed."), 0;
+    cc_term result = 0;
+    bool made = true;
+    for (uint32_t i = 0; i < loose && made; ++i)
+        made = ck_tick(k) && (values[i] = ck_make(k, CC_OPENED, first + loose - 1 - i, 0, 0, 0, 0)) != 0;
+    if (made && first <= UINT16_MAX && loose <= UINT16_MAX) {
+        index_operation op = {.operation = MEMO_OPEN_LOOSE, .values = values, .count = loose,
+                              .key = loose << 16 | first};
+        result = index_substitution(k, SUBSTITUTE_INSTANTIATE, term, &op, 0);
+    } else if (made) result = ck_instantiate_all(k, term, values, loose);
+    free(values);
+    return k->error[0] ? 0 : result;
+}
+
+/* The levels first .. first + count - 1 of `term` closed back to the indices
+ * ck_open_loose opened them from: level first + j becomes index
+ * count - 1 - j. The highest level is closed first, so each closing visits
+ * exactly the nodes that contain its level. */
+cc_term ck_close_loose(cc_kernel *k, cc_term term, uint32_t first, uint32_t count) {
+    for (uint32_t b = 0; b < count && term; ++b)
+        term = ck_close_at(k, term, first + count - 1 - b, b);
+    return k->error[0] ? 0 : term;
+}
+
+/* Whether CC_BOUND(index) occurs in `term`, for callers outside this file. */
+bool ck_index_occurs(cc_kernel *k, cc_term term, uint32_t index) {
+    return term && term < k->count && index_occurs(k, term, index);
+}
+
+/* Whether `term` mentions CC_CONTEXT(entry): nodes whose filter lacks the
+ * entry's bit are skipped in O(1), and a node searched takes a step and
+ * memoizes its answer. */
+bool ck_mentions(cc_kernel *k, cc_term term, cc_entry_id entry) {
+    typedef struct {
+        cc_term term;
+        unsigned next;
+        bool waiting;
+    } frame;
+    if (!term || term >= k->count || k->error[0]) return false;
+    frame local[32], *frames = local;
+    size_t count = 1;
+    bool result = false;
+    uint64_t bit = UINT64_C(1) << (entry % 64);
+    frames[0] = (frame){term, UINT_MAX, false};
+    while (count && !k->error[0]) {
+        frame *f = &frames[count - 1];
+        cc_node n = f->term ? k->nodes[f->term] : (cc_node){0};
+        if (f->next == UINT_MAX) {
+            uint64_t cached;
+            if (!f->term || !(n.contexts & bit)) {
+                result = false;
+                --count;
+                continue;
+            }
+            if (ck_memo_get(k, MEMO_MENTIONS, f->term, entry, 0, &cached)) {
+                result = cached != 0;
+                --count;
+                continue;
+            }
+            if (!ck_tick(k)) break;
+            if (n.kind == CC_CONTEXT) {
+                result = n.payload == entry;
+                goto done;
+            }
+            f->next = 0;
+        }
+        if (f->waiting) {
+            if (result) goto done;
+            f->waiting = false;
+        }
+        if (f->next == ck_arity(n.kind)) {
+            result = false;
+            goto done;
+        }
+        unsigned i = f->next++;
+        f->waiting = true;
+        if (frames == local && count == sizeof local / sizeof *local) {
+            size_t capacity = k->nodes[term].depth + (size_t)1;
+            frames = capacity <= SIZE_MAX / sizeof *frames ? malloc(capacity * sizeof *frames) : NULL;
+            if (!frames) {
+                frames = local;
+                ck_fail_as(k, CC_ERROR_RESOURCE, "Variable scan allocation failed.");
+                break;
+            }
+            memcpy(frames, local, sizeof local);
+        }
+        frames[count++] = (frame){n.child[i], UINT_MAX, false};
+        continue;
+done:
+        ck_memo_put(k, MEMO_MENTIONS, f->term, entry, 0, result);
+        --count;
+    }
+    if (frames != local) free(frames);
+    return !k->error[0] && result;
 }
 
 /* An opener's counter (section 3.1): a local of the operation that opens
@@ -778,11 +784,10 @@ void ck_opener_above(const cc_kernel *k, cc_opener *opener, cc_term operand) {
 }
 
 /* The next level, never one handed out before. Level UINT32_MAX would make a
- * node's `opened` wrap, so the counter's operation fails there instead, as
- * the fresh symbols it replaces fail (ck_fresh_symbol). */
+ * node's `opened` wrap, so the counter's operation fails there instead. */
 bool ck_opener_take(cc_kernel *k, cc_opener *opener, uint32_t *level) {
     if (opener->next == UINT32_MAX)
-        return ck_fail_as(k, CC_ERROR_RESOURCE, "Fresh symbol space exhausted.");
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "An operation opened more binders than the kernel's bound.");
     *level = opener->next++;
     return true;
 }

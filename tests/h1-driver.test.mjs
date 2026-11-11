@@ -127,15 +127,15 @@ test("the codec round-trips instances, constructors and eliminators, with their 
   admit(natural);
   admit(list);
   const two = numeral(2);
-  const decoded = syntax.decode(syntax.encode(two));
+  const decoded = syntax.decode(syntax.encode(two), new Map(), null, null);
   assert.equal(decoded.fn.name, "succ");
   assert.deepEqual(decoded.fn.sort, { tag: "Sort", signature: "N", parameters: [], levels: [] });
   assert.equal(again(decoded), syntax.encode(two));
   const listN = sort("List", [N]);
   const cons = app(con(listN, 1), zero, con(listN, 0));
-  assert.equal(again(syntax.decode(syntax.encode(cons))), syntax.encode(cons));
+  assert.equal(again(syntax.decode(syntax.encode(cons), new Map(), null, null)), syntax.encode(cons));
   const double = elim("N", lam("z", N, N), [zero, lam("m", N, lam("h", N, succ(succ(v("h")))))]);
-  const back = syntax.decode(syntax.encode(double));
+  const back = syntax.decode(syntax.encode(double), new Map(), null, null);
   assert.equal(back.signature, "N");
   assert.equal(back.clauses.length, 2);
   assert.equal(again(back), syntax.encode(double));
@@ -166,11 +166,11 @@ test("constructors check at their instances, and parameters are converted to the
   // N is lifted to U1, so the instance lives in U1.
   const mixed = sort("Plus", [N, U(0)]);
   const instance = driver.infer(syntax.encode(mixed));
-  assert.deepEqual(syntax.decode(g.judgement(instance).type), U(1));
+  assert.deepEqual(syntax.decode(g.judgement(instance).type, new Map(), null, null), U(1));
   check(app(con(mixed, 1), N), mixed);
   // A recorded level is carried: Pointed{0} lives in U1, and differs from Pointed{1}.
   const p0 = sort("Pointed", [], [0]), p1 = sort("Pointed", [], [1]);
-  assert.deepEqual(syntax.decode(g.judgement(driver.infer(syntax.encode(p0))).type), U(1));
+  assert.deepEqual(syntax.decode(g.judgement(driver.infer(syntax.encode(p0))).type, new Map(), null, null), U(1));
   check(app(con(p0, 0), N, zero), p0);
   assert.throws(() => check(app(con(p0, 0), N, zero), p1), /Type mismatch/);
   // A constructor's argument of the wrong type, and a wrong number of parameters.
@@ -259,7 +259,7 @@ test("displays name instances, constructors and eliminators as the source does",
   admit(natural);
   admit(list);
   admit(pointed);
-  const shown = term => syntax.decode(syntax.encode(term));
+  const shown = term => syntax.decode(syntax.encode(term), new Map(), null, null);
   const listN = sort("List", [N]);
   assert.equal(sourceText(shown(app(con(listN, 1), numeral(1), con(listN, 0)))), "cons(succ(zero), nil)");
   assert.equal(sourceText(shown(listN)), "List(N)");

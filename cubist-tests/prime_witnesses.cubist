@@ -28,11 +28,10 @@ print(evaluate(euclid(5).1));
 print(evaluate(euclid(4)));
 
 // The folded normal form keeps the search's certificate named.
-// Output: (7, (tt, fun (d : Nat, above : 1 < d, below : d < 7, divides : Divides(d, 7)) =>
-//   least_divisor(7, tt).2.2.2(d, above, below, (1 * divides.1, path i => compose j in BNat from
-//   nat_mul_assoc(1, divides.1, d) @ i { on i = 0 => 1 * divides.1 * d; on i = 1 => compose k in
-//   BNat from bnat.(1 * divides.2 @ j) { on j = 0 => bnat.(1 * nat.(divides.1 * d)); on j = 1 => 7;
-//   }; }))), tt)
+// Output: (7, (tt, fun (x : Nat, x1 : 1 < x, x2 : x < 7, x3 : Divides(x, 7)) => least_divisor(7,
+//   tt).2.2.2(x, x1, x2, (1 * x3.1, path i => compose j in BNat from nat_mul_assoc(1, x3.1, x) @ i
+//   { on i = 0 => 1 * x3.1 * x; on i = 1 => compose k in BNat from bnat.(1 * x3.2 @ j) { on j = 0
+//   => bnat.(1 * nat.(x3.1 * x)); on j = 1 => 7; }; }))), tt)
 print(evaluate(!!euclid(3)));
 
 // Past the square root of 97, the search ends at 97 itself.

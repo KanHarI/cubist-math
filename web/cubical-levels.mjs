@@ -71,14 +71,14 @@ function maximumForm(a, b) {
 }
 
 // The normal form of a kernel level node, read with read(id), which gives
-// { kind, payload, children }: each variable keyed by `key(node)`, its role
-// (web/cubical-variables.mjs, levelKey), so that a bound variable and an
-// entry never share a key.
+// { kind, payload, children }: each variable, Bound or Context, keyed by
+// `key(node)`, its role (web/cubical-variables.mjs, levelKey), so that a
+// bound variable and an entry never share a key.
 export function levelNormal(read, id, key = levelKey) {
   const node = read(id);
   switch (node.kind) {
     case "LConst": return { tier: node.payload >>> 16, constant: node.payload & 0xffff, offsets: new Map() };
-    case "Var": return variableForm(key(node));
+    case "Bound": case "Context": return variableForm(key(node));
     case "LSucc": return successorForm(levelNormal(read, node.children[0], key), node.payload);
     case "LMax": return maximumForm(levelNormal(read, node.children[0], key), levelNormal(read, node.children[1], key));
     default: throw new Error(`Expected a level, not ${node.kind}.`);

@@ -9,16 +9,19 @@
  * terms) compute on syntax and certify nothing; an untrusted driver uses
  * them to pick the instructions it issues.
  *
- * Raw syntax constructors are deliberately NOT proof certificates. Names are
- * numeric symbols whose readable spelling is maintained by the caller;
- * cc_kernel_fresh_symbol allocates them. Bound names are renamed when
- * necessary to avoid shadowing.
+ * Raw syntax constructors are deliberately NOT proof certificates. The
+ * kernel keeps no names (ABI 4, docs/roadmaps/kernel/locally-nameless-kernel.md):
+ * a term or level binder binds index 0 of its body, a variable it binds is
+ * CC_BOUND by de Bruijn index, and a variable of the context is CC_CONTEXT of
+ * its entry's id. Definitions, signatures and constructors are referred to by
+ * index; every name lives in the caller.
  * A dimension name is separate from a term name and is currently 0..63. */
 typedef uint32_t cc_term;
 typedef uint32_t cc_formula_id;
 typedef struct cc_kernel cc_kernel;
 
 typedef enum {
+    /* Reserved: CC_VAR, the named variable of ABI 3, cannot be constructed. */
     CC_U = 1, CC_VAR, CC_PI, CC_LAM, CC_APP, CC_SIGMA, CC_PAIR, CC_FST, CC_SND,
     /* Reserved: the former Nat primitive tags cannot be constructed. */
     CC_NAT, CC_ZERO, CC_SUCC, CC_NATREC, CC_UNIT, CC_POINT,
@@ -38,14 +41,19 @@ typedef enum {
      * constructor number; child the sort instance. Elim: payload a signature
      * index; children the motive and the clause list. List: an item and the
      * next cell, or 0. */
-    CC_SORT, CC_CON, CC_ELIM, CC_LIST
+    CC_SORT, CC_CON, CC_ELIM, CC_LIST,
+    /* Variables (ABI 4). Bound: payload a de Bruijn index, the variable of
+     * the index-th enclosing term or level binder, 0 the innermost. Context:
+     * payload a term or level entry's id. Both are leaves. */
+    CC_BOUND, CC_CONTEXT
 } cc_term_kind;
 
 /* The encoding of syntax this header describes. A client built for another
  * version must not exchange handles with this kernel: version 2 moved a
- * universe's level from its payload to a level child, and version 3 added
- * the declared-type kinds. */
-#define CC_KERNEL_ABI_VERSION 3u
+ * universe's level from its payload to a level child, version 3 added
+ * the declared-type kinds, and version 4 replaced named variables (CC_VAR)
+ * by CC_BOUND and CC_CONTEXT, with binders that carry no name. */
+#define CC_KERNEL_ABI_VERSION 4u
 uint32_t cc_kernel_abi_version(void);
 
 /* Resource bounds on universe levels (G0 §2.3): the finite part within a tier,
@@ -216,11 +224,12 @@ cc_judgement_id cc_instr_unit_elim(cc_kernel *, cc_judgement_id motive, cc_judge
                                    cc_judgement_id value);
 cc_judgement_id cc_instr_void(cc_kernel *);
 cc_judgement_id cc_instr_abort(cc_kernel *, cc_judgement_id type, cc_judgement_id impossible);
-/* A term entry x : A, from Γ ⊢ A : U(i); the symbol must be new. */
-cc_entry_id cc_instr_extend(cc_kernel *, cc_judgement_id type, uint32_t symbol);
+/* A new term entry x : A, from Γ ⊢ A : U(i). Every call makes a new entry:
+ * the kernel keeps no names, and the caller matches its own to entries. */
+cc_entry_id cc_instr_extend(cc_kernel *, cc_judgement_id type);
 /* The dimension entry of an interval index. */
 cc_entry_id cc_instr_dimension(cc_kernel *, unsigned index);
-/* Universe-generic definitions (G0 §2.7). Level names a level entry x < ω:
+/* Universe-generic definitions (G0 §2.7). Level makes a new level entry x < ω:
  * a universe variable, ranging over the natural numbers; its type, as
  * cc_kernel_entry reports it, is the bound LBound(1). It is no term:
  * Variable refuses it, and only levels may mention it.
@@ -231,7 +240,7 @@ cc_entry_id cc_instr_dimension(cc_kernel *, unsigned index);
  * finite level l (below ω) whose variables are level entries; the result's
  * levels are in normal form. Beta contracts (λ (x < ω). t) {l} to t[x := l],
  * and Eta expands a term of a level Π to λ (y < ω). t {y}. */
-cc_entry_id cc_instr_level(cc_kernel *, uint32_t symbol);
+cc_entry_id cc_instr_level(cc_kernel *);
 cc_judgement_id cc_instr_level_pi(cc_kernel *, cc_entry_id, cc_judgement_id body);
 cc_judgement_id cc_instr_level_lambda(cc_kernel *, cc_entry_id, cc_judgement_id body);
 cc_judgement_id cc_instr_level_apply(cc_kernel *, cc_judgement_id function, cc_term level);
@@ -312,30 +321,34 @@ cc_judgement_id cc_instr_glue_term_piece(cc_kernel *, cc_judgement_id system, cc
 cc_judgement_id cc_instr_glue_term(cc_kernel *, cc_judgement_id system);
 cc_judgement_id cc_instr_unglue(cc_kernel *, cc_judgement_id value);
 /* Syntax only, for an untrusted search: the type Equiv(A, B) as the Glue
- * rules state it. */
+ * rules state it. An operand with loose indices is refused: the type's own
+ * binders would capture them. */
 cc_term cc_kernel_equiv_type(cc_kernel *, cc_term a, cc_term b);
 /* Declared types (H1), admitted one constructor at a time: the family F1 of
  * docs/roadmaps/hott/h1-signature-specification.md, section 5.2, whose sections
  * 1.1-1.6 give the normal form checked here.
  * SignatureBegin opens a signature from a closed judgement ⊢ F : U(…), where
  * F is Π (xs < ω). Π (ps : Ps). U(ℓ): a LevelPi for each universe parameter,
- * then a Pi for each term parameter, with distinct symbols. The modifier is
- * the truncation: CC_UNTRUNCATED, or n + 2 for trunc(n) with n ≥ -1, so prop
- * is 1 and set is 2. The sort symbol names the entry s : U(ℓ) that
- * constructor types mention. Bit j of recorded marks universe parameter j
+ * then a Pi for each term parameter. The parameter entries stand for F's
+ * binders, in order: a level entry for each universe parameter and a term
+ * entry for each term parameter, at its binder's domain opened with the
+ * entries before it. The sort entry s : U(ℓ), ℓ opened with them all, stands
+ * for the sort in constructor types. All are pairwise distinct. The modifier
+ * is the truncation: CC_UNTRUNCATED, or n + 2 for trunc(n) with n ≥ -1, so
+ * prop is 1 and set is 2. Bit j of recorded marks universe parameter j
  * recorded; every other one is erased, and needs a determining occurrence:
  * a term parameter whose type ends in U(x_j) itself. The result is a
  * signature judgement: kind 4, whose term is Sort(index) and type F.
  * SignatureConstructor adds the next constructor from Γ ⊢ T : U(ℓ), with ℓ
- * compared by normal form. Every entry of Γ is one of the signature's
- * universe or term parameters, by symbol and at its type, the sort entry,
- * or an earlier constructor's entry at that constructor's type. T must have
- * the normal form: data, then positions that are cubes over s, then a
- * result that is s or an iterated path type over it, whose endpoints are
- * constructor expressions; this is checked on T as written. T may mention a
- * recorded parameter and no erased one. The symbol names the new
- * constructor's entry for later constructor types. Only the signature's
- * latest judgement continues it.
+ * compared by normal form, and an entry c : T, outside the signature's
+ * telescope, that stands for it in later constructor types. Every entry of
+ * Γ is one of the signature's parameter entries, its sort entry, or an
+ * earlier constructor's entry. T must have the normal form: data, then
+ * positions that are cubes over s, then a result that is s or an iterated
+ * path type over it, whose endpoints are constructor expressions; this is
+ * checked on T as written. T may mention a recorded parameter and no erased
+ * one. T is stored closed, abstracted over the admission telescope (below).
+ * Only the signature's latest judgement continues it.
  * SignatureClose appends the squash constructor of the modifier, marks the
  * signature admitted, and returns its index, from 1; an admitted signature
  * never changes. Each is refused while an error is recorded. */
@@ -346,9 +359,10 @@ enum {
     CC_CONSTRUCTOR_ARGUMENTS = 64, CC_CONSTRUCTOR_DIMENSIONS = 16, CC_TRUNCATION_MAX = 14
 };
 cc_judgement_id cc_instr_signature_begin(cc_kernel *, cc_judgement_id former, uint32_t modifier,
-                                         uint32_t sort_symbol, uint32_t recorded);
+                                         const cc_entry_id *parameters, size_t count, cc_entry_id sort,
+                                         uint32_t recorded);
 cc_judgement_id cc_instr_signature_constructor(cc_kernel *, cc_judgement_id signature, cc_judgement_id type,
-                                               uint32_t symbol);
+                                               cc_entry_id entry);
 uint32_t cc_instr_signature_close(cc_kernel *, cc_judgement_id signature);
 /* Instances and constructors of an admitted signature (family F2, section
  * 5.3; formation is section 3.1). SortBegin starts an instance of signature
@@ -398,9 +412,11 @@ cc_judgement_id cc_instr_endpoint(cc_kernel *, cc_judgement_id, cc_entry_id dime
  * own face implies; no binder discharges a dimension a face entry needs, and
  * Define refuses a context that holds one. */
 cc_judgement_id cc_instr_restrict(cc_kernel *, cc_judgement_id, cc_formula_id face);
-/* A closed typing judgement becomes a definition, admitted; the result is its
- * lookup. Lookup recalls a definition Define admitted. */
-cc_judgement_id cc_instr_define(cc_kernel *, uint32_t symbol, cc_judgement_id closed);
+/* A closed typing judgement becomes a new definition, admitted; the result
+ * is its lookup. Define is never answered from the derivation memo: two
+ * Defines of one judgement make two definitions. Lookup recalls a
+ * definition Define admitted. */
+cc_judgement_id cc_instr_define(cc_kernel *, cc_judgement_id closed);
 cc_judgement_id cc_instr_lookup(cc_kernel *, cc_term reference);         /* ⊢ d : T */
 /* Equalities, and rewriting. A judgement's sides are 0, its term; 1, the
  * other term of an equality; and 2, its type (THTH highlighted either the
@@ -408,14 +424,21 @@ cc_judgement_id cc_instr_lookup(cc_kernel *, cc_term reference);         /* ⊢ 
  * side's root to the highlighted subterm. A step contracts the highlighted
  * redex by the named rule; on a typing judgement's term this is subject
  * reduction, and on a type it keeps a type. A replacement swaps a
- * highlighted occurrence of a for b, given a ≡ b; when a or b uses a name
- * bound on the way down, the given equality must have that name as a
- * context entry of the binder's type, and the entry is discharged. */
+ * highlighted occurrence of a for b, given a ≡ b. The caller names an entry
+ * for each term or level binder the position crosses, outermost first, or 0
+ * for one the occurrence does not use: the occurrence, opened with them, is
+ * a, and b with them abstracted takes its place; they are discharged from
+ * the equality's context. They must be new to the rewritten judgement's
+ * context, pairwise distinct, each of its binder's kind and at its binder's
+ * domain opened with the entries outside it, and no remaining entry of the
+ * equality may depend on one. A dimension bound on the way down that a or b
+ * uses must be a dimension entry of the equality, and is discharged. */
 cc_judgement_id cc_instr_refl(cc_kernel *, cc_judgement_id typing);      /* t ≡ t : T */
 cc_judgement_id cc_instr_step(cc_kernel *, cc_judgement_id, unsigned side,
                               const uint8_t *position, size_t depth, cc_step_rule);
 cc_judgement_id cc_instr_replace(cc_kernel *, cc_judgement_id, unsigned side,
-                                 const uint8_t *position, size_t depth, cc_judgement_id by);
+                                 const uint8_t *position, size_t depth, cc_judgement_id by,
+                                 const cc_entry_id *entries, size_t count);
 /* t : T for a Π, Σ, path or Glue type T gives t ≡ its eta expansion : T;
  * for T = Glue [φ ↦ (B, e)] A, the expansion is glue [φ ↦ t] (unglue t). */
 cc_judgement_id cc_instr_eta(cc_kernel *, cc_judgement_id typing);
@@ -426,16 +449,18 @@ cc_judgement_id cc_instr_transitivity(cc_kernel *, cc_judgement_id first, cc_jud
 cc_judgement_id cc_instr_convert(cc_kernel *, cc_judgement_id typing, cc_judgement_id equality);
 cc_judgement_id cc_instr_lift(cc_kernel *, cc_judgement_id typing, cc_judgement_id type);
 
-/* Syntax only, for the driver's search: a term with a free name, or dimension,
- * renamed, avoiding capture. */
-cc_term cc_kernel_rename(cc_kernel *, cc_term, bool dimension, uint32_t from, uint32_t to);
+/* Syntax only, for the driver's search: a term with a free dimension renamed,
+ * avoiding capture. */
+cc_term cc_kernel_rename(cc_kernel *, cc_term, uint32_t from, uint32_t to);
 /* Syntax only, for the same search: a term with 0 or 1 substituted for a free
  * dimension, as a face restricts a tube before it is typed. */
 cc_term cc_kernel_endpoint_term(cc_kernel *, cc_term, uint32_t dimension, unsigned endpoint);
-/* A symbol no term of this kernel has used or will be given by the kernel's
- * own fresh names: clients naming new binders or entries allocate here, so
- * their names and the kernel's never share an id. */
-uint32_t cc_kernel_fresh_symbol(cc_kernel *);
+/* Syntax only, for the driver's derivation under a binder: the binder's body
+ * with its index 0 replaced by CC_CONTEXT(entry), for a term or level entry
+ * the body does not already mention, which would make two variables one.
+ * The body's other loose indices are left as they are. A query: it starts
+ * an operation and certifies nothing. */
+cc_term cc_kernel_instantiate(cc_kernel *, cc_term body, cc_entry_id entry);
 /* The term arena's size: its nodes, and the bytes it and the kernel's tables
  * occupy. */
 void cc_kernel_arena(const cc_kernel *, size_t *nodes, size_t *bytes);
@@ -447,9 +472,11 @@ void cc_kernel_arena(const cc_kernel *, size_t *nodes, size_t *bytes);
  * Premises are
  * judgements, in the instruction's argument order, and entry the context
  * entry the instruction bound or used. Operands: a universe level, a
- * definition symbol or reference, a path endpoint, a side and a step rule,
- * or an injection's side. The position is the highlighted one, for a step or
- * a replacement; it is valid until the next instruction. */
+ * definition reference, a path endpoint, a side and a step rule, or an
+ * injection's side. The position is the highlighted one, for a step or a
+ * replacement. The entries are a replacement's, one for each term or level
+ * binder its position crosses, or a signature's parameter entries (its sort
+ * entry is its first operand). Both are valid until the next instruction. */
 typedef struct {
     uint32_t kind;
     cc_term term, other, type;
@@ -459,38 +486,43 @@ typedef struct {
     uint32_t operand[2];
     const uint8_t *position;
     size_t depth;
+    const cc_entry_id *entries;
+    size_t entry_count;
 } cc_judgement_info;
 size_t cc_kernel_judgement_count(const cc_kernel *);
 bool cc_kernel_judgement(const cc_kernel *, cc_judgement_id, cc_judgement_info *);
 /* The index-th entry of a judgement's context, in creation order, or 0. */
 cc_entry_id cc_kernel_judgement_context(const cc_kernel *, cc_judgement_id, size_t index);
 /* Entries run from 1 to count - 1. A term entry records the judgement that
- * its type is a type; a dimension entry has symbol = index and no type; a
- * face entry, from Restrict, has neither, and cc_kernel_entry_face gives its
- * clause. */
+ * its type is a type; a level entry's type is LBound(1); a dimension entry
+ * has its interval index and no type; a face entry, from Restrict, has
+ * neither, and cc_kernel_entry_face gives its clause. No entry has a name:
+ * index is the dimension's, and 0 for any other entry. */
 size_t cc_kernel_entry_count(const cc_kernel *);
-bool cc_kernel_entry(const cc_kernel *, cc_entry_id, uint32_t *symbol, cc_term *type, bool *dimension,
+bool cc_kernel_entry(const cc_kernel *, cc_entry_id, uint32_t *index, cc_term *type, bool *dimension,
                      cc_judgement_id *source);
 bool cc_kernel_entry_face(const cc_kernel *, cc_entry_id, cc_clause *clause);
-/* Signatures run from 1 to count - 1. Symbols are the admission context's:
- * the universe parameters, then the term parameters. A constructor's type
- * is over those symbols, the sort symbol and the earlier constructors'
- * symbols; generated marks the modifier's squash constructor. */
+/* Signatures run from 1 to count - 1, with no names. The former is closed;
+ * its level has loose indices over the former's prenex, the universe
+ * parameters and then the term parameters, index 0 the last. A
+ * constructor's type has loose indices over the admission telescope: the
+ * universe parameters, the term parameters, the sort and the earlier
+ * constructors, index 0 the last of them. generated marks the modifier's
+ * squash constructor. */
 typedef struct {
     /* experimental marked signatures admitted while H1 was under review; since
-     * its release none is, and the field is always false (ABI 3 keeps it). */
+     * its release none is, and the field is always false (ABI 4 keeps it). */
     bool admitted, experimental;
-    uint32_t modifier, sort_symbol, level_count, parameter_count, constructor_count, recorded;
+    uint32_t modifier, level_count, parameter_count, constructor_count, recorded;
     cc_term former, level;
 } cc_signature_info;
 typedef struct {
-    uint32_t symbol, data, positions, dimensions;
+    uint32_t data, positions, dimensions;
     cc_term type;
     bool generated;
 } cc_constructor_info;
 size_t cc_kernel_signature_count(const cc_kernel *);
 bool cc_kernel_signature(const cc_kernel *, uint32_t index, cc_signature_info *);
-uint32_t cc_kernel_signature_symbol(const cc_kernel *, uint32_t index, uint32_t position);
 bool cc_kernel_signature_constructor(const cc_kernel *, uint32_t index, uint32_t constructor,
                                      cc_constructor_info *);
 
@@ -508,13 +540,16 @@ bool cc_kernel_commit_checkpoint(cc_kernel *);
 cc_term cc_kernel_relocated(const cc_kernel *, cc_term);
 
 /* Child order:
- * U(level) with payload zero; Var(symbol); Pi/Lam/Sigma(symbol; domain, body).
+ * U(level) with payload zero; Bound(index) and Context(entry), leaves;
+ * Pi/Lam/Sigma(domain, body), payload zero, binding index 0 in the body.
  * Levels: LConst(tier * 65536 + n) is the constant ω·tier + n; LSucc(n; level)
- * is level + n, for n ≥ 1; LMax(level, level); a level variable is a Var.
+ * is level + n, for n ≥ 1; LMax(level, level); a level variable is a Bound,
+ * or a Context of a level entry.
  * LBound(tier) is a level binder's bound ω·tier, and the type of a level
- * entry; LPi/LLam(symbol; bound, body) and LApp(function, level) are level
- * quantification, Π (x < ω). B, λ (x < ω). t and f {l}. Only the bound ω,
- * LBound(1), is admitted.
+ * entry; LPi/LLam(bound, body), payload zero, and LApp(function, level) are
+ * level quantification, Π (x < ω). B, λ (x < ω). t and f {l}. Only the bound
+ * ω, LBound(1), is admitted. Term and level binders count in one chain of
+ * indices.
  * App(fn,arg); Pair(type,first,second); Fst/Snd(pair).
  * Path(dimension; family,left,right); PLam(dimension; family,body).
  * PApp(formula; path); Comp(dimension; family,tubes,base).
@@ -540,16 +575,17 @@ cc_term cc_kernel_term(cc_kernel *, cc_term_kind, uint32_t payload,
                        cc_term a, cc_term b, cc_term c, cc_term d);
 cc_formula_id cc_kernel_formula(cc_kernel *, const cc_formula *);
 
-/* A definition Define admitted: its symbol, its value and its type. */
-bool cc_kernel_definition(const cc_kernel *, cc_term reference, uint32_t *symbol,
-                          cc_term *value, cc_term *type);
+/* A definition Define admitted: its value and its type. */
+bool cc_kernel_definition(const cc_kernel *, cc_term reference, cc_term *value, cc_term *type);
 /* Expose only the demanded head. Like normalize, this is inspection only:
- * it computes on syntax and certifies nothing, including under free names. */
+ * it computes on syntax and certifies nothing, including under free names.
+ * A term with loose indices, read under binders, is opened, its head
+ * computed and closed back over the same indices; no entry's type is read. */
 cc_term cc_kernel_whnf(cc_kernel *, cc_term);
 
 /* Explicit inspection reduction. Derivations leave terms compact. This
  * certifies nothing; pass a term an instruction derived, whose reduction
- * terminates. */
+ * terminates. A term with loose indices is refused. */
 cc_term cc_kernel_normalize(cc_kernel *, cc_term);
 
 /* The folded normal form: the normal form, except that inside the term asked
@@ -561,9 +597,11 @@ cc_term cc_kernel_normalize(cc_kernel *, cc_term);
  * as normalize. */
 cc_term cc_kernel_normalize_folded(cc_kernel *, cc_term);
 
-/* Syntactic equality up to bound names and the existing level/interval
- * algebra, with no reduction or unfolding. This query certifies no judgement.
- * False means failure; only on success is the equality answer written. */
+/* Syntactic equality up to bound dimension names and the existing
+ * level/interval algebra, with no reduction or unfolding; bound term and
+ * level variables are indices, compared as they are, so terms with loose
+ * indices compare too. This query certifies no judgement. False means
+ * failure; only on success is the equality answer written. */
 bool cc_kernel_alpha_equal(cc_kernel *, cc_term, cc_term, bool *);
 
 /* Read-only inspection of inert syntax. It does not assert that a handle was

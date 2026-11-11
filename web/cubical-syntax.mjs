@@ -2,7 +2,7 @@ import { bindDimensions } from "./translator/dimension-slots.mjs";
 import { dimensionContextKey } from "./translator/syntax-graph.mjs";
 import { freeNames, isTerm } from "./translator/core.mjs";
 import { termParts } from "./translator/term-shape.mjs";
-import { binderName, binderTerm, pushName, variableName, variableTerm } from "./cubical-variables.mjs";
+import { binderTerm, binders as BINDERS, pushName, shownBinderName, variableName, variableTerm } from "./cubical-variables.mjs";
 // The scope of no context: what is encoded against it is closed.
 export const EMPTY_SCOPE = Object.freeze(new Map());
 // Lossless syntax transport between named cubical ASTs and C arena handles.
@@ -52,6 +52,12 @@ export function freeDimensionMask(kernel, id, memo, annotated = false) {
 // rollback leaves where they are. The settled tier is kept from one
 // declaration to the next, and the rest dropped (CubicalSyntax.reset). An
 // entry is settled when every handle in it is: `id` is the largest.
+// What a decoding's names depend on, each given by its caller: an argument
+// left out is an error, not a default.
+function required(decoder, args) {
+  for (const [name, value] of Object.entries(args))
+    if (value === undefined) throw new TypeError(`${decoder} takes ${name}: null for none, never left out.`);
+}
 class NodeCache {
   constructor(kernel, weak = false) {
     Object.assign(this, { kernel, weak, settled: weak ? new WeakMap() : new Map() });
@@ -75,15 +81,50 @@ export class CubicalSyntax {
     this.kernel = kernel;
     this.encoded = new NodeCache(kernel, true);
     this.decoded = new NodeCache(kernel);
+    this.namesEpoch = kernel.binderNames.epoch;
     this.free = new NodeCache(kernel);
     // Each term's head normal form, by its node (cubical-elaborator.mjs).
     this.heads = new NodeCache(kernel);
+    // Each node's loose range (one more than its greatest loose index), and
+    // the entries it mentions: what its decoding depends on.
+    this.loose = new NodeCache(kernel);
+    this.mentioned = new NodeCache(kernel);
     // The scopes and the chains of binders open encodings are kept by.
     this.scopeNumbers = new WeakMap(); this.scopes = 0; this.chains = new Map();
   }
   // Handles made since a checkpoint move when it is committed or rolled
   // back: what was read of them is dropped then.
-  reset() { for (const cache of [this.encoded, this.decoded, this.free, this.heads]) cache.drop(); }
+  reset() { for (const cache of [this.encoded, this.decoded, this.free, this.heads, this.loose, this.mentioned]) cache.drop(); }
+  // A node's loose range, as the kernel's `loose` (term_internal.h): one
+  // more than its greatest loose Bound index, 0 when locally closed.
+  looseOf(id) {
+    if (!id) return 0;
+    let known = this.loose.get(id);
+    if (known !== undefined) return known;
+    const node = this.kernel.node(id);
+    known = node.kind === "Bound" ? node.payload + 1 : 0;
+    node.children.forEach((child, i) => {
+      if (!child) return;
+      const inner = this.looseOf(child), reach = i === 1 && BINDERS.has(node.kind) && inner ? inner - 1 : inner;
+      if (reach > known) known = reach;
+    });
+    this.loose.set(id, known);
+    return known;
+  }
+  // The entries a node mentions (Context), as a set shared where it can be.
+  entriesOf(id) {
+    if (!id) return NONE;
+    let known = this.mentioned.get(id);
+    if (known) return known;
+    const node = this.kernel.node(id);
+    if (node.kind === "Context") known = new Set([node.payload]);
+    else {
+      const parts = node.children.filter(Boolean).map(child => this.entriesOf(child)).filter(set => set.size);
+      known = !parts.length ? NONE : parts.length === 1 ? parts[0] : new Set(parts.flatMap(set => [...set]));
+    }
+    this.mentioned.set(id, known);
+    return known;
+  }
   // The dimensions free in a node, as a bit mask (freeDimensionMask), a path
   // application's annotation included: its decoding carries the annotation.
   freeDimensions(id) { return freeDimensionMask(this.kernel, id, this.free, true); }
@@ -106,9 +147,9 @@ export class CubicalSyntax {
   // A term as kernel syntax, against `scope`: the driver's map from the
   // symbols of a context's variables to their entries, made before the term
   // is encoded (scope first; InstructionDriver.scopeOf). A variable must be
-  // bound by a binder of the term around it or be an entry of the scope
-  // (web/cubical-variables.mjs, variableTerm). `dimensions` names the
-  // interval dimensions in scope.
+  // bound by a binder of the term around it, and is then Bound by its depth,
+  // or be an entry of the scope, Context of it (web/cubical-variables.mjs,
+  // variableTerm). `dimensions` names the interval dimensions in scope.
   encode(term, dimensions = new Map(), scope = EMPTY_SCOPE) {
     return this.encodeAt(term, dimensions, dimensionContextKey(dimensions), scope, null);
   }
@@ -135,7 +176,7 @@ export class CubicalSyntax {
         if (!result) throw new Error(`Unknown checked cubical definition: ${term.name}`);
         break;
       case "U": result = node(0, level(term.level)); break;
-      case "Var": result = variableTerm(k, term.name, this.binds(binders, term.name), scope); break;
+      case "Var": result = variableTerm(k, term.name, binders, scope); break;
       case "Unit": case "Point": case "Void": result = node(); break;
       case "Pi": case "Lam": case "Sigma":
         result = binderTerm(k, term.tag, term.name, child(term.domain), body(term.body)); break;
@@ -225,10 +266,6 @@ export class CubicalSyntax {
     if (!chain) this.chains.set(key, chain = { name, next, id: this.chains.size + 1 });
     return chain;
   }
-  binds(binders, name) {
-    for (let binder = binders; binder; binder = binder.next) if (binder.name === name) return true;
-    return false;
-  }
   // The kernel's List cells for a sequence, in order.
   list(items, encode) {
     let list = 0;
@@ -270,17 +307,20 @@ export class CubicalSyntax {
         return k.term("LConst", level.tier * 0x10000 + level.value);
       case "LSucc": return k.term("LSucc", level.count, this.encodeLevel(level.level, scope, binders));
       case "LMax": return k.term("LMax", 0, this.encodeLevel(level.left, scope, binders), this.encodeLevel(level.right, scope, binders));
-      case "Var": return variableTerm(k, level.name, this.binds(binders, level.name), scope);
+      case "Var": return variableTerm(k, level.name, binders, scope);
       default: throw new Error("Expected a universe level.");
     }
   }
-  decodeLevel(id, names = null) {
+  // A level, under the binders `names` and with its entries named by
+  // `naming`, both required, as decode's.
+  decodeLevel(id, names, naming) {
+    required("decodeLevel", { names, naming });
     const node = this.kernel.node(id), { kind, payload, children } = node;
     switch (kind) {
       case "LConst": return payload <= 0xffff ? payload : { tag: "LConst", tier: payload >>> 16, value: payload & 0xffff };
-      case "LSucc": return { tag: "LSucc", count: payload, level: this.decodeLevel(children[0], names) };
-      case "LMax": return { tag: "LMax", left: this.decodeLevel(children[0], names), right: this.decodeLevel(children[1], names) };
-      case "Var": return { tag: "Var", name: variableName(this.kernel, node, names) };
+      case "LSucc": return { tag: "LSucc", count: payload, level: this.decodeLevel(children[0], names, naming) };
+      case "LMax": return { tag: "LMax", left: this.decodeLevel(children[0], names, naming), right: this.decodeLevel(children[1], names, naming) };
+      case "Bound": case "Context": return { tag: "Var", name: variableName(this.kernel, node, names, naming) };
       default: throw new Error(`Expected a universe level, not ${kind}.`);
     }
   }
@@ -296,44 +336,95 @@ export class CubicalSyntax {
       return clause;
     });
   }
-  // `names` are the binders around the node, which name its bound variables
-  // (web/cubical-variables.mjs, variableName).
-  decode(id, dimensions = new Map(), names = null) {
+  // A term closed over a telescope, as a signature's constructor types are,
+  // decoded with the telescope's names, `telescope` outermost first.
+  decodeOver(id, telescope, dimensions, naming) {
+    required("decodeOver", { dimensions, naming });
+    let names = null;
+    for (const name of telescope) names = pushName(name, names);
+    return this.decode(id, dimensions, names, naming);
+  }
+  // The name a binder node shows under the binders `names`, its entries
+  // named by `naming`: its own (binderName), unless that would capture a
+  // variable its body refers to otherwise, an outer binder's, by the body's
+  // loose indices past its own, or an entry's. The one source of binder
+  // names: decode names binders by it, and so does every traversal that
+  // names the binders above a subterm (kernelOccurrence, the graph view's
+  // highlights, the workbench's operands), so that a subterm's variables
+  // read as the whole term's do.
+  binderShownName(id, names, naming) {
+    required("binderShownName", { names, naming });
+    const body = this.kernel.node(id).children[1], avoid = new Set();
+    let binder = names;
+    for (let i = 0; i < this.looseOf(body) - 1 && binder; i++, binder = binder.next) avoid.add(binder.name);
+    for (const entry of this.entriesOf(body)) avoid.add(variableName(this.kernel, { kind: "Context", payload: entry }, null, naming));
+    this.kernel.binderNames.shown(id);
+    return shownBinderName(this.kernel, id, avoid);
+  }
+  // `names` are the binders around the node, a chain {name, next} innermost
+  // first, which name its loose indices, and `naming` the names a view
+  // shows entries by, a map from entries to names, each other entry shown by
+  // its spelling (web/cubical-variables.mjs, variableName). Each is
+  // required: a caller says null for no binders around, and null for the
+  // session's spellings, as a closed term or a term in no view takes, so
+  // that one decoding an open term without its view's naming is found
+  // (required).
+  decode(id, dimensions, names, naming) {
+    required("decode", { dimensions, names, naming });
+    // A binder shown unnamed has since been named: no decoding kept shows it.
+    const { epoch } = this.kernel.binderNames;
+    if (epoch !== this.namesEpoch) {
+      this.decoded = new NodeCache(this.kernel);
+      this.namesEpoch = epoch;
+    }
     const encodingKey = dimensionContextKey(dimensions);
-    // A node's decoding depends only on the names of its free dimensions, so
-    // it is decoded, and cached, under those alone. A binder inside may then
-    // reuse the name of a dimension the node does not mention. On ABI 3 a
-    // variable is named by its symbol wherever it is bound, so the binders
-    // around a node do not change its decoding either.
+    // A node's decoding depends on the names of its free dimensions, on the
+    // names its loose indices take and on those its entries take, so it is
+    // decoded, and cached, under those alone. A binder
+    // inside may then reuse the name of a dimension the node does not
+    // mention.
     const free = this.freeDimensions(id);
     const assigned = [...dimensions.values()].reduce((mask, index) => mask | 1n << BigInt(index), 0n);
     const completeContext = (free & ~assigned) === 0n;
     if ([...dimensions.values()].some(index => !(free & 1n << BigInt(index))))
       dimensions = new Map([...dimensions].filter(([, index]) => free & 1n << BigInt(index)));
-    // In no dimension context, as most nodes are, the node alone.
-    const cacheKey = dimensions.size ? JSON.stringify([id,dimensionContextKey(dimensions)]) : id;
+    const loose = this.looseOf(id), entries = this.entriesOf(id);
+    // The names its loose indices take, and those its entries take.
+    const stack = [];
+    for (let binder = names, i = 0; i < loose; i++, binder = binder?.next) stack.push(binder?.name);
+    const shown = [...entries].sort((a, b) => a - b).map(entry => variableName(this.kernel, { kind: "Context", payload: entry }, null, naming));
+    // In no dimension context, as most nodes are, and closed, the node alone.
+    const cacheKey = dimensions.size || loose || shown.length
+      ? JSON.stringify([id, dimensionContextKey(dimensions), stack, shown]) : id;
     if (this.decoded.has(cacheKey)) {
       const result = this.decoded.get(cacheKey);
       if (completeContext && this.closed(result)) this.encoded.setNode(result, encodingKey, id);
       return result;
     }
     const node = this.kernel.node(id), { kind: tag, payload, children: c } = node;
-    const child = i => this.decode(c[i], dimensions, names), body = i => this.decode(c[i], dimensions, pushName(this.kernel, node, names));
+    const child = i => this.decode(c[i], dimensions, names, naming);
+    // A binder's own name, unless it would capture a variable its body refers
+    // to otherwise: an outer binder's, by the body's loose indices past its
+    // own, or an entry's.
+    const binder = () => this.binderShownName(id, names, naming);
+    let bound;
+    const body = i => this.decode(c[i], dimensions, pushName(bound, names), naming);
     let dim = `d${payload}`;
     while (dimensions.has(dim)) dim += "_";
     const inner = new Map(dimensions).set(dim, payload);
-    const boundChild = i => this.decode(c[i], inner, names);
+    const boundChild = i => this.decode(c[i], inner, names, naming);
     let result = { tag };
     switch (tag) {
       case "DefRef": result.name = this.kernel.definitionName(id); break;
-      case "U": result.level = this.decodeLevel(c[0], names); break;
-      case "LPi": case "LLam": Object.assign(result, { name: binderName(this.kernel, node), body: body(1) }); break;
-      case "LApp": Object.assign(result, { fn: child(0), level: this.decodeLevel(c[1], names) }); break;
+      case "U": result.level = this.decodeLevel(c[0], names, naming); break;
+      case "LPi": case "LLam": bound = binder(); Object.assign(result, { name: bound, body: body(1) }); break;
+      case "LApp": Object.assign(result, { fn: child(0), level: this.decodeLevel(c[1], names, naming) }); break;
       case "LBound": result.tier = payload; break;
-      case "Var": result.name = variableName(this.kernel, node, names); break;
+      // A variable, bound or an entry, is a Var of the name it goes by here.
+      case "Bound": case "Context": result = { tag: "Var", name: variableName(this.kernel, node, names, naming) }; break;
       case "Unit": case "Point": case "Void": break;
       case "Pi": case "Lam": case "Sigma":
-        Object.assign(result, { name: binderName(this.kernel, node), domain: child(0), body: body(1) }); break;
+        bound = binder(); Object.assign(result, { name: bound, domain: child(0), body: body(1) }); break;
       case "App": Object.assign(result, { fn: child(0), arg: child(1) }); break;
       case "Pair": Object.assign(result, { as: child(0), first: child(1), second: child(2) }); break;
       case "Fst": case "Snd": result.pair = child(0); break;
@@ -351,7 +442,7 @@ export class CubicalSyntax {
         for (let tube = c[1]; tube;) {
           const n = this.kernel.node(tube);
           if (n.kind !== "Tube") throw new Error("Invalid cubical tube list.");
-          system.push({ face: this.decodeFormula(n.payload, dimensions), term: this.decode(n.children[0], inner, names) });
+          system.push({ face: this.decodeFormula(n.payload, dimensions), term: this.decode(n.children[0], inner, names, naming) });
           tube = n.children[1];
         }
         Object.assign(result, { dim, family: tag === "HComp" ? child(0) : boundChild(0), system, base: child(2) }); break;
@@ -367,11 +458,11 @@ export class CubicalSyntax {
           const n = this.kernel.node(part), face = this.decodeFormula(n.payload, dimensions);
           if (tag === "Glue") {
             if (n.kind !== "GlueSystem") throw new Error("Invalid cubical Glue system.");
-            system.push({ face, type: this.decode(n.children[0], dimensions, names), equiv: this.decode(n.children[1], dimensions, names) });
+            system.push({ face, type: this.decode(n.children[0], dimensions, names, naming), equiv: this.decode(n.children[1], dimensions, names, naming) });
             part = n.children[2];
           } else {
             if (n.kind !== "Tube") throw new Error("Invalid cubical Glue element system.");
-            system.push({ face, term: this.decode(n.children[0], dimensions, names) }); part = n.children[1];
+            system.push({ face, term: this.decode(n.children[0], dimensions, names, naming) }); part = n.children[1];
           }
         }
         Object.assign(result, tag === "Glue" ? { base: child(0), system } : { as: child(0), base: child(1), system }); break;
@@ -379,8 +470,8 @@ export class CubicalSyntax {
       case "Unglue": Object.assign(result, { as: child(0), value: child(1) }); break;
       case "Sort":
         Object.assign(result, { signature: this.signatureRecord(payload).name,
-          parameters: this.items(c[0]).map(item => this.decode(item, dimensions, names)),
-          levels: this.items(c[1]).map(level => this.decodeLevel(level, names)) });
+          parameters: this.items(c[0]).map(item => this.decode(item, dimensions, names, naming)),
+          levels: this.items(c[1]).map(level => this.decodeLevel(level, names, naming)) });
         break;
       case "Con": {
         const sort = this.kernel.node(c[0]);
@@ -390,7 +481,7 @@ export class CubicalSyntax {
       }
       case "Elim":
         Object.assign(result, { signature: this.signatureRecord(payload).name, motive: child(0),
-          clauses: this.items(c[1]).map(item => this.decode(item, dimensions, names)) });
+          clauses: this.items(c[1]).map(item => this.decode(item, dimensions, names, naming)) });
         break;
       default: throw new Error(`Unsupported cubical node: ${tag}`);
     }
@@ -418,3 +509,4 @@ export class CubicalSyntax {
   }
   // Whether syntax has no free variable, and so encodes alike in every scope.
   closed(term) { return !isTerm(term) || !freeNames(term).size; }}
+const NONE = Object.freeze(new Set());

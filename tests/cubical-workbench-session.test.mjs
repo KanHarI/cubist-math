@@ -91,6 +91,76 @@ test("native previews handle universe operands and terms under a path binder", a
   assert.equal(body.kind, "PApp"); assert.match(body.text, /at\(p,/);
 });
 
+// A level beneath level binders refers to them by index (ABI 4): its
+// occurrence names them as the binders around it do, a successor's and a
+// maximum's alike, and so does each operand it shows.
+test("a level beneath level binders is shown by the names of its binders", async t => {
+  const session = new WorkbenchSession(module);
+  t.after(() => session.dispose());
+  const source = "def universe(U < UU0) : next(U) := U;\ndef both(U, V < UU0) : next(max(U, V)) := max(U, V);";
+  const universe = await session.load({ ...payload, source, binding: "workbench__universe", side: "expression" });
+  const successor = session.occurrence(universe.id, "type", [1, 0]);
+  assert.equal(successor.kind, "LSucc");
+  assert.match(successor.text, /U/);
+  const both = await session.load({ ...payload, source, binding: "workbench__both", side: "expression" });
+  // next(max(U, V)) is max(next(U), next(V)) in canonical form.
+  const maximum = session.occurrence(both.id, "type", [1, 1, 0]);
+  assert.equal(maximum.kind, "LMax");
+  assert.match(maximum.text, /^max\(U\w* \+ 1, V\w* \+ 1\)$/);
+  const [left, right] = [0, 1].map(child => session.occurrence(both.id, "type", [1, 1, 0, child]));
+  assert.deepEqual([left.kind, right.kind], ["LSucc", "LSucc"]);
+  assert.deepEqual([left.operands[0].label, right.operands[0].label], ["U", "V"]);
+});
+
+// Codex review, round 2: a normal form is named as its view names its
+// context. After a view with y : U0, the entry of y : Unit is spelled y'1 in
+// the session; normalizing (λ (z : Unit). z)(y) under y : Unit shows y, and
+// the result checks again in that context.
+test("a normal form names its view's context entries as the view does", async t => {
+  const { session, initial } = await fixture(t);
+  const publish = (expression, type, context) => {
+    const view = { ...initial.view, expression, type, context };
+    return session.publish(view, session.check(view), initial.selected);
+  };
+  const unit = { tag: "Unit" }, universe = { tag: "U", level: 0 }, y = { tag: "Var", name: "y" };
+  publish(y, universe, [{ name: "y", type: universe }]);
+  const redex = publish({ tag: "App", fn: { tag: "Lam", name: "z", domain: unit, body: { tag: "Var", name: "z" } }, arg: y }, unit,
+    [{ name: "y", type: unit }]);
+  const reduced = await session.handle("reduce", { state: redex.id, side: "expression", kind: "normalize" });
+  assert.deepEqual(reduced.view.expression, y);
+});
+
+// Codex review, round 2: an occurrence names the binders above it as the
+// whole term's decoding does (CubicalSyntax.binderShownName). After a native
+// Normalize, the λ and the Π the kernel rebuilt carry no names, both x, and
+// the full view shows λ x. Π x1. x = x1: the occurrence under both shows
+// x = x1, not x = x; and with x in the context, which the body refers to,
+// the λ shows x1 in both.
+test("an occurrence names the binders above it as the full view does", async t => {
+  const { session, initial } = await fixture(t);
+  const publish = (expression, type, context = []) => {
+    const view = { ...initial.view, expression, type, context };
+    return session.publish(view, session.check(view), initial.selected);
+  };
+  const unit = { tag: "Unit" }, universe = { tag: "U", level: 0 }, v = name => ({ tag: "Var", name });
+  const identity = { tag: "Lam", name: "z", domain: unit, body: v("z") };
+  const path = (left, right) => ({ tag: "Path", dim: "i", family: unit, left, right });
+  const normalized = async (body, context) => {
+    const state = publish({ tag: "App", fn: { tag: "Lam", name: "u", domain: unit, body }, arg: { tag: "Point" } },
+      { tag: "Pi", name: "_", domain: unit, body: universe }, context);
+    return session.handle("step", { state: state.id, side: "expression", path: [], rule: "normalize", budget: 100000 });
+  };
+  const shown = state => session.occurrence(state.id, "expression", []).text;
+  const bound = await normalized({ tag: "Lam", name: "x", domain: unit,
+    body: { tag: "Pi", name: "y", domain: unit, body: path({ tag: "App", fn: identity, arg: v("x") }, v("y")) } });
+  assert.equal(shown(bound), "λ (x : Unit). Π (x1 : Unit), (x =[Unit] x1)");
+  assert.match(session.occurrence(bound.id, "expression", [1, 1]).text, /^\(?x =\[Unit\] x1\)?$/);
+  const ambient = await normalized({ tag: "Lam", name: "w", domain: unit, body: path({ tag: "App", fn: identity, arg: v("w") }, v("x")) },
+    [{ name: "x", type: unit }]);
+  assert.equal(shown(ambient), "λ (x1 : Unit). (x1 =[Unit] x)");
+  assert.match(session.occurrence(ambient.id, "expression", [1]).text, /^\(?x1 =\[Unit\] x\)?$/);
+});
+
 test("subtree records expose native operands and math reductions publish checked snapshots", async t => {
   const { session, initial } = await fixture(t);
   const tree = await session.handle("subtree", { state: initial.id, side: "expression", path: [] });

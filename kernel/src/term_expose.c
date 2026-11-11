@@ -30,7 +30,7 @@ cc_term ck_expose(cc_kernel *k, cc_term term) {
             return 0;
         cc_node function = k->nodes[fn];
         if (function.kind == CC_LAM)
-            return ck_substitute(k, function.child[1], function.payload, n.child[1]);
+            return ck_instantiate(k, function.child[1], n.child[1]);
     }
     if (n.kind == CC_FST || n.kind == CC_SND) {
         cc_term pair = ck_whnf(k, n.child[0]);

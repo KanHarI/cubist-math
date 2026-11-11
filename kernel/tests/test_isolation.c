@@ -52,10 +52,10 @@ static void queries_leave_acceptance_unchanged(void) {
     assert(k);
     cc_term l0 = cc_kernel_term(k, CC_LCONST, 0, 0, 0, 0, 0);
     cc_judgement_id u0 = OK(cc_instr_universe(k, l0)), nat = OK(cc_instr_unit(k));
-    cc_entry_id a = OK(cc_instr_extend(k, u0, 100));
+    cc_entry_id a = OK(cc_instr_extend(k, u0));
     cc_judgement_id identity = OK(cc_instr_lambda(k, a, OK(cc_instr_variable(k, a))));
     cc_judgement_id beta_nat = OK(cc_instr_apply(k, identity, nat));
-    cc_entry_id x = OK(cc_instr_extend(k, beta_nat, 101)), y = OK(cc_instr_extend(k, nat, 102));
+    cc_entry_id x = OK(cc_instr_extend(k, beta_nat)), y = OK(cc_instr_extend(k, nat));
     cc_judgement_id argument = OK(cc_instr_variable(k, x));
     cc_judgement_id function = OK(cc_instr_lambda(k, y, OK(cc_instr_variable(k, y))));
     cc_term redex = term_of(beta_nat), plain = term_of(nat);
@@ -82,9 +82,9 @@ static void reduction_decides_eta_syntactically(void) {
     k = cc_kernel_new();
     assert(k);
     cc_judgement_id nat = OK(cc_instr_unit(k));
-    cc_entry_id n = OK(cc_instr_extend(k, nat, 200));
+    cc_entry_id n = OK(cc_instr_extend(k, nat));
     cc_judgement_id sigma = OK(cc_instr_sigma(k, n, nat));
-    cc_entry_id p = OK(cc_instr_extend(k, sigma, 201)), q = OK(cc_instr_extend(k, sigma, 202));
+    cc_entry_id p = OK(cc_instr_extend(k, sigma)), q = OK(cc_instr_extend(k, sigma));
     cc_judgement_id pv = OK(cc_instr_variable(k, p));
     cc_judgement_id identity = OK(cc_instr_lambda(k, q, OK(cc_instr_variable(k, q))));
     cc_judgement_id beta_p = OK(cc_instr_apply(k, identity, pv));
@@ -98,7 +98,7 @@ static void reduction_decides_eta_syntactically(void) {
     /* Glue over (λ (T : U0). T)(Nat) and over Nat, each with one piece on
      * the empty face, which needs no equivalence and no image. */
     cc_term l0 = cc_kernel_term(k, CC_LCONST, 0, 0, 0, 0, 0);
-    cc_entry_id t = OK(cc_instr_extend(k, OK(cc_instr_universe(k, l0)), 203));
+    cc_entry_id t = OK(cc_instr_extend(k, OK(cc_instr_universe(k, l0))));
     cc_judgement_id beta_nat = OK(cc_instr_apply(k, OK(cc_instr_lambda(k, t, OK(cc_instr_variable(k, t)))), nat));
     cc_formula formula;
     cc_init(&formula, CC_FACE);
@@ -108,7 +108,7 @@ static void reduction_decides_eta_syntactically(void) {
     cc_judgement_id unit = OK(cc_instr_unit(k)), point = OK(cc_instr_point(k)), zero = OK(cc_instr_point(k));
     cc_judgement_id over_redex = OK(cc_instr_glue(k, OK(cc_instr_glue_piece(k, OK(cc_instr_glue_base(k, beta_nat)), never, unit, zero))));
     cc_judgement_id over_nat = OK(cc_instr_glue(k, OK(cc_instr_glue_piece(k, OK(cc_instr_glue_base(k, nat)), never, unit, zero))));
-    cc_entry_id b = OK(cc_instr_extend(k, over_redex, 204));
+    cc_entry_id b = OK(cc_instr_extend(k, over_redex));
     cc_judgement_id bv = OK(cc_instr_variable(k, b));
     cc_judgement_id unglued = OK(cc_instr_unglue(k, bv));
     /* At b's own Glue type, the Glue term of unglue b is b. */
@@ -141,6 +141,18 @@ static void reduction_decides_eta_syntactically(void) {
     cc_kernel_free(k);
 }
 
+/* A free variable of raw syntax: a context entry's reference. Its type,
+ * Unit, plays no part, since reduction reads no entry's type. */
+static cc_term free_variable(void) {
+    cc_entry_id entry = OK(cc_instr_extend(k, OK(cc_instr_unit(k))));
+    return ck_make(k, CC_CONTEXT, entry, 0, 0, 0, 0);
+}
+
+/* The identity λ (x : domain). x, as raw syntax. */
+static cc_term identity_on(cc_term domain) {
+    return ck_make(k, CC_LAM, 0, domain, ck_make(k, CC_BOUND, 0, 0, 0, 0, 0), 0, 0);
+}
+
 /* G(d) = Glue [d = 0 ↦ (Unit, e)] Unit, as raw syntax. */
 static cc_term glue_line(cc_term unit, cc_term e, unsigned d) {
     cc_formula face;
@@ -161,7 +173,7 @@ static void normal_forms_and_the_glue_step_keep_eta(void) {
     assert(k);
     unsigned i = 0, j = 1;
     cc_term unit = ck_make(k, CC_UNIT, 0, 0, 0, 0, 0), point = ck_make(k, CC_POINT, 0, 0, 0, 0, 0);
-    cc_term e = ck_var(k, 300), p = ck_var(k, 301), b1 = ck_var(k, 302);
+    cc_term e = free_variable(), p = free_variable(), b1 = free_variable();
     cc_term along = ck_make(k, CC_PATH, j, glue_line(unit, e, j), point, b1, 0);
     cc_term b = ck_make(k, CC_PAPP, ck_interval_variable(k, i), p, along, 0, 0);
     cc_term over_i = glue_line(unit, e, i);
@@ -176,10 +188,10 @@ static void normal_forms_and_the_glue_step_keep_eta(void) {
      * glue_G [] (glue_A' [] (unglue_A(u))) is g: the inner Glue term is u only
      * because A' is A by a Beta step. */
     cc_term nat = ck_make(k, CC_UNIT, 0, 0, 0, 0, 0);
-    cc_term identity = ck_make(k, CC_LAM, 403, ck_universe_at(k, 0), ck_var(k, 403), 0, 0);
+    cc_term identity = identity_on(ck_universe_at(k, 0));
     cc_term a = ck_make(k, CC_GLUE, 0, nat, 0, 0, 0);
     cc_term a_redex = ck_make(k, CC_GLUE, 0, ck_make(k, CC_APP, 0, identity, nat, 0, 0), 0, 0, 0);
-    cc_term g_type = ck_make(k, CC_GLUE, 0, a, 0, 0, 0), g = ck_var(k, 404);
+    cc_term g_type = ck_make(k, CC_GLUE, 0, a, 0, 0, 0), g = free_variable();
     cc_term u = ck_make(k, CC_UNGLUE, 0, g_type, g, 0, 0);
     cc_term inner = ck_make(k, CC_GLUE_TERM, 0, a_redex, ck_make(k, CC_UNGLUE, 0, a, u, 0, 0), 0, 0);
     cc_term outer = ck_make(k, CC_GLUE_TERM, 0, g_type, inner, 0, 0);
@@ -206,7 +218,7 @@ static void glue_step_normalizes_only_its_side_conditions(void) {
     assert(k);
     unsigned i = 0, j = 1;
     cc_term unit = ck_make(k, CC_UNIT, 0, 0, 0, 0, 0), point = ck_make(k, CC_POINT, 0, 0, 0, 0, 0);
-    cc_term e = ck_var(k, 300), p = ck_var(k, 301), f = ck_var(k, 303), t = ck_var(k, 302);
+    cc_term e = free_variable(), p = free_variable(), f = free_variable(), x = free_variable(), t = x;
     for (unsigned n = 0; n < 40; ++n) t = ck_make(k, CC_APP, 0, ck_make(k, CC_APP, 0, f, t, 0, 0), t, 0, 0);
     cc_term end = ck_make(k, CC_GLUE_TERM, 0, ck_make(k, CC_GLUE, 0, unit, 0, 0, 0), t, 0, 0);
     cc_term along = ck_make(k, CC_PATH, j, glue_line(unit, e, j), point, end, 0);
@@ -247,10 +259,10 @@ static void glue_step_normalizes_only_its_side_conditions(void) {
     /* The sixth review: Glue types equal only below their heads, over the
      * graph on both sides, agree part by part, by a beta step in the family:
      * the graph is the same node on both sides, and never normalized. */
-    cc_term family = ck_make(k, CC_APP, 0, ck_make(k, CC_LAM, 700, ck_universe_at(k, 0), ck_var(k, 700), 0, 0), unit, 0, 0);
+    cc_term family = ck_make(k, CC_APP, 0, identity_on(ck_universe_at(k, 0)), unit, 0, 0);
     cc_term plain = ck_make(k, CC_GLUE, 0, ck_make(k, CC_PATH, j, unit, t, t, 0), 0, 0, 0);
     cc_term redex = ck_make(k, CC_GLUE, 0, ck_make(k, CC_PATH, j, family, t, t, 0), 0, 0, 0);
-    cc_term g = ck_var(k, 701);
+    cc_term g = free_variable();
     cc_term retyped = ck_make(k, CC_GLUE_TERM, 0, redex, ck_make(k, CC_UNGLUE, 0, plain, g, 0, 0), 0, 0);
     cc_kernel_work(k, &before);
     ck_operation(k, CC_WORK_INSTRUCTION);
@@ -260,7 +272,7 @@ static void glue_step_normalizes_only_its_side_conditions(void) {
     assert(after.instruction_steps - before.instruction_steps < 1000);
     /* And over two graphs that are different nodes, equal level by level
      * down to (λ z. z)(x) against x: each pair of levels is compared once. */
-    cc_term other = ck_make(k, CC_APP, 0, ck_make(k, CC_LAM, 702, unit, ck_var(k, 702), 0, 0), ck_var(k, 302), 0, 0);
+    cc_term other = ck_make(k, CC_APP, 0, identity_on(unit), x, 0, 0);
     for (unsigned n = 0; n < 40; ++n) other = ck_make(k, CC_APP, 0, ck_make(k, CC_APP, 0, f, other, 0, 0), other, 0, 0);
     cc_term far = ck_make(k, CC_GLUE, 0, ck_make(k, CC_PATH, j, unit, other, other, 0), 0, 0, 0);
     cc_term relabeled = ck_make(k, CC_GLUE_TERM, 0, far, ck_make(k, CC_UNGLUE, 0, plain, g, 0, 0), 0, 0);

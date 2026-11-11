@@ -104,10 +104,10 @@ function measuring(path, index = 0, source = null) {
         try {
           query = new RuntimeQuery(kernel, result.judgement, { ...checker.runtimeLimits(), origins: true });
           // The value form's walk, which spends no query of the directive's fuel.
-          valueForm(query.root, this.runtimeQueries({ spend() {} }, query, this.demandQueries(scope, () => "")), d.value);
+          valueForm(query.root, this.runtimeQueries({ spend() {} }, query, this.demandQueries(scope, () => "", null)), d.value);
           const walked = performance.now(), walkSteps = query.stats.steps;
           const term = query.readback(query.root, { origins: true }), read = performance.now(), atRead = ticks();
-          normal = checker.normalForm(term);
+          normal = checker.normalForm(term, null);
           Object.assign(record, { by: "runtime", walkSteps, walkMs: walked - started, readbackSteps: query.stats.steps - walkSteps,
             readbackMs: read - walked, normalizeTicks: ticks() - atRead, normalizeMs: performance.now() - read });
         } catch (error) {
@@ -117,7 +117,7 @@ function measuring(path, index = 0, source = null) {
       }
       if (!normal) {
         const at = ticks(), kernelStarted = performance.now();
-        try { normal = checker.normalForm(result.expression); record.by ??= "kernel"; }
+        try { normal = checker.normalForm(result.expression, result.naming ?? null); record.by ??= "kernel"; }
         catch (error) { record.error = error.message; throw error; }
         finally { Object.assign(record, { kernelTicks: ticks() - at, kernelMs: performance.now() - kernelStarted }); }
       }

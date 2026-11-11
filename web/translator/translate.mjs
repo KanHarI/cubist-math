@@ -410,7 +410,7 @@ export class Translator {
     // form first, stuck definitions folded, as it computed the full one
     // before folded normal forms (docs/roadmaps/historical/folded-normal-forms.md).
     const result=d.assertion?this.checker.infer(term):this.checker.evaluated(term);
-    const normal=expected&&!isPattern(expected)?this.checker.normalForm(result.expression):null;
+    const normal=expected&&!isPattern(expected)?this.checker.normalForm(result.expression,result.naming):null;
     const assumptions=result.native?.axioms??[...(this.checker.requiredAssumptions?.(result.term,result.type).keys()??[])];
     if(assumptions.length)throw Error(this.nonComputingMessage("The evaluated term",assumptions,result.term,result.type));
     if(d.assertion)return `${d.assertion} ${this.shownIn(type,scope)}`;
@@ -420,7 +420,7 @@ export class Translator {
     // (evaluation.mjs, L2.9a and EVAL5's demand marks). The value is shown
     // as far as it was computed.
     if(isPattern(expected)) {
-      const {shown,failed}=observe(expected,result.expression,()=>result.type,scope,this.demandQueries(scope,source));
+      const {shown,failed}=observe(expected,result.expression,()=>result.type,scope,this.demandQueries(scope,source,result.naming));
       if(!failed)return this.shownIn(shown,scope);
       // The value and its failing part, as one display. A part's type is
       // shown as it is, reducing nothing for display: its parameters may be
@@ -442,8 +442,10 @@ export class Translator {
   }
   // The kernel queries a pattern's demands ask (evaluation.mjs's observe):
   // each a query of the evaluation's, and a failure located at the part of
-  // the pattern that demanded it.
-  demandQueries(scope,source) {
+  // the pattern that demanded it. What they decode, they name as the
+  // evaluated term's view does (`naming`).
+  demandQueries(scope,source,naming) {
+    if(naming===undefined)throw new TypeError("demandQueries takes the evaluated term's naming.");
     const checker=this.checker,orders=new Map();
     const asked=(node,query)=>{
       scope.spend("queries");
@@ -454,10 +456,10 @@ export class Translator {
       head:(handle,node)=>asked(node,()=>checker.derivedHead(handle)),
       // !!! asks for the full normal form; !! and an expression's leaf for
       // the folded one.
-      normal:(handle,node)=>asked(node,()=>checker.normalForm(handle,{full:node?.mark==="!!!"})),
+      normal:(handle,node)=>asked(node,()=>checker.normalForm(handle,naming,{full:node?.mark==="!!!"})),
       spine:handle=>checker.kernel.spine(handle),
-      decoded:handle=>checker.decoded(handle),
-      constructor:handle=>checker.shownConstructor(handle),
+      decoded:handle=>checker.decoded(handle,naming),
+      constructor:handle=>checker.shownConstructor(handle,naming),
       glueSystem:handle=>checker.glueSystem(handle),
       // A constructor's fields in the order the printer shows them, read once
       // per declared type.
@@ -547,7 +549,7 @@ export class Translator {
       // witness ask for the full normal form: a witness is a constructor
       // read under formal compositions, whose bases a folded normal form may
       // keep named (folded-normal-forms.md).
-      const normal=d.mark==="!!"||d.mark==="!!!"||d.show==="witness"?this.checker.normalForm(result.expression,{full:d.mark==="!!!"||d.show==="witness"}):null;
+      const normal=d.mark==="!!"||d.mark==="!!!"||d.show==="witness"?this.checker.normalForm(result.expression,result.naming,{full:d.mark==="!!!"||d.show==="witness"}):null;
       const assumptions=result.native.axioms;
       if(assumptions.length)throw Error(this.nonComputingMessage("The evaluated term",assumptions,result.term,result.type));
       // print(evaluate(e)); shows the value form, computed as far as it is
@@ -556,11 +558,11 @@ export class Translator {
       // print(evaluate(!!e)); and print(evaluate(!!!e)); the normal form.
       if(d.show==="evaluate") {
         if(d.mark==="!!"||d.mark==="!!!")return {text:this.shownIn(normal,scope),axioms:[]};
-        const at=this.demandQueries(scope,node=>scope.unit.source.slice(node.start,node.end).trim());
+        const at=this.demandQueries(scope,node=>scope.unit.source.slice(node.start,node.end).trim(),result.naming);
         // A weak head and a value form are shown as computed, reducing
         // nothing more for display; a value form whole, within the budget
         // its walk kept.
-        if(d.mark==="!")return {text:this.shownIn(this.checker.decoded(at.head(result.expression,d.value)),scope,{reduce:0}),axioms:[]};
+        if(d.mark==="!")return {text:this.shownIn(this.checker.decoded(at.head(result.expression,d.value),result.naming),scope,{reduce:0}),axioms:[]};
         return {text:this.shownIn(this.valueFormOf(result,scope,d.value,at),scope,{width:Infinity,reduce:0}),axioms:[]};
       }
       // print(witness(t)); reads the witness off a closed truncation's

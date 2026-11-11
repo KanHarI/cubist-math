@@ -202,7 +202,7 @@ static cc_term result_type(cc_kernel *k, cc_term type, const cc_term *arguments,
         cc_node pi = k->nodes[type];
         if (pi.kind != CC_PI)
             return ck_fail(k, "A constructor's type has fewer arguments than its application."), 0;
-        type = ck_substitute(k, pi.child[1], pi.payload, arguments[m]);
+        type = ck_instantiate(k, pi.child[1], arguments[m]);
     }
     return type;
 }

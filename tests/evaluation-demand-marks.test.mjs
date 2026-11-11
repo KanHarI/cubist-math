@@ -9,6 +9,7 @@ import { lint } from "../web/cubist/lint.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { checkProgram } from "./check-program.mjs";
+import { namedTerms } from "./named-terms.mjs";
 import { normalDigest, sharedNormalDigest } from "../tools/evaluation-baseline.mjs";
 import { termFields, writtenFields, writtenParts } from "../web/translator/term-shape.mjs";
 import { reported } from "../tools/inline-errors.mjs";
@@ -46,7 +47,7 @@ function recordedProgram(t) {
     // while the term's handles are live.
     if (latest && !latest.normalized && !("displayed" in latest)) {
       latest.displayed = term;
-      try { latest.root = checker.decoded(kernel.spine(head.call(kernel, latest.handle)).root.id); }
+      try { latest.root = checker.decoded(kernel.spine(head.call(kernel, latest.handle)).root.id, null); }
       catch { latest.root = null; }
     }
     return displayText.call(this, term, ...rest);
@@ -69,7 +70,7 @@ function recordedProgram(t) {
   const normalizing = (query, folded) => function (handle) {
     asked.push({ query, handle });
     const result = query === "normalize" ? normalize.call(this, handle) : normalizeFolded.call(this, handle);
-    if (evaluations.at(-1)?.handle === handle) Object.assign(evaluations.at(-1), { normalized: true, folded, normal: checker.decoded(result) });
+    if (evaluations.at(-1)?.handle === handle) Object.assign(evaluations.at(-1), { normalized: true, folded, normal: checker.decoded(result, null) });
     return result;
   };
   kernel.normalize = normalizing("normalize", false);
@@ -353,7 +354,7 @@ def grow(n : UNat) : Tree := match n {
 def wide := node(grow(12), 7, grow(12));`, { module });
   const { checker } = program, kernel = checker.kernel;
   const at = { head: handle => checker.derivedHead(handle), spine: handle => kernel.spine(handle),
-    constructor: handle => checker.shownConstructor(handle),
+    constructor: handle => checker.shownConstructor(handle, null),
     fieldOrder: constructor => checker.displayNames[constructor.sort.signature]?.constructors?.[constructor.index]?.order ?? null };
   const { expression } = checker.evaluated({ tag: "DefRef", name: "main__wide" });
   const form = valueForm(expression, at, null);
@@ -394,7 +395,9 @@ use unat;
 def p : UNat and UNat := ((fun (x : UNat) => succ(x))(2), 0);
 print(evaluate(!p));
 print(evaluate(p));`, { module });
-  assert.deepEqual(result.prints.map(print => print.text), ["((fun (x : UNat) => succ(x))(2), 0)", "(3, 0)"]);
+  // The λ is one node with the library's λ (m : UNat). succ(m), which was
+  // encoded first and so names it: binders carry no names (ABI 4).
+  assert.deepEqual(result.prints.map(print => print.text), ["((fun (m : UNat) => succ(m))(2), 0)", "(3, 0)"]);
 });
 
 test("the value form stops exactly where the printer's 4,000 nodes end", async t => {
@@ -520,8 +523,8 @@ test("normalize accepts the data parts of a derived handle's weak head, and only
   checker.derivedHead(kernel.term("Pair", 0, annotation, first, second));
   assert.throws(() => kernel.normalize(first), /instruction derived/);
   assert.deepEqual(kernel.node(checker.derivedHead(expression)).children.slice(0, 3), [annotation, first, second]);
-  assert.equal(checker.displayText(checker.normalForm(first), []), "unat.(3)");
-  assert.equal(checker.normalForm(second).tag, "Lam");
+  assert.equal(checker.displayText(checker.normalForm(first, null), []), "unat.(3)");
+  assert.equal(checker.normalForm(second, null).tag, "Lam");
   // Nothing below the data parts is admitted: not a lambda's domain or body,
   // even once the lambda's own head is asked, nor the parts of a part,
   // until that part's own head is asked.
@@ -531,7 +534,7 @@ test("normalize accepts the data parts of a derived handle's weak head, and only
   const [inner] = kernel.spine(kernel.head(first)).args;
   assert.throws(() => kernel.normalize(inner), /instruction derived/);
   assert.equal(kernel.spine(checker.derivedHead(first)).args[0], inner);
-  assert.equal(checker.displayText(checker.normalForm(inner), []), "unat.(2)");
+  assert.equal(checker.displayText(checker.normalForm(inner, null), []), "unat.(2)");
 });
 
 test("normalize accepts no annotation of a derived handle's weak head that was not derived already", async t => {
@@ -550,7 +553,7 @@ def nested_ : ((UNat and UNat) or Unit) and UNat := (left((1, 2)), 2 + 1);`, { m
   assert.deepEqual([injection.kind, inner.kind, constructor.kind], ["Inl", "Pair", "Con"]);
   for (const annotation of [injection.children[0], inner.children[0], constructor.children[0]])
     assert.throws(() => kernel.normalize(annotation), /instruction derived/);
-  assert.equal(checker.displayText(checker.normalForm(inner.children[1]), []), "unat.(1)");
+  assert.equal(checker.displayText(checker.normalForm(inner.children[1], null), []), "unat.(1)");
 });
 
 test("the head of a derived path or level lambda admits nothing under its binder", async t => {
@@ -802,7 +805,7 @@ test("each value form the runtime computes reads back to the kernel's normal for
 // dimensions and the slots the kernel gives them, and no further, across
 // programs as well as within one.
 const digested = (program, value) => {
-  const decoded = program.checker.syntax.decode(value, program.checker.dimensions);
+  const decoded = program.checker.syntax.decode(value, program.checker.dimensions, null, null);
   return { shared: sharedNormalDigest(decoded).digest, decoded: normalDigest(decoded) };
 };
 const definitionValue = (program, name, owner = "main") => program.kernel.definition(program.kernel.definitions.get(`${owner}__${name}`)).value;
@@ -836,8 +839,9 @@ test("the report's digest tells terms apart as the baseline's digest of their de
   // Terms as the kernel's normal forms may hold them, with their dimensions
   // in any slots, built directly: alike but for their slots, or different in
   // the binder a formula names, once in a part shared under both binders.
-  const { kernel } = program, raw = (kind, payload, ...children) => kernel.term(kind, payload, ...children);
-  const family = raw("Var", kernel.symbol("A")), path = raw("Var", kernel.symbol("p"));
+  // Free variables are entries (ABI 4).
+  const { kernel } = program, raw = (kind, payload, ...children) => kernel.term(kind, payload, ...children), named = namedTerms(kernel);
+  const family = named.realize(named.v("A")), path = named.realize(named.v("p"));
   const at = slot => raw("PApp", syntax.formula([["d:1"]], "interval", new Map([["d", slot]])), path);
   const plam = (slot, body) => raw("PLam", slot, family, body);
   const built = {
@@ -867,8 +871,9 @@ test("the report's digest tells terms apart as the baseline's digest of their de
 test("the report's digest reads every part decoding reads", async t => {
   const { program, verdicts } = await checkProgram(t, "import unat;\nuse unat;\ndef two := 2;\ndef three := 3;\ninductive Flag {\n  lit;\n  unlit;\n}\n", { module });
   assert.deepEqual([verdicts.two, verdicts.three], [true, true]);
-  const { kernel, checker: { syntax } } = program, raw = (kind, payload, ...children) => kernel.term(kind, payload, ...children);
-  const v = name => raw("Var", kernel.symbol(name)), level = value => raw("LConst", value);
+  // Terms written with names (tests/named-terms.mjs), made kernel syntax at the end.
+  const { kernel, checker: { syntax } } = program, { term: raw, bind, v, lv, realize } = namedTerms(kernel);
+  const level = value => raw("LConst", value);
   const face = (slot, bit = 1) => syntax.formula([[`d:${bit}`]], "face", new Map([["d", slot]]));
   const at = slot => raw("PApp", syntax.formula([["d:1"]], "interval", new Map([["d", slot]])), v("p"));
   const list = items => items.reduceRight((next, item) => raw("List", 0, item, next), 0);
@@ -876,12 +881,12 @@ test("the report's digest reads every part decoding reads", async t => {
   const sort = (signature, parameters, levels) => raw("Sort", signature, list(parameters), list(levels));
   const glue = (type, equiv, at) => raw("Glue", 0, v("a"), raw("GlueSystem", at, type, equiv, 0));
   const glueTerm = (as, term, at) => raw("GlueTerm", 0, as, v("b"), raw("Tube", at, term, 0));
-  const tube = (at, term) => raw("Tube", at, term, 0), lambda = (name, body) => raw("Lam", kernel.symbol(name), v("A"), body);
+  const tube = (at, term) => raw("Tube", at, term, 0), lambda = (name, body) => bind("Lam", name, v("A"), body);
   const formula = (clauses, outer, inner) => raw("PApp", syntax.formula(clauses, "interval", new Map([["d", outer], ["e", inner]])), v("p"));
   const both = (outer, inner) => formula([["d:1", "e:1"]], outer, inner), either = (outer, inner) => formula([["d:1"], ["e:1"]], outer, inner);
   const comp = term => raw("Comp", 3, v("A"), tube(face(4), term), v("b"));
   const faced = (kind, slot) => raw(kind, 3, v("A"), tube(face(slot), v("t")), v("b"));
-  const levelLambda = (kind, bound, used) => raw(kind, kernel.symbol(bound), raw("LBound", 1), raw("U", 0, raw("Var", kernel.symbol(used))));
+  const levelLambda = (kind, bound, used) => bind(kind, bound, raw("LBound", 1), raw("U", 0, lv(used)));
   const terms = {
     free_a: v("a"), free_b: v("b"),
     two: kernel.definitions.get("main__two"), three: kernel.definitions.get("main__three"),
@@ -910,9 +915,9 @@ test("the report's digest reads every part decoding reads", async t => {
     unshadowed: lambda("x", lambda("y", raw("App", 0, v("x"), lambda("z", v("x"))))),
     // What a binder does not bind: a lambda's domain, a path's endpoints, a
     // composition's and a transport's base.
-    domain: raw("Lam", kernel.symbol("x"), v("x"), v("x")), domain_renamed: raw("Lam", kernel.symbol("y"), v("x"), v("y")),
-    pi: raw("Pi", kernel.symbol("x"), v("A"), v("x")), pi_renamed: raw("Pi", kernel.symbol("y"), v("A"), v("y")),
-    sigma: raw("Sigma", kernel.symbol("x"), v("A"), v("x")), sigma_renamed: raw("Sigma", kernel.symbol("y"), v("A"), v("y")),
+    domain: bind("Lam", "x", v("x"), v("x")), domain_renamed: bind("Lam", "y", v("x"), v("y")),
+    pi: bind("Pi", "x", v("A"), v("x")), pi_renamed: bind("Pi", "y", v("A"), v("y")),
+    sigma: bind("Sigma", "x", v("A"), v("x")), sigma_renamed: bind("Sigma", "y", v("A"), v("y")),
     path_type: raw("Path", 3, at(3), at(3), v("a")), path_type_moved: raw("Path", 5, at(5), at(3), v("a")),
     path_family: raw("PLam", 3, at(3), v("a")), path_family_moved: raw("PLam", 5, at(5), v("a")),
     comp_base: raw("Comp", 3, v("A"), 0, at(3)), comp_base_moved: raw("Comp", 5, v("A"), 0, at(3)),
@@ -925,7 +930,7 @@ test("the report's digest reads every part decoding reads", async t => {
     // binder's bound, a transport descriptor's term.
     annotated: raw("PApp", syntax.formula([["d:1"]], "interval", new Map([["d", 3]])), v("p"), v("T")),
     annotated_other: raw("PApp", syntax.formula([["d:1"]], "interval", new Map([["d", 3]])), v("p"), v("U")),
-    level_bound: raw("LLam", kernel.symbol("l"), raw("LBound", 2), raw("U", 0, raw("Var", kernel.symbol("l")))),
+    level_bound: bind("LLam", "l", raw("LBound", 2), raw("U", 0, lv("l"))),
     trans_descriptor: raw("Trans", 3, at(3), tube(face(4), v("c")), v("b")),
     // An outer binding read again after an inner binder of its name.
     restored: lambda("x", raw("App", 0, lambda("x", v("x")), v("x"))), restored_renamed: lambda("x", raw("App", 0, lambda("y", v("y")), v("x"))),
@@ -974,10 +979,11 @@ test("the report's digest reads every part decoding reads", async t => {
     level_max: raw("U", 0, raw("LMax", 0, level(0), level(1))), level_tier: raw("U", 0, raw("LConst", (1 << 16) | 3)), level_bound_term: raw("LBound", 2),
     unit: raw("Unit", 0), point: raw("Point", 0), void: raw("Void", 0), path_of: raw("Path", 3, v("A"), v("a"), v("b")),
   };
+  for (const [name, part] of Object.entries(terms)) terms[name] = realize(part);
   const digests = Object.fromEntries(Object.entries(terms).map(([name, value]) => [name, digested(program, value)]));
   // It counts every distinct object of the decoding, arrays among them.
   for (const [name, value] of Object.entries(terms)) {
-    const decoded = syntax.decode(value, program.checker.dimensions);
+    const decoded = syntax.decode(value, program.checker.dimensions, null, null);
     assert.equal(sharedNormalDigest(decoded).objects, distinctObjects(decoded), `${name} counts its objects`);
   }
   const names = Object.keys(digests);
@@ -1008,7 +1014,7 @@ test("the report's digest reads every part decoding reads", async t => {
   // would make the two disagree on some change.
   let changes = 0;
   for (const [name, value] of Object.entries(terms)) {
-    const decoded = syntax.decode(value, program.checker.dimensions), shared = sharedNormalDigest(decoded).digest, reference = normalDigest(decoded);
+    const decoded = syntax.decode(value, program.checker.dimensions, null, null), shared = sharedNormalDigest(decoded).digest, reference = normalDigest(decoded);
     for (const changed of oneChange(decoded)) {
       // A change no decoding gives, as a system that is no list, both refuse.
       const attempt = digest => { try { return digest(changed); } catch (error) { return error; } };
@@ -1031,7 +1037,7 @@ test("the report's digest reads every part decoding reads", async t => {
   // the digest it has under another binding.
   let contexts = 0;
   for (const [name, value] of Object.entries(terms)) {
-    const decoded = syntax.decode(value, program.checker.dimensions), { terms: termNames, dims: dimensionNames } = namesIn(decoded);
+    const decoded = syntax.decode(value, program.checker.dimensions, null, null), { terms: termNames, dims: dimensionNames } = namesIn(decoded);
     const binders = [...new Set([...termNames, ...dimensionNames, "fresh′"])].flatMap(bound => [
       part => ({ tag: "Lam", name: bound, domain: { tag: "Var", name: "A" }, body: part }),
       part => ({ tag: "PLam", dim: bound, family: { tag: "Var", name: "A" }, body: part })]);

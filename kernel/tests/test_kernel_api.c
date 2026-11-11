@@ -25,41 +25,80 @@ static void definitions(void) {
     assert(k);
     cc_judgement_id unit = cc_instr_unit(k);
     cc_judgement_id two = cc_instr_sum(k, unit, unit);
-    cc_term named_one = info(k, cc_instr_define(k, 101, cc_instr_inject(k, two, cc_instr_point(k), false))).term;
+    cc_judgement_id one = cc_instr_inject(k, two, cc_instr_point(k), false);
+    cc_term named_one = info(k, cc_instr_define(k, one)).term;
     assert(kind(k, named_one) == CC_DEFREF);
-    uint32_t symbol;
     cc_term body, type;
-    assert(cc_kernel_definition(k, named_one, &symbol, &body, &type));
-    assert(symbol == 101 && kind(k, body) == CC_INL && kind(k, type) == CC_SUM);
-    assert(!cc_kernel_definition(k, body, NULL, NULL, NULL));
+    assert(cc_kernel_definition(k, named_one, &body, &type));
+    assert(kind(k, body) == CC_INL && kind(k, type) == CC_SUM);
+    assert(!cc_kernel_definition(k, body, NULL, NULL));
     assert(kind(k, cc_kernel_whnf(k, named_one)) == CC_INL);
     /* Lookup recalls the definition at its type, and only a definition. */
     assert(info(k, cc_instr_lookup(k, named_one)).type == type);
     assert(!cc_instr_lookup(k, body));
     cc_kernel_clear_error(k);
 
-    /* Publication is closed and atomic: an open judgement, or a name already
-     * taken by another body, publishes nothing. */
-    cc_entry_id x = cc_instr_extend(k, unit, 17);
-    assert(x && !cc_instr_define(k, 102, cc_instr_variable(k, x)));
+    /* Publication is closed and atomic: an open judgement publishes nothing.
+     * Define is stateful and keeps no name: the same closed judgement
+     * defined again is a second definition, with its own reference, as two
+     * names for one body are two definitions (the driver names each). */
+    cc_entry_id x = cc_instr_extend(k, unit);
+    assert(x && !cc_instr_define(k, cc_instr_variable(k, x)));
     assert(strstr(cc_kernel_error(k), "closed judgement"));
     cc_kernel_clear_error(k);
-    assert(!cc_instr_define(k, 101, cc_instr_point(k)));
-    assert(strstr(cc_kernel_error(k), "already registered"));
-    cc_kernel_clear_error(k);
+    cc_term again = info(k, cc_instr_define(k, one)).term;
+    assert(again && again != named_one && kind(k, again) == CC_DEFREF);
+    uint32_t first_index, second_index;
+    assert(cc_kernel_node(k, named_one, NULL, &first_index, NULL) && cc_kernel_node(k, again, NULL, &second_index, NULL));
+    assert(first_index != second_index);
+    cc_term again_body;
+    assert(cc_kernel_definition(k, again, &again_body, NULL) && again_body == body);
+    /* Lookup's judgement reports the reference and no name. */
+    cc_judgement_info lookup = info(k, cc_instr_lookup(k, again));
+    assert(lookup.term == again && lookup.operand[0] == again && lookup.operand[1] == 0);
 
     /* A head query exposes a function without normalizing its body, and
      * free-name analysis visits a shared DAG once rather than walking 2^24
      * branches. */
     cc_term nat = cc_kernel_term(k, CC_U, 0, cc_kernel_term(k, CC_LCONST, 0, 0, 0, 0, 0), 0, 0, 0);
-    cc_term free_var = cc_kernel_term(k, CC_VAR, 17, 0, 0, 0, 0);
+    /* λ (y : U0). x under λ (x : U0): the outer binder is index 1. */
+    cc_term outer_var = cc_kernel_term(k, CC_BOUND, 1, 0, 0, 0, 0);
     cc_term shared = cc_kernel_term(k, CC_UNIT, 0, 0, 0, 0, 0);
     for (unsigned i = 0; i < 24; ++i)
         shared = cc_kernel_term(k, CC_SUM, 0, shared, shared, 0, 0);
-    cc_term inner = cc_kernel_term(k, CC_LAM, 18, nat, free_var, 0, 0);
-    cc_term outer = cc_kernel_term(k, CC_LAM, 17, nat, inner, 0, 0);
+    cc_term inner = cc_kernel_term(k, CC_LAM, 0, nat, outer_var, 0, 0);
+    cc_term outer = cc_kernel_term(k, CC_LAM, 0, nat, inner, 0, 0);
     cc_term inserted = cc_kernel_term(k, CC_APP, 0, outer, shared, 0, 0);
     assert(kind(k, cc_kernel_whnf(k, inserted)) == CC_LAM);
+    cc_kernel_free(k);
+}
+
+/* The kernel keeps no names (ABI 4): two Extends at one type are two
+ * entries, each with its own variable, and a binder over one leaves the
+ * other free; the same for two level entries. */
+static void entries(void) {
+    cc_kernel *k = cc_kernel_new();
+    assert(k);
+    cc_judgement_id unit = cc_instr_unit(k);
+    cc_entry_id x = cc_instr_extend(k, unit), y = cc_instr_extend(k, unit);
+    assert(x && y && x != y);
+    uint32_t index = 1;
+    cc_term x_type = 0, y_type = 0;
+    assert(cc_kernel_entry(k, x, &index, &x_type, NULL, NULL) && index == 0);
+    assert(cc_kernel_entry(k, y, &index, &y_type, NULL, NULL) && index == 0 && x_type == y_type);
+    cc_term x_term = info(k, cc_instr_variable(k, x)).term, y_term = info(k, cc_instr_variable(k, y)).term;
+    uint32_t payload = 0;
+    assert(x_term != y_term && kind(k, y_term) == CC_CONTEXT);
+    assert(cc_kernel_node(k, y_term, NULL, &payload, NULL) && payload == y);
+    /* λ (x : Unit). y: the body is y's variable, not the bound one, and y
+     * stays in the context. */
+    cc_judgement_id constant = cc_instr_lambda(k, x, cc_instr_variable(k, y));
+    cc_term children[4];
+    assert(cc_kernel_node(k, info(k, constant).term, NULL, NULL, children) && children[1] == y_term);
+    assert(cc_kernel_judgement_context(k, constant, 0) == y && !cc_kernel_judgement_context(k, constant, 1));
+    cc_entry_id u = cc_instr_level(k), v = cc_instr_level(k);
+    assert(u && v && u != v && u != x && v != y);
+    assert(cc_kernel_error_kind(k) == CC_ERROR_NONE);
     cc_kernel_free(k);
 }
 
@@ -68,7 +107,7 @@ static void error_kinds(void) {
     cc_kernel *k = cc_kernel_new();
     assert(k);
     cc_judgement_id unit = cc_instr_unit(k);
-    cc_entry_id y = cc_instr_extend(k, unit, 102);
+    cc_entry_id y = cc_instr_extend(k, unit);
     cc_judgement_id identity = cc_instr_lambda(k, y, cc_instr_variable(k, y));
     assert(cc_kernel_error_kind(k) == CC_ERROR_NONE);
     /* Unit, a type, is no argument of λ (y : Unit). y. */
@@ -186,10 +225,10 @@ static void exact_sharing(void) {
     cc_kernel_checkpoint(k);
     assert(cc_kernel_term(k, CC_LCONST, MANY + 1, 0, 0, 0, 0));
     cc_judgement_id unit = cc_instr_unit(k);
-    cc_term reference = info(k, cc_instr_define(k, 500, cc_instr_sum(k, unit, unit))).term;
+    cc_term reference = info(k, cc_instr_define(k, cc_instr_sum(k, unit, unit))).term;
     assert(reference && cc_kernel_commit_checkpoint(k));
     cc_term value;
-    assert(cc_kernel_definition(k, cc_kernel_relocated(k, reference), NULL, &value, NULL));
+    assert(cc_kernel_definition(k, cc_kernel_relocated(k, reference), &value, NULL));
     cc_term u = cc_kernel_term(k, CC_UNIT, 0, 0, 0, 0, 0);
     assert(cc_kernel_term(k, CC_SUM, 0, u, u, 0, 0) == value);
     cc_kernel_free(k);
@@ -197,6 +236,7 @@ static void exact_sharing(void) {
 
 int main(void) {
     definitions();
+    entries();
     exact_sharing();
     error_kinds();
     resource_failures();

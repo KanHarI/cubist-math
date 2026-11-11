@@ -84,16 +84,17 @@ void ck_leave(cc_kernel *k) {
 }
 
 unsigned ck_arity(cc_term_kind kind) {
-    /* The kernel's own kinds (term_internal.h) are leaves. */
-    if (kind == CC_BOUND || kind == CC_CONTEXT || kind == CC_OPENED)
+    /* The kernel's own kind (term_internal.h) is a leaf. */
+    if (kind == CC_OPENED)
         return 0;
     switch (kind) {
-    /* Retired primitive tags stay reserved in ABI 3, and are not syntax. */
+    /* Retired tags stay reserved, and are not syntax: the primitive types',
+     * and the named variable of ABI 3. */
     case CC_NAT: case CC_ZERO: case CC_SUCC: case CC_NATREC:
-    case CC_W: case CC_SUP: case CC_WREC:
+    case CC_W: case CC_SUP: case CC_WREC: case CC_VAR:
     case CC_PUSHOUT: case CC_PUSH_LEFT: case CC_PUSH_RIGHT: case CC_PUSH_PATH: case CC_PUSH_ELIM: return 5;
-    case CC_DEFREF: case CC_VAR: case CC_UNIT: case CC_POINT: case CC_VOID:
-    case CC_LBOUND: case CC_LCONST:
+    case CC_DEFREF: case CC_UNIT: case CC_POINT: case CC_VOID:
+    case CC_LBOUND: case CC_LCONST: case CC_BOUND: case CC_CONTEXT:
         return 0;
     case CC_U: case CC_FST: case CC_SND: case CC_LSUCC: case CC_CON:
         return 1;
@@ -121,7 +122,6 @@ cc_kernel *cc_kernel_new(void) {
         k->formula_count = 1;
         k->definition_count = 1;
         k->signature_count = 1;
-        k->next_symbol = 1;
         k->budget = k->operation_budget = UINT64_C(10000000);
     }
     return k;
@@ -145,8 +145,8 @@ void cc_kernel_free(cc_kernel *k) {
     free(k->context_sets);
     free(k->context_items);
     free(k->positions);
+    free(k->entry_vectors);
     free(k->derivations);
-    free(k->entry_index);
     for (size_t i = 1; i < k->formula_count; ++i)
         cc_clear(&k->formulas[i]);
     free(k->relocation);
@@ -243,19 +243,18 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
     if ((kind == CC_PAPP || kind == CC_TUBE || kind == CC_GLUE_SYSTEM) &&
         !cc_kernel_get_formula(k, payload))
         return ck_fail(k, "A formula handle names no registered formula."), 0;
+    /* A binder binds index 0 of its body and carries no name. */
+    if (ck_term_binder(kind) && payload)
+        return ck_fail(k, "A term or level binder carries no name: its payload is zero."), 0;
     /* A CC_BOUND's or CC_OPENED's counter is its payload plus one, which
-     * must not wrap to 0: the same refusal as a symbol's. */
-    if ((kind == CC_VAR || ck_term_binder(kind) || kind == CC_BOUND || kind == CC_OPENED) && payload == UINT32_MAX)
-        return ck_fail_as(k, CC_ERROR_RESOURCE, "Term symbol space exhausted."), 0;
-    /* A context reference names a term or level entry of the judgement
-     * store, never a dimension or face entry, nor one truncated: the
-     * refusals of ck_instr_entry, but for level entries, which it allows. */
-    if (kind == CC_CONTEXT && (!payload || payload >= k->entry_count))
-        return ck_fail(k, "Unknown context entry."), 0;
-    if (kind == CC_CONTEXT && k->entries[payload].face)
-        return ck_fail(k, "A face entry is an assumption, not a variable or a dimension."), 0;
-    if (kind == CC_CONTEXT && k->entries[payload].dimension)
-        return ck_fail(k, "Expected a term entry."), 0;
+     * must not wrap to 0. */
+    if ((kind == CC_BOUND || kind == CC_OPENED) && payload == UINT32_MAX)
+        return ck_fail_as(k, CC_ERROR_RESOURCE, "A variable's index exceeds the kernel's bound."), 0;
+    /* A context reference names a live term or level entry of the judgement
+     * store, never a dimension or face entry, nor one truncated. */
+    if (kind == CC_CONTEXT && (!payload || payload >= k->entry_count || k->entries[payload].face ||
+                               k->entries[payload].dimension))
+        return ck_fail(k, "A context reference names no live term or level entry."), 0;
     /* Identical syntax is one node. Every child and payload is compared after
      * hashing, so collisions affect performance, never term identity. A
      * node's counters, loose and opened, are functions of its kind, payload
@@ -307,9 +306,8 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
         }
         k->capacity = capacity;
     }
-    /* A context reference sets its entry's bit in the same filter, which
-     * abstraction reads until the filter becomes PR 3's `contexts`. */
-    uint64_t symbols = kind == CC_VAR || kind == CC_CONTEXT ? UINT64_C(1) << (payload % 64) : 0, dims = 0;
+    /* A context reference sets its entry's bit in the filter. */
+    uint64_t contexts = kind == CC_CONTEXT ? UINT64_C(1) << (payload % 64) : 0, dims = 0;
     if (kind == CC_PAPP || kind == CC_TUBE || kind == CC_GLUE_SYSTEM) {
         const cc_formula *formula = cc_kernel_get_formula(k, payload);
         for (size_t i = 0; formula && i < formula->length; ++i)
@@ -321,7 +319,7 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
     for (unsigned i = 0; i < arity; ++i)
         if (children[i]) {
             const cc_node *child = &k->nodes[children[i]];
-            symbols |= child->symbols;
+            contexts |= child->contexts;
             dims |= child->dims;
             /* A term or level binder binds index 0 in its body. */
             uint32_t reach = i == 1 && ck_term_binder(kind) && child->loose ? child->loose - 1 : child->loose;
@@ -331,10 +329,7 @@ cc_term ck_make(cc_kernel *k, cc_term_kind kind, uint32_t payload,
     cc_term result = (cc_term)k->count++;
     k->nodes[result] = (cc_node){.kind = (uint8_t)kind, .depth = (uint16_t)depth, .payload = payload,
                                  .child = {a, b, c, d}, .loose = loose, .opened = opened,
-                                 .symbols = symbols, .dims = dims};
-    if ((kind == CC_VAR || ck_term_binder(kind)) && payload >= k->next_symbol) {
-        k->next_symbol = payload + 1;
-    }
+                                 .contexts = contexts, .dims = dims};
     ck_intern(k, result);
     return result;
 }
@@ -343,8 +338,8 @@ cc_term cc_kernel_term(cc_kernel *k, cc_term_kind kind, uint32_t payload,
                        cc_term a, cc_term b, cc_term c, cc_term d) {
     /* Building syntax is no operation: an error here is charged to none. */
     ck_standalone(k);
-    /* The kernel's own kinds are no part of ABI 3. */
-    if (k && !k->error[0] && (kind == CC_BOUND || kind == CC_CONTEXT || kind == CC_OPENED))
+    /* The kernel's own kind is no part of the ABI. */
+    if (k && !k->error[0] && kind == CC_OPENED)
         return ck_fail(k, "Unknown term constructor."), 0;
     return ck_make(k, kind, payload, a, b, c, d);
 }
@@ -398,23 +393,6 @@ bool cc_kernel_node(const cc_kernel *k, cc_term id, cc_term_kind *kind,
     if (payload) *payload = k->nodes[id].payload;
     if (children) memcpy(children, k->nodes[id].child, sizeof k->nodes[id].child);
     return true;
-}
-
-cc_term ck_var(cc_kernel *k, uint32_t name) {
-    return ck_make(k, CC_VAR, name, 0, 0, 0, 0);
-}
-
-uint32_t ck_fresh_symbol(cc_kernel *k) {
-    if (k->next_symbol == UINT32_MAX) {
-        ck_fail_as(k, CC_ERROR_RESOURCE, "Fresh symbol space exhausted.");
-        return 0;
-    }
-    return k->next_symbol++;
-}
-
-uint32_t cc_kernel_fresh_symbol(cc_kernel *k) {
-    ck_standalone(k);
-    return k ? ck_fresh_symbol(k) : 0;
 }
 
 void cc_kernel_clear_error(cc_kernel *k) {

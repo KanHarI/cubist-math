@@ -18,7 +18,9 @@ const fail = (kind, message) => { throw new RuntimeError(kind, message); };
 // either other kind is refused when it is demanded, with these reasons.
 const pathConstructorRefused = "Execution of a path constructor is not implemented.";
 const cubicalPositionsRefused = "Execution of a constructor with cubical recursive positions is not implemented.";
-// The term binders of ck_term_binder: each binds its payload in its second child.
+// The term binders of ck_term_binder: each binds index 0 of its second
+// child (ABI 4). A variable is Bound(i), the i-th binding frame of its
+// environment, 0 the nearest; a closed query has no Context.
 const binders = new Set(["Pi", "Lam", "Sigma", "LPi", "LLam"]);
 // Readback's tables (docs/roadmaps/runtime/typed-readback.md, 3.2 to 3.5).
 // Data: the values a normal-form readback reads by value outside every
@@ -152,11 +154,11 @@ function descriptors(kernel, index, budget) {
   budget.tick();
   const s = kernel.signature(index), record = kernel.signatureRecords.get(index);
   if (!s.admitted || !record) fail("input", "Runtime execution requires an admitted signature.");
-  // The sort's variable in the constructor types, by the name its admission
-  // record keeps (web/cubical-signatures.mjs).
-  const sort = kernel.symbol(record.admission.sort);
   budget.allocate(1 + s.constructors.length);
-  return s.constructors.map(c => {
+  // A constructor type is closed over the admission telescope, its earlier
+  // constructors last: at its root the sort is index k for constructor k,
+  // and under d of its binders index d + k.
+  return s.constructors.map((c, k) => {
     const count = c.data + c.positions;
     if (c.dimensions || c.generated) return { data: c.data, count, arities: null, refused: pathConstructorRefused };
     const arities = [];
@@ -167,7 +169,7 @@ function descriptors(kernel, index, budget) {
       if (i >= c.data) {
         let position = read(pi.children[0]), arity = 0;
         while (position.kind === "Pi") { arity++; position = read(position.children[1]); }
-        if (position.kind !== "Var" || position.payload !== sort) refused = cubicalPositionsRefused;
+        if (position.kind !== "Bound" || position.payload !== i + arity + k) refused = cubicalPositionsRefused;
         arities.push(arity);
       }
       type = pi.children[1];
@@ -345,7 +347,7 @@ export class RuntimeQuery {
   #enter(root) {
     const table = this.#sharing(root);
     if (!table) return null;
-    const instance = this.#cell({ parent: null, symbol: undefined, cell: null, binder: 0 });
+    const instance = this.#cell({ parent: null, binds: false, cell: null, binder: 0 });
     this.#budget.allocate(1 + table.size);
     this.#shared.set(instance, new Map(table));
     return instance;
@@ -412,11 +414,15 @@ export class RuntimeQuery {
           slice = 0; yield;
           this.#open(); budget.check();
         }
+        // A bound variable is its index-th binding frame's cell: a frame that
+        // binds nothing, a root's instance, is passed over.
         if (task?.operation === "lookup") {
-          const { env, symbol } = task;
+          const { env, index } = task;
           if (!env) fail("input", "Unbound variable in a closed runtime query.");
-          if (env.symbol === symbol) force(env.cell);
-          else task = { operation: "lookup", env: env.parent, symbol };
+          if (!env.binds) task = { operation: "lookup", env: env.parent, index };
+          else if (index) task = { operation: "lookup", env: env.parent, index: index - 1 };
+          else if (!env.cell) fail("input", "Unbound variable in a closed runtime query.");
+          else force(env.cell);
           continue;
         }
         if (task) {
@@ -433,7 +439,8 @@ export class RuntimeQuery {
           // forces, is delayed alone.
           const annotation = id => this.#delay(id, env), delay = n.shares ? id => this.#share(id, env) : annotation;
           switch (n.kind) {
-            case "Var": task = { operation: "lookup", env, symbol: n.payload }; break;
+            case "Bound": task = { operation: "lookup", env, index: n.payload }; break;
+            case "Context": fail("input", "A closed runtime query refers to no context entry.");
             // A definition's value is read at its first demand: one thunk per
             // definition, however many references name it.
             case "DefRef":
@@ -450,7 +457,7 @@ export class RuntimeQuery {
             // found when the λ is first forced (#sharing).
             case "Lam": case "LLam":
               if (n.sharing === undefined) n.sharing = this.#sharing(c[1]);
-              returned(this.#value({ tag: n.kind, symbol: n.payload, body: c[1], env, domain: annotation(c[0]), node: cell.code })); break;
+              returned(this.#value({ tag: n.kind, body: c[1], env, domain: annotation(c[0]), node: cell.code })); break;
             // A path abstraction is a weak head too, kept with its
             // environment. Applying one, at an interval point, is cubical
             // demand, so nothing here substitutes a dimension.
@@ -524,7 +531,7 @@ export class RuntimeQuery {
               budget.stats.beta++;
               // The frame records the node of the function it applied, whose
               // binder, at its domain, a readback telescope binds (3.3).
-              force(this.#delay(value.body, this.#cell({ parent: value.env, symbol: value.symbol, cell: argument, binder: value.node })));
+              force(this.#delay(value.body, this.#cell({ parent: value.env, binds: true, cell: argument, binder: value.node })));
             } else if (!frame.level && value.tag === "Con") {
               const descriptor = this.#descriptor(value.signature, value.index);
               if (value.args.length >= descriptor.count) fail("input", "A constructor received too many arguments.");
@@ -584,10 +591,11 @@ export class RuntimeQuery {
     let value = yield* this.#run(cell);
     for (let f; (f = this.#eta(value));) {
       // f is the λ's body but its variable: it is evaluated in an instance
-      // of the body's scope of its own, a frame that binds nothing, so that
-      // its delays count against the body's shared calls, not those of the
-      // scope that made the λ.
-      const instance = this.#cell({ parent: value.env, symbol: undefined, cell: null, binder: value.node });
+      // of the body's scope of its own, a frame for the λ's binder that
+      // binds it to nothing, as f never uses it, so that its delays count
+      // against the body's shared calls, not those of the scope that made
+      // the λ.
+      const instance = this.#cell({ parent: value.env, binds: true, cell: null, binder: value.node });
       value = yield* this.#run(this.#delay(f, instance));
     }
     // The head observed is kept, by the cell asked, for its readback: after
@@ -604,25 +612,11 @@ export class RuntimeQuery {
     if (value.tag !== "Lam" && value.tag !== "LLam") return 0;
     const body = this.#node(value.body);
     if (body.kind !== (value.tag === "Lam" ? "App" : "LApp")) return 0;
+    // The λ's variable is index 0 in its body: f is free of it when f has
+    // no loose index 0, as the kernel's `loose` decides it.
     const argument = this.#node(body.children[1]);
-    return argument.kind === "Var" && argument.payload === value.symbol && !this.#free(body.children[0], value.symbol)
+    return argument.kind === "Bound" && argument.payload === 0 && !this.#scope(body.children[0]).vars.has(0)
       ? body.children[0] : 0;
-  }
-  // Whether a variable occurs free in syntax, as ck_term_free decides it:
-  // Π, λ, Σ and their level forms bind their payload in their second child.
-  #free(code, symbol) {
-    const seen = new Set(), pending = [code];
-    while (pending.length) {
-      this.#budget.tick();
-      const id = pending.pop();
-      if (!id || seen.has(id)) continue;
-      seen.add(id);
-      const n = this.#node(id);
-      if (n.kind === "Var" && n.payload === symbol) return true;
-      const bound = binders.has(n.kind) && n.payload === symbol;
-      n.children.forEach((child, i) => { if (!(bound && i === 1)) pending.push(child); });
-    }
-    return false;
   }
   // An observation is the weak head the kernel computes for the represented
   // term, classified: a constructor applied to all of its arguments or to
@@ -816,7 +810,7 @@ export class RuntimeQuery {
   // A value, from the fields the machine executes (3.2): a constructor's
   // index and instance cell, rebuilt one level into a literal Sort of the
   // value's signature, never the node it was made from; a function's
-  // symbol, body and environment; an eliminator's signature, motive and
+  // body and environment; an eliminator's signature, motive and
   // clauses. A node supplies only what a value does not hold: a function's
   // domain, a path abstraction's dimension and family, a type's parts.
   #valueTask(value, mode) {
@@ -841,7 +835,7 @@ export class RuntimeQuery {
         return frame([{ kind: "part", code, env, mode: mode === "outer" ? "origin" : mode, items: null }, ...value.args.map(cell)],
           ([instance, ...args]) => args.reduce((fn, argument) => this.#write("App", 0, fn, argument), this.#write("Con", value.index, instance)));
       }
-      case "Lam": case "LLam": return closure(this.#made(value.node, value.tag, value.symbol, value.body), value.env);
+      case "Lam": case "LLam": return closure(this.#made(value.node, value.tag, 0, value.body), value.env);
       case "PLam": return closure(this.#made(value.node, "PLam", this.#node(value.node).payload, value.body), value.env);
       case "Type": return closure(value.node, value.env);
       case "Elim": return frame([cell(value.motive), ...value.clauses.map(cell)], ([motive, ...clauses]) =>
@@ -890,7 +884,7 @@ export class RuntimeQuery {
     const memo = typeof code === "number" ? this.#closures(mode, env) : null, known = memo && this.#recall(memo.get(code));
     if (known) return known;
     const n = this.#syntax(code);
-    if (n.kind === "Var")
+    if (n.kind === "Bound")
       return { parts: [{ kind: "cell", cell: this.#binding(env, n.payload).cell, mode }], results: [], stable: true, build: first, memo, key: code };
     if (n.kind === "DefRef" && mode !== "origin") {
       const cell = this.#definitions.get(n.payload), forced = cell?.state === 2;
@@ -934,16 +928,15 @@ export class RuntimeQuery {
       return this.#write(n.kind, n.payload, ...children);
     } };
   }
-  // The frames a code needs: the nearest binding of each variable free in
-  // the code, and, for each, the nearest binding above it of each variable
-  // free in its binder's domain, in the environment's order, outermost
-  // first.
+  // The frames a code needs: the binding of each of the code's loose
+  // indices, and, for each, the binding above it of each loose index of its
+  // binder's domain, in the environment's order, outermost first.
   #frames(code, env) {
     const needed = new Set(), pending = [[this.#scope(code).vars, env]];
     while (pending.length) {
       const [vars, from] = pending.pop();
-      for (const symbol of vars) {
-        const frame = this.#binding(from, symbol);
+      for (const index of vars) {
+        const frame = this.#binding(from, index);
         if (needed.has(frame)) continue;
         this.#budget.allocate(); needed.add(frame);
         pending.push([this.#scope(this.#node(frame.binder).children[0]).vars, frame.parent]);
@@ -956,29 +949,70 @@ export class RuntimeQuery {
     }
     return frames.reverse();
   }
-  // An environment kept for a value's readback: its frames a code needs,
-  // copied in order, each the parent of the next, so that the value keeps
-  // no binding its readback does not read. Lookup in it finds what lookup
-  // in the environment found: no frame dropped binds a variable nearer than
-  // the one kept for it. A node with no children, such as Unit, needs none.
+  // An environment kept for a value's readback: its binding frames up to the
+  // outermost one a code needs, those it needs with their bindings and the
+  // others empty, so that the value keeps no binding its readback does not
+  // read, and an index finds the frame it found. A node with no children,
+  // such as Unit, needs none.
   #pruned(code, env) {
     if (!env || this.#node(code).children.every(child => !child)) return null;
-    return this.#frames(code, env).reduce((parent, frame) =>
-      this.#cell({ parent, symbol: frame.symbol, cell: frame.cell, binder: frame.binder }), null);
+    const needed = new Set(this.#frames(code, env)), chain = [];
+    for (let at = env, found = 0; at && found < needed.size; at = at.parent) {
+      this.#budget.tick();
+      if (!at.binds) continue;
+      chain.push(at);
+      if (needed.has(at)) found++;
+    }
+    return chain.reverse().reduce((parent, frame) => this.#cell(needed.has(frame)
+      ? { parent, binds: true, cell: frame.cell, binder: frame.binder } : { parent, binds: true, cell: null, binder: 0 }), null);
+  }
+  // A code with each loose index renumbered by `index`, which maps an index
+  // at the code's root to the one it takes in the term built around it
+  // (#telescope), written only where it changes. A node under d of the
+  // code's binders renumbers its indices from d on.
+  #reindexed(code, index, depth = 0, memo = new Map()) {
+    const { vars } = this.#scope(code);
+    // Where the frames a code needs are its environment's, in order, every
+    // index keeps its number, and the code is kept as written.
+    if (![...vars].some(v => v >= depth) || (!depth && [...vars].every(v => index(v) === v))) return this.#handleOf(code);
+    const key = typeof code === "number" ? `${code}|${depth}` : null;
+    if (key && memo.has(key)) return memo.get(key);
+    const n = this.#syntax(code);
+    const result = n.kind === "Bound" ? this.#write("Bound", index(n.payload - depth) + depth)
+      : this.#write(n.kind, n.payload, ...n.children.map((child, i) =>
+        child ? this.#reindexed(child, index, depth + (i === 1 && binders.has(n.kind) ? 1 : 0), memo) : 0));
+    if (key) memo.set(key, result);
+    return result;
   }
   // The telescope of the frames a code needs, applied to their cells:
-  // App(…App(L1(x1; D1, … Ln(xn; Dn, code)…), R(c1))…, R(cn)). Each Li is
-  // the binder the frame's β contracted, a term or level λ, and Di its
-  // domain as written, so the domains are closed together, never one by
-  // one. A level binding is applied to its level, read back.
+  // App(…App(L1(D1, … Ln(Dn, code)…), R(c1))…, R(cn)). Each Li is the binder
+  // the frame's β contracted, a term or level λ, and Di its domain as
+  // written, so the domains are closed together, never one by one. The
+  // code's indices, and each domain's, are renumbered to the telescope's
+  // binders: the frames left out bind nothing in it. A level binding is
+  // applied to its level, read back.
   #telescope(code, env, mode, stable, memo, key, then = term => term) {
     const frames = this.#frames(code, env);
     this.#readStats.bindings += frames.length;
     const binder = frame => this.#node(frame.binder), level = frame => binder(frame).kind === "LLam";
     return { parts: frames.map(frame => level(frame) ? { kind: "level", code: frame.cell.code, env: frame.cell.env } : { kind: "cell", cell: frame.cell, mode }),
       results: [], stable, memo, key, build: args => {
-        let term = this.#handleOf(code);
-        for (let i = frames.length; i-- > 0;) term = this.#write(binder(frames[i]).kind, frames[i].symbol, binder(frames[i]).children[0], term);
+        // Each binding frame's place in the environment, from the nearest,
+        // and each needed frame's in the telescope, from the outermost.
+        const chain = [], place = new Map(frames.map((frame, k) => [frame, k]));
+        for (let at = env, found = 0; at && found < frames.length; at = at.parent) {
+          if (!at.binds) continue;
+          chain.push(at);
+          if (place.has(at)) found++;
+        }
+        const position = new Map(chain.map((frame, p) => [frame, p]));
+        // An index at a frame's binder's domain counts from the frame above it.
+        const from = (start, under) => i => under - 1 - place.get(chain[start + i]);
+        let term = this.#reindexed(code, from(0, frames.length));
+        for (let k = frames.length; k-- > 0;) {
+          const b = binder(frames[k]), domain = this.#reindexed(b.children[0], from(position.get(frames[k]) + 1, k));
+          term = this.#write(b.kind, 0, domain, term);
+        }
         frames.forEach((frame, i) => { term = this.#write(level(frame) ? "LApp" : "App", 0, term, args[i]); });
         return then(term);
       } };
@@ -993,7 +1027,7 @@ export class RuntimeQuery {
     const memo = this.#closures("level", env), key = code, known = this.#recall(memo.get(code));
     if (known) return known;
     let n = this.#node(code), stable = true;
-    while (n.kind === "Var") {
+    while (n.kind === "Bound") {
       const { cell } = this.#binding(env, n.payload);
       if (cell.operation !== "syntax" || cell.state === 2) fail("input", "A level variable is bound to a term.");
       code = cell.code; env = cell.env; n = this.#node(code); stable = false;
@@ -1006,12 +1040,17 @@ export class RuntimeQuery {
       return universe.children[0];
     });
   }
-  // The nearest binding of a symbol in an environment, as the machine's
-  // lookup takes it.
-  #binding(env, symbol) {
+  // The binding frame of an index in an environment, as the machine's
+  // lookup takes it: a frame that binds nothing is passed over.
+  #binding(env, index) {
     for (let at = env; at; at = at.parent) {
       this.#budget.tick();
-      if (at.symbol === symbol) return at;
+      if (!at.binds) continue;
+      if (!index) {
+        if (!at.cell) break;
+        return at;
+      }
+      index--;
     }
     return fail("input", "Unbound variable in a closed runtime query.");
   }
@@ -1030,10 +1069,11 @@ export class RuntimeQuery {
     this.#budget.tick(); this.#readStats.writes++;
     return this.#kernel().term(kind, payload, ...children);
   }
-  // The variables free in a code, binding as ck_term_free does, and the
-  // definitions it references outside its term binders, once per copied
-  // node, within the query's budget (3.3). Everything inside a term binder
-  // stays as written, so a binder references none.
+  // The loose indices of a code, as the kernel's `loose` counts them, a
+  // binder's body one deeper, and the definitions it references outside its
+  // term binders, once per copied node, within the query's budget (3.3).
+  // Everything inside a term binder stays as written, so a binder
+  // references none.
   #scope(code) {
     if (typeof code !== "number") return this.#scopeOf(code, code.children.map(child => child ? this.#scope(child) : null));
     const scopes = this.#image.scopes;
@@ -1055,17 +1095,17 @@ export class RuntimeQuery {
       this.#budget.allocate();
       return new Set(some.flatMap(set => [...set]));
     };
-    if (n.kind === "Var" || n.kind === "DefRef") {
+    if (n.kind === "Bound" || n.kind === "DefRef") {
       this.#budget.allocate();
       const own = new Set([n.payload]);
-      return n.kind === "Var" ? { vars: own, defs: none } : { vars: none, defs: own };
+      return n.kind === "Bound" ? { vars: own, defs: none } : { vars: none, defs: own };
     }
     const binder = binders.has(n.kind), parts = children.filter(Boolean);
     const vars = union(children.flatMap((child, i) => {
       if (!child) return [];
-      if (!(binder && i === 1 && child.vars.has(n.payload))) return [child.vars];
+      if (!(binder && i === 1) || !child.vars.size) return [child.vars];
       this.#budget.allocate();
-      return [new Set([...child.vars].filter(symbol => symbol !== n.payload))];
+      return [new Set([...child.vars].filter(index => index > 0).map(index => index - 1))];
     }));
     return { vars, defs: binder ? none : union(parts.map(child => child.defs)) };
   }

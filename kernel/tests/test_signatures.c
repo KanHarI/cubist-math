@@ -37,8 +37,13 @@ static void rejects(uint32_t id, const char *fragment, int line) {
 #define REJECTS(x, fragment) rejects((x), (fragment), __LINE__)
 
 static cc_term lconst(unsigned n) { return cc_kernel_term(k, CC_LCONST, n, 0, 0, 0, 0); }
-static cc_term lvar(uint32_t symbol) { return cc_kernel_term(k, CC_VAR, symbol, 0, 0, 0, 0); }
+/* A level variable: the reference to a level entry. */
+static cc_term lvar(cc_entry_id level) { return cc_kernel_term(k, CC_CONTEXT, level, 0, 0, 0, 0); }
 static cc_term lsucc(cc_term level) { return cc_kernel_term(k, CC_LSUCC, 1, level, 0, 0, 0); }
+/* The variable of the index-th enclosing binder, as a closed type reports
+ * it. */
+static cc_term bound(uint32_t index) { return cc_kernel_term(k, CC_BOUND, index, 0, 0, 0, 0); }
+static cc_term pi(cc_term domain, cc_term body) { return cc_kernel_term(k, CC_PI, 0, domain, body, 0, 0); }
 static cc_judgement_id var(cc_entry_id e) { return OK(cc_instr_variable(k, e)); }
 static cc_judgement_id universe(cc_term level) { return OK(cc_instr_universe(k, level)); }
 static cc_signature_info signature(uint32_t index) {
@@ -60,60 +65,36 @@ static cc_term child(cc_term t, unsigned i) { cc_term c[4]; assert(cc_kernel_nod
 static uint32_t payload(cc_term t) { uint32_t p; assert(cc_kernel_node(k, t, NULL, &p, NULL)); return p; }
 static cc_term tier1(unsigned n) { return cc_kernel_term(k, CC_LCONST, 1u << 16 | n, 0, 0, 0, 0); }
 
-/* Symbols. Each signature gets its own, as a driver's supply would give. */
-enum {
-    X = 1, Y, A, B, L, P,
-    S_N = 10, ZERO, SUCC, M,
-    S_LIST = 20, NIL, CONS, HEAD, TAIL,
-    S_S1 = 30, BASE, LOOP,
-    S_T = 40, TB, TP, TQ, SURF,
-    S_S2 = 50, S2BASE, S2SURF,
-    S_TR = 60, POINT, VALUE,
-    S_PT = 70, PT, CARRIER, ELEMENT,
-    S_H = 80, HOLD, HB,
-    S_BAD = 90, BAD, BF, BG, BN, BX, C1, C2, LATER, OTHER, BH, Z,
-    S_Q = 110, CLASS, QA,
-    S_G = 120, GPOINT, GA,
-    S_BOTH = 130, MK, BOTH_A, BOTH_B,
-    S_TREE = 400, TREE_L, TREE_ARG, TREE_B, TREE_LV, TREE_BV, TREE_C, SUP,
-    S_QUO = 410, QUO_A, QUO_ARG1, QUO_ARG2, QUO_R, QUO_X, QUO_Y, QUO_RR, CLS, QEQ,
-    S_CAN = 420, CAN_LEAF, CAN_NODE, CAN_N, CAN_F,
-    S_WR = 430, WR_BASE, WR_LOOP, WR_P, WR_WRAP, WR_FIX,
-    S_BR = 440, BR_A, BR_LEAF, BR_NODE, BR_X, BR_F, BR_COLLAPSE,
-    S_TAG = 450, TAG_A, TAG_X, TAG_B, TAG,
-    S_HID = 460, HID_BASE, HID_LOOP, HID_Y, HID_T, HID_C,
-    S_GEN = 470, GEN_C,
-    S_OPEN = 480, OPEN_C, TREE_N, S_GONE,
-    S_SUSP = 490, SUSP_A, NORTH, SOUTH, MERID, SUSP_X,
-    S_PUSH = 500, PUSH_C, PUSH_A, PUSH_B, PUSH_ARG, PUSH_F, PUSH_G, PUSH_X, PUSH_Y, INL, INR, PUSH_Z, PUSH, PUSH_N,
-    KAN_A = 520, KAN_B, KAN_E, KAN_X, KAN_M, KAN_Q, KAN_Y = 540,
-    ELIM_P = 600, ELIM_PZ = 602, ELIM_N, ELIM_H, ELIM_PS, ELIM_Z, ELIM_Q, ELIM_PB = 609, ELIM_PB2, ELIM_PL, ELIM_PL2,
-    ELIM_T = 620, ELIM_A = 622, ELIM_PP, ELIM_B, ELIM_W, ELIM_L = 627, ELIM_BB, ELIM_C, ELIM_CBAR, ELIM_MS,
-    ELIM_V = 640, ELIM_PV = 642, ELIM_PW, ELIM_WV, ELIM_WP, ELIM_WPB, ELIM_MW, ELIM_MF,
-    S_PW = 700, PW_BASE, PW_LOOP, PW_P, PW_WRAP, PW_V, PW_PV = 707, PW_PL, PW_PE, PW_PBAR, PW_MW, PW_P0,
-    S_BOX = 720, BOX_N, BOX, BOX_Z, BOX_X, AMB_Z = 730, AMB_P, AMB_F, AMB_FB, AMB_FL,
-    ACC_C = 740, ACC_R, A6_N, A6_X, A6_G, E9_Y, E9_Z, E9_YB, E9_ZB, E9_SQ, E10_Z, E10_P, E10_PB, E10_PL,
-    S_RES = 760, S_ARGS, S_DEEP, RES_B, RES_F, RES_A = RES_F + 3,
-    HB_X = 780, HB_A, HB_B, HB_MA, HB_MB, HB_MK, HB_TA, HB_HERE, HB_T, HB_WRAP, HB_FA, HB_F, HB_BB, HB_PACK, HB_Z,
-    HB_FF, HB_WRAP2, HB_WRAP3, HB_UZ,
-    S_MIXED = 810, S_TAG2, S_OUTER, S_HID2, S_BIG, S_OUTER2,
-    PROP_A = 850, PROP_B, PROP_E, PROP_XA, PROP_XB,
-    /* CP01: constructors whose boundaries use a path-valued position. */
-    CP_TP = 900, CP_TWIST, CP_QP, CP_SQ, CP_TE, CP_TBAR, CP_MT, CP_QE, CP_QBAR, CP_MS,
-    RES_C = 3000, RES_N = 3400,
-    /* Four for each random term of the property tests. */
-    PROP_R = 6000
-};
+/* The kernel keeps no names: every entry here is made by Extend or Level,
+ * and stands for what the driver would name. A signature is opened with
+ * the entries for its former's binders, the universe parameters' level
+ * entries and then the term parameters', and its sort's entry, all made
+ * before SignatureBegin; each constructor with an entry at its type, made
+ * before SignatureConstructor, for later constructor types to mention. */
+static cc_entry_id extend(cc_judgement_id type) { return OK(cc_instr_extend(k, type)); }
+
+/* SignatureConstructor at a type, with a new entry at that type standing
+ * for the constructor; the result is the instruction's, for OK or
+ * REJECTS. */
+static cc_judgement_id admit(cc_judgement_id signature, cc_judgement_id type) {
+    return cc_instr_signature_constructor(k, signature, type, extend(type));
+}
 
 /* ⊢ U(0) : U(1), the former of a signature with no parameters in U0. */
 static cc_judgement_id former_u0(void) { return universe(lconst(0)); }
 
-/* ⊢ Π (x < ω). Π (A : U(x)). U(x) : U(ω), with x and A named by the
- * given symbols: the former of List, Trunc and the like. */
-static cc_judgement_id former_generic(uint32_t x, uint32_t a, cc_entry_id *xe, cc_entry_id *ae) {
-    *xe = OK(cc_instr_level(k, x));
-    cc_judgement_id ux = universe(lvar(x));
-    *ae = OK(cc_instr_extend(k, ux, a));
+/* SignatureBegin over U0 with no parameters, at the sort entry s : U0. */
+static cc_judgement_id begin_u0(uint32_t modifier, cc_entry_id sort) {
+    return cc_instr_signature_begin(k, former_u0(), modifier, NULL, 0, sort, 0);
+}
+
+/* ⊢ Π (x < ω). Π (A : U(x)). U(x) : U(ω), the former of List, Trunc and
+ * the like, with the level entry x and the term entry A : U(x) that stand
+ * for its binders. */
+static cc_judgement_id former_generic(cc_entry_id *xe, cc_entry_id *ae) {
+    *xe = OK(cc_instr_level(k));
+    cc_judgement_id ux = universe(lvar(*xe));
+    *ae = extend(ux);
     cc_judgement_id body = OK(cc_instr_pi(k, *ae, ux));
     return OK(cc_instr_level_pi(k, *xe, body));
 }
@@ -123,76 +104,92 @@ static cc_judgement_id former_generic(uint32_t x, uint32_t a, cc_entry_id *xe, c
 static void natural_numbers(void) {
     /* inductive N { zero; succ(n : N); } */
     uint32_t index;
-    cc_judgement_id sig = OK(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, S_N, 0));
-    cc_entry_id s = OK(cc_instr_extend(k, former_u0(), S_N));
-    sig = OK(cc_instr_signature_constructor(k, sig, var(s), ZERO));
-    cc_entry_id zero = OK(cc_instr_extend(k, var(s), ZERO));
-    (void)zero;
-    cc_entry_id n = OK(cc_instr_extend(k, var(s), M));
+    cc_entry_id s = extend(former_u0());
+    cc_judgement_id sig = OK(begin_u0(CC_UNTRUNCATED, s));
+    cc_entry_id zero = extend(var(s));
+    sig = OK(cc_instr_signature_constructor(k, sig, var(s), zero));
+    cc_entry_id n = extend(var(s));
     cc_judgement_id succ_type = OK(cc_instr_pi(k, n, var(s)));
-    sig = OK(cc_instr_signature_constructor(k, sig, succ_type, SUCC));
+    cc_entry_id succ_entry = extend(succ_type);
+    sig = OK(cc_instr_signature_constructor(k, sig, succ_type, succ_entry));
     index = OK(cc_instr_signature_close(k, sig));
     nat_signature = index;
     cc_signature_info info = signature(index);
     assert(info.admitted && !info.experimental && info.constructor_count == 2 && !info.level_count);
-    cc_constructor_info succ = constructor(index, 1);
-    assert(succ.symbol == SUCC && succ.data == 0 && succ.positions == 1 && succ.dimensions == 0 && !succ.generated);
+    assert(info.former == term_of(former_u0()) && info.level == lconst(0));
+    /* The constructors carry no name: their types are reported closed over
+     * the telescope [s, zero], index 0 the last: zero : s is Bound 0, and
+     * succ : Π (n : s). s is Π (Bound 1). Bound 2. */
+    cc_constructor_info first = constructor(index, 0), succ = constructor(index, 1);
+    assert(first.type == bound(0) && !first.data && !first.positions && !first.generated);
+    assert(succ.type == pi(bound(1), bound(2)));
+    assert(succ.data == 0 && succ.positions == 1 && succ.dimensions == 0 && !succ.generated);
     /* A14: an admitted signature never changes. */
     REJECTS(cc_instr_signature_close(k, sig), "already admitted");
-    REJECTS(cc_instr_signature_constructor(k, sig, var(s), OTHER), "already admitted");
+    REJECTS(cc_instr_signature_constructor(k, sig, var(s), extend(var(s))), "already admitted");
 }
 
 static void lists(void) {
     /* inductive List(U < UU0, A : U) { nil; cons(head : A, tail : List); }: the
      * universe parameter is erased, determined by A : U(x). */
     cc_entry_id xe, ae;
-    cc_judgement_id former = former_generic(X, A, &xe, &ae);
-    cc_judgement_id sig = OK(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, S_LIST, 0));
-    cc_entry_id s = OK(cc_instr_extend(k, universe(lvar(X)), S_LIST));
-    sig = OK(cc_instr_signature_constructor(k, sig, var(s), NIL));
-    OK(cc_instr_extend(k, var(s), NIL));
-    cc_entry_id head = OK(cc_instr_extend(k, var(ae), HEAD));
-    cc_entry_id tail = OK(cc_instr_extend(k, var(s), TAIL));
+    cc_judgement_id former = former_generic(&xe, &ae);
+    const cc_entry_id parameters[] = {xe, ae};
+    cc_entry_id s = extend(universe(lvar(xe)));
+    cc_judgement_id begun = OK(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, parameters, 2, s, 0));
+    /* SignatureBegin's judgement records its entries: the parameters', then
+     * the sort's. */
+    cc_judgement_info opened = info(begun);
+    assert(opened.entry_count == 2 && opened.entries[0] == xe && opened.entries[1] == ae && opened.operand[0] == s);
+    cc_judgement_id sig = OK(cc_instr_signature_constructor(k, begun, var(s), extend(var(s))));
+    cc_entry_id head = extend(var(ae));
+    cc_entry_id tail = extend(var(s));
     cc_judgement_id cons_type = OK(cc_instr_pi(k, head, OK(cc_instr_pi(k, tail, var(s)))));
-    sig = OK(cc_instr_signature_constructor(k, sig, cons_type, CONS));
+    sig = OK(admit(sig, cons_type));
     uint32_t index = OK(cc_instr_signature_close(k, sig));
     list_signature = index;
     cc_signature_info info = signature(index);
     assert(info.level_count == 1 && info.parameter_count == 1 && info.recorded == 0);
-    assert(cc_kernel_signature_symbol(k, index, 0) == X && cc_kernel_signature_symbol(k, index, 1) == A);
+    /* No names are reported: the former is closed, its level U(x) is index 1
+     * over the prenex [x, A], and cons : Π (head : A). Π (tail : s). s is
+     * closed over the telescope [x, A, s, nil]; nil : s over [x, A, s]. */
+    assert(info.former == term_of(former) && info.level == bound(1));
     cc_constructor_info cons = constructor(index, 1);
     assert(cons.data == 1 && cons.positions == 1 && cons.dimensions == 0);
+    assert(cons.type == pi(bound(2), pi(bound(2), bound(3))) && constructor(index, 0).type == bound(0));
 }
 
 /* The circle: base; loop : Path(i; s, base, base). */
 static void circle(void) {
-    cc_judgement_id sig = OK(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, S_S1, 0));
-    cc_entry_id s = OK(cc_instr_extend(k, former_u0(), S_S1));
-    sig = OK(cc_instr_signature_constructor(k, sig, var(s), BASE));
-    cc_entry_id base = OK(cc_instr_extend(k, var(s), BASE));
+    cc_entry_id s = extend(former_u0());
+    cc_judgement_id sig = OK(begin_u0(CC_UNTRUNCATED, s));
+    cc_entry_id base = extend(var(s));
+    sig = OK(cc_instr_signature_constructor(k, sig, var(s), base));
     cc_entry_id i = OK(cc_instr_dimension(k, 0));
     cc_judgement_id loop_type = OK(cc_instr_path(k, i, var(s), var(base), var(base)));
-    sig = OK(cc_instr_signature_constructor(k, sig, loop_type, LOOP));
+    sig = OK(admit(sig, loop_type));
     uint32_t index = OK(cc_instr_signature_close(k, sig));
     circle_signature = index;
     cc_constructor_info loop = constructor(index, 1);
     assert(loop.dimensions == 1 && loop.data == 0 && loop.positions == 0);
+    /* Path(i; s, base, base) over [s, base]: the dimension keeps its index. */
+    assert(loop.type == cc_kernel_term(k, CC_PATH, 0, bound(1), bound(0), bound(0), 0));
 }
 
 /* A2: the torus, whose square's inner endpoints are p @ i, and S2, whose
  * outer endpoints are path abstractions ⟨j⟩ base. */
 static void squares(void) {
-    cc_judgement_id sig = OK(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, S_T, 0));
-    cc_entry_id s = OK(cc_instr_extend(k, former_u0(), S_T));
-    sig = OK(cc_instr_signature_constructor(k, sig, var(s), TB));
-    cc_entry_id b = OK(cc_instr_extend(k, var(s), TB));
+    cc_entry_id s = extend(former_u0());
+    cc_judgement_id sig = OK(begin_u0(CC_UNTRUNCATED, s));
+    cc_entry_id b = extend(var(s));
+    sig = OK(cc_instr_signature_constructor(k, sig, var(s), b));
     cc_entry_id i = OK(cc_instr_dimension(k, 0)), j = OK(cc_instr_dimension(k, 1));
     /* p and q : Path(j; s, b, b), over the dimension the square's inner paths use. */
     cc_judgement_id loop_type = OK(cc_instr_path(k, j, var(s), var(b), var(b)));
-    sig = OK(cc_instr_signature_constructor(k, sig, loop_type, TP));
-    cc_entry_id p = OK(cc_instr_extend(k, loop_type, TP));
-    sig = OK(cc_instr_signature_constructor(k, sig, loop_type, TQ));
-    cc_entry_id q = OK(cc_instr_extend(k, loop_type, TQ));
+    cc_entry_id p = extend(loop_type);
+    sig = OK(cc_instr_signature_constructor(k, sig, loop_type, p));
+    cc_entry_id q = extend(loop_type);
+    sig = OK(cc_instr_signature_constructor(k, sig, loop_type, q));
     /* surf : Path(i; Path(j; s, p @ i, p @ i), q, q). At i = 0 the family is
      * Path(j; s, p @ 0, p @ 0), which reduces to q's type; the driver
      * converts q there, as it would. */
@@ -210,7 +207,7 @@ static void squares(void) {
     cc_judgement_id q0 = OK(cc_instr_convert(k, var(q), OK(cc_instr_symmetry(k, eq0))));
     cc_judgement_id q1 = OK(cc_instr_convert(k, var(q), OK(cc_instr_symmetry(k, eq1))));
     cc_judgement_id surf_type = OK(cc_instr_path(k, i, inner, q0, q1));
-    sig = OK(cc_instr_signature_constructor(k, sig, surf_type, SURF));
+    sig = OK(admit(sig, surf_type));
     uint32_t torus = torus_signature = OK(cc_instr_signature_close(k, sig));
     assert(constructor(torus, 3).dimensions == 2);
     /* A10: a square whose sides do not meet the inner paths at a corner.
@@ -218,21 +215,21 @@ static void squares(void) {
      * b, b) meets it at every corner, and the square's path type is formed;
      * r : Path(j; s, c, c), for another point c, does not, and it is not. */
     cc_judgement_id flat_inner = OK(cc_instr_path(k, j, var(s), var(b), var(b)));
-    cc_entry_id side = OK(cc_instr_extend(k, flat_inner, ACC_R + 100));
+    cc_entry_id side = extend(flat_inner);
     OK(cc_instr_path(k, i, flat_inner, var(side), var(side)));
-    cc_entry_id c = OK(cc_instr_extend(k, var(s), ACC_C));
-    cc_entry_id r = OK(cc_instr_extend(k, OK(cc_instr_path(k, j, var(s), var(c), var(c))), ACC_R));
+    cc_entry_id c = extend(var(s));
+    cc_entry_id r = extend(OK(cc_instr_path(k, j, var(s), var(c), var(c))));
     REJECTS(cc_instr_path(k, i, flat_inner, var(r), var(r)), "endpoint has the wrong type");
 
     /* S2: base; surf : Path(i; Path(j; s, base, base), ⟨j⟩ base, ⟨j⟩ base). */
-    sig = OK(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, S_S2, 0));
-    s = OK(cc_instr_extend(k, former_u0(), S_S2));
-    sig = OK(cc_instr_signature_constructor(k, sig, var(s), S2BASE));
-    cc_entry_id base = OK(cc_instr_extend(k, var(s), S2BASE));
+    s = extend(former_u0());
+    sig = OK(begin_u0(CC_UNTRUNCATED, s));
+    cc_entry_id base = extend(var(s));
+    sig = OK(cc_instr_signature_constructor(k, sig, var(s), base));
     cc_judgement_id flat = OK(cc_instr_path(k, j, var(s), var(base), var(base)));
     cc_judgement_id constant = OK(cc_instr_path_lambda(k, j, var(base)));
     cc_judgement_id s2_type = OK(cc_instr_path(k, i, flat, constant, constant));
-    sig = OK(cc_instr_signature_constructor(k, sig, s2_type, S2SURF));
+    sig = OK(admit(sig, s2_type));
     uint32_t sphere = OK(cc_instr_signature_close(k, sig));
     assert(constructor(sphere, 1).dimensions == 2);
 }
@@ -241,15 +238,14 @@ static void squares(void) {
  * constructor with 1, 2 and 3 dimensions. */
 static void truncations(void) {
     const uint32_t modifiers[] = {1, 2, 3};
-    const uint32_t sorts[] = {S_TR, S_Q, S_G};
     for (unsigned m = 0; m < 3; ++m) {
         cc_entry_id xe, ae;
-        uint32_t base = 200 + 10 * m;
-        cc_judgement_id former = former_generic(base, base + 1, &xe, &ae);
-        cc_judgement_id sig = OK(cc_instr_signature_begin(k, former, modifiers[m], sorts[m], 0));
-        cc_entry_id s = OK(cc_instr_extend(k, universe(lvar(base)), sorts[m]));
-        cc_entry_id a = OK(cc_instr_extend(k, var(ae), base + 2));
-        sig = OK(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, a, var(s))), base + 3));
+        cc_judgement_id former = former_generic(&xe, &ae);
+        const cc_entry_id parameters[] = {xe, ae};
+        cc_entry_id s = extend(universe(lvar(xe)));
+        cc_judgement_id sig = OK(cc_instr_signature_begin(k, former, modifiers[m], parameters, 2, s, 0));
+        cc_entry_id a = extend(var(ae));
+        sig = OK(admit(sig, OK(cc_instr_pi(k, a, var(s)))));
         uint32_t index = OK(cc_instr_signature_close(k, sig));
         if (m == 0) trunc_signature = index;
         if (m == 1) set_signature = index;
@@ -259,8 +255,13 @@ static void truncations(void) {
         cc_constructor_info squash = constructor(index, 1);
         assert(squash.generated && squash.data == 0);
         assert(squash.dimensions == modifiers[m] && squash.positions == 2 * modifiers[m]);
-        /* Its type: pairs of cells, then a path type; the carrier is the sort. */
-        assert(kind(squash.type) == CC_PI);
+        /* Its type: pairs of cells, then a path type; the carrier is the
+         * sort. It took no entry, and is stored closed: it mentions none. */
+        assert(kind(squash.type) == CC_PI && !k->nodes[squash.type].contexts);
+        /* The prop squash, Π (y z : s). Path(s, y, z), over the telescope
+         * [x, A, s, point]: the sort is index 1 at its root. */
+        if (m == 0)
+            assert(squash.type == pi(bound(1), pi(bound(2), cc_kernel_term(k, CC_PATH, 0, bound(3), bound(1), bound(0), 0))));
     }
 }
 
@@ -268,37 +269,42 @@ static void truncations(void) {
  * universe parameter, which its constructor type mentions. V24: proposed
  * erased, a parameter a constructor type mentions is refused. */
 static void recorded_parameters(void) {
-    cc_entry_id xe = OK(cc_instr_level(k, Y));
-    cc_judgement_id next = universe(lsucc(lvar(Y)));
-    cc_judgement_id former = OK(cc_instr_level_pi(k, xe, next));
+    cc_entry_id ye = OK(cc_instr_level(k));
+    cc_judgement_id next = universe(lsucc(lvar(ye)));
+    cc_judgement_id former = OK(cc_instr_level_pi(k, ye, next));
+    cc_entry_id s = extend(next);
     /* V14: with nothing to read it from, the parameter is not erasable. */
-    REJECTS(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, S_PT, 0), "determining occurrence");
-    cc_judgement_id sig = OK(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, S_PT, 1));
-    cc_entry_id s = OK(cc_instr_extend(k, next, S_PT));
-    cc_entry_id carrier = OK(cc_instr_extend(k, universe(lvar(Y)), CARRIER));
-    cc_entry_id element = OK(cc_instr_extend(k, var(carrier), ELEMENT));
+    REJECTS(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, &ye, 1, s, 0), "determining occurrence");
+    cc_judgement_id sig = OK(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, &ye, 1, s, 1));
+    cc_entry_id carrier = extend(universe(lvar(ye)));
+    cc_entry_id element = extend(var(carrier));
     cc_judgement_id pt_type = OK(cc_instr_pi(k, carrier, OK(cc_instr_pi(k, element, var(s)))));
     /* pt's type lives in U(y + 1), the declared level. */
-    sig = OK(cc_instr_signature_constructor(k, sig, pt_type, PT));
+    sig = OK(admit(sig, pt_type));
     uint32_t index = OK(cc_instr_signature_close(k, sig));
     pointed_signature = index;
     assert(signature(index).recorded == 1 && constructor(index, 0).data == 2);
+    /* pt : Π (X : U(y)). Π (x : X). s over [y, s]: its recorded level is
+     * index 1 at the root. */
+    assert(constructor(index, 0).type == pi(cc_kernel_term(k, CC_U, 0, bound(1), 0, 0, 0), pi(bound(0), bound(2))));
 
     /* Holder(x < ω, A : U(x)) : U(x + 1) { hold(B : U(x)); } with x proposed
      * erased: A : U(x) determines it, but hold's type mentions it. */
-    cc_entry_id he = OK(cc_instr_level(k, X));
-    cc_judgement_id ux = universe(lvar(X));
-    cc_entry_id ha = OK(cc_instr_extend(k, ux, A));
-    cc_judgement_id hnext = universe(lsucc(lvar(X)));
+    cc_entry_id he = OK(cc_instr_level(k));
+    cc_judgement_id ux = universe(lvar(he));
+    cc_entry_id ha = extend(ux);
+    cc_judgement_id hnext = universe(lsucc(lvar(he)));
     cc_judgement_id hformer = OK(cc_instr_level_pi(k, he, OK(cc_instr_pi(k, ha, hnext))));
-    cc_judgement_id hsig = OK(cc_instr_signature_begin(k, hformer, CC_UNTRUNCATED, S_H, 0));
-    cc_entry_id hs = OK(cc_instr_extend(k, hnext, S_H));
-    cc_entry_id hb = OK(cc_instr_extend(k, ux, HB));
+    const cc_entry_id hparameters[] = {he, ha};
+    cc_entry_id hs = extend(hnext);
+    cc_judgement_id hsig = OK(cc_instr_signature_begin(k, hformer, CC_UNTRUNCATED, hparameters, 2, hs, 0));
+    cc_entry_id hb = extend(ux);
     cc_judgement_id hold_type = OK(cc_instr_pi(k, hb, var(hs)));
-    REJECTS(cc_instr_signature_constructor(k, hsig, hold_type, HOLD), "erased universe parameter");
-    /* Recorded, the same signature is admitted. */
-    cc_judgement_id recorded = OK(cc_instr_signature_begin(k, hformer, CC_UNTRUNCATED, S_H, 1));
-    recorded = OK(cc_instr_signature_constructor(k, recorded, hold_type, HOLD));
+    cc_entry_id hold = extend(hold_type);
+    REJECTS(cc_instr_signature_constructor(k, hsig, hold_type, hold), "erased universe parameter");
+    /* Recorded, the same signature is admitted, over the same entries. */
+    cc_judgement_id recorded = OK(cc_instr_signature_begin(k, hformer, CC_UNTRUNCATED, hparameters, 2, hs, 1));
+    recorded = OK(cc_instr_signature_constructor(k, recorded, hold_type, hold));
     OK(cc_instr_signature_close(k, recorded));
 }
 
@@ -351,14 +357,15 @@ static void instances(void) {
 
     /* V15: Both(x < ω, A, B : U(x)) { mk(a : A, b : B); }: two readings of x
      * must agree; lifting the lower parameter makes them agree. */
-    cc_entry_id xe = OK(cc_instr_level(k, X));
-    cc_judgement_id ux = universe(lvar(X));
-    cc_entry_id ae = OK(cc_instr_extend(k, ux, A)), be = OK(cc_instr_extend(k, ux, B));
+    cc_entry_id xe = OK(cc_instr_level(k));
+    cc_judgement_id ux = universe(lvar(xe));
+    cc_entry_id ae = extend(ux), be = extend(ux);
     cc_judgement_id former = OK(cc_instr_level_pi(k, xe, OK(cc_instr_pi(k, ae, OK(cc_instr_pi(k, be, ux))))));
-    cc_judgement_id sig = OK(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, S_BOTH, 0));
-    cc_entry_id s = OK(cc_instr_extend(k, ux, S_BOTH));
-    cc_entry_id a = OK(cc_instr_extend(k, var(ae), BOTH_A)), b = OK(cc_instr_extend(k, var(be), BOTH_B));
-    sig = OK(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, a, OK(cc_instr_pi(k, b, var(s))))), MK));
+    const cc_entry_id parameters[] = {xe, ae, be};
+    cc_entry_id s = extend(ux);
+    cc_judgement_id sig = OK(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, parameters, 3, s, 0));
+    cc_entry_id a = extend(var(ae)), b = extend(var(be));
+    sig = OK(admit(sig, OK(cc_instr_pi(k, a, OK(cc_instr_pi(k, b, var(s)))))));
     uint32_t both = OK(cc_instr_signature_close(k, sig));
     cc_judgement_id unit1 = OK(cc_instr_lift(k, OK(cc_instr_unit(k)), universe(lconst(1))));
     cc_judgement_id half = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, both)), nat));
@@ -369,17 +376,19 @@ static void instances(void) {
     /* V16: λ (x < ω). Trunc(U(x)) at 0 is Trunc(U(0)) : U(1), by LevelApply and
      * a Beta step: level substitution reaches the instance's parameters. */
     cc_judgement_id trunc_ux = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, trunc_signature)), ux));
-    assert(type_of(trunc_ux) == term_of(universe(lsucc(lvar(X)))));
+    assert(type_of(trunc_ux) == term_of(universe(lsucc(lvar(xe)))));
     cc_judgement_id at0 = OK(cc_instr_level_apply(k, OK(cc_instr_level_lambda(k, xe, trunc_ux)), lconst(0)));
     assert(type_of(at0) == term_of(universe(lconst(1))));
     cc_judgement_id reduced = OK(cc_instr_step(k, OK(cc_instr_refl(k, at0)), 1, NULL, 0, CC_STEP_BETA));
     cc_term instance = info(reduced).other;
     assert(kind(instance) == CC_SORT && child(child(instance, 0), 0) == term_of(universe(lconst(0))));
-    /* A recorded level may be a level variable in the context, and no other;
-     * an instance in progress has no constructors. */
-    cc_judgement_id px = OK(cc_instr_sort_level(k, p, lvar(X)));
-    assert(type_of(px) == term_of(universe(lsucc(lvar(X)))) && cc_kernel_judgement_context(k, px, 0) == xe);
-    REJECTS(cc_instr_sort_level(k, p, lvar(S_GONE)), "Unbound level variable");
+    /* A recorded level may be a level variable in the context, and no other:
+     * not a bound one with no binder, nor a term entry; an instance in
+     * progress has no constructors. */
+    cc_judgement_id px = OK(cc_instr_sort_level(k, p, lvar(xe)));
+    assert(type_of(px) == term_of(universe(lsucc(lvar(xe)))) && cc_kernel_judgement_context(k, px, 0) == xe);
+    REJECTS(cc_instr_sort_level(k, p, bound(0)), "Unbound level variable");
+    REJECTS(cc_instr_sort_level(k, p, lvar(ae)), "A term variable is not a level.");
     REJECTS(cc_instr_construct(k, p, 0), "Expected a typing judgement");
     REJECTS(cc_instr_sort_level(k, p0, lconst(0)), "Expected an instance in progress");
 
@@ -399,7 +408,7 @@ static void instances(void) {
 
     /* Tree(Nat, λ n. Nat) : U0; sup : Π (l : Nat). Π (c : Π (b : (λ n. Nat)(l)). T). T,
      * with T the instance: the position's arity is instantiated too. */
-    cc_entry_id tn = OK(cc_instr_extend(k, nat, TREE_N));
+    cc_entry_id tn = extend(nat);
     cc_judgement_id tree = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_parameter(k,
         OK(cc_instr_sort_begin(k, tree_signature)), nat)), OK(cc_instr_lambda(k, tn, nat))));
     assert(type_of(tree) == term_of(universe(lconst(0))));
@@ -407,35 +416,35 @@ static void instances(void) {
      * of the arguments supplied, and a later argument would be dropped. */
     cc_judgement_id half_tree = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, tree_signature)), nat));
     REJECTS(cc_instr_step(k, half_tree, 0, NULL, 0, CC_STEP_WHNF), "not rewritten");
-    REJECTS(cc_instr_replace(k, half_tree, 0, (const uint8_t[]){0, 0}, 2, OK(cc_instr_refl(k, nat))), "not rewritten");
+    REJECTS(cc_instr_replace(k, half_tree, 0, (const uint8_t[]){0, 0}, 2, OK(cc_instr_refl(k, nat)), NULL, 0),
+            "not rewritten");
     cc_term sup = type_of(OK(cc_instr_construct(k, tree, 0)));
     cc_term position = child(child(sup, 1), 0);
     assert(kind(child(sup, 0)) == CC_SORT && kind(position) == CC_PI && kind(child(position, 0)) == CC_APP);
     assert(child(position, 1) == term_of(tree) && child(child(sup, 1), 1) == term_of(tree));
 
     /* Constructor expressions at an instance: fix : wrap(⟨i⟩ loop @ i) = base,
-     * and collapse's λ, mention the signature's names nowhere, in the
-     * annotations they carry included. */
+     * and collapse's λ, mention none of the entries the signature was
+     * admitted with, nor any other, and no loose index, in the annotations
+     * they carry included: the instance closes the telescope. */
     cc_term fix = type_of(OK(cc_instr_construct(k, OK(cc_instr_sort_begin(k, wrapped_signature)), 3)));
-    const uint32_t wrapped_names[] = {S_WR, WR_BASE, WR_LOOP, WR_WRAP, WR_P};
-    for (unsigned n = 0; n < 5; ++n) assert(!ck_term_free(k, fix, wrapped_names[n]));
+    assert(!k->nodes[fix].contexts && !k->nodes[fix].loose);
     cc_term wrap_at = child(fix, 1);
     assert(kind(wrap_at) == CC_APP && kind(child(wrap_at, 0)) == CC_CON && payload(child(wrap_at, 0)) == 2);
     cc_judgement_id branch = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, branch_signature)), nat));
     cc_term collapse = type_of(OK(cc_instr_construct(k, branch, 2)));
-    const uint32_t branch_names[] = {S_BR, BR_A, BR_LEAF, BR_NODE};
-    for (unsigned n = 0; n < 4; ++n) assert(!ck_term_free(k, collapse, branch_names[n]));
+    assert(!k->nodes[collapse].contexts && !k->nodes[collapse].loose);
 
     /* Section 5.3's refusals: an open signature, and a rolled-back one. */
-    cc_judgement_id open = OK(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, S_OPEN, 0));
+    cc_entry_id os = extend(former_u0());
+    cc_judgement_id open = OK(begin_u0(CC_UNTRUNCATED, os));
     REJECTS(cc_instr_sort_begin(k, payload(term_of(open))), "Only an admitted signature");
-    cc_entry_id os = OK(cc_instr_extend(k, former_u0(), S_OPEN));
-    OK(cc_instr_signature_close(k, OK(cc_instr_signature_constructor(k, open, var(os), OPEN_C))));
+    OK(cc_instr_signature_close(k, OK(admit(open, var(os)))));
     REJECTS(cc_instr_sort_begin(k, 0), "Only an admitted signature");
     cc_kernel_checkpoint(k);
-    cc_judgement_id gone = OK(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, S_GONE, 0));
-    cc_entry_id gs = OK(cc_instr_extend(k, former_u0(), S_GONE));
-    uint32_t forgotten = OK(cc_instr_signature_close(k, OK(cc_instr_signature_constructor(k, gone, var(gs), OPEN_C))));
+    cc_entry_id gs = extend(former_u0());
+    cc_judgement_id gone = OK(begin_u0(CC_UNTRUNCATED, gs));
+    uint32_t forgotten = OK(cc_instr_signature_close(k, OK(admit(gone, var(gs)))));
     OK(cc_instr_sort_begin(k, forgotten));
     cc_kernel_rollback(k);
     REJECTS(cc_instr_sort_begin(k, forgotten), "Only an admitted signature");
@@ -446,44 +455,51 @@ static void instances(void) {
 static void shapes(void) {
     /* V4: Tree(x, y < ω, L : U(x), B : L → U(y)) : U(max(x, y))
      * { sup(l : L, c : Π (b : B(l)). s); }: a position of arity one. */
-    cc_entry_id xe = OK(cc_instr_level(k, X)), ye = OK(cc_instr_level(k, Y));
-    cc_judgement_id ux = universe(lvar(X)), uy = universe(lvar(Y));
-    cc_judgement_id top = universe(cc_kernel_term(k, CC_LMAX, 0, lvar(X), lvar(Y), 0, 0));
-    cc_entry_id le = OK(cc_instr_extend(k, ux, TREE_L));
-    cc_entry_id arg = OK(cc_instr_extend(k, var(le), TREE_ARG));
-    cc_entry_id be = OK(cc_instr_extend(k, OK(cc_instr_pi(k, arg, uy)), TREE_B));
+    cc_entry_id xe = OK(cc_instr_level(k)), ye = OK(cc_instr_level(k));
+    cc_judgement_id ux = universe(lvar(xe)), uy = universe(lvar(ye));
+    cc_judgement_id top = universe(cc_kernel_term(k, CC_LMAX, 0, lvar(xe), lvar(ye), 0, 0));
+    cc_entry_id le = extend(ux);
+    cc_entry_id arg = extend(var(le));
+    cc_entry_id be = extend(OK(cc_instr_pi(k, arg, uy)));
     cc_judgement_id former = OK(cc_instr_level_pi(k, xe, OK(cc_instr_level_pi(k, ye,
         OK(cc_instr_pi(k, le, OK(cc_instr_pi(k, be, top))))))));
-    cc_judgement_id sig = OK(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, S_TREE, 0));
-    cc_entry_id s = OK(cc_instr_extend(k, top, S_TREE));
-    cc_entry_id l = OK(cc_instr_extend(k, var(le), TREE_LV));
-    cc_entry_id b = OK(cc_instr_extend(k, OK(cc_instr_apply(k, var(be), var(l))), TREE_BV));
-    cc_entry_id c = OK(cc_instr_extend(k, OK(cc_instr_pi(k, b, var(s))), TREE_C));
-    sig = OK(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, l, OK(cc_instr_pi(k, c, var(s))))), SUP));
+    const cc_entry_id tree_parameters[] = {xe, ye, le, be};
+    cc_entry_id s = extend(top);
+    cc_judgement_id sig = OK(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, tree_parameters, 4, s, 0));
+    cc_entry_id l = extend(var(le));
+    cc_entry_id b = extend(OK(cc_instr_apply(k, var(be), var(l))));
+    cc_entry_id c = extend(OK(cc_instr_pi(k, b, var(s))));
+    sig = OK(admit(sig, OK(cc_instr_pi(k, l, OK(cc_instr_pi(k, c, var(s)))))));
     uint32_t tree = tree_signature = OK(cc_instr_signature_close(k, sig));
     assert(signature(tree).level_count == 2 && signature(tree).recorded == 0);
     cc_constructor_info sup = constructor(tree, 0);
     assert(sup.data == 1 && sup.positions == 1 && sup.dimensions == 0);
+    /* sup : Π (l : L). Π (c : Π (b : B(l)). s). s over [x, y, L, B, s]: the
+     * position's arity applies B, index 2 under l, to the data argument l,
+     * index 0. */
+    cc_term arity = pi(cc_kernel_term(k, CC_APP, 0, bound(2), bound(0), 0, 0), bound(2));
+    assert(sup.type == pi(bound(2), pi(arity, bound(2))));
 
     /* A3: Quotient(x < ω, A : U(x), R : A → A → U(x)) : set
      * { cls(a : A); eq(a b : A, r : R a b) : Path(s, cls(a), cls(b)); }: a
      * boundary applies an earlier constructor to data. */
-    cc_entry_id qa = OK(cc_instr_extend(k, ux, QUO_A));
-    cc_entry_id q1 = OK(cc_instr_extend(k, var(qa), QUO_ARG1)), q2 = OK(cc_instr_extend(k, var(qa), QUO_ARG2));
-    cc_entry_id qr = OK(cc_instr_extend(k, OK(cc_instr_pi(k, q1, OK(cc_instr_pi(k, q2, ux)))), QUO_R));
+    cc_entry_id qa = extend(ux);
+    cc_entry_id q1 = extend(var(qa)), q2 = extend(var(qa));
+    cc_entry_id qr = extend(OK(cc_instr_pi(k, q1, OK(cc_instr_pi(k, q2, ux)))));
     former = OK(cc_instr_level_pi(k, xe, OK(cc_instr_pi(k, qa, OK(cc_instr_pi(k, qr, ux))))));
-    sig = OK(cc_instr_signature_begin(k, former, 2, S_QUO, 0));
-    s = OK(cc_instr_extend(k, ux, S_QUO));
-    cc_entry_id a = OK(cc_instr_extend(k, var(qa), QUO_X)), y = OK(cc_instr_extend(k, var(qa), QUO_Y));
+    const cc_entry_id quotient_parameters[] = {xe, qa, qr};
+    s = extend(ux);
+    sig = OK(cc_instr_signature_begin(k, former, 2, quotient_parameters, 3, s, 0));
+    cc_entry_id a = extend(var(qa)), y = extend(var(qa));
     cc_judgement_id cls_type = OK(cc_instr_pi(k, a, var(s)));
-    sig = OK(cc_instr_signature_constructor(k, sig, cls_type, CLS));
-    cc_entry_id cls = OK(cc_instr_extend(k, cls_type, CLS));
-    cc_entry_id r = OK(cc_instr_extend(k, OK(cc_instr_apply(k, OK(cc_instr_apply(k, var(qr), var(a))), var(y))), QUO_RR));
+    cc_entry_id cls = extend(cls_type);
+    sig = OK(cc_instr_signature_constructor(k, sig, cls_type, cls));
+    cc_entry_id r = extend(OK(cc_instr_apply(k, OK(cc_instr_apply(k, var(qr), var(a))), var(y))));
     cc_entry_id i = OK(cc_instr_dimension(k, 0)), j = OK(cc_instr_dimension(k, 1));
     cc_judgement_id related = OK(cc_instr_path(k, i, var(s), OK(cc_instr_apply(k, var(cls), var(a))),
                                                OK(cc_instr_apply(k, var(cls), var(y)))));
     cc_judgement_id eq_type = OK(cc_instr_pi(k, a, OK(cc_instr_pi(k, y, OK(cc_instr_pi(k, r, related))))));
-    sig = OK(cc_instr_signature_constructor(k, sig, eq_type, QEQ));
+    sig = OK(admit(sig, eq_type));
     uint32_t quotient = quotient_signature = OK(cc_instr_signature_close(k, sig));
     cc_constructor_info eq = constructor(quotient, 1);
     assert(eq.data == 3 && eq.positions == 0 && eq.dimensions == 1);
@@ -491,27 +507,27 @@ static void shapes(void) {
 
     /* A15: Cantor : set { leaf; node(f : Nat → s); }, infinitary. */
     cc_judgement_id nat = OK(fixture_nat(k));
-    sig = OK(cc_instr_signature_begin(k, former_u0(), 2, S_CAN, 0));
-    s = OK(cc_instr_extend(k, former_u0(), S_CAN));
-    sig = OK(cc_instr_signature_constructor(k, sig, var(s), CAN_LEAF));
-    cc_entry_id f = OK(cc_instr_extend(k, OK(cc_instr_pi(k, OK(cc_instr_extend(k, nat, CAN_N)), var(s))), CAN_F));
-    sig = OK(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, f, var(s))), CAN_NODE));
+    s = extend(former_u0());
+    sig = OK(begin_u0(2, s));
+    sig = OK(admit(sig, var(s)));
+    cc_entry_id f = extend(OK(cc_instr_pi(k, extend(nat), var(s))));
+    sig = OK(admit(sig, OK(cc_instr_pi(k, f, var(s)))));
     uint32_t cantor = OK(cc_instr_signature_close(k, sig));
     assert(constructor(cantor, 1).positions == 1 && constructor(cantor, 2).generated);
 
     /* A16: base; loop : base = base; wrap(p : base = base);
      * fix : wrap(⟨i⟩ loop @ i) = base: a positional argument of path type
      * given as a path abstraction. */
-    sig = OK(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, S_WR, 0));
-    s = OK(cc_instr_extend(k, former_u0(), S_WR));
-    sig = OK(cc_instr_signature_constructor(k, sig, var(s), WR_BASE));
-    cc_entry_id base = OK(cc_instr_extend(k, var(s), WR_BASE));
+    s = extend(former_u0());
+    sig = OK(begin_u0(CC_UNTRUNCATED, s));
+    cc_entry_id base = extend(var(s));
+    sig = OK(cc_instr_signature_constructor(k, sig, var(s), base));
     cc_judgement_id loop_type = OK(cc_instr_path(k, i, var(s), var(base), var(base)));
-    sig = OK(cc_instr_signature_constructor(k, sig, loop_type, WR_LOOP));
-    cc_entry_id loop = OK(cc_instr_extend(k, loop_type, WR_LOOP));
-    cc_judgement_id wrap_type = OK(cc_instr_pi(k, OK(cc_instr_extend(k, loop_type, WR_P)), var(s)));
-    sig = OK(cc_instr_signature_constructor(k, sig, wrap_type, WR_WRAP));
-    cc_entry_id wrap = OK(cc_instr_extend(k, wrap_type, WR_WRAP));
+    cc_entry_id loop = extend(loop_type);
+    sig = OK(cc_instr_signature_constructor(k, sig, loop_type, loop));
+    cc_judgement_id wrap_type = OK(cc_instr_pi(k, extend(loop_type), var(s)));
+    cc_entry_id wrap = extend(wrap_type);
+    sig = OK(cc_instr_signature_constructor(k, sig, wrap_type, wrap));
     /* ⟨i⟩ loop @ i : Path(i; s, loop @ 0, loop @ 1), which the path steps
      * bring to loop's type. */
     cc_judgement_id line = OK(cc_instr_path_lambda(k, i, OK(cc_instr_path_apply(k, var(loop), i, 0))));
@@ -522,38 +538,45 @@ static void shapes(void) {
     to_loop = OK(cc_instr_step(k, to_loop, 1, (const uint8_t[]){2}, 1, CC_STEP_PATH));
     line = OK(cc_instr_convert(k, line, to_loop));
     cc_judgement_id fix_type = OK(cc_instr_path(k, j, var(s), OK(cc_instr_apply(k, var(wrap), line)), var(base)));
-    sig = OK(cc_instr_signature_constructor(k, sig, fix_type, WR_FIX));
+    sig = OK(admit(sig, fix_type));
     uint32_t wrapped = wrapped_signature = OK(cc_instr_signature_close(k, sig));
     assert(constructor(wrapped, 2).positions == 1 && constructor(wrapped, 3).dimensions == 1);
+    /* fix's stored type is over [s, base, loop, wrap]: its family is the
+     * sort, index 3, and its boundary heads are the earlier constructors'
+     * indices: wrap(…) applies index 0, and base is index 2. */
+    cc_term stored_fix = constructor(wrapped, 3).type;
+    assert(kind(stored_fix) == CC_PATH && child(stored_fix, 0) == bound(3) && child(stored_fix, 2) == bound(2));
+    assert(kind(child(stored_fix, 1)) == CC_APP && child(child(stored_fix, 1), 0) == bound(0));
 
     /* Branch(A : U0) { leaf; node(f : A → s); collapse(f : A → s) :
      * node(λ x. f x) = leaf; }: a λ as a positional argument. */
-    cc_entry_id pa = OK(cc_instr_extend(k, former_u0(), BR_A));
-    sig = OK(cc_instr_signature_begin(k, OK(cc_instr_pi(k, pa, former_u0())), CC_UNTRUNCATED, S_BR, 0));
-    s = OK(cc_instr_extend(k, former_u0(), S_BR));
-    sig = OK(cc_instr_signature_constructor(k, sig, var(s), BR_LEAF));
-    cc_entry_id leaf = OK(cc_instr_extend(k, var(s), BR_LEAF));
-    cc_entry_id x = OK(cc_instr_extend(k, var(pa), BR_X));
-    cc_entry_id g = OK(cc_instr_extend(k, OK(cc_instr_pi(k, x, var(s))), BR_F));
+    cc_entry_id pa = extend(former_u0());
+    s = extend(former_u0());
+    sig = OK(cc_instr_signature_begin(k, OK(cc_instr_pi(k, pa, former_u0())), CC_UNTRUNCATED, &pa, 1, s, 0));
+    cc_entry_id leaf = extend(var(s));
+    sig = OK(cc_instr_signature_constructor(k, sig, var(s), leaf));
+    cc_entry_id x = extend(var(pa));
+    cc_entry_id g = extend(OK(cc_instr_pi(k, x, var(s))));
     cc_judgement_id node_type = OK(cc_instr_pi(k, g, var(s)));
-    sig = OK(cc_instr_signature_constructor(k, sig, node_type, BR_NODE));
-    cc_entry_id node_entry = OK(cc_instr_extend(k, node_type, BR_NODE));
+    cc_entry_id node_entry = extend(node_type);
+    sig = OK(cc_instr_signature_constructor(k, sig, node_type, node_entry));
     cc_judgement_id expanded = OK(cc_instr_lambda(k, x, OK(cc_instr_apply(k, var(g), var(x)))));
     cc_judgement_id collapse = OK(cc_instr_pi(k, g, OK(cc_instr_path(k, i, var(s),
         OK(cc_instr_apply(k, var(node_entry), expanded)), var(leaf)))));
-    sig = OK(cc_instr_signature_constructor(k, sig, collapse, BR_COLLAPSE));
+    sig = OK(admit(sig, collapse));
     uint32_t branch = branch_signature = OK(cc_instr_signature_close(k, sig));
     assert(constructor(branch, 2).positions == 1 && constructor(branch, 2).dimensions == 1);
 
     /* V25: Tagged(x, y < ω, A : U(x)) : U(max(x, y + 1)) { tag(a : A, B : U(y)); },
      * x erased and y recorded. */
-    cc_judgement_id tagged_top = universe(cc_kernel_term(k, CC_LMAX, 0, lvar(X), lsucc(lvar(Y)), 0, 0));
-    cc_entry_id ta = OK(cc_instr_extend(k, ux, TAG_A));
+    cc_judgement_id tagged_top = universe(cc_kernel_term(k, CC_LMAX, 0, lvar(xe), lsucc(lvar(ye)), 0, 0));
+    cc_entry_id ta = extend(ux);
     former = OK(cc_instr_level_pi(k, xe, OK(cc_instr_level_pi(k, ye, OK(cc_instr_pi(k, ta, tagged_top))))));
-    sig = OK(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, S_TAG, 2));
-    s = OK(cc_instr_extend(k, tagged_top, S_TAG));
-    cc_entry_id tx = OK(cc_instr_extend(k, var(ta), TAG_X)), tb = OK(cc_instr_extend(k, uy, TAG_B));
-    sig = OK(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, tx, OK(cc_instr_pi(k, tb, var(s))))), TAG));
+    const cc_entry_id tagged_parameters[] = {xe, ye, ta};
+    s = extend(tagged_top);
+    sig = OK(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, tagged_parameters, 3, s, 2));
+    cc_entry_id tx = extend(var(ta)), tb = extend(uy);
+    sig = OK(admit(sig, OK(cc_instr_pi(k, tx, OK(cc_instr_pi(k, tb, var(s)))))));
     uint32_t tagged = tagged_signature = OK(cc_instr_signature_close(k, sig));
     assert(signature(tagged).recorded == 2 && constructor(tagged, 0).data == 2);
 }
@@ -562,26 +585,25 @@ static void shapes(void) {
  * A path application's annotation, whose endpoints the path step exposes,
  * and a path abstraction's family may hide nothing. */
 static void carried_types(void) {
-    cc_judgement_id sig = OK(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, S_HID, 0));
-    cc_entry_id s = OK(cc_instr_extend(k, former_u0(), S_HID));
-    sig = OK(cc_instr_signature_constructor(k, sig, var(s), HID_BASE));
-    cc_entry_id base = OK(cc_instr_extend(k, var(s), HID_BASE));
+    cc_entry_id s = extend(former_u0());
+    cc_judgement_id sig = OK(begin_u0(CC_UNTRUNCATED, s));
+    cc_entry_id base = extend(var(s));
+    sig = OK(cc_instr_signature_constructor(k, sig, var(s), base));
     cc_entry_id i = OK(cc_instr_dimension(k, 0)), j = OK(cc_instr_dimension(k, 1));
     cc_judgement_id loop_type = OK(cc_instr_path(k, i, var(s), var(base), var(base)));
-    sig = OK(cc_instr_signature_constructor(k, sig, loop_type, HID_LOOP));
-    cc_entry_id loop = OK(cc_instr_extend(k, loop_type, HID_LOOP));
+    cc_entry_id loop = extend(loop_type);
+    sig = OK(cc_instr_signature_constructor(k, sig, loop_type, loop));
     /* loop, at Path(i; s, (λ (y : s). y)(base), base): loop @ 0 steps to the redex. */
-    cc_entry_id y = OK(cc_instr_extend(k, var(s), HID_Y));
+    cc_entry_id y = extend(var(s));
     cc_judgement_id redex = OK(cc_instr_apply(k, OK(cc_instr_lambda(k, y, var(y))), var(base)));
     cc_judgement_id hidden_type = OK(cc_instr_path(k, i, var(s), redex, var(base)));
     cc_judgement_id unfolded = OK(cc_instr_step(k, OK(cc_instr_refl(k, hidden_type)), 1, (const uint8_t[]){1}, 1,
                                                 CC_STEP_BETA));
     cc_judgement_id hidden = OK(cc_instr_convert(k, var(loop), OK(cc_instr_symmetry(k, unfolded))));
     cc_judgement_id at0 = OK(cc_instr_path_apply(k, hidden, 0, 0));
-    REJECTS(cc_instr_signature_constructor(k, sig, OK(cc_instr_path(k, j, var(s), at0, var(base))), HID_C),
-            "constructor expression");
+    REJECTS(admit(sig, OK(cc_instr_path(k, j, var(s), at0, var(base)))), "constructor expression");
     /* ⟨j⟩ base, with base at (λ (T : U0). T)(s): its family is no cube. */
-    cc_entry_id t = OK(cc_instr_extend(k, former_u0(), HID_T));
+    cc_entry_id t = extend(former_u0());
     cc_judgement_id ids = OK(cc_instr_apply(k, OK(cc_instr_lambda(k, t, var(t))), var(s)));
     cc_judgement_id to_s = OK(cc_instr_step(k, OK(cc_instr_refl(k, ids)), 1, NULL, 0, CC_STEP_BETA));
     cc_judgement_id base_ids = OK(cc_instr_convert(k, var(base), OK(cc_instr_symmetry(k, to_s))));
@@ -591,63 +613,73 @@ static void carried_types(void) {
     line = OK(cc_instr_convert(k, line, flatten));
     cc_judgement_id flat = OK(cc_instr_path(k, j, var(s), var(base), var(base)));
     cc_judgement_id constant = OK(cc_instr_path_lambda(k, j, var(base)));
-    REJECTS(cc_instr_signature_constructor(k, sig, OK(cc_instr_path(k, i, flat, line, constant)), HID_C),
-            "not a cube over the sort");
+    REJECTS(admit(sig, OK(cc_instr_path(k, i, flat, line, constant))), "not a cube over the sort");
     /* As written, loop @ 0 is admitted. */
-    sig = OK(cc_instr_signature_constructor(k, sig, OK(cc_instr_path(k, j, var(s),
-        OK(cc_instr_path_apply(k, var(loop), 0, 0)), var(base))), HID_C));
+    sig = OK(admit(sig, OK(cc_instr_path(k, j, var(s), OK(cc_instr_path_apply(k, var(loop), 0, 0)), var(base)))));
     OK(cc_instr_signature_close(k, sig));
 }
 
 /* Q10: each admission is a new sort, and the gate and a signature's state
- * are checked on every call: none is answered from the derivation cache. The
- * names a signature takes are reserved from the fresh-symbol supply. */
+ * are checked on every call: none is answered from the derivation cache.
+ * Two admissions over the same entries are two sorts. */
 static void generative(void) {
-    cc_judgement_id first = OK(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, S_GEN, 0));
-    cc_judgement_id second = OK(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, S_GEN, 0));
+    cc_entry_id s = extend(former_u0());
+    cc_judgement_id first = OK(begin_u0(CC_UNTRUNCATED, s));
+    cc_judgement_id second = OK(begin_u0(CC_UNTRUNCATED, s));
     assert(first != second && term_of(first) != term_of(second));
     cc_kernel_set_extensions(k, 0);
-    REJECTS(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, S_GEN, 0), "switched off");
+    REJECTS(begin_u0(CC_UNTRUNCATED, s), "switched off");
     cc_kernel_set_extensions(k, CC_EXTENSION_H1);
-    cc_entry_id s = OK(cc_instr_extend(k, former_u0(), S_GEN));
-    cc_judgement_id next = OK(cc_instr_signature_constructor(k, first, var(s), GEN_C));
-    REJECTS(cc_instr_signature_constructor(k, first, var(s), GEN_C), "latest");
+    cc_entry_id c = extend(var(s));
+    cc_judgement_id next = OK(cc_instr_signature_constructor(k, first, var(s), c));
+    REJECTS(cc_instr_signature_constructor(k, first, var(s), c), "latest");
     /* Rewriting would copy a signature judgement without its state. */
     REJECTS(cc_instr_step(k, first, 2, NULL, 0, CC_STEP_WHNF), "not rewritten");
-    REJECTS(cc_instr_replace(k, first, 2, NULL, 0, OK(cc_instr_refl(k, former_u0()))), "not rewritten");
+    REJECTS(cc_instr_replace(k, first, 2, NULL, 0, OK(cc_instr_refl(k, former_u0())), NULL, 0), "not rewritten");
     OK(cc_instr_signature_close(k, next));
-    REJECTS(cc_instr_signature_constructor(k, first, var(s), GEN_C), "already admitted");
-    OK(cc_instr_signature_close(k, OK(cc_instr_signature_constructor(k, second, var(s), GEN_C))));
+    REJECTS(cc_instr_signature_constructor(k, first, var(s), c), "already admitted");
+    /* The constructor's entry stands for it in the first signature only: the
+     * second takes it too. */
+    OK(cc_instr_signature_close(k, OK(cc_instr_signature_constructor(k, second, var(s), c))));
 
-    /* A prop signature whose sort and constructor symbols are the next the
-     * supply would give: the squash's names avoid both. */
-    uint32_t sort = cc_kernel_fresh_symbol(k) + 1, point = sort + 1;
-    cc_judgement_id sig = OK(cc_instr_signature_begin(k, former_u0(), 1, sort, 0));
-    cc_entry_id own = OK(cc_instr_extend(k, former_u0(), sort));
+    /* A prop signature: its squash takes no entry and has no name. It is
+     * reported generated, at Π (y z : s). Path(s, y, z) closed over the
+     * telescope [s, point], the sort index 1 at the root, and the point's
+     * entry is not in it. */
+    cc_entry_id own = extend(former_u0());
+    cc_judgement_id sig = OK(begin_u0(1, own));
+    cc_entry_id point = extend(var(own));
     sig = OK(cc_instr_signature_constructor(k, sig, var(own), point));
     uint32_t index = OK(cc_instr_signature_close(k, sig));
     cc_constructor_info squash = constructor(index, 1);
-    assert(squash.symbol != point && squash.symbol != sort && cc_kernel_fresh_symbol(k) > point);
+    assert(squash.generated && squash.dimensions == 1 && squash.positions == 2 && !squash.data);
+    assert(squash.type == pi(bound(1), pi(bound(2), cc_kernel_term(k, CC_PATH, 0, bound(3), bound(1), bound(0), 0))));
+    assert(!k->nodes[squash.type].contexts && constructor(index, 0).type == bound(0));
 
     /* An instance's recorded levels compare by normal form, under binders
      * too: Sort(i; ; [x]) = Sort(i; ; [max(x, x)]), and
-     * λ (x < ω). Sort(i; ; [x]) = λ (y < ω). Sort(i; ; [max(y, y)]). */
-    cc_term by_x = cc_kernel_term(k, CC_LIST, 0, lvar(X), 0, 0, 0);
-    cc_term by_max = cc_kernel_term(k, CC_LIST, 0, cc_kernel_term(k, CC_LMAX, 0, lvar(X), lvar(X), 0, 0), 0, 0, 0);
+     * λ (x < ω). Sort(i; ; [x]) = λ (y < ω). Sort(i; ; [max(y, y)]), where
+     * the bound level is index 0 on both sides. */
+    cc_entry_id xe = OK(cc_instr_level(k)), ye = OK(cc_instr_level(k));
+    cc_term by_x = cc_kernel_term(k, CC_LIST, 0, lvar(xe), 0, 0, 0);
+    cc_term by_max = cc_kernel_term(k, CC_LIST, 0, cc_kernel_term(k, CC_LMAX, 0, lvar(xe), lvar(xe), 0, 0), 0, 0, 0);
     cc_term sort_x = cc_kernel_term(k, CC_SORT, index, 0, by_x, 0, 0);
     cc_term sort_max = cc_kernel_term(k, CC_SORT, index, 0, by_max, 0, 0);
     assert(sort_x != sort_max && ck_alpha_equal(k, sort_x, sort_max));
-    cc_term by_y = cc_kernel_term(k, CC_LIST, 0, cc_kernel_term(k, CC_LMAX, 0, lvar(Y), lvar(Y), 0, 0), 0, 0, 0);
-    cc_term bound = cc_kernel_term(k, CC_LBOUND, 1, 0, 0, 0, 0);
-    cc_term over_x = cc_kernel_term(k, CC_LLAM, X, bound, sort_x, 0, 0);
-    cc_term over_y = cc_kernel_term(k, CC_LLAM, Y, bound, cc_kernel_term(k, CC_SORT, index, 0, by_y, 0, 0), 0, 0);
-    assert(ck_alpha_equal(k, over_x, over_y));
-    /* Another level, another signature, or a longer list differ. */
-    cc_term by_other = cc_kernel_term(k, CC_LIST, 0, lvar(Y), 0, 0, 0);
-    cc_term longer = cc_kernel_term(k, CC_LIST, 0, lvar(X), by_x, 0, 0);
+    cc_term by_index = cc_kernel_term(k, CC_LIST, 0, bound(0), 0, 0, 0);
+    cc_term by_index_max = cc_kernel_term(k, CC_LIST, 0, cc_kernel_term(k, CC_LMAX, 0, bound(0), bound(0), 0, 0), 0, 0, 0);
+    cc_term omega = cc_kernel_term(k, CC_LBOUND, 1, 0, 0, 0, 0);
+    cc_term over_x = cc_kernel_term(k, CC_LLAM, 0, omega, cc_kernel_term(k, CC_SORT, index, 0, by_index, 0, 0), 0, 0);
+    cc_term over_y = cc_kernel_term(k, CC_LLAM, 0, omega, cc_kernel_term(k, CC_SORT, index, 0, by_index_max, 0, 0), 0, 0);
+    assert(over_x != over_y && ck_alpha_equal(k, over_x, over_y));
+    /* Another level, another signature, or a longer list differ; so does the
+     * bound level against an entry's under the same binder. */
+    cc_term by_other = cc_kernel_term(k, CC_LIST, 0, lvar(ye), 0, 0, 0);
+    cc_term longer = cc_kernel_term(k, CC_LIST, 0, lvar(xe), by_x, 0, 0);
     assert(!ck_alpha_equal(k, sort_x, cc_kernel_term(k, CC_SORT, index, 0, by_other, 0, 0)));
     assert(!ck_alpha_equal(k, sort_x, cc_kernel_term(k, CC_SORT, index - 1, 0, by_x, 0, 0)));
     assert(!ck_alpha_equal(k, sort_x, cc_kernel_term(k, CC_SORT, index, 0, longer, 0, 0)));
+    assert(!ck_alpha_equal(k, over_x, cc_kernel_term(k, CC_LLAM, 0, omega, sort_x, 0, 0)));
     assert(!cc_kernel_error(k)[0]);
 }
 
@@ -674,20 +706,20 @@ static void boundaries(void) {
 
     /* Susp(x < ω, A : U(x)) { north; south; merid(a : A) : north = south; }:
      * merid(0) @ 1 is south. */
-    cc_entry_id xe = OK(cc_instr_level(k, X));
-    cc_judgement_id ux = universe(lvar(X));
-    cc_entry_id sa = OK(cc_instr_extend(k, ux, SUSP_A));
+    cc_entry_id xe = OK(cc_instr_level(k));
+    cc_judgement_id ux = universe(lvar(xe));
+    cc_entry_id sa = extend(ux);
+    const cc_entry_id susp_parameters[] = {xe, sa};
+    cc_entry_id s = extend(ux);
     cc_judgement_id sig = OK(cc_instr_signature_begin(k, OK(cc_instr_level_pi(k, xe, OK(cc_instr_pi(k, sa, ux)))),
-                                                      CC_UNTRUNCATED, S_SUSP, 0));
-    cc_entry_id s = OK(cc_instr_extend(k, ux, S_SUSP));
-    sig = OK(cc_instr_signature_constructor(k, sig, var(s), NORTH));
-    cc_entry_id north = OK(cc_instr_extend(k, var(s), NORTH));
-    sig = OK(cc_instr_signature_constructor(k, sig, var(s), SOUTH));
-    cc_entry_id south = OK(cc_instr_extend(k, var(s), SOUTH));
+                                                      CC_UNTRUNCATED, susp_parameters, 2, s, 0));
+    cc_entry_id north = extend(var(s));
+    sig = OK(cc_instr_signature_constructor(k, sig, var(s), north));
+    cc_entry_id south = extend(var(s));
+    sig = OK(cc_instr_signature_constructor(k, sig, var(s), south));
     cc_entry_id i = OK(cc_instr_dimension(k, 0)), j = OK(cc_instr_dimension(k, 1));
-    cc_entry_id a = OK(cc_instr_extend(k, var(sa), SUSP_X));
-    sig = OK(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, a, OK(cc_instr_path(k, i, var(s), var(north),
-                                                                                          var(south))))), MERID));
+    cc_entry_id a = extend(var(sa));
+    sig = OK(admit(sig, OK(cc_instr_pi(k, a, OK(cc_instr_path(k, i, var(s), var(north), var(south)))))));
     cc_judgement_id susp = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, susp_signature = OK(cc_instr_signature_close(k, sig)))),
                                                       nat));
     cc_judgement_id merid0 = OK(cc_instr_apply(k, OK(cc_instr_construct(k, susp, 2)), zero));
@@ -699,27 +731,28 @@ static void boundaries(void) {
      * push(c : C) : inl(f(c)) = inr(g(c)); } at Nat, Nat, Nat, λ n. n and
      * succ: push(0) @ 0 is inl((λ n. n)(0)), which normalizes to inl(0), and
      * push(0) @ 1 normalizes to inr(1). */
-    cc_entry_id pc = OK(cc_instr_extend(k, ux, PUSH_C)), pa = OK(cc_instr_extend(k, ux, PUSH_A));
-    cc_entry_id pb = OK(cc_instr_extend(k, ux, PUSH_B));
-    cc_entry_id arg = OK(cc_instr_extend(k, var(pc), PUSH_ARG));
-    cc_entry_id pf = OK(cc_instr_extend(k, OK(cc_instr_pi(k, arg, var(pa))), PUSH_F));
-    cc_entry_id pg = OK(cc_instr_extend(k, OK(cc_instr_pi(k, arg, var(pb))), PUSH_G));
+    cc_entry_id pc = extend(ux), pa = extend(ux);
+    cc_entry_id pb = extend(ux);
+    cc_entry_id arg = extend(var(pc));
+    cc_entry_id pf = extend(OK(cc_instr_pi(k, arg, var(pa))));
+    cc_entry_id pg = extend(OK(cc_instr_pi(k, arg, var(pb))));
     cc_judgement_id former = OK(cc_instr_level_pi(k, xe, OK(cc_instr_pi(k, pc, OK(cc_instr_pi(k, pa,
         OK(cc_instr_pi(k, pb, OK(cc_instr_pi(k, pf, OK(cc_instr_pi(k, pg, ux))))))))))));
-    sig = OK(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, S_PUSH, 0));
-    s = OK(cc_instr_extend(k, ux, S_PUSH));
-    cc_entry_id left = OK(cc_instr_extend(k, var(pa), PUSH_X)), right = OK(cc_instr_extend(k, var(pb), PUSH_Y));
+    const cc_entry_id push_parameters[] = {xe, pc, pa, pb, pf, pg};
+    s = extend(ux);
+    sig = OK(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, push_parameters, 6, s, 0));
+    cc_entry_id left = extend(var(pa)), right = extend(var(pb));
     cc_judgement_id inl_type = OK(cc_instr_pi(k, left, var(s))), inr_type = OK(cc_instr_pi(k, right, var(s)));
-    sig = OK(cc_instr_signature_constructor(k, sig, inl_type, INL));
-    cc_entry_id inl = OK(cc_instr_extend(k, inl_type, INL));
-    sig = OK(cc_instr_signature_constructor(k, sig, inr_type, INR));
-    cc_entry_id inr = OK(cc_instr_extend(k, inr_type, INR));
-    cc_entry_id c = OK(cc_instr_extend(k, var(pc), PUSH_Z));
+    cc_entry_id inl = extend(inl_type);
+    sig = OK(cc_instr_signature_constructor(k, sig, inl_type, inl));
+    cc_entry_id inr = extend(inr_type);
+    sig = OK(cc_instr_signature_constructor(k, sig, inr_type, inr));
+    cc_entry_id c = extend(var(pc));
     cc_judgement_id glued = OK(cc_instr_path(k, i, var(s), OK(cc_instr_apply(k, var(inl), OK(cc_instr_apply(k, var(pf), var(c))))),
                                              OK(cc_instr_apply(k, var(inr), OK(cc_instr_apply(k, var(pg), var(c)))))));
-    sig = OK(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, c, glued)), PUSH));
+    sig = OK(admit(sig, OK(cc_instr_pi(k, c, glued))));
     uint32_t push_signature = OK(cc_instr_signature_close(k, sig));
-    cc_entry_id n = OK(cc_instr_extend(k, nat, PUSH_N));
+    cc_entry_id n = extend(nat);
     cc_judgement_id push = OK(cc_instr_sort_begin(k, push_signature));
     const cc_judgement_id parameters[] = {nat, nat, nat, OK(cc_instr_lambda(k, n, var(n))),
                                           OK(cc_instr_lambda(k, n, OK(fixture_succ(k, var(n)))))};
@@ -789,14 +822,15 @@ static void boundaries(void) {
      * P replaced by (λ (X : U0). X)(P) would no longer reduce. */
     cc_judgement_id loop_type = OK(cc_instr_path(k, i, s1, OK(cc_instr_construct(k, s1, 0)),
                                                  OK(cc_instr_construct(k, s1, 0))));
-    cc_entry_id xt = OK(cc_instr_extend(k, u0, PUSH_N + 1));
+    cc_entry_id xt = extend(u0);
     cc_judgement_id wrapped = OK(cc_instr_apply(k, OK(cc_instr_lambda(k, xt, var(xt))), loop_type));
     cc_judgement_id unwrap = OK(cc_instr_step(k, OK(cc_instr_refl(k, wrapped)), 1, NULL, 0, CC_STEP_BETA));
     cc_judgement_id at0 = OK(cc_instr_path_apply(k, loop, 0, 0));
-    REJECTS(cc_instr_replace(k, at0, 0, (const uint8_t[]){1}, 1, OK(cc_instr_symmetry(k, unwrap))),
+    REJECTS(cc_instr_replace(k, at0, 0, (const uint8_t[]){1}, 1, OK(cc_instr_symmetry(k, unwrap)), NULL, 0),
             "annotation is replaced only by a path type");
     /* Inside the annotation, and by another path type, rewriting is allowed. */
-    cc_judgement_id same_type = OK(cc_instr_replace(k, at0, 0, (const uint8_t[]){1}, 1, OK(cc_instr_refl(k, loop_type))));
+    cc_judgement_id same_type = OK(cc_instr_replace(k, at0, 0, (const uint8_t[]){1}, 1, OK(cc_instr_refl(k, loop_type)),
+                                                    NULL, 0));
     assert(reduct(same_type, CC_STEP_WHNF) == base);
 
     /* N4: loop @ (i ∧ j), restricted to j = 0, is loop @ 0, and so base. */
@@ -891,12 +925,15 @@ static cc_term constructor_argument(cc_term t, uint32_t index, uint32_t count) {
 }
 
 /* The squash of a truncated signature at an instance, applied to variables
- * y_s, z_s : B_s, B_{s+1} = Path(B_s, y_s, z_s), and then at the dimensions. */
-static cc_judgement_id squash_at(cc_judgement_id instance, uint32_t steps, uint32_t symbols,
-                                 const cc_entry_id *dimensions) {
+ * y_s, z_s : B_s, B_{s+1} = Path(B_s, y_s, z_s), and then at the dimensions;
+ * first receives y_0's entry. */
+static cc_judgement_id squash_at(cc_judgement_id instance, uint32_t steps, const cc_entry_id *dimensions,
+                                 cc_entry_id *first) {
     cc_judgement_id b = instance, applied = OK(cc_instr_construct(k, instance, 1));
     for (uint32_t s = 0; s < steps; ++s) {
-        cc_entry_id y = OK(cc_instr_extend(k, b, symbols + 2 * s)), z = OK(cc_instr_extend(k, b, symbols + 2 * s + 1));
+        cc_entry_id y = extend(b), z = extend(b);
+        if (!s)
+            *first = y;
         applied = OK(cc_instr_apply(k, OK(cc_instr_apply(k, applied, var(y))), var(z)));
         b = OK(cc_instr_path(k, OK(cc_instr_dimension(k, 5 + s)), b, var(y), var(z)));
     }
@@ -931,8 +968,8 @@ static void kan(void) {
     assert(ck_alpha_equal(k, reduct(composed, CC_STEP_NORMALIZE), term_of(one)));
     /* K2 in substance, in N rather than Plus: a neutral tube keeps it
      * neutral: q @ i on j = 0, for q : succ(zero) = m. */
-    cc_entry_id m = OK(cc_instr_extend(k, n, KAN_M));
-    cc_entry_id q = OK(cc_instr_extend(k, OK(cc_instr_path(k, i, n, one, var(m))), KAN_Q));
+    cc_entry_id m = extend(n);
+    cc_entry_id q = extend(OK(cc_instr_path(k, i, n, one, var(m))));
     cc_judgement_id q_i = OK(cc_instr_path_apply(k, var(q), i, 0));
     cc_judgement_id starts = OK(cc_instr_step(k, OK(cc_instr_refl(k, OK(cc_instr_endpoint(k, q_i, i, 0)))), 1, NULL, 0,
                                              CC_STEP_PATH));
@@ -952,8 +989,8 @@ static void kan(void) {
 
     /* A line of types e : A = B, and Susp(e @ i) along it. */
     cc_judgement_id u0 = universe(lconst(0));
-    cc_entry_id ta = OK(cc_instr_extend(k, u0, KAN_A)), tb = OK(cc_instr_extend(k, u0, KAN_B));
-    cc_entry_id e = OK(cc_instr_extend(k, OK(cc_instr_path(k, i, u0, var(ta), var(tb))), KAN_E));
+    cc_entry_id ta = extend(u0), tb = extend(u0);
+    cc_entry_id e = extend(OK(cc_instr_path(k, i, u0, var(ta), var(tb))));
     cc_judgement_id e_i = OK(cc_instr_path_apply(k, var(e), i, 0));
     cc_judgement_id e_0 = OK(cc_instr_path_apply(k, var(e), 0, 0)), e_1 = OK(cc_instr_path_apply(k, var(e), 0, 1));
     cc_judgement_id line = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, susp_signature)), e_i));
@@ -997,7 +1034,7 @@ static void kan(void) {
     /* K6 in part, along a line of types rather than ua: merid(a) @ j along the
      * line: an hcomp corrected on j = 0 and j = 1, whose
      * faces are the transports of north and south. */
-    cc_entry_id a = OK(cc_instr_extend(k, var(ta), KAN_X));
+    cc_entry_id a = extend(var(ta));
     cc_judgement_id to_a = OK(cc_instr_step(k, OK(cc_instr_refl(k, e_0)), 1, NULL, 0, CC_STEP_PATH));
     cc_judgement_id a0 = OK(cc_instr_convert(k, var(a), OK(cc_instr_symmetry(k, to_a))));
     cc_judgement_id merid = OK(cc_instr_path_apply(k, OK(cc_instr_apply(k, OK(cc_instr_construct(k, start, 2)), a0)), j, 0));
@@ -1044,7 +1081,8 @@ static void kan(void) {
         uint32_t steps = t + 2;
         cc_judgement_id from = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, truncated[t])), e_0));
         cc_judgement_id along = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, truncated[t])), e_i));
-        cc_judgement_id squash = squash_at(from, steps, KAN_Y + 10 * t, dims);
+        cc_entry_id first = 0;
+        cc_judgement_id squash = squash_at(from, steps, dims, &first);
         cc_judgement_id carried = OK(cc_instr_trans(k, OK(cc_instr_system(k, i, along, squash)), nowhere()));
         cc_term box = reduct(carried, CC_STEP_WHNF);
         assert(kind(box) == CC_HCOMP && tubes(box) == 2 * steps + 1);
@@ -1069,7 +1107,7 @@ static void kan(void) {
                 assert(ck_alpha_equal(k, normal(ab), normal(ba)));
             }
         /* The first argument, y_0, is moved along the line. */
-        cc_judgement_id y0 = var(OK(cc_instr_extend(k, from, KAN_Y + 10 * t)));
+        cc_judgement_id y0 = var(first);
         cc_term moved_y0 = reduct(OK(cc_instr_comp(k, OK(cc_instr_system(k, i, along, y0)))), CC_STEP_NORMALIZE);
         assert(ck_alpha_equal(k, normal(constructor_argument(child(box, 2), 0, 2 * steps)), moved_y0));
         for (uint32_t l = 0; l < steps; ++l)
@@ -1126,13 +1164,13 @@ static cc_formula_id random_formula(void) {
 typedef struct { cc_judgement_id along, start, element; } property_line;
 
 /* An instance over the line's type T: Susp(T), Torus, or Quotient(T, R) with
- * R x y = Nat, bound by symbols from `symbol`; `relation` receives R. */
-static cc_judgement_id property_instance(unsigned sort, cc_judgement_id type, uint32_t symbol, cc_judgement_id *relation) {
+ * R x y = Nat, x and y bound by new entries; `relation` receives R. */
+static cc_judgement_id property_instance(unsigned sort, cc_judgement_id type, cc_judgement_id *relation) {
     if (sort == 1)
         return OK(cc_instr_sort_begin(k, torus_signature));
     if (sort == 0)
         return OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, susp_signature)), type));
-    cc_entry_id x = OK(cc_instr_extend(k, type, symbol)), y = OK(cc_instr_extend(k, type, symbol + 1));
+    cc_entry_id x = extend(type), y = extend(type);
     *relation = OK(cc_instr_lambda(k, x, OK(cc_instr_lambda(k, y, OK(fixture_nat(k))))));
     return OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, quotient_signature)), type)),
                                       *relation));
@@ -1175,9 +1213,9 @@ static void transport_properties(void) {
     cc_entry_id i = OK(cc_instr_dimension(k, 0));
     cc_entry_id dims[2] = {OK(cc_instr_dimension(k, 1)), OK(cc_instr_dimension(k, 2))};
     cc_judgement_id u0 = universe(lconst(0));
-    cc_entry_id ta = OK(cc_instr_extend(k, u0, PROP_A)), tb = OK(cc_instr_extend(k, u0, PROP_B));
-    cc_entry_id e = OK(cc_instr_extend(k, OK(cc_instr_path(k, i, u0, var(ta), var(tb))), PROP_E));
-    cc_entry_id xa = OK(cc_instr_extend(k, var(ta), PROP_XA)), xb = OK(cc_instr_extend(k, var(tb), PROP_XB));
+    cc_entry_id ta = extend(u0), tb = extend(u0);
+    cc_entry_id e = extend(OK(cc_instr_path(k, i, u0, var(ta), var(tb))));
+    cc_entry_id xa = extend(var(ta)), xb = extend(var(tb));
     /* The lines: along e, from A; along e reversed, from B; and constant at A. */
     cc_formula flipped;
     cc_init(&flipped, CC_INTERVAL);
@@ -1198,14 +1236,13 @@ static void transport_properties(void) {
     cc_formula_id always = cc_kernel_formula(k, &top);
     cc_clear(&top);
     enum { TERMS = 96 };
-    unsigned restrictions = 0, symbol = PROP_R, drawn[3][3] = {{0}}, paths[3] = {0};
+    unsigned restrictions = 0, drawn[3][3] = {{0}}, paths[3] = {0};
     for (unsigned n = 0; n < TERMS; ++n) {
         unsigned sort = pick(3), l = sort == 1 ? 2 : pick(3);
         ++drawn[sort][l];
         cc_judgement_id relation = 0, unused = 0;
-        cc_judgement_id along = property_instance(sort, lines[l].along, symbol, &unused);
-        cc_judgement_id start = property_instance(sort, lines[l].start, symbol + 2, &relation);
-        symbol += 4;
+        cc_judgement_id along = property_instance(sort, lines[l].along, &unused);
+        cc_judgement_id start = property_instance(sort, lines[l].start, &relation);
         cc_judgement_id u = property_term(sort, start, relation, lines[l].element, &paths[sort]);
         /* K10, at each face of the two dimensions: the transport restricted,
          * as it is and as the weak head it reduces to (the hcomp of 3.5,
@@ -1254,9 +1291,9 @@ static void transport_properties(void) {
 }
 
 /* A motive P : Π (z : I). U0, as a variable. */
-static cc_entry_id motive_over(cc_judgement_id instance, uint32_t symbol) {
-    cc_entry_id z = OK(cc_instr_extend(k, instance, symbol + 1));
-    return OK(cc_instr_extend(k, OK(cc_instr_pi(k, z, universe(lconst(0)))), symbol));
+static cc_entry_id motive_over(cc_judgement_id instance) {
+    cc_entry_id z = extend(instance);
+    return extend(OK(cc_instr_pi(k, z, universe(lconst(0)))));
 }
 
 /* P(t), the motive applied, as a type. */
@@ -1306,8 +1343,8 @@ static void critical_composition_pairs(void) {
     cc_judgement_id n = OK(cc_instr_sort_begin(k, nat_signature));
     cc_judgement_id zero = OK(cc_instr_construct(k, n, 0)), succ = OK(cc_instr_construct(k, n, 1));
     cc_judgement_id one = OK(cc_instr_apply(k, succ, zero));
-    cc_entry_id m = OK(cc_instr_extend(k, n, cc_kernel_fresh_symbol(k)));
-    cc_entry_id q = OK(cc_instr_extend(k, OK(cc_instr_path(k, i, n, zero, var(m))), cc_kernel_fresh_symbol(k)));
+    cc_entry_id m = extend(n);
+    cc_entry_id q = extend(OK(cc_instr_path(k, i, n, zero, var(m))));
     cc_judgement_id tube = OK(cc_instr_apply(k, succ, OK(cc_instr_path_apply(k, var(q), i, 0))));
     cc_judgement_id starts = OK(cc_instr_step(k, OK(cc_instr_refl(k, OK(cc_instr_endpoint(k, tube, i, 0)))),
                                              1, (const uint8_t[]){1}, 1, CC_STEP_PATH));
@@ -1323,8 +1360,8 @@ static void critical_composition_pairs(void) {
 
     cc_judgement_id s1 = OK(cc_instr_sort_begin(k, circle_signature));
     cc_judgement_id base = OK(cc_instr_construct(k, s1, 0));
-    cc_entry_id x = OK(cc_instr_extend(k, s1, cc_kernel_fresh_symbol(k)));
-    cc_entry_id p = OK(cc_instr_extend(k, OK(cc_instr_path(k, i, s1, base, var(x))), cc_kernel_fresh_symbol(k)));
+    cc_entry_id x = extend(s1);
+    cc_entry_id p = extend(OK(cc_instr_path(k, i, s1, base, var(x))));
     tube = OK(cc_instr_path_apply(k, var(p), i, 0));
     starts = OK(cc_instr_step(k, OK(cc_instr_refl(k, OK(cc_instr_endpoint(k, tube, i, 0)))),
                              1, NULL, 0, CC_STEP_PATH));
@@ -1356,18 +1393,18 @@ static void elimination(void) {
     /* N: P(zero), then Π (n : N). Π (n̄ : P(n)). P(succ(n)). */
     cc_judgement_id n = OK(cc_instr_sort_begin(k, nat_signature));
     cc_judgement_id zero = OK(cc_instr_construct(k, n, 0)), succ = OK(cc_instr_construct(k, n, 1));
-    cc_entry_id p = motive_over(n, ELIM_P);
+    cc_entry_id p = motive_over(n);
     cc_judgement_id opened = OK(cc_instr_eliminator(k, var(p)));
     assert(info(opened).kind == 6 && type_of(opened) == term_of(at(p, zero)) && !info(opened).other);
     REJECTS(cc_instr_eliminator_close(k, opened), "lacks a clause");
     /* E6: a clause of the wrong type. */
     REJECTS(cc_instr_eliminator_clause(k, opened, OK(fixture_zero(k))), "clause type");
-    cc_entry_id pz = OK(cc_instr_extend(k, at(p, zero), ELIM_PZ));
+    cc_entry_id pz = extend(at(p, zero));
     cc_judgement_id after_zero = OK(cc_instr_eliminator_clause(k, opened, var(pz)));
-    cc_entry_id m = OK(cc_instr_extend(k, n, ELIM_N)), h = OK(cc_instr_extend(k, at(p, var(m)), ELIM_H));
+    cc_entry_id m = extend(n), h = extend(at(p, var(m)));
     cc_judgement_id step_type = OK(cc_instr_pi(k, m, OK(cc_instr_pi(k, h, at(p, OK(cc_instr_apply(k, succ, var(m))))))));
     assert(ck_alpha_equal(k, term_of(step_type), type_of(after_zero)));
-    cc_entry_id ps = OK(cc_instr_extend(k, step_type, ELIM_PS));
+    cc_entry_id ps = extend(step_type);
     cc_judgement_id full = OK(cc_instr_eliminator_clause(k, after_zero, var(ps)));
     REJECTS(cc_instr_eliminator_clause(k, full, var(ps)), "every constructor");
     cc_judgement_id elim = OK(cc_instr_eliminator_close(k, full));
@@ -1380,21 +1417,21 @@ static void elimination(void) {
     REJECTS(cc_instr_step(k, OK(cc_instr_refl(k, OK(cc_instr_apply(k, elim, var(m))))), 1, NULL, 0, CC_STEP_IOTA),
             "Iota needs");
     /* A motive over no declared type is refused. */
-    cc_entry_id plain = OK(cc_instr_extend(k, OK(cc_instr_unit(k)), 899999));
+    cc_entry_id plain = extend(OK(cc_instr_unit(k)));
     REJECTS(cc_instr_eliminator(k, OK(cc_instr_lambda(k, plain, nat))), "instance of a declared type");
 
     /* The circle: loop's clause is PathP(i. P(loop @ i), pb, pb); E7: one
      * whose ends are not the base clause is refused. */
     cc_judgement_id s1 = OK(cc_instr_sort_begin(k, circle_signature));
     cc_judgement_id base = OK(cc_instr_construct(k, s1, 0)), loop = OK(cc_instr_construct(k, s1, 1));
-    cc_entry_id q = motive_over(s1, ELIM_Q);
-    cc_entry_id pb = OK(cc_instr_extend(k, at(q, base), ELIM_PB)), other = OK(cc_instr_extend(k, at(q, base), ELIM_PB2));
+    cc_entry_id q = motive_over(s1);
+    cc_entry_id pb = extend(at(q, base)), other = extend(at(q, base));
     cc_judgement_id circle = OK(cc_instr_eliminator_clause(k, OK(cc_instr_eliminator(k, var(q))), var(pb)));
     cc_judgement_id loop_type = path_over(q, loop, i, var(pb));
     assert(term_of(loop_type) == type_of(circle));
-    REJECTS(cc_instr_eliminator_clause(k, circle, var(OK(cc_instr_extend(k, path_over(q, loop, i, var(other)), ELIM_PL2)))),
+    REJECTS(cc_instr_eliminator_clause(k, circle, var(extend(path_over(q, loop, i, var(other))))),
             "clause type");
-    cc_entry_id pl = OK(cc_instr_extend(k, loop_type, ELIM_PL));
+    cc_entry_id pl = extend(loop_type);
     cc_judgement_id circle_elim = OK(cc_instr_eliminator_close(k, OK(cc_instr_eliminator_clause(k, circle, var(pl)))));
     /* CP01: elim(loop @ j) is pl @ j; at either endpoint both orders give
      * pb. Take the inner boundary explicitly, independently of Iota. */
@@ -1434,21 +1471,23 @@ static void elimination(void) {
     joins(on_face, var(pb));
 
     /* E3: the prop squash: Π (y z : T). Π (ȳ : P(y)) (z̄ : P(z)). PathP(i. …, ȳ, z̄):
-     * its boundary shows the positions y, z by their displayed variables. */
+     * its boundary shows the positions y, z by their displayed variables,
+     * ȳ and z̄, indices 1 and 0 under the four binders; ȳ's type applies P
+     * to y, index 1 under y and z. */
     cc_judgement_id tr = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, trunc_signature)), nat));
-    cc_entry_id t = motive_over(tr, ELIM_T);
-    cc_entry_id a = OK(cc_instr_extend(k, nat, ELIM_A));
+    cc_entry_id t = motive_over(tr);
+    cc_entry_id a = extend(nat);
     cc_judgement_id point_at = OK(cc_instr_apply(k, OK(cc_instr_construct(k, tr, 0)), var(a)));
-    cc_entry_id pp = OK(cc_instr_extend(k, OK(cc_instr_pi(k, a, at(t, point_at))), ELIM_PP));
+    cc_entry_id pp = extend(OK(cc_instr_pi(k, a, at(t, point_at))));
     cc_term squash = type_of(OK(cc_instr_eliminator_clause(k, OK(cc_instr_eliminator(k, var(t))), var(pp))));
     cc_term y_bar = child(child(squash, 1), 1), z_bar = child(y_bar, 1), inner = child(z_bar, 1);
-    assert(kind(inner) == CC_PATH && payload(child(inner, 1)) == payload(y_bar) && payload(child(inner, 2)) == payload(z_bar));
-    assert(kind(child(y_bar, 0)) == CC_APP && payload(child(child(y_bar, 0), 1)) == payload(squash));
+    assert(kind(inner) == CC_PATH && child(inner, 1) == bound(1) && child(inner, 2) == bound(0));
+    assert(child(y_bar, 0) == cc_kernel_term(k, CC_APP, 0, term_of(var(t)), bound(1), 0, 0));
     /* E9: Trunc(Nat)'s eliminator, with both clauses, is over its own
      * instance: a term of Trunc(Unit) is refused. The squash clause is
      * derived here as the kernel reports it. */
-    cc_entry_id ty = OK(cc_instr_extend(k, tr, E9_Y)), tz = OK(cc_instr_extend(k, tr, E9_Z));
-    const cc_entry_id bars[2] = {OK(cc_instr_extend(k, at(t, var(ty)), E9_YB)), OK(cc_instr_extend(k, at(t, var(tz)), E9_ZB))};
+    cc_entry_id ty = extend(tr), tz = extend(tr);
+    const cc_entry_id bars[2] = {extend(at(t, var(ty))), extend(at(t, var(tz)))};
     cc_judgement_id sq = OK(cc_instr_apply(k, OK(cc_instr_apply(k, OK(cc_instr_construct(k, tr, 1)), var(ty))), var(tz)));
     cc_judgement_id ends[2];
     for (unsigned e = 0; e < 2; ++e) {
@@ -1461,65 +1500,65 @@ static void elimination(void) {
     cc_judgement_id tr_open = OK(cc_instr_eliminator_clause(k, OK(cc_instr_eliminator(k, var(t))), var(pp)));
     assert(ck_alpha_equal(k, type_of(tr_open), term_of(squash_type)));
     cc_judgement_id tr_elim = OK(cc_instr_eliminator_close(k, OK(cc_instr_eliminator_clause(k, tr_open,
-        var(OK(cc_instr_extend(k, squash_type, E9_SQ)))))));
+        var(extend(squash_type))))));
     OK(cc_instr_apply(k, tr_elim, point_at));
     cc_judgement_id unit_tr = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, trunc_signature)), OK(cc_instr_unit(k))));
     REJECTS(cc_instr_apply(k, tr_elim, OK(cc_instr_apply(k, OK(cc_instr_construct(k, unit_tr, 0)), OK(cc_instr_point(k))))),
             "wrong type");
     /* E10: a motive into UU0 for the circle, P : Π (z : S1). U(ω), with its
      * two clauses. */
-    cc_entry_id wide = OK(cc_instr_extend(k, OK(cc_instr_pi(k, OK(cc_instr_extend(k, s1, E10_Z)), universe(tier1(0)))), E10_P));
-    cc_entry_id wide_base = OK(cc_instr_extend(k, at(wide, base), E10_PB));
-    cc_entry_id wide_loop = OK(cc_instr_extend(k, path_over(wide, loop, i, var(wide_base)), E10_PL));
+    cc_entry_id wide = extend(OK(cc_instr_pi(k, extend(s1), universe(tier1(0)))));
+    cc_entry_id wide_base = extend(at(wide, base));
+    cc_entry_id wide_loop = extend(path_over(wide, loop, i, var(wide_base)));
     cc_judgement_id wide_elim = OK(cc_instr_eliminator_close(k, OK(cc_instr_eliminator_clause(k,
         OK(cc_instr_eliminator_clause(k, OK(cc_instr_eliminator(k, var(wide))), var(wide_base))), var(wide_loop)))));
     assert(kind(type_of(wide_elim)) == CC_PI);
 
     /* Tree(Nat, λ n. Nat): sup's position has an arity, so q̄ is λ b. elim(c(b)). */
-    cc_entry_id nb = OK(cc_instr_extend(k, nat, ELIM_B));
+    cc_entry_id nb = extend(nat);
     cc_judgement_id family = OK(cc_instr_lambda(k, nb, nat));
     cc_judgement_id tree = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_parameter(k,
         OK(cc_instr_sort_begin(k, tree_signature)), nat)), family));
-    cc_entry_id w = motive_over(tree, ELIM_W);
-    cc_entry_id l = OK(cc_instr_extend(k, nat, ELIM_L));
-    cc_entry_id b = OK(cc_instr_extend(k, OK(cc_instr_apply(k, family, var(l))), ELIM_BB));
-    cc_entry_id c = OK(cc_instr_extend(k, OK(cc_instr_pi(k, b, tree)), ELIM_C));
-    cc_entry_id c_bar = OK(cc_instr_extend(k, OK(cc_instr_pi(k, b, at(w, OK(cc_instr_apply(k, var(c), var(b)))))), ELIM_CBAR));
+    cc_entry_id w = motive_over(tree);
+    cc_entry_id l = extend(nat);
+    cc_entry_id b = extend(OK(cc_instr_apply(k, family, var(l))));
+    cc_entry_id c = extend(OK(cc_instr_pi(k, b, tree)));
+    cc_entry_id c_bar = extend(OK(cc_instr_pi(k, b, at(w, OK(cc_instr_apply(k, var(c), var(b)))))));
     cc_judgement_id sup = OK(cc_instr_construct(k, tree, 0));
     cc_judgement_id sup_type = OK(cc_instr_pi(k, l, OK(cc_instr_pi(k, c, OK(cc_instr_pi(k, c_bar,
         at(w, OK(cc_instr_apply(k, OK(cc_instr_apply(k, sup, var(l))), var(c))))))))));
     cc_judgement_id tree_open = OK(cc_instr_eliminator(k, var(w)));
     assert(ck_alpha_equal(k, type_of(tree_open), term_of(sup_type)));
-    cc_entry_id ms = OK(cc_instr_extend(k, sup_type, ELIM_MS));
+    cc_entry_id ms = extend(sup_type);
     cc_judgement_id tree_elim = OK(cc_instr_eliminator_close(k, OK(cc_instr_eliminator_clause(k, tree_open, var(ms)))));
     cc_term on_sup = iota_of(OK(cc_instr_apply(k, tree_elim, OK(cc_instr_apply(k, OK(cc_instr_apply(k, sup, var(l))),
                                                                                   var(c))))));
     cc_term lifted = child(on_sup, 1);
     assert(kind(lifted) == CC_LAM && kind(child(lifted, 1)) == CC_APP && child(child(lifted, 1), 0) == term_of(tree_elim));
-    assert(child(child(child(lifted, 1), 1), 0) == term_of(var(c)));
+    assert(child(child(lifted, 1), 1) == cc_kernel_term(k, CC_APP, 0, term_of(var(c)), bound(0), 0, 0));
 
     /* A16: wrap's position is a path, displayed as a PathP between base's
      * clause; fix's boundary wrap(⟨i⟩ loop @ i) is shown as
      * m_wrap(⟨i⟩ loop @ i, ⟨i⟩ m_loop @ i). */
     cc_judgement_id wr = OK(cc_instr_sort_begin(k, wrapped_signature));
     cc_judgement_id wbase = OK(cc_instr_construct(k, wr, 0)), wloop = OK(cc_instr_construct(k, wr, 1));
-    cc_entry_id v = motive_over(wr, ELIM_V);
-    cc_entry_id pv = OK(cc_instr_extend(k, at(v, wbase), ELIM_PV));
-    cc_entry_id pw = OK(cc_instr_extend(k, path_over(v, wloop, i, var(pv)), ELIM_PW));
+    cc_entry_id v = motive_over(wr);
+    cc_entry_id pv = extend(at(v, wbase));
+    cc_entry_id pw = extend(path_over(v, wloop, i, var(pv)));
     cc_judgement_id wrapped = OK(cc_instr_eliminator_clause(k, OK(cc_instr_eliminator_clause(k,
         OK(cc_instr_eliminator(k, var(v))), var(pv))), var(pw)));
     cc_term wrap_clause = type_of(wrapped);
     cc_term path_bar = child(child(wrap_clause, 1), 0);
     assert(kind(path_bar) == CC_PATH && child(path_bar, 1) == term_of(var(pv)) && child(path_bar, 2) == term_of(var(pv)));
-    cc_entry_id pw_var = OK(cc_instr_extend(k, wr, ELIM_WV));
+    cc_entry_id pw_var = extend(wr);
     (void)pw_var;
     /* A clause for wrap, as a variable of the reported type's shape. */
-    cc_entry_id loop_var = OK(cc_instr_extend(k, OK(cc_instr_path(k, i, wr, wbase, wbase)), ELIM_WP));
-    cc_entry_id loop_bar = OK(cc_instr_extend(k, path_over(v, var(loop_var), i, var(pv)), ELIM_WPB));
+    cc_entry_id loop_var = extend(OK(cc_instr_path(k, i, wr, wbase, wbase)));
+    cc_entry_id loop_bar = extend(path_over(v, var(loop_var), i, var(pv)));
     cc_judgement_id wrap_type = OK(cc_instr_pi(k, loop_var, OK(cc_instr_pi(k, loop_bar,
         at(v, OK(cc_instr_apply(k, OK(cc_instr_construct(k, wr, 2)), var(loop_var))))))));
     assert(ck_alpha_equal(k, term_of(wrap_type), wrap_clause));
-    cc_entry_id mw = OK(cc_instr_extend(k, wrap_type, ELIM_MW));
+    cc_entry_id mw = extend(wrap_type);
     cc_term fix_clause = type_of(OK(cc_instr_eliminator_clause(k, wrapped, var(mw))));
     cc_term left = child(fix_clause, 1);
     assert(kind(fix_clause) == CC_PATH && kind(left) == CC_APP && child(child(left, 0), 0) == term_of(var(mw)));
@@ -1552,7 +1591,7 @@ static void elimination(void) {
     cc_judgement_id fix_type = OK(cc_instr_path(k, j, at(v, OK(cc_instr_path_apply(k, wfix, j, 0))), fix_ends[0],
                                                 fix_ends[1]));
     assert(ck_alpha_equal(k, term_of(fix_type), fix_clause));
-    cc_entry_id mf = OK(cc_instr_extend(k, fix_type, ELIM_MF));
+    cc_entry_id mf = extend(fix_type);
     cc_judgement_id fix_elim = OK(cc_instr_eliminator_close(k, OK(cc_instr_eliminator_clause(k,
         OK(cc_instr_eliminator_clause(k, wrapped, var(mw))), var(mf)))));
     cc_judgement_id fix_peak = OK(cc_instr_apply(k, fix_elim, OK(cc_instr_path_apply(k, wfix, 0, 0))));
@@ -1566,24 +1605,27 @@ static void elimination(void) {
     assert(ck_alpha_equal(k, normal(iota_then_path), normal(boundary_then_iota)));
 }
 
-/* Review regressions of F5: Iota instantiates fresh placeholders only; the
- * displayed binders avoid ambient dimensions; a path-valued position is
- * lifted to a path abstraction. */
+/* Review regressions of F5: Iota instantiates the constructor's own
+ * arguments only, never a clause's free entries; the displayed binders avoid
+ * ambient dimensions; a path-valued position is lifted to a path
+ * abstraction. */
 static void elimination_capture(void) {
     cc_entry_id i = OK(cc_instr_dimension(k, 0)), j = OK(cc_instr_dimension(k, 1));
     cc_judgement_id nat = OK(fixture_nat(k)), zero = OK(fixture_zero(k));
 
-    /* Box { box(n : Nat); }, and the clause λ x. n, whose n is the admission
-     * entry, free: elim(box(0)) is (λ x. n)(0). */
-    cc_judgement_id sig = OK(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, S_BOX, 0));
-    cc_entry_id bs = OK(cc_instr_extend(k, former_u0(), S_BOX));
-    cc_entry_id bn = OK(cc_instr_extend(k, nat, BOX_N));
-    sig = OK(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, bn, var(bs))), BOX));
+    /* Box { box(n : Nat); }, and the clause λ x. n, whose n is the entry
+     * that stood for box's argument at admission, free in the clause: box's
+     * stored type binds that argument as an index, so iota's instantiation
+     * of it never touches the clause, and elim(box(0)) is (λ x. n)(0). */
+    cc_entry_id bs = extend(former_u0());
+    cc_judgement_id sig = OK(begin_u0(CC_UNTRUNCATED, bs));
+    cc_entry_id bn = extend(nat);
+    sig = OK(admit(sig, OK(cc_instr_pi(k, bn, var(bs)))));
     cc_judgement_id boxes = OK(cc_instr_sort_begin(k, OK(cc_instr_signature_close(k, sig))));
     cc_judgement_id box = OK(cc_instr_construct(k, boxes, 0));
-    cc_judgement_id constant = OK(cc_instr_lambda(k, OK(cc_instr_extend(k, boxes, BOX_Z)), nat));
+    cc_judgement_id constant = OK(cc_instr_lambda(k, extend(boxes), nat));
     cc_judgement_id opened = OK(cc_instr_eliminator(k, constant));
-    cc_entry_id bx = OK(cc_instr_extend(k, nat, BOX_X));
+    cc_entry_id bx = extend(nat);
     cc_judgement_id target = OK(cc_instr_pi(k, bx, OK(cc_instr_apply(k, constant, OK(cc_instr_apply(k, box, var(bx)))))));
     assert(ck_alpha_equal(k, term_of(target), type_of(opened)));
     cc_judgement_id to_nat = OK(cc_instr_step(k, OK(cc_instr_refl(k, target)), 1, (const uint8_t[]){1}, 1, CC_STEP_BETA));
@@ -1596,11 +1638,11 @@ static void elimination_capture(void) {
      * loop's clause is PathP(j. (F @ i)(loop @ j), fb, fb). */
     cc_judgement_id s1 = OK(cc_instr_sort_begin(k, circle_signature));
     cc_judgement_id base = OK(cc_instr_construct(k, s1, 0)), loop = OK(cc_instr_construct(k, s1, 1));
-    cc_judgement_id family = OK(cc_instr_pi(k, OK(cc_instr_extend(k, s1, AMB_Z)), universe(lconst(0))));
-    cc_entry_id pp = OK(cc_instr_extend(k, family, AMB_P));
-    cc_entry_id f = OK(cc_instr_extend(k, OK(cc_instr_path(k, j, family, var(pp), var(pp))), AMB_F));
+    cc_judgement_id family = OK(cc_instr_pi(k, extend(s1), universe(lconst(0))));
+    cc_entry_id pp = extend(family);
+    cc_entry_id f = extend(OK(cc_instr_path(k, j, family, var(pp), var(pp))));
     cc_judgement_id motive = OK(cc_instr_path_apply(k, var(f), i, 0));
-    cc_entry_id fb = OK(cc_instr_extend(k, OK(cc_instr_apply(k, motive, base)), AMB_FB));
+    cc_entry_id fb = extend(OK(cc_instr_apply(k, motive, base)));
     cc_judgement_id with_base = OK(cc_instr_eliminator_clause(k, OK(cc_instr_eliminator(k, motive)), var(fb)));
     cc_judgement_id ends[2];
     for (unsigned e = 0; e < 2; ++e) {
@@ -1613,47 +1655,46 @@ static void elimination_capture(void) {
                                                  ends[0], ends[1]));
     assert(ck_alpha_equal(k, term_of(loop_type), type_of(with_base)));
     OK(cc_instr_eliminator_close(k, OK(cc_instr_eliminator_clause(k, with_base,
-        var(OK(cc_instr_extend(k, loop_type, AMB_FL)))))));
+        var(extend(loop_type))))));
 
     /* PW { base; loop : base = base; wrap(p : base = base) : base = base;
      *      twist(p : base = base) : Path(i; Path(j; s, base, base), wrap(p), p); }.
      * twist's faces on i give its path-valued position to an earlier
      * constructor, wrap(p) @ j, and apply it at a formula, p @ j. */
-    sig = OK(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, S_PW, 0));
-    cc_entry_id s = OK(cc_instr_extend(k, former_u0(), S_PW));
-    sig = OK(cc_instr_signature_constructor(k, sig, var(s), PW_BASE));
-    cc_entry_id pbase = OK(cc_instr_extend(k, var(s), PW_BASE));
+    cc_entry_id s = extend(former_u0());
+    sig = OK(begin_u0(CC_UNTRUNCATED, s));
+    cc_entry_id pbase = extend(var(s));
+    sig = OK(cc_instr_signature_constructor(k, sig, var(s), pbase));
     cc_judgement_id around = OK(cc_instr_path(k, i, var(s), var(pbase), var(pbase)));
-    sig = OK(cc_instr_signature_constructor(k, sig, around, PW_LOOP));
-    OK(cc_instr_extend(k, around, PW_LOOP));
-    cc_judgement_id wrap_on = OK(cc_instr_pi(k, OK(cc_instr_extend(k, around, PW_P)), around));
-    sig = OK(cc_instr_signature_constructor(k, sig, wrap_on, PW_WRAP));
-    cc_entry_id pwrap = OK(cc_instr_extend(k, wrap_on, PW_WRAP));
-    cc_entry_id tp = OK(cc_instr_extend(k, around, CP_TP));
+    sig = OK(admit(sig, around));
+    cc_judgement_id wrap_on = OK(cc_instr_pi(k, extend(around), around));
+    cc_entry_id pwrap = extend(wrap_on);
+    sig = OK(cc_instr_signature_constructor(k, sig, wrap_on, pwrap));
+    cc_entry_id tp = extend(around);
     cc_judgement_id flat = OK(cc_instr_path(k, j, var(s), var(pbase), var(pbase)));
-    sig = OK(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, tp, OK(cc_instr_path(k, i, flat,
-        OK(cc_instr_apply(k, var(pwrap), var(tp))), var(tp))))), CP_TWIST));
+    sig = OK(admit(sig, OK(cc_instr_pi(k, tp, OK(cc_instr_path(k, i, flat, OK(cc_instr_apply(k, var(pwrap), var(tp))),
+                                                                  var(tp)))))));
     uint32_t twisted = OK(cc_instr_signature_close(k, sig));
     assert(constructor(twisted, 3).positions == 1 && constructor(twisted, 3).dimensions == 2);
     cc_judgement_id pw = OK(cc_instr_sort_begin(k, twisted));
     cc_judgement_id b0 = OK(cc_instr_construct(k, pw, 0)), l0 = OK(cc_instr_construct(k, pw, 1));
     cc_judgement_id w0 = OK(cc_instr_construct(k, pw, 2)), t0 = OK(cc_instr_construct(k, pw, 3));
-    cc_entry_id v = motive_over(pw, PW_V);
-    cc_entry_id pv = OK(cc_instr_extend(k, at(v, b0), PW_PV));
-    cc_entry_id pl = OK(cc_instr_extend(k, path_over(v, l0, i, var(pv)), PW_PL));
+    cc_entry_id v = motive_over(pw);
+    cc_entry_id pv = extend(at(v, b0));
+    cc_entry_id pl = extend(path_over(v, l0, i, var(pv)));
     cc_judgement_id loops = OK(cc_instr_path(k, i, pw, b0, b0));
-    cc_entry_id pe = OK(cc_instr_extend(k, loops, PW_PE));
-    cc_entry_id pbar = OK(cc_instr_extend(k, path_over(v, var(pe), i, var(pv)), PW_PBAR));
+    cc_entry_id pe = extend(loops);
+    cc_entry_id pbar = extend(path_over(v, var(pe), i, var(pv)));
     cc_judgement_id wrap_type = OK(cc_instr_pi(k, pe, OK(cc_instr_pi(k, pbar,
         path_over(v, OK(cc_instr_apply(k, w0, var(pe))), i, var(pv))))));
     cc_judgement_id opened_pw = OK(cc_instr_eliminator_clause(k, OK(cc_instr_eliminator_clause(k,
         OK(cc_instr_eliminator(k, var(v))), var(pv))), var(pl)));
     assert(ck_alpha_equal(k, term_of(wrap_type), type_of(opened_pw)));
-    cc_entry_id mw = OK(cc_instr_extend(k, wrap_type, PW_MW));
+    cc_entry_id mw = extend(wrap_type);
     /* twist's clause type as a driver derives it: Π (p). Π (p̄).
      * PathP(i. PathP(j. P(twist(p) @ i @ j), pv, pv), m_wrap(p, p̄), p̄). */
-    cc_entry_id te = OK(cc_instr_extend(k, loops, CP_TE));
-    cc_entry_id tbar = OK(cc_instr_extend(k, path_over(v, var(te), i, var(pv)), CP_TBAR));
+    cc_entry_id te = extend(loops);
+    cc_entry_id tbar = extend(path_over(v, var(te), i, var(pv)));
     cc_judgement_id twist_i = OK(cc_instr_path_apply(k, OK(cc_instr_apply(k, t0, var(te))), i, 0));
     cc_judgement_id corners[2];
     for (unsigned e = 0; e < 2; ++e)
@@ -1670,10 +1711,10 @@ static void elimination_capture(void) {
         OK(cc_instr_path(k, i, square, sides[0], sides[1]))))));
     cc_judgement_id with_wrap = OK(cc_instr_eliminator_clause(k, opened_pw, var(mw)));
     assert(ck_alpha_equal(k, term_of(twist_type), type_of(with_wrap)));
-    cc_entry_id mt = OK(cc_instr_extend(k, twist_type, CP_MT));
+    cc_entry_id mt = extend(twist_type);
     cc_judgement_id pw_elim = OK(cc_instr_eliminator_close(k, OK(cc_instr_eliminator_clause(k, with_wrap, var(mt)))));
     /* elim(wrap(p0) @ j) is m_wrap(p0, ⟨i⟩ elim(p0 @ i)) @ j. */
-    cc_entry_id p0 = OK(cc_instr_extend(k, loops, PW_P0));
+    cc_entry_id p0 = extend(loops);
     cc_term reduced = iota_of(OK(cc_instr_apply(k, pw_elim, OK(cc_instr_path_apply(k,
         OK(cc_instr_apply(k, w0, var(p0))), j, 0)))));
     assert(kind(reduced) == CC_PAPP && kind(child(reduced, 1)) == CC_PATH);
@@ -1746,77 +1787,86 @@ static void annotations(void) {
 
 /* Refusals of section 10.1. Each uses a fresh open signature over U0 whose
  * sort entry is s. */
-static cc_judgement_id open_bad(cc_entry_id *s, uint32_t sort) {
-    cc_judgement_id sig = OK(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, sort, 0));
-    *s = OK(cc_instr_extend(k, former_u0(), sort));
-    return sig;
+static cc_judgement_id open_bad(cc_entry_id *s) {
+    *s = extend(former_u0());
+    return OK(begin_u0(CC_UNTRUNCATED, *s));
 }
 
 static void refusals(void) {
     cc_entry_id s;
     cc_judgement_id nat = OK(fixture_nat(k));
-    cc_judgement_id sig = open_bad(&s, S_BAD);
-    cc_entry_id f = OK(cc_instr_extend(k, OK(cc_instr_pi(k, OK(cc_instr_extend(k, var(s), BX)), nat)), BF));
+    cc_judgement_id sig = open_bad(&s);
+    cc_entry_id f = extend(OK(cc_instr_pi(k, extend(var(s)), nat)));
     /* A4: s in data, as the domain of a function argument. */
-    REJECTS(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, f, var(s))), BAD), "arity mentions");
+    REJECTS(admit(sig, OK(cc_instr_pi(k, f, var(s)))), "arity mentions");
     /* A5: s in an arity: f : (s → Nat) → s. */
-    cc_judgement_id s_to_nat = OK(cc_instr_pi(k, OK(cc_instr_extend(k, var(s), BX)), nat));
-    cc_entry_id h = OK(cc_instr_extend(k, s_to_nat, BH));
-    cc_entry_id g = OK(cc_instr_extend(k, OK(cc_instr_pi(k, h, var(s))), BG));
-    REJECTS(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, g, var(s))), BAD), "arity mentions");
+    cc_judgement_id s_to_nat = OK(cc_instr_pi(k, extend(var(s)), nat));
+    cc_entry_id h = extend(s_to_nat);
+    cc_entry_id g = extend(OK(cc_instr_pi(k, h, var(s))));
+    REJECTS(admit(sig, OK(cc_instr_pi(k, g, var(s)))), "arity mentions");
     /* A6: s under a function inside a position's arity: g : Nat → (s → s). */
-    cc_entry_id an = OK(cc_instr_extend(k, nat, A6_N)), ax = OK(cc_instr_extend(k, var(s), A6_X));
-    cc_entry_id ag = OK(cc_instr_extend(k, OK(cc_instr_pi(k, an, OK(cc_instr_pi(k, ax, var(s))))), A6_G));
-    REJECTS(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, ag, var(s))), BAD), "arity mentions");
+    cc_entry_id an = extend(nat), ax = extend(var(s));
+    cc_entry_id ag = extend(OK(cc_instr_pi(k, an, OK(cc_instr_pi(k, ax, var(s))))));
+    REJECTS(admit(sig, OK(cc_instr_pi(k, ag, var(s)))), "arity mentions");
     /* A11: data after a position, in the kernel's order. */
-    cc_entry_id x = OK(cc_instr_extend(k, var(s), BX));
-    cc_entry_id n = OK(cc_instr_extend(k, nat, BN));
+    cc_entry_id x = extend(var(s));
+    cc_entry_id n = extend(nat);
     cc_judgement_id late_data = OK(cc_instr_pi(k, x, OK(cc_instr_pi(k, n, var(s)))));
-    REJECTS(cc_instr_signature_constructor(k, sig, late_data, BAD), "data argument follows a position");
+    REJECTS(admit(sig, late_data), "data argument follows a position");
     /* A13: a foreign entry in the constructor type's context: a type
      * variable T : U0 that is not the signature's. */
-    cc_entry_id foreign = OK(cc_instr_extend(k, former_u0(), OTHER));
-    REJECTS(cc_instr_signature_constructor(k, sig, var(foreign), BAD), "not the signature's");
+    cc_entry_id foreign = extend(former_u0());
+    REJECTS(admit(sig, var(foreign)), "not the signature's");
     /* A constructor type in another universe: U0 itself lives in U1. */
-    REJECTS(cc_instr_signature_constructor(k, sig, former_u0(), BAD), "signature's universe");
-    /* A7: a boundary naming the constructor itself. */
-    cc_entry_id self = OK(cc_instr_extend(k, var(s), C1));
+    REJECTS(admit(sig, former_u0()), "signature's universe");
+    /* A7: a boundary naming the constructor itself. A constructor's entry
+     * is typed by its type, so no term of the type mentions it: a boundary's
+     * entry given as the constructor's has another type, and a new entry
+     * leaves the boundary's entry outside the telescope. */
+    cc_entry_id self = extend(var(s));
     cc_entry_id i = OK(cc_instr_dimension(k, 0));
-    REJECTS(cc_instr_signature_constructor(k, sig, OK(cc_instr_path(k, i, var(s), var(self), var(self))), C1),
-            "itself");
+    cc_judgement_id around_self = OK(cc_instr_path(k, i, var(s), var(self), var(self)));
+    REJECTS(cc_instr_signature_constructor(k, sig, around_self, self), "A constructor entry's type is not that constructor's.");
+    REJECTS(admit(sig, around_self), "not the signature's");
+    /* The constructor's entry can still sit in its type's context, with no
+     * term mentioning it: s : U0, converted along U0 = (λ (_ : s). U0)(c) = U0. */
+    cc_entry_id c = extend(var(s));
+    cc_judgement_id constant = OK(cc_instr_lambda(k, extend(var(s)), former_u0()));
+    cc_judgement_id beta = OK(cc_instr_step(k, OK(cc_instr_refl(k, OK(cc_instr_apply(k, constant, var(c))))), 1, NULL, 0,
+                                            CC_STEP_BETA));
+    cc_judgement_id weakened = OK(cc_instr_convert(k, var(s), OK(cc_instr_transitivity(k, OK(cc_instr_symmetry(k, beta)), beta))));
+    assert(term_of(weakened) == term_of(var(s)) && cc_kernel_judgement_context(k, weakened, 1) == c);
+    REJECTS(cc_instr_signature_constructor(k, sig, weakened, c), "names the constructor itself");
     /* A8: a boundary naming a later constructor: the entry is not yet the
      * signature's. */
-    cc_entry_id later = OK(cc_instr_extend(k, var(s), LATER));
-    REJECTS(cc_instr_signature_constructor(k, sig, OK(cc_instr_path(k, i, var(s), var(later), var(later))), C2),
-            "not the signature's");
+    cc_entry_id later = extend(var(s));
+    REJECTS(admit(sig, OK(cc_instr_path(k, i, var(s), var(later), var(later)))), "not the signature's");
     /* A boundary with a composition (A9): comp^i s [] x, with x : s a position. */
-    cc_judgement_id good = OK(cc_instr_signature_constructor(k, sig, var(s), C1));
-    cc_entry_id c1 = OK(cc_instr_extend(k, var(s), C1));
-    (void)c1;
-    cc_entry_id z = OK(cc_instr_extend(k, var(s), Z));
+    cc_judgement_id good = OK(admit(sig, var(s)));
+    cc_entry_id z = extend(var(s));
     cc_judgement_id system = OK(cc_instr_system(k, i, var(s), var(z)));
     cc_judgement_id composed = OK(cc_instr_comp(k, system));
     cc_entry_id j = OK(cc_instr_dimension(k, 1));
     cc_judgement_id with_comp = OK(cc_instr_pi(k, z, OK(cc_instr_path(k, j, var(s), composed, var(z)))));
-    REJECTS(cc_instr_signature_constructor(k, good, with_comp, C2), "composition");
+    REJECTS(admit(good, with_comp), "composition");
     /* Only the latest judgement continues a signature. */
-    REJECTS(cc_instr_signature_constructor(k, sig, var(s), C2), "latest");
+    REJECTS(admit(sig, var(s)), "latest");
     /* A12: a data argument that mentions a position, in a boundary. */
     cc_judgement_id nat_con = OK(cc_instr_pi(k, n, var(s)));
-    cc_judgement_id with_nat = OK(cc_instr_signature_constructor(k, good, nat_con, C2));
-    cc_entry_id c2 = OK(cc_instr_extend(k, nat_con, C2));
-    cc_entry_id w = OK(cc_instr_extend(k, var(s), Z + 1));
-    cc_judgement_id zero_of_w = OK(cc_instr_apply(k, OK(cc_instr_lambda(k, OK(cc_instr_extend(k, var(s), Z + 2)),
+    cc_entry_id c2 = extend(nat_con);
+    cc_judgement_id with_nat = OK(cc_instr_signature_constructor(k, good, nat_con, c2));
+    cc_entry_id w = extend(var(s));
+    cc_judgement_id zero_of_w = OK(cc_instr_apply(k, OK(cc_instr_lambda(k, extend(var(s)),
                                                                            OK(fixture_zero(k)))), var(w)));
     cc_judgement_id tainted = OK(cc_instr_apply(k, var(c2), zero_of_w));
     cc_judgement_id tainted_type = OK(cc_instr_pi(k, w, OK(cc_instr_path(k, i, var(s), tainted, var(w)))));
-    REJECTS(cc_instr_signature_constructor(k, with_nat, tainted_type, Z + 3), "data terms only");
+    REJECTS(admit(with_nat, tainted_type), "data terms only");
     /* T7: a commit while a signature is open is refused; T5: rollback
      * forgets a signature opened since the checkpoint. */
     size_t before = cc_kernel_signature_count(k);
     cc_kernel_checkpoint(k);
     cc_entry_id s2;
-    cc_judgement_id opened = open_bad(&s2, S_BAD + 50);
+    cc_judgement_id opened = open_bad(&s2);
     (void)opened;
     assert(cc_kernel_signature_count(k) == before + 1);
     assert(!cc_kernel_commit_checkpoint(k));
@@ -1830,28 +1880,30 @@ static void refusals(void) {
  * admits each signature, since for finite x the parameter A : U(x) lifts
  * into UU0, and refuses every instance that reads a level of tier 1 (Q16).
  * The later proposal's tier-parametric check (2.3) is not H1's. */
-/* ⊢ Π (x < ω). Π (A : U(x)). U0, with x and A named by the given symbols. */
-static cc_judgement_id former_into_u0(uint32_t x, uint32_t a, cc_entry_id *ae) {
-    cc_entry_id xe = OK(cc_instr_level(k, x));
-    *ae = OK(cc_instr_extend(k, universe(lvar(x)), a));
-    return OK(cc_instr_level_pi(k, xe, OK(cc_instr_pi(k, *ae, universe(lconst(0))))));
+/* ⊢ Π (x < ω). Π (A : U(x)). U0, with the entries x and A that stand for its
+ * binders; parameters receives both, in order. */
+static cc_judgement_id former_into_u0(cc_entry_id parameters[2]) {
+    parameters[0] = OK(cc_instr_level(k));
+    parameters[1] = extend(universe(lvar(parameters[0])));
+    return OK(cc_instr_level_pi(k, parameters[0], OK(cc_instr_pi(k, parameters[1], universe(lconst(0))))));
 }
 
 static void hidden_bounds(void) {
     cc_judgement_id nat = OK(fixture_nat(k)), u0 = universe(lconst(0)), uu0 = universe(tier1(0));
     cc_judgement_id nat_big = OK(cc_instr_lift(k, nat, uu0)), uu0_itself = uu0;
-    cc_entry_id ae;
 
     /* V13: Mixed(x < ω, A : U(x), B : UU0) { mk(a : A, b : B); } lives in UU0;
-     * Mixed(U2, Nat) reads x = 3, and Mixed(Nat) with Nat : UU0 reads ω. */
-    cc_entry_id be = OK(cc_instr_extend(k, uu0, HB_B));
-    cc_entry_id xe = OK(cc_instr_level(k, HB_X));
-    ae = OK(cc_instr_extend(k, universe(lvar(HB_X)), HB_A));
+     * Mixed(U2, Nat) reads x = 3, and Mixed(Nat) with Nat : UU0 reads ω. The
+     * parameter entries need not be made in the former's order. */
+    cc_entry_id be = extend(uu0);
+    cc_entry_id xe = OK(cc_instr_level(k));
+    cc_entry_id ae = extend(universe(lvar(xe)));
     cc_judgement_id former = OK(cc_instr_level_pi(k, xe, OK(cc_instr_pi(k, ae, OK(cc_instr_pi(k, be, uu0))))));
-    cc_judgement_id sig = OK(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, S_MIXED, 0));
-    cc_entry_id s = OK(cc_instr_extend(k, uu0, S_MIXED));
-    cc_entry_id a = OK(cc_instr_extend(k, var(ae), HB_MA)), b = OK(cc_instr_extend(k, var(be), HB_MB));
-    sig = OK(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, a, OK(cc_instr_pi(k, b, var(s))))), HB_MK));
+    const cc_entry_id mixed_parameters[] = {xe, ae, be};
+    cc_entry_id s = extend(uu0);
+    cc_judgement_id sig = OK(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, mixed_parameters, 3, s, 0));
+    cc_entry_id a = extend(var(ae)), b = extend(var(be));
+    sig = OK(admit(sig, OK(cc_instr_pi(k, a, OK(cc_instr_pi(k, b, var(s)))))));
     uint32_t mixed = OK(cc_instr_signature_close(k, sig));
     cc_judgement_id at3 = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, mixed)), universe(lconst(2))));
     assert(type_of(OK(cc_instr_sort_parameter(k, at3, nat_big))) == term_of(uu0));
@@ -1861,31 +1913,31 @@ static void hidden_bounds(void) {
     /* V17: Tag(A : UU0) : U0 { here; } and Outer(x < ω, A : U(x)) : U0
      * { wrap(t : Tag(A)); }, with A lifted into UU0; Outer(Nat) is formed,
      * Outer(UU0) and Outer(A) for A : UU0 are not. */
-    cc_entry_id ta = OK(cc_instr_extend(k, uu0, HB_TA));
-    sig = OK(cc_instr_signature_begin(k, OK(cc_instr_pi(k, ta, u0)), CC_UNTRUNCATED, S_TAG2, 0));
-    s = OK(cc_instr_extend(k, u0, S_TAG2));
-    uint32_t tag = OK(cc_instr_signature_close(k, OK(cc_instr_signature_constructor(k, sig, var(s), HB_HERE))));
-    former = former_into_u0(HB_X + 100, HB_A + 100, &ae);
-    sig = OK(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, S_OUTER, 0));
-    s = OK(cc_instr_extend(k, u0, S_OUTER));
-    cc_judgement_id tag_a = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, tag)), OK(cc_instr_lift(k, var(ae), uu0))));
-    cc_entry_id held = OK(cc_instr_extend(k, tag_a, HB_T));
-    uint32_t outer = OK(cc_instr_signature_close(k, OK(cc_instr_signature_constructor(k, sig,
-        OK(cc_instr_pi(k, held, var(s))), HB_WRAP))));
+    cc_entry_id ta = extend(uu0);
+    s = extend(u0);
+    sig = OK(cc_instr_signature_begin(k, OK(cc_instr_pi(k, ta, u0)), CC_UNTRUNCATED, &ta, 1, s, 0));
+    uint32_t tag = OK(cc_instr_signature_close(k, OK(admit(sig, var(s)))));
+    cc_entry_id parameters[2] = {0, 0};
+    former = former_into_u0(parameters);
+    s = extend(u0);
+    sig = OK(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, parameters, 2, s, 0));
+    cc_judgement_id tag_a = OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, tag)),
+                                                       OK(cc_instr_lift(k, var(parameters[1]), uu0))));
+    cc_entry_id held = extend(tag_a);
+    uint32_t outer = OK(cc_instr_signature_close(k, OK(admit(sig, OK(cc_instr_pi(k, held, var(s)))))));
     OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, outer)), nat));
     REJECTS(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, outer)), uu0_itself), "finite levels only");
     REJECTS(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, outer)), nat_big), "finite levels only");
 
     /* V18: the same bound through a definition F(A : UU0) : U0 := Unit, in
      * wrap(t : F(A)); refused at the instance that reads it. */
-    cc_entry_id fa = OK(cc_instr_extend(k, uu0, HB_FA));
-    cc_judgement_id f = OK(cc_instr_define(k, HB_F, OK(cc_instr_lambda(k, fa, OK(cc_instr_unit(k))))));
-    former = former_into_u0(HB_X + 200, HB_A + 200, &ae);
-    sig = OK(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, S_HID2, 0));
-    s = OK(cc_instr_extend(k, u0, S_HID2));
-    cc_entry_id through = OK(cc_instr_extend(k, OK(cc_instr_apply(k, f, OK(cc_instr_lift(k, var(ae), uu0)))), HB_T + 100));
-    uint32_t hid = OK(cc_instr_signature_close(k, OK(cc_instr_signature_constructor(k, sig,
-        OK(cc_instr_pi(k, through, var(s))), HB_WRAP2))));
+    cc_entry_id fa = extend(uu0);
+    cc_judgement_id f = OK(cc_instr_define(k, OK(cc_instr_lambda(k, fa, OK(cc_instr_unit(k))))));
+    former = former_into_u0(parameters);
+    s = extend(u0);
+    sig = OK(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, parameters, 2, s, 0));
+    cc_entry_id through = extend(OK(cc_instr_apply(k, f, OK(cc_instr_lift(k, var(parameters[1]), uu0)))));
+    uint32_t hid = OK(cc_instr_signature_close(k, OK(admit(sig, OK(cc_instr_pi(k, through, var(s)))))));
     OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, hid)), nat));
     REJECTS(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, hid)), nat_big), "finite levels only");
 
@@ -1893,24 +1945,23 @@ static void hidden_bounds(void) {
      * F : Big → U0) : U0 { wrap(t : F(pack(A))); }: a bound in a
      * parameter-free signature's constructor type. */
     cc_judgement_id uu1 = universe(tier1(1));
-    sig = OK(cc_instr_signature_begin(k, uu1, CC_UNTRUNCATED, S_BIG, 0));
-    s = OK(cc_instr_extend(k, uu1, S_BIG));
-    cc_entry_id bb = OK(cc_instr_extend(k, uu0, HB_BB));
-    uint32_t big = OK(cc_instr_signature_close(k, OK(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, bb, var(s))),
-        HB_PACK))));
+    s = extend(uu1);
+    sig = OK(cc_instr_signature_begin(k, uu1, CC_UNTRUNCATED, NULL, 0, s, 0));
+    cc_entry_id bb = extend(uu0);
+    uint32_t big = OK(cc_instr_signature_close(k, OK(admit(sig, OK(cc_instr_pi(k, bb, var(s)))))));
     cc_judgement_id big_instance = OK(cc_instr_sort_begin(k, big));
-    cc_entry_id z = OK(cc_instr_extend(k, big_instance, HB_Z));
-    cc_entry_id x2 = OK(cc_instr_level(k, HB_X + 300));
-    cc_entry_id a2 = OK(cc_instr_extend(k, universe(lvar(HB_X + 300)), HB_A + 300));
-    cc_entry_id fe = OK(cc_instr_extend(k, OK(cc_instr_pi(k, z, u0)), HB_FF));
+    cc_entry_id z = extend(big_instance);
+    cc_entry_id x2 = OK(cc_instr_level(k));
+    cc_entry_id a2 = extend(universe(lvar(x2)));
+    cc_entry_id fe = extend(OK(cc_instr_pi(k, z, u0)));
     former = OK(cc_instr_level_pi(k, x2, OK(cc_instr_pi(k, a2, OK(cc_instr_pi(k, fe, u0))))));
-    sig = OK(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, S_OUTER2, 0));
-    s = OK(cc_instr_extend(k, u0, S_OUTER2));
+    const cc_entry_id outer2_parameters[] = {x2, a2, fe};
+    s = extend(u0);
+    sig = OK(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, outer2_parameters, 3, s, 0));
     cc_judgement_id packed = OK(cc_instr_apply(k, OK(cc_instr_construct(k, big_instance, 0)), OK(cc_instr_lift(k, var(a2), uu0))));
-    cc_entry_id carried = OK(cc_instr_extend(k, OK(cc_instr_apply(k, var(fe), packed)), HB_T + 200));
-    uint32_t outer2 = OK(cc_instr_signature_close(k, OK(cc_instr_signature_constructor(k, sig,
-        OK(cc_instr_pi(k, carried, var(s))), HB_WRAP3))));
-    cc_judgement_id family = OK(cc_instr_lambda(k, OK(cc_instr_extend(k, big_instance, HB_UZ)), OK(cc_instr_unit(k))));
+    cc_entry_id carried = extend(OK(cc_instr_apply(k, var(fe), packed)));
+    uint32_t outer2 = OK(cc_instr_signature_close(k, OK(admit(sig, OK(cc_instr_pi(k, carried, var(s)))))));
+    cc_judgement_id family = OK(cc_instr_lambda(k, extend(big_instance), OK(cc_instr_unit(k))));
     OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, outer2)), nat)), family));
     REJECTS(cc_instr_sort_parameter(k, OK(cc_instr_sort_parameter(k, OK(cc_instr_sort_begin(k, outer2)), uu0_itself)), family),
             "finite levels only");
@@ -1921,11 +1972,11 @@ static void hidden_bounds(void) {
 /* R2, R3: the resource bounds of 5.8, at their limits and above them. */
 static void resources(void) {
     /* R2: 256 constructors are admitted, and a 257th is refused. */
-    cc_judgement_id sig = OK(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, S_RES, 0));
-    cc_entry_id s = OK(cc_instr_extend(k, former_u0(), S_RES));
+    cc_entry_id s = extend(former_u0());
+    cc_judgement_id sig = OK(begin_u0(CC_UNTRUNCATED, s));
     for (uint32_t c = 0; c < CC_SIGNATURE_CONSTRUCTORS; ++c)
-        sig = OK(cc_instr_signature_constructor(k, sig, var(s), RES_C + c));
-    REJECTS(cc_instr_signature_constructor(k, sig, var(s), RES_C + CC_SIGNATURE_CONSTRUCTORS), "too many constructors");
+        sig = OK(admit(sig, var(s)));
+    REJECTS(admit(sig, var(s)), "too many constructors");
     assert(signature(OK(cc_instr_signature_close(k, sig))).constructor_count == CC_SIGNATURE_CONSTRUCTORS);
 
     /* R2: a constructor with 64 arguments is admitted, and one with 65 is
@@ -1933,23 +1984,23 @@ static void resources(void) {
     cc_judgement_id nat = OK(fixture_nat(k));
     cc_entry_id args[CC_CONSTRUCTOR_ARGUMENTS + 1];
     for (uint32_t a = 0; a <= CC_CONSTRUCTOR_ARGUMENTS; ++a)
-        args[a] = OK(cc_instr_extend(k, nat, RES_N + a));
-    sig = OK(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, S_ARGS, 0));
-    s = OK(cc_instr_extend(k, former_u0(), S_ARGS));
+        args[a] = extend(nat);
+    s = extend(former_u0());
+    sig = OK(begin_u0(CC_UNTRUNCATED, s));
     cc_judgement_id at_limit = var(s);
     for (uint32_t a = CC_CONSTRUCTOR_ARGUMENTS; a-- > 0;)
         at_limit = OK(cc_instr_pi(k, args[a], at_limit));
-    REJECTS(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, args[CC_CONSTRUCTOR_ARGUMENTS], at_limit)), RES_F),
-            "too many arguments");
-    sig = OK(cc_instr_signature_constructor(k, sig, at_limit, RES_F));
+    REJECTS(admit(sig, OK(cc_instr_pi(k, args[CC_CONSTRUCTOR_ARGUMENTS], at_limit))), "too many arguments");
+    sig = OK(admit(sig, at_limit));
     assert(constructor(OK(cc_instr_signature_close(k, sig)), 0).data == CC_CONSTRUCTOR_ARGUMENTS);
 
     /* R3: a position of arity 64 into a cube of depth 8, ⟨i⟩ … b at each
      * level, is admitted within the budget. */
-    sig = OK(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, S_DEEP, 0));
-    s = OK(cc_instr_extend(k, former_u0(), S_DEEP));
-    sig = OK(cc_instr_signature_constructor(k, sig, var(s), RES_B));
-    cc_judgement_id cube = var(s), point = var(OK(cc_instr_extend(k, var(s), RES_B)));
+    s = extend(former_u0());
+    sig = OK(begin_u0(CC_UNTRUNCATED, s));
+    cc_entry_id b = extend(var(s));
+    sig = OK(cc_instr_signature_constructor(k, sig, var(s), b));
+    cc_judgement_id cube = var(s), point = var(b);
     for (unsigned d = 0; d < 8; ++d) {
         cc_entry_id dimension = OK(cc_instr_dimension(k, d));
         cc_judgement_id next = OK(cc_instr_path(k, dimension, cube, point, point));
@@ -1959,10 +2010,12 @@ static void resources(void) {
     cc_judgement_id position = cube;
     for (uint32_t a = CC_CONSTRUCTOR_ARGUMENTS; a-- > 0;)
         position = OK(cc_instr_pi(k, args[a], position));
-    cc_entry_id f = OK(cc_instr_extend(k, position, RES_A));
+    cc_entry_id f = extend(position);
+    cc_judgement_id deep_type = OK(cc_instr_pi(k, f, var(s)));
+    cc_entry_id deep_entry = extend(deep_type);
     cc_work_counters before, after;
     cc_kernel_work(k, &before);
-    sig = OK(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, f, var(s))), RES_F + 1));
+    sig = OK(cc_instr_signature_constructor(k, sig, deep_type, deep_entry));
     uint32_t deep = OK(cc_instr_signature_close(k, sig));
     cc_kernel_work(k, &after);
     assert(constructor(deep, 1).positions == 1);
@@ -1995,21 +2048,101 @@ static void malformed(void) {
     REJECTS(cc_instr_sort_begin(k, 9999), "Only an admitted signature");
 }
 
-/* T6: a commit keeps an admitted signature and relocates its syntax. */
+/* T6: a commit keeps an admitted signature and relocates its syntax. The
+ * entries it was admitted with are truncated; its stored types mention
+ * none of them, and read the same. */
 static void commits(void) {
+    size_t entries = cc_kernel_entry_count(k);
     cc_kernel_checkpoint(k);
-    cc_judgement_id sig = OK(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, 300, 0));
-    cc_entry_id s = OK(cc_instr_extend(k, former_u0(), 300));
-    cc_entry_id m = OK(cc_instr_extend(k, var(s), 301));
-    sig = OK(cc_instr_signature_constructor(k, sig, var(s), 302));
-    sig = OK(cc_instr_signature_constructor(k, sig, OK(cc_instr_pi(k, m, var(s))), 303));
+    cc_entry_id s = extend(former_u0());
+    cc_entry_id m = extend(var(s));
+    cc_judgement_id sig = OK(begin_u0(CC_UNTRUNCATED, s));
+    sig = OK(admit(sig, var(s)));
+    sig = OK(admit(sig, OK(cc_instr_pi(k, m, var(s)))));
     uint32_t index = OK(cc_instr_signature_close(k, sig));
+    assert(cc_kernel_entry_count(k) > entries);
     assert(cc_kernel_commit_checkpoint(k));
+    assert(cc_kernel_entry_count(k) == entries);
     cc_constructor_info succ = constructor(index, 1);
-    assert(kind(succ.type) == CC_PI && succ.symbol == 303 && succ.positions == 1);
+    assert(succ.type == pi(bound(1), bound(2)) && succ.positions == 1 && !succ.generated);
     /* Instances formed after the commit check. */
     assert(kind(type_of(OK(cc_instr_construct(k, OK(cc_instr_sort_begin(k, index)), 1)))) == CC_PI);
     assert(kind(signature(index).former) == CC_U);
+}
+
+/* Section 3.6: the entries that stand for a signature's telescope. Its
+ * parameter entries are one per binder of the former, of the binder's
+ * kind, at its domain opened with the entries before them, and pairwise
+ * distinct; the sort's is a term entry at the universe opened with them all,
+ * apart from them; a constructor's is a term entry at its type, new to the
+ * telescope; and a constructor type's context holds the telescope's entries
+ * only. Each is refused with its own message. */
+static void admission_entries(void) {
+    /* Both(x < ω, A B : U(x)) : U(x), with x, A and B, and the sort s. */
+    cc_entry_id xe = OK(cc_instr_level(k));
+    cc_judgement_id ux = universe(lvar(xe));
+    cc_entry_id ae = extend(ux), be = extend(ux);
+    cc_judgement_id former = OK(cc_instr_level_pi(k, xe, OK(cc_instr_pi(k, ae, OK(cc_instr_pi(k, be, ux))))));
+    cc_entry_id s = extend(ux);
+    REJECTS(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, (const cc_entry_id[]){xe, ae}, 2, s, 0),
+            "A signature takes one entry for each of its former's parameters.");
+    REJECTS(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, NULL, 3, s, 0),
+            "A signature takes one entry for each of its former's parameters.");
+    /* A term entry for the universe parameter, a level entry for a term
+     * parameter. */
+    REJECTS(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, (const cc_entry_id[]){ae, ae, be}, 3, s, 0),
+            "A signature's universe parameter takes a level entry.");
+    REJECTS(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, (const cc_entry_id[]){xe, xe, be}, 3, s, 0),
+            "A signature's term parameter takes a term entry.");
+    /* A repeated parameter entry, of the right kind and type: A and B have
+     * one type. */
+    REJECTS(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, (const cc_entry_id[]){xe, ae, ae}, 3, s, 0),
+            "A signature's entries are pairwise distinct, the sort's apart from its parameters'.");
+    /* The sort's entry equal to a parameter's, at the sort's type U(x), and a
+     * level entry for the sort. */
+    const cc_entry_id parameters[] = {xe, ae, be};
+    REJECTS(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, parameters, 3, be, 0),
+            "A signature's entries are pairwise distinct, the sort's apart from its parameters'.");
+    REJECTS(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, parameters, 3, xe, 0),
+            "A signature's sort takes a term entry.");
+    /* Types are read with the entries given: A at U(y) for another level
+     * entry y is no parameter of the signature opened at x, nor is s : U(x)
+     * its sort when it is opened at y, nor is a sort in U0. */
+    cc_entry_id ye = OK(cc_instr_level(k));
+    cc_judgement_id uy = universe(lvar(ye));
+    cc_entry_id ay = extend(uy), by = extend(uy), sy = extend(uy);
+    REJECTS(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, (const cc_entry_id[]){xe, ay, be}, 3, s, 0),
+            "A parameter entry's type is not the signature's.");
+    REJECTS(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, (const cc_entry_id[]){ye, ay, by}, 3, s, 0),
+            "The sort entry's type is not the signature's universe.");
+    REJECTS(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, parameters, 3, extend(former_u0()), 0),
+            "The sort entry's type is not the signature's universe.");
+    /* Opened at y throughout, the same former is admitted. */
+    OK(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, (const cc_entry_id[]){ye, ay, by}, 3, sy, 0));
+
+    /* Constructor entries. */
+    cc_judgement_id sig = OK(cc_instr_signature_begin(k, former, CC_UNTRUNCATED, parameters, 3, s, 0));
+    REJECTS(cc_instr_signature_constructor(k, sig, var(s), ye), "A constructor takes a term entry.");
+    /* The sort's, a parameter's and an earlier constructor's entry are
+     * already in the telescope. */
+    REJECTS(cc_instr_signature_constructor(k, sig, var(s), s), "A constructor's entry is already in its signature's telescope.");
+    REJECTS(cc_instr_signature_constructor(k, sig, var(s), ae), "A constructor's entry is already in its signature's telescope.");
+    cc_entry_id first = extend(var(s));
+    sig = OK(cc_instr_signature_constructor(k, sig, var(s), first));
+    REJECTS(cc_instr_signature_constructor(k, sig, var(s), first),
+            "A constructor's entry is already in its signature's telescope.");
+    /* An entry at another type than the constructor's. */
+    cc_judgement_id pair_type = OK(cc_instr_pi(k, extend(var(ae)), OK(cc_instr_pi(k, extend(var(be)), var(s)))));
+    REJECTS(cc_instr_signature_constructor(k, sig, pair_type, extend(var(s))), "A constructor entry's type is not that constructor's.");
+    /* A constructor type whose context holds an entry outside the telescope:
+     * a type T : U(x) that is no parameter. */
+    cc_entry_id outside = extend(ux);
+    REJECTS(admit(sig, OK(cc_instr_pi(k, extend(var(outside)), var(s)))), "not the signature's");
+    /* The telescope's entries only, the parameters' included: mk(a : A, b : B)
+     * is admitted, its type closed over [x, A, B, s, first]. */
+    sig = OK(admit(sig, pair_type));
+    uint32_t index = OK(cc_instr_signature_close(k, sig));
+    assert(constructor(index, 1).type == pi(bound(3), pi(bound(3), bound(3))));
 }
 
 int main(void) {
@@ -2019,12 +2152,16 @@ int main(void) {
      * refused. */
     assert(cc_kernel_extensions(k) == CC_EXTENSION_H1);
     cc_kernel_set_extensions(k, 0);
-    REJECTS(cc_instr_signature_begin(k, former_u0(), CC_UNTRUNCATED, S_N, 0), "switched off");
+    cc_entry_id sort = extend(former_u0());
+    REJECTS(begin_u0(CC_UNTRUNCATED, sort), "switched off");
     cc_kernel_set_extensions(k, CC_EXTENSION_H1);
     assert(cc_kernel_extensions(k) == CC_EXTENSION_H1);
     /* Formers that are not Π (xs < ω). Π (ps : Ps). U(ℓ), or not closed. */
-    REJECTS(cc_instr_signature_begin(k, OK(fixture_nat(k)), CC_UNTRUNCATED, S_N, 0), "former type");
-    REJECTS(cc_instr_signature_begin(k, former_u0(), CC_TRUNCATION_MAX + 3, S_N, 0), "truncation level");
+    REJECTS(cc_instr_signature_begin(k, OK(fixture_nat(k)), CC_UNTRUNCATED, NULL, 0, sort, 0), "former type");
+    cc_entry_id level = OK(cc_instr_level(k));
+    REJECTS(cc_instr_signature_begin(k, universe(lvar(level)), CC_UNTRUNCATED, NULL, 0, extend(universe(lvar(level))), 0),
+            "A signature's former type must be closed.");
+    REJECTS(begin_u0(CC_TRUNCATION_MAX + 3, sort), "truncation level");
     natural_numbers();
     lists();
     circle();
@@ -2047,6 +2184,7 @@ int main(void) {
     resources();
     malformed();
     commits();
+    admission_entries();
     cc_kernel_free(k);
     printf("signature admission: ok\n");
     return 0;

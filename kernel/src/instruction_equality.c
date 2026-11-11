@@ -109,12 +109,12 @@ cc_judgement_id cc_instr_eta(cc_kernel *k, cc_judgement_id typing_id) {
         return 0;
     cc_node type = k->nodes[t.type];
     cc_term expanded = 0;
+    /* λ (x : A). t x, built directly: t is locally closed, and x is index 0. */
+    cc_term variable = ck_instr_make(k, CC_BOUND, 0, 0, 0, 0, 0);
     if (type.kind == CC_PI) {
-        uint32_t name = ck_fresh_symbol(k);
-        expanded = ck_instr_make(k, CC_LAM, name, type.child[0], ck_instr_app(k, t.term, ck_var(k, name)), 0, 0);
+        expanded = ck_instr_make(k, CC_LAM, 0, type.child[0], ck_instr_app(k, t.term, variable), 0, 0);
     } else if (type.kind == CC_LPI) {
-        uint32_t name = ck_fresh_symbol(k);
-        expanded = ck_instr_make(k, CC_LLAM, name, type.child[0], ck_instr_make(k, CC_LAPP, 0, t.term, ck_var(k, name), 0, 0), 0, 0);
+        expanded = ck_instr_make(k, CC_LLAM, 0, type.child[0], ck_instr_make(k, CC_LAPP, 0, t.term, variable, 0, 0), 0, 0);
     } else if (type.kind == CC_SIGMA) {
         expanded = ck_instr_make(k, CC_PAIR, 0, t.type, ck_instr_make(k, CC_FST, 0, t.term, 0, 0, 0), ck_instr_make(k, CC_SND, 0, t.term, 0, 0, 0), 0);
     } else if (type.kind == CC_PATH) {
@@ -201,11 +201,11 @@ static cc_term contract(cc_kernel *k, cc_term term, cc_step_rule rule) {
     case CC_STEP_BETA:
         if (n.kind == CC_APP && k->nodes[n.child[0]].kind == CC_LAM) {
             cc_node lambda = k->nodes[n.child[0]];
-            return ck_substitute(k, lambda.child[1], lambda.payload, n.child[1]);
+            return ck_instantiate(k, lambda.child[1], n.child[1]);
         }
         if (n.kind == CC_LAPP && k->nodes[n.child[0]].kind == CC_LLAM) {
             cc_node lambda = k->nodes[n.child[0]];
-            return ck_level_instantiate(k, lambda.child[1], lambda.payload, n.child[1]);
+            return ck_level_instantiate(k, lambda.child[1], n.child[1]);
         }
         return ck_fail(k, "Beta needs a lambda applied to an argument, or a level lambda to a level."), 0;
     case CC_STEP_DELTA:
@@ -348,70 +348,189 @@ cc_judgement_id cc_instr_step(cc_kernel *k, cc_judgement_id id, unsigned side,
     if (!judgement(k, id, side, &e, &root))
         return 0;
     cc_term target = locate(k, root, position, depth, NULL);
-    cc_term changed = target ? rebuild(k, root, position, depth, contract(k, target, rule)) : 0;
+    if (!target)
+        return 0;
+    /* Under binders, the target's loose indices are opened with CC_OPENED
+     * levels, one for each binder it uses: its judgement holds no opened
+     * level, so they take 0, 1, …, the outermost first. The contraction is
+     * closed back over the same indices (section 3.3). */
+    uint32_t loose = k->nodes[target].loose;
+    cc_term opened = ck_open_loose(k, target, 0);
+    cc_term contracted = opened ? contract(k, opened, rule) : 0;
+    cc_term closed = contracted ? ck_close_loose(k, contracted, 0, loose) : 0;
+    cc_term changed = closed ? rebuild(k, root, position, depth, closed) : 0;
     if (!changed)
         return 0;
     return republish(k, e, side, changed, e.context);
 }
 
-/* A term whose free names matter at a depth of the path: the two sides of
- * the replacing equality at the bottom, and the type of each discharged
- * entry at its binder, where it is that binder's domain. */
+/* A term whose free dimensions matter at a depth of the path: the two sides
+ * of the replacing equality at the bottom, and the type of each entry the
+ * caller supplied at its binder, where it is that binder's domain. */
 typedef struct {
     cc_term term;
     size_t depth;
 } scoped_term;
 
-static bool shadowed(const crossing *crossed, size_t from, size_t to, unsigned kind, uint32_t name) {
-    for (size_t m = from + 1; m < to; ++m)
-        if (bound_under(crossed[m].node.kind, crossed[m].child) == kind && crossed[m].node.payload == name)
-            return true;
-    return false;
-}
-
-static bool needed(cc_kernel *k, const crossing *crossed, size_t at, const scoped_term *terms, size_t count) {
-    unsigned kind = bound_under(crossed[at].node.kind, crossed[at].child);
-    uint32_t name = crossed[at].node.payload;
-    for (size_t t = 0; t < count; ++t) {
-        if (terms[t].depth <= at || shadowed(crossed, at, terms[t].depth, kind == 3 ? 2 : kind, name))
-            continue;
-        bool free = kind == 1 ? ck_term_free(k, terms[t].term, name)
-                              : name < CC_DIMENSIONS && (ck_free_dims(k, terms[t].term) & (UINT64_C(1) << name));
-        if (free)
+/* Whether a dimension binder below `from` and above `to` binds the same
+ * dimension again. */
+static bool shadowed(const crossing *crossed, size_t from, size_t to, uint32_t name) {
+    for (size_t m = from + 1; m < to; ++m) {
+        unsigned kind = bound_under(crossed[m].node.kind, crossed[m].child);
+        if ((kind == 2 || kind == 3) && crossed[m].node.payload == name)
             return true;
     }
     return false;
 }
 
-static cc_entry_id context_entry(const cc_kernel *k, uint32_t set, uint32_t symbol, bool dimension) {
+/* Whether the dimension a dimension binder on the path binds is free in a
+ * term below it. */
+static bool needed(cc_kernel *k, const crossing *crossed, size_t at, const scoped_term *terms, size_t count) {
+    uint32_t name = crossed[at].node.payload;
+    for (size_t t = 0; t < count; ++t) {
+        if (terms[t].depth <= at || shadowed(crossed, at, terms[t].depth, name))
+            continue;
+        if (name < CC_DIMENSIONS && (ck_free_dims(k, terms[t].term) & (UINT64_C(1) << name)))
+            return true;
+    }
+    return false;
+}
+
+static cc_entry_id dimension_entry(const cc_kernel *k, uint32_t set, uint32_t index) {
     cc_context_set s = k->context_sets[set];
     for (uint32_t i = 0; i < s.count; ++i) {
         cc_entry_id id = k->context_items[s.offset + i];
-        if (k->entries[id].dimension == dimension && k->entries[id].symbol == symbol)
+        if (k->entries[id].dimension && k->entries[id].index == index)
             return id;
     }
     return 0;
 }
 
+static bool in_context(const cc_kernel *k, uint32_t set, cc_entry_id id) {
+    cc_context_set s = k->context_sets[set];
+    for (uint32_t i = 0; i < s.count; ++i)
+        if (k->context_items[s.offset + i] == id)
+            return true;
+    return false;
+}
+
+/* Whether an entry of `set` other than the given ones depends on one of
+ * them: is one of them in its own context. */
+static bool keeps_dependent(const cc_kernel *k, uint32_t set, const cc_entry_id *entries, size_t count) {
+    cc_context_set s = k->context_sets[set];
+    for (uint32_t i = 0; i < s.count; ++i) {
+        cc_entry_id kept = k->context_items[s.offset + i];
+        bool given = false;
+        for (size_t b = 0; b < count && !given; ++b)
+            given = entries[b] == kept;
+        for (size_t b = 0; b < count && !given; ++b)
+            if (entries[b] && in_context(k, k->entries[kept].context, entries[b]))
+                return true;
+    }
+    return false;
+}
+
+/* The entries of a replacement (section 3.6): for each term or level binder
+ * the position crosses, outermost first, an entry or 0. Each given entry is
+ * of its binder's kind, new to the rewritten judgement's context, given once,
+ * and at its binder's domain opened with the entries outside it. `values`
+ * receives what opens each binder: its entry's CC_CONTEXT, or for a binder
+ * given none a placeholder, CC_OPENED of the binder's ordinal, which no
+ * judgement holds, so that a term that still uses that binder is known in
+ * O(1) by its `opened`. */
+static bool binder_entries(cc_kernel *k, const crossing *crossed, size_t depth, const cc_entry_id *entries,
+                           size_t count, uint32_t rewritten, cc_term *values, scoped_term *terms, size_t *scoped) {
+    size_t binders = 0;
+    for (size_t at = 0; at < depth; ++at)
+        binders += bound_under(crossed[at].node.kind, crossed[at].child) == 1;
+    if (count != binders)
+        return ck_fail(k, "A replacement takes an entry, or 0, for each term or level binder its position crosses.");
+    for (size_t at = 0, b = 0; at < depth; ++at) {
+        if (bound_under(crossed[at].node.kind, crossed[at].child) != 1)
+            continue;
+        cc_entry_id id = entries[b];
+        if (!id) {
+            values[b] = ck_make(k, CC_OPENED, (uint32_t)b, 0, 0, 0, 0);
+            if (!values[b])
+                return false;
+            ++b;
+            continue;
+        }
+        bool level = crossed[at].node.kind == CC_LPI || crossed[at].node.kind == CC_LLAM;
+        if (id >= k->entry_count || k->entries[id].face || k->entries[id].dimension ||
+            k->entries[id].level_variable != level)
+            return ck_fail(k, "A replacement takes a level entry for a level binder, and a term entry for a term binder.");
+        for (size_t other = 0; other < b; ++other)
+            if (entries[other] == id)
+                return ck_fail(k, "A replacement gives one entry to two of its binders.");
+        if (in_context(k, rewritten, id))
+            return ck_fail(k, "A replacement's entry for a binder is already in the rewritten judgement's context.");
+        /* The domain, under the binders outside it, opened with what opens
+         * them: the innermost of those is index 0. */
+        cc_term outer[1024] = {0};
+        for (size_t m = 0; m < b; ++m)
+            outer[m] = values[b - 1 - m];
+        cc_term domain = ck_instantiate_all(k, crossed[at].node.child[0], outer, (uint32_t)b);
+        if (!domain)
+            return false;
+        if (k->nodes[domain].opened)
+            return ck_fail(k, "A replacement's entry for a binder has a type that needs an outer binder given no entry.");
+        if (!ck_instr_same(k, k->entries[id].type, domain, "A replacement's entry for a binder is not at the binder's domain."))
+            return false;
+        values[b] = ck_make(k, CC_CONTEXT, id, 0, 0, 0, 0);
+        if (!values[b])
+            return false;
+        terms[(*scoped)++] = (scoped_term){k->entries[id].type, at};
+        ++b;
+    }
+    return true;
+}
+
+/* The binder entries are part of the derivation (section 3.7): the same
+ * replacement with other entries is another derivation. */
 cc_judgement_id cc_instr_replace(cc_kernel *k, cc_judgement_id id, unsigned side,
-                                 const uint8_t *position, size_t depth, cc_judgement_id by) {
+                                 const uint8_t *position, size_t depth, cc_judgement_id by,
+                                 const cc_entry_id *entries, size_t count) {
     cc_judgement_id found;
-    if (!ck_instr_begin(k, (cc_derivation){.rule = CC_INSTR_REPLACE, .premise = {id, by}, .operand = {side}}, position, depth, &found))
+    if (!ck_instr_begin_entries(k, (cc_derivation){.rule = CC_INSTR_REPLACE, .premise = {id, by}, .operand = {side}},
+                                position, depth, entries, count, &found))
         return found;
     cc_fact e = {0}, inner = {0};
     cc_term root = 0;
     if (!judgement(k, id, side, &e, &root) || !ck_instr_premise(k, by, CC_FACT_EQUALITY, &inner))
         return 0;
     crossing *crossed = depth ? malloc(depth * sizeof *crossed) : NULL;
-    scoped_term *terms = malloc((depth + 2) * sizeof *terms);
+    scoped_term *terms = malloc((2 * depth + 2) * sizeof *terms);
     cc_entry_id *removed = depth ? malloc(depth * sizeof *removed) : NULL;
+    cc_term *values = depth ? malloc(depth * sizeof *values) : NULL;
     cc_judgement_id result = 0;
-    if ((depth && (!crossed || !removed)) || !terms) {
+    if ((depth && (!crossed || !removed || !values)) || !terms) {
         ck_fail_as(k, CC_ERROR_RESOURCE, "Replacement allocation failed.");
         goto done;
     }
     cc_term target = locate(k, root, position, depth, crossed);
-    if (!target || !ck_instr_same(k, target, inner.term, "The highlighted subterm is not the equality's left side."))
+    if (!target)
+        goto done;
+    /* The entries for the binders crossed, checked, and the target opened
+     * with them: a binder it uses must have one. */
+    size_t count_scoped = 2, discharged = 0;
+    terms[0] = (scoped_term){inner.term, depth};
+    terms[1] = (scoped_term){inner.other, depth};
+    if (!binder_entries(k, crossed, depth, entries, count, e.context, values, terms, &count_scoped))
+        goto done;
+    {
+        cc_term reversed[1024] = {0};
+        for (size_t b = 0; b < count; ++b)
+            reversed[b] = values[count - 1 - b];
+        target = ck_instantiate_all(k, target, reversed, (uint32_t)count);
+    }
+    if (!target)
+        goto done;
+    if (k->nodes[target].opened) {
+        ck_fail(k, "A replacement gives no entry to a binder its occurrence uses.");
+        goto done;
+    }
+    if (!ck_instr_same(k, target, inner.term, "The highlighted subterm is not the equality's left side."))
         goto done;
     /* A path application's annotation is the path type its endpoints are
      * read from (boundary reduction included): it stays one. */
@@ -420,40 +539,49 @@ cc_judgement_id cc_instr_replace(cc_kernel *k, cc_judgement_id id, unsigned side
         ck_fail(k, "A path application's annotation is replaced only by a path type.");
         goto done;
     }
-    /* From the innermost binder out: a binder whose name the replacement
-     * uses must correspond to an entry of the replacing equality with the
-     * binder's type; that entry is discharged, and its type's names are in
-     * turn looked up further out. */
-    size_t count = 2, discharged = 0;
-    terms[0] = (scoped_term){inner.term, depth};
-    terms[1] = (scoped_term){inner.other, depth};
+    /* The entries given are discharged. From the innermost binder out, a
+     * dimension binder whose dimension the replacement or an entry's type
+     * uses must correspond to a dimension entry of the replacing equality,
+     * which is discharged too. */
+    for (size_t b = 0; b < count; ++b)
+        if (entries[b])
+            removed[discharged++] = entries[b];
     for (size_t at = depth; at-- > 0;) {
         unsigned kind = bound_under(crossed[at].node.kind, crossed[at].child);
-        if (!kind || !needed(k, crossed, at, terms, count))
+        if (kind < 2 || !needed(k, crossed, at, terms, count_scoped))
             continue;
         if (kind == 3) {
             ck_fail(k, "Replacing a subterm that uses a composition's dimension is not supported.");
             goto done;
         }
-        cc_entry_id id = context_entry(k, inner.context, crossed[at].node.payload, kind == 2);
-        if (!id) {
+        cc_entry_id dimension = dimension_entry(k, inner.context, crossed[at].node.payload);
+        if (!dimension) {
             ck_fail(k, "The replacing equality lacks an entry for a bound name it uses.");
             goto done;
         }
         for (size_t r = 0; r < discharged; ++r)
-            if (removed[r] == id) {
+            if (removed[r] == dimension) {
                 ck_fail(k, "One entry would be bound twice on the path.");
                 goto done;
             }
-        if (kind == 1) {
-            if (!ck_instr_same(k, k->entries[id].type, crossed[at].node.child[0], "The entry and the binder have different types."))
-                goto done;
-            terms[count++] = (scoped_term){k->entries[id].type, at};
-        }
-        removed[discharged++] = id;
+        removed[discharged++] = dimension;
+    }
+    /* The replacement, with the entries given abstracted: the innermost
+     * binder's is index 0 at the position. */
+    cc_term replacement = inner.other;
+    for (size_t b = count; b-- > 0 && replacement;)
+        if (entries[b])
+            replacement = ck_abstract_at(k, replacement, entries[b], (uint32_t)(count - 1 - b));
+    if (!replacement)
+        goto done;
+    /* No entry the equality keeps may depend on a binder's entry, which it
+     * discharges (section 3.6, condition 5). */
+    if (keeps_dependent(k, inner.context, entries, count)) {
+        ck_fail(k, "A replacement's equality keeps an entry that depends on a binder's entry.");
+        goto done;
     }
     uint32_t context = 0;
-    cc_term changed = rebuild(k, root, position, depth, inner.other);
+    cc_term changed = rebuild(k, root, position, depth, replacement);
     if (!changed || !ck_instr_discharge(k, inner.context, removed, discharged, &context) || !ck_instr_merge(k, e.context, context, &context))
         goto done;
     result = republish(k, e, side, changed, context);
@@ -461,5 +589,6 @@ done:
     free(crossed);
     free(terms);
     free(removed);
+    free(values);
     return result;
 }

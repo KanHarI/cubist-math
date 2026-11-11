@@ -86,13 +86,13 @@ def length(xs : List(U0, UNat)) : UNat := match xs {
 print(evaluate(!!or_swap));
 // Output: forall A : U0. forall B : U0. A or B -> B or A
 print(typeof(or_swap));
-// Output: fun (A, B : U0, value : A or B) => match value return B or A { left a => right(a); right
-//   b => left(b); }
+// Output: fun (A, B : U0, either : A or B) => match either return B or A { left a => right(a);
+//   right b => left(b); }
 print(evaluate(!!swap_sides));
 // Output: forall A : U0. forall B : U0. A or B -> B or A
 print(typeof(swap_sides));
-// Output: fun (value : Unit or Unit) => match value as z return Shape(z) { left a => 0; right b
-//   => tt; }
+// Output: fun (value : Unit or Unit) => match value as z return Shape(z) { left a => 0; right b =>
+//   tt; }
 print(evaluate(!!default));
 // Output: forall value : Unit or Unit. Shape(value)
 print(typeof(default));
@@ -120,8 +120,8 @@ print(typeof(negate));
 print(evaluate(!!reverse));
 // Output: Circle -> Circle
 print(typeof(reverse));
-// Output: fun (x : List(__U, UNat)) => induction x return UNat { nil => 0; cons(head, tail) with ih
-//   => succ(ih); }
+// Output: fun (x : List(__U, UNat)) => induction x return UNat { nil => 0; cons(x1, x2) with ih =>
+//   succ(ih); }
 print(evaluate(!!length));
 // Output: List(__U, UNat) -> UNat
 print(typeof(length));

@@ -2,7 +2,11 @@
  * Application first exposes its FUNCTION, not its argument. Induction first
  * exposes the SCRUTINEE, not every branch or recursive hypothesis. Therefore a
  * branch that ignores its recursive hypothesis does not evaluate that subtree.
- * Full normalization is only requested for an explicit inspection result. */
+ * Full normalization is only requested for an explicit inspection result.
+ * Reduction sees only locally closed terms (section 3.3 of
+ * docs/roadmaps/kernel/locally-nameless-kernel.md): ck_whnf refuses a loose
+ * one in O(1), and normalization opens a binder's body before it reduces
+ * under it, so no reduction ever shifts an index. */
 #include "term_internal.h"
 
 static cc_term app(cc_kernel *k, cc_term f, cc_term x) {
@@ -119,7 +123,7 @@ static cc_term weak(cc_kernel *k, cc_term term, cc_term *next) {
             return 0;
         cc_node head = k->nodes[fn];
         if (head.kind == CC_LAM)
-            return weak_again(next, ck_substitute(k, head.child[1], head.payload, n.child[1]));
+            return weak_again(next, ck_instantiate(k, head.child[1], n.child[1]));
         return fn == n.child[0] ? term : app(k, fn, n.child[1]);
     }
     /* ∀-β (G0 §2.7): instantiation of a level lambda substitutes the level. */
@@ -129,7 +133,7 @@ static cc_term weak(cc_kernel *k, cc_term term, cc_term *next) {
             return 0;
         cc_node head = k->nodes[fn];
         if (head.kind == CC_LLAM)
-            return weak_again(next, ck_level_instantiate(k, head.child[1], head.payload, n.child[1]));
+            return weak_again(next, ck_level_instantiate(k, head.child[1], n.child[1]));
         return fn == n.child[0] ? term : ck_make(k, CC_LAPP, 0, fn, n.child[1], 0, 0);
     }
     if (n.kind == CC_PAIR) {
@@ -216,11 +220,12 @@ static cc_term weak(cc_kernel *k, cc_term term, cc_term *next) {
         cc_clear(&argument);
         return beta ? weak_again(next, result) : result;
     }
-    /* ∀-η: λ (x < ω). f {x} is f when x is not free in f. */
+    /* ∀-η: λ (x < ω). f {x} is f when x is not free in f: f has no loose
+     * index, exactly, and is then locally closed. */
     if (n.kind == CC_LLAM) {
         cc_node head = k->nodes[n.child[1]];
-        if (head.kind == CC_LAPP && k->nodes[head.child[1]].kind == CC_VAR &&
-            k->nodes[head.child[1]].payload == n.payload && !ck_term_free(k, head.child[0], n.payload))
+        if (head.kind == CC_LAPP && k->nodes[head.child[1]].kind == CC_BOUND &&
+            k->nodes[head.child[1]].payload == 0 && !k->nodes[head.child[0]].loose)
             return weak_again(next, head.child[0]);
         return term;
     }
@@ -231,7 +236,7 @@ static cc_term weak(cc_kernel *k, cc_term term, cc_term *next) {
         cc_node head = k->nodes[body];
         if (n.kind == CC_LAM && head.kind == CC_APP) {
             cc_node argument = k->nodes[head.child[1]];
-            if (argument.kind == CC_VAR && argument.payload == n.payload && !ck_term_free(k, head.child[0], n.payload))
+            if (argument.kind == CC_BOUND && argument.payload == 0 && !k->nodes[head.child[0]].loose)
                 return weak_again(next, head.child[0]);
         }
         if (n.kind == CC_PLAM && head.kind == CC_PAPP) {
@@ -305,6 +310,8 @@ static cc_term weak_tails(cc_kernel *k, cc_term term) {
 cc_term ck_whnf(cc_kernel *k, cc_term term) {
     if (!term || term >= k->count || !ck_tick(k))
         return 0;
+    if (k->nodes[term].loose)
+        return ck_fail(k, "Reduction reached a term with a loose bound variable."), 0;
     if (k->weak_cache[term])
         return k->weak_cache[term];
     if (!ck_enter(k, "Native reduction recursion depth exceeded."))
@@ -326,6 +333,10 @@ typedef struct {
     /* A folded definition application, and the inner part of one's spine:
      * rebuilt from their normalized arguments, never reduced. */
     bool folded, spine;
+    /* The level a term or level binder's body was opened at, while it is
+     * normalized (opening). */
+    bool opening;
+    uint32_t level;
 } normal_frame;
 enum { NORMAL_ENTER, NORMAL_CHILDREN, NORMAL_CHILD_DONE, NORMAL_GLUE,
        NORMAL_GLUE_DONE, NORMAL_REDUCE, NORMAL_REDUCED };
@@ -433,7 +444,7 @@ static bool computed_data(const cc_kernel *k, cc_term head) {
     cc_term root = head;
     while (spine_node(k->nodes[root].kind))
         root = k->nodes[root].child[0];
-    if (k->nodes[root].kind == CC_VAR || k->nodes[root].kind == CC_CON)
+    if (k->nodes[root].kind == CC_CONTEXT || k->nodes[root].kind == CC_OPENED || k->nodes[root].kind == CC_CON)
         return true;
     switch (k->nodes[head].kind) {
     case CC_PAIR: case CC_INL: case CC_INR: case CC_POINT: case CC_ZERO: case CC_SUCC: case CC_SUP:
@@ -510,6 +521,8 @@ static bool normal_restrict(cc_kernel *k, cc_node *node) {
 static cc_term normal(cc_kernel *k, cc_term term, bool fold) {
     if (!term || term >= k->count)
         return 0;
+    if (k->nodes[term].loose)
+        return ck_fail(k, "Normalization reached a term with a loose bound variable."), 0;
     if (fold && !k->folded_cache) {
         k->folded_cache = calloc(k->capacity, sizeof *k->folded_cache);
         if (!k->folded_cache)
@@ -574,6 +587,14 @@ static cc_term normal(cc_kernel *k, cc_term term, bool fold) {
             break;
         }
         case NORMAL_CHILD_DONE:
+            /* A binder's body was opened: its normal form is closed again at
+             * the same level, back to index 0 (section 3.1). */
+            if (frame->opening) {
+                frame->opening = false;
+                result = ck_close(k, result, frame->level);
+                if (!result)
+                    goto failed;
+            }
             frame->node.child[frame->next++] = result;
             frame->phase = NORMAL_CHILDREN;
             /* fall through */
@@ -583,7 +604,23 @@ static cc_term normal(cc_kernel *k, cc_term term, bool fold) {
             if (frame->next < ck_arity(frame->node.kind)) {
                 frame->phase = NORMAL_CHILD_DONE;
                 bool spine = (frame->folded || frame->spine) && frame->next == 0 && spine_node(frame->node.kind);
-                normal_push(k, &stack, frame->node.child[frame->next], spine);
+                cc_term child = frame->node.child[frame->next];
+                /* A term or level binder's body is opened at a level above
+                 * every level it holds: it combines with nothing else, since
+                 * this frame receives its normal form closed again. */
+                if (frame->next == 1 && ck_term_binder(frame->node.kind)) {
+                    cc_opener opener = {0};
+                    ck_opener_above(k, &opener, child);
+                    if (!ck_opener_take(k, &opener, &frame->level))
+                        goto failed;
+                    child = ck_open(k, child, frame->level);
+                    if (!child)
+                        goto failed;
+                    frame->opening = true;
+                    /* The frame pointer may move with the stack: the push is
+                     * last. */
+                }
+                normal_push(k, &stack, child, spine);
                 break;
             }
             cc_node n = frame->node;
@@ -758,8 +795,26 @@ static bool parts_agree(cc_kernel *k, cc_term a, cc_term b) {
     cc_node x = k->nodes[left], y = k->nodes[right];
     if (x.kind == y.kind && x.payload == y.payload) {
         bool parts = true;
-        for (unsigned i = 0; i < ck_arity(x.kind) && parts; ++i)
-            parts = x.child[i] == y.child[i] || normal_agree(k, x.child[i], y.child[i]);
+        for (unsigned i = 0; i < ck_arity(x.kind) && parts; ++i) {
+            if (x.child[i] == y.child[i])
+                continue;
+            cc_term a = x.child[i], b = y.child[i];
+            /* A common binder's bodies are opened at one level, above every
+             * level either side holds (section 3.1). */
+            if (i == 1 && ck_term_binder(x.kind)) {
+                cc_opener opener = {0};
+                uint32_t level = 0;
+                ck_opener_above(k, &opener, left);
+                ck_opener_above(k, &opener, right);
+                if (!ck_opener_take(k, &opener, &level))
+                    return false;
+                a = ck_open(k, a, level);
+                b = a ? ck_open(k, b, level) : 0;
+                if (!b)
+                    return false;
+            }
+            parts = normal_agree(k, a, b);
+        }
         if (parts || k->error[0] || !eta_sensitive(x.kind))
             return parts;
     }

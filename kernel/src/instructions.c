@@ -5,10 +5,12 @@
  * instruction names the position and the rule. The graph is append-only, a
  * failed instruction publishes nothing, and a repeated one is shared.
  *
- * Invariants: the free term variables and dimensions of a judgement's terms
- * are entries of its context; a context is closed under the entries' own
- * dependencies; term entries have distinct symbols, and dimension entries
- * distinct indices. Binders discharge exactly one entry. */
+ * Invariants: a judgement's terms are locally closed; the entries they refer
+ * to (CC_CONTEXT) and the dimensions free in them are entries of its context;
+ * a context is closed under the entries' own dependencies; dimension entries
+ * have distinct indices. Entries have no names. Binders discharge exactly one
+ * entry, abstracting it from the body (section 3.3 of
+ * docs/roadmaps/kernel/locally-nameless-kernel.md). */
 #include "term_internal.h"
 
 static void *reserve(cc_kernel *k, void *items, size_t *capacity, size_t needed, size_t size) {
@@ -59,23 +61,30 @@ static bool ready(cc_kernel *k) {
 
 /* ---- The derivation graph ---------------------------------------------- */
 
-static uint32_t derivation_hash(const cc_derivation *d, const uint8_t *position) {
+/* A derivation's identity: its rule, premises, entry and operands, its
+ * position, and its entry vector (section 3.7), entry by entry. */
+static uint32_t derivation_hash(const cc_derivation *d, const uint8_t *position, const uint32_t *entries) {
     uint32_t words[] = {d->rule, d->premise[0], d->premise[1], d->premise[2], d->premise[3],
-                        d->entry, d->operand[0], d->operand[1], d->depth};
+                        d->entry, d->operand[0], d->operand[1], d->depth, d->entry_count};
     uint32_t hash = UINT32_C(2166136261);
     for (size_t i = 0; i < sizeof words / sizeof *words; ++i)
         hash = (hash ^ words[i]) * UINT32_C(16777619);
     for (uint32_t i = 0; i < d->depth; ++i)
         hash = (hash ^ position[i]) * UINT32_C(16777619);
+    for (uint32_t i = 0; i < d->entry_count; ++i)
+        hash = (hash ^ entries[i]) * UINT32_C(16777619);
     return hash;
 }
 
-static bool same_derivation(const cc_kernel *k, const cc_derivation *a, const uint8_t *position, const cc_derivation *b) {
+static bool same_derivation(const cc_kernel *k, const cc_derivation *a, const uint8_t *position,
+                            const uint32_t *entries, const cc_derivation *b) {
     if (a->rule != b->rule || memcmp(a->premise, b->premise, sizeof a->premise) || a->entry != b->entry ||
-        memcmp(a->operand, b->operand, sizeof a->operand) || a->depth != b->depth)
+        memcmp(a->operand, b->operand, sizeof a->operand) || a->depth != b->depth || a->entry_count != b->entry_count)
         return false;
     for (uint32_t i = 0; i < a->depth; ++i)
         if (position[i] != k->positions[b->position + i]) return false;
+    for (uint32_t i = 0; i < a->entry_count; ++i)
+        if (entries[i] != k->entry_vectors[b->entries + i]) return false;
     return true;
 }
 
@@ -100,8 +109,10 @@ static void remember(cc_kernel *k, cc_judgement_id id) {
     const cc_fact *fact = &k->facts[id];
     size_t mask = k->derivation_capacity - 1;
     /* A derivation of depth 0 has no positions, and the array may still be
-     * null: an offset from it is undefined, and the hash reads none. */
-    size_t slot = derivation_hash(&fact->how, fact->how.depth ? k->positions + fact->how.position : NULL) & mask;
+     * null: an offset from it is undefined, and the hash reads none. So for
+     * the entry vectors. */
+    size_t slot = derivation_hash(&fact->how, fact->how.depth ? k->positions + fact->how.position : NULL,
+                                  fact->how.entry_count ? k->entry_vectors + fact->how.entries : NULL) & mask;
     while (k->derivations[slot] && k->derivations[slot] < k->fact_count)
         slot = (slot + 1) & mask;
     if (!k->derivations[slot])
@@ -112,21 +123,33 @@ static void remember(cc_kernel *k, cc_judgement_id id) {
 /* Start an instruction. It proceeds only when it is new: the judgement of
  * an identical earlier instruction is returned instead, as is 0 on error. */
 bool ck_instr_begin(cc_kernel *k, cc_derivation how, const uint8_t *position, size_t depth, cc_judgement_id *found) {
+    return ck_instr_begin_entries(k, how, position, depth, NULL, 0, found);
+}
+
+/* An entry vector is at most as long as a position is deep: one entry for
+ * each binder a position crosses (section 3.7). */
+bool ck_instr_begin_entries(cc_kernel *k, cc_derivation how, const uint8_t *position, size_t depth,
+                            const cc_entry_id *entries, size_t count, cc_judgement_id *found) {
     *found = 0;
     if (!ready(k))
         return false;
-    if (depth > 1024)
+    if (depth > 1024 || count > 1024)
         return ck_fail_as(k, CC_ERROR_RESOURCE, "Position depth exceeded.");
     if (depth && !position)
         return ck_fail(k, "Missing position.");
+    if (count && !entries)
+        return ck_fail(k, "Missing entries.");
     how.depth = (uint32_t)depth;
+    how.entry_count = (uint32_t)count;
     k->pending = how;
     k->pending_position = position;
+    k->pending_entries = entries;
     if (k->derivation_capacity) {
         size_t mask = k->derivation_capacity - 1;
-        for (size_t slot = derivation_hash(&how, position) & mask; k->derivations[slot]; slot = (slot + 1) & mask) {
+        for (size_t slot = derivation_hash(&how, position, entries) & mask; k->derivations[slot];
+             slot = (slot + 1) & mask) {
             cc_judgement_id id = k->derivations[slot];
-            if (id < k->fact_count && same_derivation(k, &how, position, &k->facts[id].how)) {
+            if (id < k->fact_count && same_derivation(k, &how, position, entries, &k->facts[id].how)) {
                 *found = id;
                 return false;
             }
@@ -160,6 +183,12 @@ bool ck_instr_entry(cc_kernel *k, cc_entry_id id, bool dimension, cc_entry *out)
 cc_judgement_id ck_instr_publish(cc_kernel *k, uint32_t kind, cc_term term, cc_term other, cc_term type, uint32_t context) {
     if (k->error[0] || !term || !type || (kind == CC_FACT_EQUALITY && !other))
         return 0;
+    /* A judgement holds no variable an operation opened, and no loose index:
+     * O(1) checks of its terms (section 3.1). */
+    if (k->nodes[term].opened || k->nodes[type].opened || (other && k->nodes[other].opened))
+        return ck_fail(k, "A result would hold a variable an operation opened."), 0;
+    if (k->nodes[term].loose || k->nodes[type].loose || (kind == CC_FACT_EQUALITY && k->nodes[other].loose))
+        return ck_fail(k, "A judgement's terms are locally closed."), 0;
     cc_fact *facts = reserve(k, k->facts, &k->fact_capacity, k->fact_count + 1, sizeof *facts);
     if (!facts)
         return 0;
@@ -173,6 +202,16 @@ cc_judgement_id ck_instr_publish(cc_kernel *k, uint32_t kind, cc_term term, cc_t
         memcpy(positions + k->position_count, k->pending_position, how.depth);
         how.position = (uint32_t)k->position_count;
         k->position_count += how.depth;
+    }
+    if (how.entry_count) {
+        uint32_t *vectors = reserve(k, k->entry_vectors, &k->entry_vector_capacity,
+                                    k->entry_vector_count + how.entry_count, sizeof *vectors);
+        if (!vectors)
+            return 0;
+        k->entry_vectors = vectors;
+        memcpy(vectors + k->entry_vector_count, k->pending_entries, how.entry_count * sizeof *vectors);
+        how.entries = (uint32_t)k->entry_vector_count;
+        k->entry_vector_count += how.entry_count;
     }
     cc_judgement_id id = (cc_judgement_id)k->fact_count++;
     k->facts[id] = (cc_fact){kind, term, other, type, context, how, 0};
@@ -267,7 +306,7 @@ bool ck_instr_merge(cc_kernel *k, uint32_t a, uint32_t b, uint32_t *out) {
         else { next = x[i++]; ++j; }
         cc_entry e = k->entries[next];
         if (e.dimension) {
-            uint64_t bit = UINT64_C(1) << e.symbol;
+            uint64_t bit = UINT64_C(1) << e.index;
             if (dimensions & bit)
                 return ck_fail(k, "Two dimension entries with one index meet in a context.");
             dimensions |= bit;
@@ -286,7 +325,9 @@ bool ck_instr_merge3(cc_kernel *k, uint32_t a, uint32_t b, uint32_t c, uint32_t 
 
 /* Remove entries from a context. A remaining entry must not depend on a
  * removed one, and must not be another dimension entry with a removed
- * dimension's index: the binder would capture it. */
+ * dimension's index: the binder would capture it. A removed entry may depend
+ * on another removed one, as a replacement's entries for nested binders do
+ * (section 3.6). */
 bool ck_instr_discharge(cc_kernel *k, uint32_t set, const cc_entry_id *removed, size_t count, uint32_t *out) {
     if (k->error[0])
         return false;
@@ -299,16 +340,18 @@ bool ck_instr_discharge(cc_kernel *k, uint32_t set, const cc_entry_id *removed, 
     for (uint32_t i = 0; i < s.count; ++i) {
         cc_entry e = k->entries[items[i]];
         bool gone = false;
-        for (size_t r = 0; r < count && !gone; ++r) {
-            cc_entry binder = k->entries[removed[r]];
+        for (size_t r = 0; r < count && !gone; ++r)
             gone = items[i] == removed[r];
-            if (!gone && contains(k, e.context, removed[r]))
+        if (gone)
+            continue;
+        for (size_t r = 0; r < count; ++r) {
+            cc_entry binder = k->entries[removed[r]];
+            if (contains(k, e.context, removed[r]))
                 return ck_fail(k, "A context entry still depends on the discharged entry.");
-            if (!gone && e.dimension && binder.dimension && e.symbol == binder.symbol)
+            if (e.dimension && binder.dimension && e.index == binder.index)
                 return ck_fail(k, "The binder would capture another dimension entry with its index.");
         }
-        if (!gone)
-            z[n++] = items[i];
+        z[n++] = items[i];
     }
     if (n == s.count) { *out = set; return true; }
     return publish_set(k, n, out);
@@ -320,67 +363,13 @@ bool ck_instr_bind(cc_kernel *k, uint32_t body, cc_entry_id e, uint32_t *out) {
     return ck_instr_discharge(k, body, &e, 1, &rest) && ck_instr_merge(k, rest, k->entries[e].context, out);
 }
 
-/* Term entries by symbol. A slot holding a truncated id is free again, and
- * lookups compare the entry, so a stale slot only costs time. */
-static size_t symbol_slot(uint32_t symbol, size_t capacity) {
-    return (size_t)(symbol * UINT32_C(2654435761)) & (capacity - 1);
-}
-
-static cc_entry_id find_entry(const cc_kernel *k, uint32_t symbol) {
-    if (!k->entry_index_capacity)
-        return 0;
-    size_t mask = k->entry_index_capacity - 1;
-    for (size_t slot = symbol_slot(symbol, k->entry_index_capacity); k->entry_index[slot]; slot = (slot + 1) & mask) {
-        cc_entry_id id = k->entry_index[slot];
-        if (id < k->entry_count && !k->entries[id].dimension && k->entries[id].symbol == symbol)
-            return id;
-    }
-    return 0;
-}
-
-/* A failed allocation only forgoes the index: find_entry then misses, and
- * extend's uniqueness check would too, so it fails the instruction. */
-static void index_entry(cc_kernel *k, cc_entry_id id) {
-    if ((k->entry_index_used + 1) * 2 > k->entry_index_capacity) {
-        size_t capacity = 256;
-        while (capacity < 4 * k->entry_count && capacity < SIZE_MAX / 8) capacity *= 2;
-        uint32_t *table = calloc(capacity, sizeof *table);
-        if (!table) { ck_fail_as(k, CC_ERROR_RESOURCE, "Entry index allocation failed."); return; }
-        free(k->entry_index);
-        k->entry_index = table;
-        k->entry_index_capacity = capacity;
-        k->entry_index_used = 0;
-        for (cc_entry_id old = 1; old < id; ++old)
-            if (!k->entries[old].dimension && !k->entries[old].face) index_entry(k, old);
-    }
-    size_t mask = k->entry_index_capacity - 1, slot = symbol_slot(k->entries[id].symbol, k->entry_index_capacity);
-    while (k->entry_index[slot] && k->entry_index[slot] < k->entry_count && k->entry_index[slot] != id)
-        slot = (slot + 1) & mask;
-    if (!k->entry_index[slot]) ++k->entry_index_used;
-    k->entry_index[slot] = id;
-}
-
-/* A term entry is named by its symbol: extending with the same type
- * judgement and symbol again returns the same entry. */
-cc_entry_id cc_instr_extend(cc_kernel *k, cc_judgement_id type, uint32_t symbol) {
+/* A new term entry, x : A, from Γ ⊢ A : U(i): every call makes one. The
+ * kernel keeps no names (section 5.1 of the design): the caller matches its
+ * own names to entries, and reuses an entry by passing it again. */
+cc_entry_id cc_instr_extend(cc_kernel *k, cc_judgement_id type) {
     cc_fact t = {0};
     cc_term level = 0;
     if (!ready(k) || !ck_instr_premise(k, type, CC_FACT_TYPING, &t) || !ck_instr_universe(k, t.type, &level))
-        return 0;
-    if (!symbol)
-        return ck_fail(k, "A context entry needs a symbol."), 0;
-    /* The same name at the same type, however that type was derived, is the
-     * same entry: its own judgement justifies its type. Contexts are then
-     * canonical, one entry per name. */
-    cc_entry_id named = find_entry(k, symbol);
-    if (named) {
-        if (k->entries[named].source == type || ck_alpha_equal(k, k->entries[named].type, t.term))
-            return named;
-        if (!k->error[0])
-            ck_fail(k, "The symbol already names a context entry.");
-        return 0;
-    }
-    if (!ck_var(k, symbol))
         return 0;
     cc_entry *entries = reserve(k, k->entries, &k->entry_capacity, k->entry_count + 1, sizeof *entries);
     if (!entries)
@@ -392,33 +381,21 @@ cc_entry_id cc_instr_extend(cc_kernel *k, cc_judgement_id type, uint32_t symbol)
     if (!self)
         return 0;
     *self = id;
-    k->entries[id] = (cc_entry){.symbol = symbol, .type = t.term, .level = level, .context = t.context, .source = type};
+    k->entries[id] = (cc_entry){.type = t.term, .level = level, .context = t.context, .source = type};
     if (!publish_set(k, 1, &scope) || !ck_instr_merge(k, t.context, scope, &scope))
         return 0;
     k->entries[id].scope = scope;
-    index_entry(k, id);
-    if (k->error[0]) return 0;
     ++k->entry_count;
     return id;
 }
 
-/* A level entry x < ω (G0 §2.2). Its type is the bound, LBound(1): binder
- * syntax, never a term, so the entry needs no judgement. Level and term
- * entries share the symbols: the same symbol again gives the same level
- * entry, and a term entry's symbol is refused. */
-cc_entry_id cc_instr_level(cc_kernel *k, uint32_t symbol) {
+/* A new level entry x < ω (G0 §2.2). Its type is the bound, LBound(1): binder
+ * syntax, never a term, so the entry needs no judgement. */
+cc_entry_id cc_instr_level(cc_kernel *k) {
     if (!ready(k))
         return 0;
-    if (!symbol)
-        return ck_fail(k, "A context entry needs a symbol."), 0;
-    cc_entry_id named = find_entry(k, symbol);
-    if (named) {
-        if (k->entries[named].level_variable)
-            return named;
-        return ck_fail(k, "The symbol already names a context entry."), 0;
-    }
     cc_term bound = ck_instr_make(k, CC_LBOUND, 1, 0, 0, 0, 0);
-    if (!bound || !ck_var(k, symbol))
+    if (!bound)
         return 0;
     cc_entry *entries = reserve(k, k->entries, &k->entry_capacity, k->entry_count + 1, sizeof *entries);
     if (!entries)
@@ -429,12 +406,10 @@ cc_entry_id cc_instr_level(cc_kernel *k, uint32_t symbol) {
     if (!self)
         return 0;
     *self = id;
-    k->entries[id] = (cc_entry){.symbol = symbol, .type = bound, .level_variable = true};
+    k->entries[id] = (cc_entry){.type = bound, .level_variable = true};
     if (!publish_set(k, 1, &scope))
         return 0;
     k->entries[id].scope = scope;
-    index_entry(k, id);
-    if (k->error[0]) return 0;
     ++k->entry_count;
     return id;
 }
@@ -460,7 +435,7 @@ cc_entry_id ck_instr_dimension_entry(cc_kernel *k, unsigned index) {
     if (index >= CC_DIMENSIONS)
         return ck_fail(k, "Dimension outside the native range."), 0;
     cc_entry_id cached = k->dimension_entries[index];
-    if (cached && cached < k->entry_count && k->entries[cached].dimension && k->entries[cached].symbol == index)
+    if (cached && cached < k->entry_count && k->entries[cached].dimension && k->entries[cached].index == index)
         return cached;
     cc_entry *entries = reserve(k, k->entries, &k->entry_capacity, k->entry_count + 1, sizeof *entries);
     if (!entries)
@@ -471,7 +446,7 @@ cc_entry_id ck_instr_dimension_entry(cc_kernel *k, unsigned index) {
     if (!self)
         return 0;
     *self = id;
-    k->entries[id] = (cc_entry){.symbol = index, .dimension = true};
+    k->entries[id] = (cc_entry){.index = index, .dimension = true};
     if (!publish_set(k, 1, &scope))
         return 0;
     k->entries[id].scope = scope;
@@ -545,16 +520,19 @@ cc_judgement_id cc_instr_variable(cc_kernel *k, cc_entry_id id) {
     cc_entry e = {0};
     if (!ck_instr_entry(k, id, false, &e))
         return 0;
-    return ck_instr_typing(k, ck_var(k, e.symbol), e.type, e.scope);
+    return ck_instr_typing(k, ck_make(k, CC_CONTEXT, id, 0, 0, 0, 0), e.type, e.scope);
 }
 
 /* ---- Universes and inductive types -------------------------------------- */
 
-/* The context of a level (G0 §2.3): the level entries of its variables. */
+/* The context of a level (G0 §2.3): the level entries of its variables, each
+ * keyed by its id. A bound or opened variable, loose in the level, is
+ * refused. */
 static bool level_context(cc_kernel *k, const cc_level_nf *nf, uint32_t *context) {
     *context = 0;
     for (uint32_t i = 0; i < nf->count; ++i) {
-        cc_entry_id id = nf->terms[i].key <= UINT32_MAX ? find_entry(k, (uint32_t)nf->terms[i].key) : 0;
+        uint64_t key = nf->terms[i].key;
+        cc_entry_id id = key < CC_LEVEL_KEY_OPENED && key < k->entry_count ? (cc_entry_id)key : 0;
         if (!id)
             return ck_fail(k, "Unbound level variable.");
         if (!k->entries[id].level_variable)
@@ -693,10 +671,11 @@ cc_judgement_id cc_instr_sum_elim(cc_kernel *k, cc_judgement_id motive_id, cc_ju
         return ck_fail(k, "Sum induction needs a value of a sum type."), 0;
     if (!motive(k, p, v.type))
         return 0;
+    /* Π (x : A). P(inl x): the motive and the sum type are locally closed,
+     * and x is index 0. */
     for (unsigned side = 0; side < 2; ++side) {
-        uint32_t name = ck_fresh_symbol(k);
-        cc_term injected = ck_instr_make(k, side ? CC_INR : CC_INL, 0, v.type, ck_var(k, name), 0, 0);
-        if (!ck_instr_same(k, cases[side].type, ck_instr_make(k, CC_PI, name, sum.child[side], ck_instr_app(k, p.term, injected), 0, 0),
+        cc_term injected = ck_instr_make(k, side ? CC_INR : CC_INL, 0, v.type, ck_instr_make(k, CC_BOUND, 0, 0, 0, 0, 0), 0, 0);
+        if (!ck_instr_same(k, cases[side].type, ck_instr_make(k, CC_PI, 0, sum.child[side], ck_instr_app(k, p.term, injected), 0, 0),
                   side ? "The right case has the wrong type." : "The left case has the wrong type."))
             return 0;
     }
@@ -719,8 +698,10 @@ static cc_judgement_id former(cc_kernel *k, cc_term_kind kind, cc_entry_id id, c
     if (!ck_instr_entry(k, id, false, &e) || !ck_instr_premise(k, family, CC_FACT_TYPING, &b) ||
         !ck_instr_universe(k, b.type, &level) || !ck_instr_bind(k, b.context, id, &context))
         return 0;
-    return ck_instr_typing(k, ck_instr_make(k, kind, e.symbol, e.type, b.term, 0, 0),
-                  ck_universe(k, ck_level_max(k, e.level, level)), context);
+    /* The family abstracted over the entry it discharges. */
+    cc_term body = ck_abstract(k, b.term, id);
+    return body ? ck_instr_typing(k, ck_instr_make(k, kind, 0, e.type, body, 0, 0),
+                  ck_universe(k, ck_level_max(k, e.level, level)), context) : 0;
 }
 
 cc_judgement_id cc_instr_pi(cc_kernel *k, cc_entry_id id, cc_judgement_id codomain) {
@@ -741,7 +722,10 @@ cc_judgement_id cc_instr_lambda(cc_kernel *k, cc_entry_id id, cc_judgement_id bo
     if (!ck_instr_entry(k, id, false, &e) || !ck_instr_premise(k, body_id, CC_FACT_TYPING, &b) ||
         !ck_instr_bind(k, b.context, id, &context))
         return 0;
-    return ck_instr_typing(k, ck_instr_make(k, CC_LAM, e.symbol, e.type, b.term, 0, 0), ck_instr_make(k, CC_PI, e.symbol, e.type, b.type, 0, 0), context);
+    /* The body and its type abstracted over the entry discharged. */
+    cc_term body = ck_abstract(k, b.term, id), type = body ? ck_abstract(k, b.type, id) : 0;
+    return type ? ck_instr_typing(k, ck_instr_make(k, CC_LAM, 0, e.type, body, 0, 0),
+                                  ck_instr_make(k, CC_PI, 0, e.type, type, 0, 0), context) : 0;
 }
 
 cc_judgement_id cc_instr_apply(cc_kernel *k, cc_judgement_id function, cc_judgement_id argument) {
@@ -757,7 +741,7 @@ cc_judgement_id cc_instr_apply(cc_kernel *k, cc_judgement_id function, cc_judgem
         return ck_fail(k, "Only a term of a Π type can be applied."), 0;
     if (!ck_instr_same(k, a.type, pi.child[0], "The argument has the wrong type.") || !ck_instr_merge(k, f.context, a.context, &context))
         return 0;
-    return ck_instr_typing(k, ck_instr_app(k, f.term, a.term), ck_substitute(k, pi.child[1], pi.payload, a.term), context);
+    return ck_instr_typing(k, ck_instr_app(k, f.term, a.term), ck_instantiate(k, pi.child[1], a.term), context);
 }
 
 /* ---- Level quantification (G0 §2.7) ------------------------------------ */
@@ -775,8 +759,10 @@ cc_judgement_id cc_instr_level_pi(cc_kernel *k, cc_entry_id id, cc_judgement_id 
     if (!level_entry(k, id, &e) || !ck_instr_premise(k, body_id, CC_FACT_TYPING, &b) || !ck_instr_universe(k, b.type, &level) ||
         !ck_instr_bind(k, b.context, id, &context))
         return 0;
-    return ck_instr_typing(k, ck_instr_make(k, CC_LPI, e.symbol, e.type, b.term, 0, 0),
-                  ck_universe(k, ck_level_limit(k, e.symbol, level)), context);
+    /* The limit reads the entry's key before abstraction; its result
+     * mentions the entry no more. */
+    cc_term limit = ck_level_limit(k, id, level), body = limit ? ck_abstract(k, b.term, id) : 0;
+    return body ? ck_instr_typing(k, ck_instr_make(k, CC_LPI, 0, e.type, body, 0, 0), ck_universe(k, limit), context) : 0;
 }
 
 /* ∀-Intro. */
@@ -789,8 +775,9 @@ cc_judgement_id cc_instr_level_lambda(cc_kernel *k, cc_entry_id id, cc_judgement
     uint32_t context = 0;
     if (!level_entry(k, id, &e) || !ck_instr_premise(k, body_id, CC_FACT_TYPING, &b) || !ck_instr_bind(k, b.context, id, &context))
         return 0;
-    return ck_instr_typing(k, ck_instr_make(k, CC_LLAM, e.symbol, e.type, b.term, 0, 0),
-                  ck_instr_make(k, CC_LPI, e.symbol, e.type, b.type, 0, 0), context);
+    cc_term body = ck_abstract(k, b.term, id), type = body ? ck_abstract(k, b.type, id) : 0;
+    return type ? ck_instr_typing(k, ck_instr_make(k, CC_LLAM, 0, e.type, body, 0, 0),
+                                  ck_instr_make(k, CC_LPI, 0, e.type, type, 0, 0), context) : 0;
 }
 
 /* ∀-Elim: only at a finite level, since the variable ranges over the levels
@@ -818,7 +805,7 @@ cc_judgement_id cc_instr_level_apply(cc_kernel *k, cc_judgement_id function, cc_
     ck_level_nf_free(&nf);
     if (!canonical || !ck_instr_merge(k, f.context, levels, &context))
         return 0;
-    cc_term type = ck_level_instantiate(k, pi.child[1], pi.payload, canonical);
+    cc_term type = ck_level_instantiate(k, pi.child[1], canonical);
     return type ? ck_instr_typing(k, ck_instr_make(k, CC_LAPP, 0, f.term, canonical, 0, 0), type, context) : 0;
 }
 
@@ -836,7 +823,7 @@ cc_judgement_id cc_instr_pair(cc_kernel *k, cc_judgement_id type_id, cc_judgemen
     if (sigma.kind != CC_SIGMA)
         return ck_fail(k, "A pair needs a Σ type."), 0;
     if (!ck_instr_same(k, a.type, sigma.child[0], "The first component has the wrong type.") ||
-        !ck_instr_same(k, b.type, ck_substitute(k, sigma.child[1], sigma.payload, a.term), "The second component has the wrong type.") ||
+        !ck_instr_same(k, b.type, ck_instantiate(k, sigma.child[1], a.term), "The second component has the wrong type.") ||
         !ck_instr_merge3(k, t.context, a.context, b.context, &context))
         return 0;
     return ck_instr_typing(k, ck_instr_make(k, CC_PAIR, 0, t.term, a.term, b.term, 0), t.term, context);
@@ -855,7 +842,7 @@ static cc_judgement_id projection(cc_kernel *k, cc_judgement_id pair, bool secon
     cc_term first = ck_instr_make(k, CC_FST, 0, p.term, 0, 0, 0);
     if (!second)
         return ck_instr_typing(k, first, sigma.child[0], p.context);
-    return ck_instr_typing(k, ck_instr_make(k, CC_SND, 0, p.term, 0, 0, 0), ck_substitute(k, sigma.child[1], sigma.payload, first), p.context);
+    return ck_instr_typing(k, ck_instr_make(k, CC_SND, 0, p.term, 0, 0, 0), ck_instantiate(k, sigma.child[1], first), p.context);
 }
 
 cc_judgement_id cc_instr_first(cc_kernel *k, cc_judgement_id pair) { return projection(k, pair, false); }
@@ -893,23 +880,22 @@ cc_judgement_id cc_instr_family(cc_kernel *k, cc_judgement_id type_id, cc_judgem
         return ck_fail(k, "Only a Π or Σ type has a family."), 0;
     if (!ck_instr_same(k, a.type, former.child[0], "The argument has the wrong type.") || !ck_instr_merge(k, t.context, a.context, &context))
         return 0;
-    return ck_instr_typing(k, ck_substitute(k, former.child[1], former.payload, a.term), t.type, context);
+    return ck_instr_typing(k, ck_instantiate(k, former.child[1], a.term), t.type, context);
 }
 
 /* ---- Definitions -------------------------------------------------------- */
 
-cc_judgement_id cc_instr_define(cc_kernel *k, uint32_t symbol, cc_judgement_id closed) {
-    cc_judgement_id found;
-    if (!ck_instr_begin(k, (cc_derivation){.rule = CC_INSTR_DEFINE, .premise = {closed}, .operand = {symbol}}, NULL, 0, &found))
-        return found;
+/* Each Define makes a new definition: it is never answered from the
+ * derivation memo, so two Defines of one judgement make two definitions with
+ * distinct references, and the caller names each (section 8 of the design). */
+cc_judgement_id cc_instr_define(cc_kernel *k, cc_judgement_id closed) {
+    if (!ck_instr_begin_stateful(k, (cc_derivation){.rule = CC_INSTR_DEFINE, .premise = {closed}}, NULL, 0))
+        return 0;
     cc_fact d = {0};
     if (!ck_instr_premise(k, closed, CC_FACT_TYPING, &d))
         return 0;
     if (d.context)
         return ck_fail(k, "Only a closed judgement can be defined."), 0;
-    for (size_t i = 1; i < k->definition_count; ++i)
-        if (k->definitions[i].symbol == symbol)
-            return ck_fail(k, "Definition symbol is already registered."), 0;
     cc_definition *definitions = reserve(k, k->definitions, &k->definition_capacity, k->definition_count + 1, sizeof *definitions);
     if (!definitions)
         return 0;
@@ -918,7 +904,7 @@ cc_judgement_id cc_instr_define(cc_kernel *k, uint32_t symbol, cc_judgement_id c
     cc_term reference = ck_instr_make(k, CC_DEFREF, index, 0, 0, 0, 0);
     if (!reference)
         return 0;
-    k->definitions[index] = (cc_definition){symbol, d.term, d.type};
+    k->definitions[index] = (cc_definition){d.term, d.type};
     ++k->definition_count;
     return ck_instr_typing(k, reference, d.type, 0);
 }
@@ -941,11 +927,14 @@ size_t cc_kernel_judgement_count(const cc_kernel *k) {
 
 /* The machinery above, for instruction families in their own files. */
 bool ck_instr_ready(cc_kernel *k) { return ready(k); }
-bool ck_instr_begin_stateful(cc_kernel *k, cc_derivation how) {
+bool ck_instr_begin_stateful(cc_kernel *k, cc_derivation how, const cc_entry_id *entries, size_t count) {
     if (!ready(k))
         return false;
+    how.depth = 0;
+    how.entry_count = (uint32_t)count;
     k->pending = how;
     k->pending_position = NULL;
+    k->pending_entries = entries;
     return true;
 }
 /* A level in normal form, and its context: the level entries of its
@@ -977,7 +966,8 @@ bool cc_kernel_judgement(const cc_kernel *k, cc_judgement_id id, cc_judgement_in
     cc_term other = f.kind == CC_FACT_EQUALITY ? f.other : 0;
     *info = (cc_judgement_info){f.kind, f.term, other, f.type, (cc_instruction)f.how.rule,
         {f.how.premise[0], f.how.premise[1], f.how.premise[2], f.how.premise[3]}, f.how.entry,
-        {f.how.operand[0], f.how.operand[1]}, f.how.depth ? k->positions + f.how.position : NULL, f.how.depth};
+        {f.how.operand[0], f.how.operand[1]}, f.how.depth ? k->positions + f.how.position : NULL, f.how.depth,
+        f.how.entry_count ? k->entry_vectors + f.how.entries : NULL, f.how.entry_count};
     return true;
 }
 
@@ -992,12 +982,12 @@ size_t cc_kernel_entry_count(const cc_kernel *k) {
     return k && k->entry_count ? k->entry_count : 1;
 }
 
-bool cc_kernel_entry(const cc_kernel *k, cc_entry_id id, uint32_t *symbol, cc_term *type, bool *dimension,
+bool cc_kernel_entry(const cc_kernel *k, cc_entry_id id, uint32_t *index, cc_term *type, bool *dimension,
                      cc_judgement_id *source) {
     if (!k || !id || id >= k->entry_count)
         return false;
     cc_entry e = k->entries[id];
-    if (symbol) *symbol = e.symbol;
+    if (index) *index = e.index;
     if (type) *type = e.type;
     if (dimension) *dimension = e.dimension;
     if (source) *source = e.source;

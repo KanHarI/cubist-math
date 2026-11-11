@@ -3,7 +3,7 @@ import { isAssumptionName } from "./translator/names.mjs";
 // Read the native arena directly. Source names are labels only; they never
 // replace handles, payloads, or constructor operands in this listing.
 import { cubicalKinds } from "./cubical-kernel.mjs";
-import { binderName, termBinders, variableName } from "./cubical-variables.mjs";
+import { binderName, binders, variableName } from "./cubical-variables.mjs";
 
 export const operandNames = {
   Pi: ["domain", "body"], Lam: ["domain", "body"], Sigma: ["domain", "body"], W: ["domain", "body"],
@@ -37,9 +37,11 @@ export function kernelAssembly(program, view, checked, { limit = 400, expanded =
   // differs: but an assumption's kernel name is internal (names.mjs,
   // assumptionMark), and its label alone names it.
   const named = (label, name) => isAssumptionName(name) ? label ?? name : label && label !== name ? `${label} (${name})` : name;
+  // Each variable of the view's context by the kernel entry its scope binds
+  // it to: the kernel knows an entry by its id, and no name.
   const context = view.context.map(entry => ({ name: entry.name, label: entry.label ?? entry.name,
     shown: named(entry.label ?? entry.name, entry.name),
-    symbol: kernel.symbol(entry.name), handle: encode(entry.type) }));
+    entry: scope.get(kernel.symbol(entry.name)), handle: encode(entry.type) }));
   const queue = [...focus, ...roots.map(root => root.handle), ...context.map(entry => entry.handle)];
   const seen = new Set(), nodes = [], formulas = new Map(), expand = new Set(expanded);
   for (let index = 0; index < queue.length && nodes.length < limit; index++) {
@@ -48,9 +50,13 @@ export function kernelAssembly(program, view, checked, { limit = 400, expanded =
     const native = kernel.node(id), opcode = cubicalKinds.indexOf(native.kind);
     const node = { id, opcode, mnemonic: opcodeName(native.kind), kind: native.kind, payload: native.payload,
       operands: native.children.map((handle, i) => ({ slot: "abcd"[i], label: operandNames[native.kind]?.[i] ?? "unused", handle })) };
-    if (native.kind === "Var" || termBinders.has(native.kind)) {
-      const name = native.kind === "Var" ? variableName(kernel, native) : binderName(kernel, native), label = view.symbols[name]?.name;
-      node.annotation = `symbol #${native.payload}: ${named(label, name)}`;
+    if (native.kind === "Context") {
+      const name = variableName(kernel, native, null, checked.naming), label = view.symbols[name]?.name;
+      node.annotation = `entry #${native.payload}: ${named(label, name)}`;
+    } else if (native.kind === "Bound") node.annotation = `bound variable, index ${native.payload}`;
+    else if (binders.has(native.kind)) {
+      const name = binderName(kernel, id), label = view.symbols[name]?.name;
+      node.annotation = `binds index 0 of operand b: ${named(label, name)}`;
     } else if (["Path", "PLam", "Comp", "HComp", "Trans"].includes(native.kind)) node.annotation = `dimension #${native.payload}`;
     else if (native.kind === "U") node.annotation = "universe; its level is operand a";
     else if (native.kind === "Sort" || native.kind === "Elim")
@@ -85,7 +91,7 @@ export function kernelAssembly(program, view, checked, { limit = 400, expanded =
 export function assemblyText(listing) {
   const lines = ["; Cubical C native term arena — handles are local to this replay session.",
     ...listing.roots.map(root => `; ${root.label}: %${root.handle}`),
-    ...listing.context.map(entry => `; Context #${entry.symbol} ${entry.shown ?? `${entry.label} (${entry.name})`} : %${entry.handle}`),
+    ...listing.context.map(entry => `; Context #${entry.entry} ${entry.shown ?? `${entry.label} (${entry.name})`} : %${entry.handle}`),
     ...listing.dimensions.map(([name, slot]) => `; Interval ${name}: dimension #${slot}`), ""];
   for (const node of listing.nodes) {
     lines.push(`%${node.id} = ${node.mnemonic} [${node.opcode}] payload=${node.payload} `
@@ -114,7 +120,7 @@ export function renderAssembly(container, listing, { jump, expand, inspect }) {
   const roots = el("div", undefined, "assembly-roots");
   for (const root of listing.roots) { const row = el("div", `${root.label}: `); row.append(reference(root.handle)); roots.append(row); }
   for (const entry of listing.context) {
-    const row = el("div", `Context #${entry.symbol} ${entry.shown ?? `${entry.label} (${entry.name})`} : `);
+    const row = el("div", `Context #${entry.entry} ${entry.shown ?? `${entry.label} (${entry.name})`} : `);
     row.append(reference(entry.handle)); roots.append(row);
   }
   if (!listing.context.length) roots.append(el("div", "Empty context"));

@@ -22,13 +22,15 @@ def size(t : Tree) : UNat := match t {
     node(l, r) => succ(size(l));
   };
 
-// Output: fun (x : Tree) => induction x return UNat { leaf => 1; node(l, r) with l_rec, r_rec =>
-//   succ(l_rec); }
+// Output: fun (x : Tree) => induction x return UNat { leaf => 1; node(x1, x2) with x3, x4 =>
+//   succ(x3); }
 print(evaluate(!!size));
 
+// The clause's binders are the kernel's, which carry no names (ABI 4), and
+// show the driver's: a follow-up names them after the constructor's fields.
 def size_again := fun (x : Tree) => induction x return UNat {
     leaf => 1;
-    node(l, r) with l_rec, r_rec => succ(l_rec);
+    node(x1, x2) with x3, x4 => succ(x3);
   };
 
 def size_same : size = size_again {
@@ -43,19 +45,19 @@ def length(xs : List(U0, UNat)) : UNat := induction xs return UNat {
 // An instance carries no erased universe, so the printer writes __U in its
 // place, and whoever writes the instance out supplies it: the elaborator
 // says what __U stands for.
-// Output: fun (x : List(__U, UNat)) => induction x return UNat { nil => 0; cons(head, tail) with ih
-//   => succ(ih); }
+// Output: fun (x : List(__U, UNat)) => induction x return UNat { nil => 0; cons(x1, x2) with ih =>
+//   succ(ih); }
 print(evaluate(!!length));
 
 // Error: E372: __U stands for a universe that the printer could not show: write the universe in its
 //   place, such as U0 or a universe variable.
 def length_again := fun (x : List(__U, UNat)) => induction x return UNat {
     nil => 0;
-    cons(head, tail) with ih => succ(ih);
+    cons(x1, x2) with ih => succ(ih);
   };
 
 // Written out, it checks.
 def length_written := fun (x : List(U0, UNat)) => induction x return UNat {
     nil => 0;
-    cons(head, tail) with ih => succ(ih);
+    cons(x1, x2) with ih => succ(ih);
   };

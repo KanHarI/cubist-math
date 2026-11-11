@@ -23,8 +23,8 @@ inductive D {
 //   : P_a(e); }
 print(inspect(E));
 // Output: inductive F : U0 -> U0 -> U0 -> U0 -> U0 -> U0 -> U0 -> U0 -> U0 -> U0 (type) { f : F [0
-//   data, 0 positions, 0 dimensions]; } eliminator for P : F(U, V, W, X, Y, V_, W_, X_, Y_) -> U_a
-//   { f_case : P(f); }
+//   data, 0 positions, 0 dimensions]; } eliminator for P_a : F(U, V, W, X, Y, V_, W_, X_, Y_) ->
+//   U_a { f_case : P_a(f); }
 print(inspect(F));
 // Output: inductive D : U0 (type) { c_ : D [0 data, 0 positions, 0 dimensions]; d : D -> D [0 data,
 //   1 position, 0 dimensions]; } eliminator for P : D -> U { c_case : P(c_); d_case : forall x : D.

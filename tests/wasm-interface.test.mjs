@@ -26,7 +26,7 @@ const lower = values => values.map(value => value?.toLowerCase() ?? null);
 
 test("JS term, instruction, step and error encodings agree with the C header", () => {
   assert.deepEqual(lower(cubicalKinds), enumeration("cc_term_kind", /^CC_/, [
-    "NAT", "ZERO", "SUCC", "NATREC", "W", "SUP", "WREC", "PUSHOUT", "PUSH_LEFT", "PUSH_RIGHT", "PUSH_PATH", "PUSH_ELIM",
+    "VAR", "NAT", "ZERO", "SUCC", "NATREC", "W", "SUP", "WREC", "PUSHOUT", "PUSH_LEFT", "PUSH_RIGHT", "PUSH_PATH", "PUSH_ELIM",
   ]));
   assert.deepEqual(lower(instructions), enumeration("cc_instruction", /^CC_INSTR_/, [
     "NAT", "ZERO", "SUCC", "NAT_ELIM", "PUSHOUT", "PUSH_POINT", "PUSH_PATH", "PUSH_ELIM", "W", "SUP", "W_ELIM",
@@ -42,11 +42,15 @@ test("syntactic comparison separates inequality from failure and does not reduce
   const kernel = new CubicalKernel(module);
   t.after(() => kernel.dispose());
   const unit = kernel.term("Unit"), point = kernel.term("Point");
-  const x = kernel.term("Var", 10), y = kernel.term("Var", 20);
-  const a = kernel.term("Lam", 10, unit, x), b = kernel.term("Lam", 20, unit, y);
+  // λ (x : Unit). x, built twice, is one handle: a binder carries no name
+  // (ABI 4), and its variable is index 0.
+  const a = kernel.term("Lam", 0, unit, kernel.term("Bound", 0)), b = kernel.term("Lam", 0, unit, kernel.term("Bound", 0));
   const applied = kernel.term("App", 0, a, point);
+  assert.equal(a, b);
   assert.ok(kernel.alphaEqual(a, b));
-  assert.ok(!kernel.alphaEqual(a, kernel.term("Lam", 20, unit, x)));
+  assert.ok(!kernel.alphaEqual(a, kernel.term("Lam", 0, unit, kernel.term("Bound", 1))));
+  assert.throws(() => kernel.term("Lam", 10, unit, kernel.term("Bound", 0)), /carries no name/);
+  assert.throws(() => kernel.term("Var", 10), /Unsupported cubical constructor/);
   assert.ok(!kernel.alphaEqual(applied, point));
   assert.ok(kernel.alphaEqual(kernel.head(applied), point));
   assert.ok(!kernel.alphaEqual(applied, point), "normalization must not change syntactic equality");
@@ -54,11 +58,13 @@ test("syntactic comparison separates inequality from failure and does not reduce
   assert.throws(() => kernel.alphaEqual(0, point), /Unknown cubical node/);
   assert.equal(module._cb_alpha_equal(0, a, b), -1);
   assert.equal(module._cb_alpha_equal(kernel.handle, a, 0xffffffff), -1);
-  const c = kernel.term("Lam", 30, unit, kernel.term("Var", 30));
+  // Path abstractions over two dimension names are alpha-equal, two handles.
+  const p = kernel.term("PLam", 0, unit, point), q = kernel.term("PLam", 1, unit, point);
+  assert.notEqual(p, q);
   kernel.setStepBudget(1n);
-  assert.throws(() => kernel.alphaEqual(a, c), error => error.kind === "budget");
+  assert.throws(() => kernel.alphaEqual(p, q), error => error.kind === "budget");
   kernel.setStepBudget(kernel.stepBudget);
-  assert.ok(kernel.alphaEqual(a, c), "failed queries are retryable");
+  assert.ok(kernel.alphaEqual(p, q), "failed queries are retryable");
 });
 
 test("budget writes retain both 32-bit halves and restore the session baseline on failure", t => {

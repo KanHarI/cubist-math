@@ -69,13 +69,13 @@ static void restricted_tubes(void) {
     assert(k);
     cc_term l0 = cc_kernel_term(k, CC_LCONST, 0, 0, 0, 0, 0);
     cc_judgement_id u0 = OK(cc_instr_universe(k, l0));
-    cc_entry_id a = OK(cc_instr_extend(k, u0, 100));
+    cc_entry_id a = OK(cc_instr_extend(k, u0));
     cc_entry_id kd = OK(cc_instr_dimension(k, 0)), id = OK(cc_instr_dimension(k, 1)), jd = OK(cc_instr_dimension(k, 2));
     /* p : A = A in U0, and x : p @ k, a type that mentions k. */
     cc_judgement_id loop = OK(cc_instr_path(k, kd, u0, var(a), var(a)));
-    cc_entry_id p = OK(cc_instr_extend(k, loop, 101));
+    cc_entry_id p = OK(cc_instr_extend(k, loop));
     cc_judgement_id at_k = OK(cc_instr_path_apply(k, var(p), kd, 0));
-    cc_entry_id x = OK(cc_instr_extend(k, at_k, 102));
+    cc_entry_id x = OK(cc_instr_extend(k, at_k));
     cc_judgement_id xv = var(x);
     cc_formula_id k0 = face(1, (const unsigned[][2]){{0, 0}}, false);
 
@@ -126,8 +126,8 @@ static void restricted_tubes(void) {
     rejects(cc_instr_path_lambda(k, kd, again), "still depends on the discharged entry");
     rejects(cc_instr_endpoint(k, again, kd, 1), "still depends on the discharged entry");
     cc_judgement_id unit = OK(cc_instr_unit(k));
-    OK(cc_instr_define(k, 103, unit));
-    rejects(cc_instr_define(k, 104, OK(cc_instr_restrict(k, unit, k0))), "Only a closed judgement");
+    OK(cc_instr_define(k, unit));
+    rejects(cc_instr_define(k, OK(cc_instr_restrict(k, unit, k0))), "Only a closed judgement");
 
     /* A tube on a face that does not imply the assumption leaves it: x
      * restricted to k = 0 ∧ j = 1 is at p @ 0 as well, but the composition
@@ -161,16 +161,16 @@ static void variables_on_a_face(void) {
     assert(k);
     cc_term l0 = cc_kernel_term(k, CC_LCONST, 0, 0, 0, 0, 0);
     cc_judgement_id u0 = OK(cc_instr_universe(k, l0));
-    cc_entry_id a = OK(cc_instr_extend(k, u0, 100));
+    cc_entry_id a = OK(cc_instr_extend(k, u0));
     cc_entry_id kd = OK(cc_instr_dimension(k, 0)), id = OK(cc_instr_dimension(k, 1));
     cc_judgement_id loop = OK(cc_instr_path(k, kd, u0, var(a), var(a)));
-    cc_entry_id p = OK(cc_instr_extend(k, loop, 101));
+    cc_entry_id p = OK(cc_instr_extend(k, loop));
     cc_judgement_id at_k = OK(cc_instr_path_apply(k, var(p), kd, 0));
     cc_formula_id k0 = face(1, (const unsigned[][2]){{0, 0}}, false);
     cc_judgement_id at_0 = OK(cc_instr_restrict(k, at_k, k0));
     /* y, w : p @ 0, types that hold only where k = 0, and z : p @ k. */
-    cc_entry_id y = OK(cc_instr_extend(k, at_0, 102)), w = OK(cc_instr_extend(k, at_0, 103));
-    cc_entry_id z = OK(cc_instr_extend(k, at_k, 104));
+    cc_entry_id y = OK(cc_instr_extend(k, at_0)), w = OK(cc_instr_extend(k, at_0));
+    cc_entry_id z = OK(cc_instr_extend(k, at_k));
     cc_judgement_id yv = var(y), zv = var(z);
     assert(faces(yv, NULL) == 1);
     /* comp^i (p @ k) [k = 0 ↦ (λ w. z)(y)] z: the tube is z on the face, by
@@ -202,8 +202,8 @@ static void split_systems(void) {
     assert(k);
     cc_term l0 = cc_kernel_term(k, CC_LCONST, 0, 0, 0, 0, 0);
     cc_judgement_id u0 = OK(cc_instr_universe(k, l0));
-    cc_entry_id a = OK(cc_instr_extend(k, u0, 100));
-    cc_entry_id x = OK(cc_instr_extend(k, var(a), 101));
+    cc_entry_id a = OK(cc_instr_extend(k, u0));
+    cc_entry_id x = OK(cc_instr_extend(k, var(a)));
     cc_entry_id kd = OK(cc_instr_dimension(k, 0)), zd = OK(cc_instr_dimension(k, 1));
     OK(cc_instr_dimension(k, 2));
     OK(cc_instr_dimension(k, 3));
