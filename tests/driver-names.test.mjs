@@ -2,7 +2,8 @@
 // (docs/roadmaps/kernel/locally-nameless-kernel.md, section 5.3): entries
 // named by name and type, across driver resets and checkpoints; definitions
 // and signatures named by their indices; constructors through their
-// instances' signatures; and a declaration's levels compared as written.
+// instances' signatures; a declaration's levels compared as written; and
+// decodings kept by the names they show.
 import "./fresh-build.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -10,7 +11,7 @@ import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
 import { CubicalDeclarationTransaction } from "../web/cubical-transaction.mjs";
 import { InstructionDriver } from "../web/cubical-instruction-driver.mjs";
-import { hiddenIn } from "../web/cubical-variables.mjs";
+import { hiddenIn, pushName } from "../web/cubical-variables.mjs";
 import { sourceReader } from "../tools/module-sources.mjs";
 import { checkProgram } from "./check-program.mjs";
 
@@ -298,4 +299,61 @@ test("a binder's key for its entries stays what it was when a source name names 
   const other = new InstructionDriver(kernel), cold = other.graph.judgement(other.derive(unnamed, scopeOf(other, 1n)));
   assert.equal(warm.term, cold.term);
   assert.deepEqual(warm.context, cold.context);
+});
+
+// A node's decoding depends on the names its entries and its loose indices
+// take (CubicalSyntax.decodeNode), and is one object wherever they are
+// named alike, found again by the node in the context it is decoded in: in
+// A : U0, a : A, λ (z : A). a(z) shown with a named a or b, and its body
+// under a binder named p, q or z.
+test("a decoding is shared where its node is named alike, and its own where it is named otherwise", async t => {
+  const program = fresh(t), { kernel, checker } = program, syntax = checker.syntax;
+  const A = { tag: "Var", name: "A" }, a = { tag: "Var", name: "a" }, z = { tag: "Var", name: "z" };
+  const context = [["A", { tag: "U", level: 0 }], ["a", A]].map(([name, type]) => [kernel.symbol(name), type]);
+  const scope = checker.driver.scopeOf(context, 0n, (type, inner) => syntax.encode(type, new Map(), inner));
+  const entry = scope.get(kernel.symbol("a"));
+  const term = syntax.encode(lam("z", A, { tag: "App", fn: a, arg: z }), new Map(), scope), body = kernel.node(term).children[1];
+  // Each naming a map of its own, as each scope's is.
+  const as = name => new Map([[entry, name]]);
+  const decode = (naming, handle = term, names = null) => syntax.decode(handle, new Map(), names, naming);
+  const first = decode(as("a")), other = decode(as("b"));
+  assert.deepEqual([first.body.fn.name, other.body.fn.name], ["a", "b"]);
+  assert.equal(decode(as("a")), first, "named alike, one decoding");
+  assert.equal(decode(as("b")), other);
+  assert.equal(other.domain, first.domain, "the part that mentions no entry named otherwise is shared");
+  const [p, q] = ["p", "q"].map(name => decode(as("a"), body, pushName(name, null)));
+  assert.deepEqual([p.arg.name, q.arg.name], ["p", "q"]);
+  assert.equal(decode(as("a"), body, pushName("z", null)), first.body, "the body under its binder's name, as the λ shows it");
+});
+
+// A binder the kernel built is shown unnamed until an encoding names it
+// (web/cubical-kernel.mjs, BinderNames). Naming it as it was shown, or x,
+// changes no decoding, and every decoding is kept; naming a binder shown by
+// two names by one of them drops the decodings that show a binder unnamed,
+// and keeps those of named binders alone.
+test("a binder named as it was shown keeps every decoding, and one named otherwise drops those that show a binder unnamed", async t => {
+  const program = fresh(t), { kernel, checker } = program, syntax = checker.syntax, names = kernel.binderNames;
+  const decode = (handle, chain = null) => syntax.decode(handle, new Map(), chain, null);
+  const unitType = syntax.encode(unit), outer = kernel.term("Bound", 1);
+  // λ (x : Unit). λ (x1 : Unit). x and Π (x : Unit). Π (x1 : Unit). x, all four binders unnamed.
+  const lambda = kernel.term("Lam", 0, unitType, kernel.term("Lam", 0, unitType, outer));
+  const pi = kernel.term("Pi", 0, unitType, kernel.term("Pi", 0, unitType, outer));
+  const [inner, piInner] = [lambda, pi].map(handle => kernel.node(handle).children[1]);
+  for (const handle of [lambda, inner, pi, piInner]) assert.ok(!names.has(handle));
+  const named = syntax.encode(lam("w", unit, { tag: "Var", name: "w" }));
+  const shown = term => [term.name, term.body.name, term.body.body.name];
+  const [l, p, w] = [decode(lambda), decode(pi), decode(named)];
+  assert.deepEqual([shown(l), shown(p)], [["x", "x1", "x"], ["x", "x1", "x"]]);
+  // The inner λ alone, under a binder q, is shown by a second name.
+  const q = decode(inner, pushName("q", null));
+  assert.deepEqual([q.name, q.body.name], ["x", "q"]);
+  names.set(piInner, "x1");
+  names.set(pi, "x");
+  assert.equal(decode(pi), p, "named as shown, x1, and x: the decoding is kept");
+  assert.equal(decode(lambda), l);
+  names.set(inner, "x1");
+  const again = decode(inner, pushName("q", null));
+  assert.deepEqual([again.name, again.body.name], ["x1", "q"], "the decoding that showed it as x is dropped");
+  assert.equal(decode(named), w, "a decoding of named binders alone is kept");
+  assert.deepEqual(shown(decode(lambda)), ["x", "x1", "x"]);
 });
