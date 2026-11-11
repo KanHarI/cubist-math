@@ -9,6 +9,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import createCubical from "../web/dist/cubical.mjs";
 import { CubicalProgram } from "../web/cubical-program.mjs";
+import { CubicalSyntax } from "../web/cubical-syntax.mjs";
 import { CubicalDeclarationTransaction } from "../web/cubical-transaction.mjs";
 import { InstructionDriver } from "../web/cubical-instruction-driver.mjs";
 import { hiddenIn, pushName } from "../web/cubical-variables.mjs";
@@ -356,4 +357,42 @@ test("a binder named as it was shown keeps every decoding, and one named otherwi
   assert.deepEqual([again.name, again.body.name], ["x1", "q"], "the decoding that showed it as x is dropped");
   assert.equal(decode(named), w, "a decoding of named binders alone is kept");
   assert.deepEqual(shown(decode(lambda)), ["x", "x1", "x"]);
+});
+
+// A binder's variant reads the stem of its own name, which is fixed at its
+// first use (EntryNames.stemOf): what a decoding showed, decoding it again
+// shows, whatever was shown since. From the first review of this change: a
+// binder x1 shown under an outer x1 is x1_1, read with x1 as its own stem;
+// an unnamed binder then shown under x as x1 does not make x1 a variant of
+// x, which would show the first as x2; and naming the unnamed one z, which
+// drops the decodings that show a binder unnamed, leaves the first's as it
+// was, as a codec of its own decodes it.
+test("a binder's variant shows the same whatever is shown after it", async t => {
+  const program = fresh(t), { kernel, checker } = program, syntax = checker.syntax, names = kernel.binderNames;
+  const unitType = syntax.encode(unit), outer = kernel.term("Bound", 1);
+  const named = kernel.term("Lam", 0, unitType, outer), unnamed = kernel.term("Pi", 0, unitType, outer);
+  for (const handle of [named, unnamed]) assert.ok(!names.has(handle));
+  names.set(named, "x1");
+  const under = (codec, handle, name) => codec.decode(handle, new Map(), pushName(name, null), null).name;
+  assert.equal(under(syntax, named, "x1"), "x1_1");
+  assert.equal(under(syntax, unnamed, "x"), "x1");
+  names.set(unnamed, "z");
+  assert.equal(under(syntax, named, "x1"), "x1_1");
+  assert.equal(under(new CubicalSyntax(kernel), named, "x1"), "x1_1");
+});
+
+// The same with two named binders and nothing named since: a binder y1
+// shown under y1 is y1_1, and a binder y shown under y as y1 after it
+// leaves y1 its own stem, so that a codec of its own decodes the first as
+// the kept decoding shows it.
+test("a name read as its own stem is never made a variant's", async t => {
+  const program = fresh(t), { kernel, checker } = program, syntax = checker.syntax, names = kernel.binderNames;
+  const unitType = syntax.encode(unit), outer = kernel.term("Bound", 1);
+  const first = kernel.term("Lam", 0, unitType, outer), second = kernel.term("Sigma", 0, unitType, outer);
+  names.set(first, "y1");
+  names.set(second, "y");
+  const under = (codec, handle, name) => codec.decode(handle, new Map(), pushName(name, null), null).name;
+  assert.equal(under(syntax, first, "y1"), "y1_1");
+  assert.equal(under(syntax, second, "y"), "y1");
+  assert.equal(under(new CubicalSyntax(kernel), first, "y1"), under(syntax, first, "y1"));
 });

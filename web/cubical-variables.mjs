@@ -196,16 +196,18 @@ export const pushName = (name, names) => ({ name, next: names });
 // entry's, `avoid`; then the first numbered name, x1, x2, …, that would not,
 // numbered as a generated name is (web/translator/names.mjs, NameSupply), so
 // that the display shows it by its stem where it can and the printed text
-// parses.
+// parses. Of what the session records it reads only its own name's stem
+// (EntryNames.stemOf), which never changes once read: so it is the same
+// however often it is asked.
 export function shownBinderName(kernel, handle, avoid) {
   const own = binderName(kernel, handle);
   if (!avoid.has(own)) return own;
-  const stem = kernel.entryNames.stems.get(own) ?? own;
+  const stem = kernel.entryNames.stemOf(own);
   const base = /[0-9]$/.test(stem) || /^U+$/.test(stem) ? `${stem}_` : stem;
   for (let suffix = 1; ; suffix++) {
     const variant = `${base}${suffix}`;
     if (avoid.has(variant)) continue;
-    kernel.entryNames.stems.set(variant, stem);
+    kernel.entryNames.variantOf(variant, stem);
     return variant;
   }
 }
@@ -259,8 +261,27 @@ export class EntryNames {
     // The last variant number of each name: a spelling is never made again, so
     // a variant names one stem for ever, as its display reads it (stems).
     this.variants = new Map();
+    // Each variant's stem, and the names whose stem was read as their own
+    // (stemOf): a name's stem is fixed at its first use.
     this.stems = new Map();
+    this.ownStems = new Set();
     this.likenesses = new Map();
+  }
+  // The stem a name was made from: a variant's, recorded when it was made
+  // (variantOf), and otherwise the name itself. A name's stem is fixed at its
+  // first use, as a binder's key is (binderKey): once read as its own, the
+  // name is never recorded as a variant, and a variant's stem is recorded
+  // once. So a binder's variant, which reads it (shownBinderName), is the
+  // same whatever is shown after it, as CubicalSyntax.decode keeps it.
+  stemOf(name) {
+    const stem = this.stems.get(name);
+    if (stem !== undefined) return stem;
+    this.ownStems.add(name);
+    return name;
+  }
+  // A variant made from `stem`, unless the name was used before.
+  variantOf(name, stem) {
+    if (!this.stems.has(name) && !this.ownStems.has(name)) this.stems.set(name, stem);
   }
   // A live entry made for `name` at `type`, a type's term handle or LEVEL,
   // that `excluded` does not refuse: the first made of those at a type
@@ -318,7 +339,7 @@ export class EntryNames {
       const variant = `${key}${suffix}`;
       if (this.holders.has(this.kernel.symbol(variant))) continue;
       this.variants.set(key, suffix);
-      this.stems.set(variant, name);
+      this.variantOf(variant, name);
       return variant;
     }
   }

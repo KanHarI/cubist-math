@@ -456,7 +456,9 @@ export class CubicalSyntax {
     required("decode", { dimensions, names, naming });
     // A binder shown unnamed has since been named otherwise
     // (web/cubical-kernel.mjs, BinderNames): the decodings that show a
-    // binder unnamed go, and those that show named binders alone stay.
+    // binder unnamed go, and those that show named binders alone stay, as
+    // a binder's name never changes once given, nor, once read, the stem
+    // its variant reads (web/cubical-variables.mjs, EntryNames.stemOf).
     const { epoch } = this.kernel.binderNames;
     if (epoch !== this.namesEpoch) {
       this.provisional = new NodeCache(this.kernel);
