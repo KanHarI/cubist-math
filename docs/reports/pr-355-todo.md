@@ -27,9 +27,16 @@ reworks the same code.
       and `EntryNames.spelling`, in `web/cubical-variables.mjs`.
     - The λ's decoding is the same object across the rollback, so the result
       made before `x'1` was a variant is served after.
-  - **Constraint on the fix:** routing `SourceNames` through the decoder's
-    fixed stems (`EntryNames.stemOf`) changed which path proof search took in
+  - **Constraint on the fix:** while #355 was in review, a version tried
+    fixing each stem at its first use, and `SourceNames` read those. That
+    version was later dropped. It changed which path proof search took in
     `CommRing.ring` and `Field.comm_ring` (6 more kernel instructions each),
     with outputs unchanged. So the display's names reach elaboration
     somewhere, and a fix must be checked by a differential run that
     compares kernel work, not outputs alone.
+  - **#354's codec has the same order dependence.** A named binder whose
+    name is taken shows a variant built from the stem as it stands
+    (`shownBinderName`), and recording that variant changes the stems.
+    #355 replicates this exactly: it rebuilds a kept decoding wherever
+    #354 would have shown it differently. So the follow-up settles both
+    together.
