@@ -1596,6 +1596,18 @@ Each PR is verified locally first, opened as a draft, and keeps
    (section 5.3). ABI 4's head query must stay so over `CC_CONTEXT`
    references, reading an entry only to name it, never its type; if it
    comes to read entry types, that binding must be revisited.
+   *As merged (#354):* checking took 1.44 times main's wall time on the
+   library and on the archive audit. Nearly all of the extra time was in the
+   driver's decoding of terms, not in the kernel. The user decided
+   (2026-11-08) that two driver-only PRs follow:
+   - a performance PR (#355), which returns most of that time. Outputs and
+     kernel work stay equal to #354's, and its description gives the
+     measurements and the cost that remains;
+   - a PR that restores the source's binder names where the kernel rebuilds
+     binders. The kernel keeps no name hints.
+
+   #355 did not reach main's wall time. The user moved that gate to PR 5
+   (2026-11-11).
 4. **PR 4, direct iota.** For an eligible constructor, build the reduct as
    the clause applied to the arguments and then to `elim(q_j)` for each
    recursive argument `q_j`, without the display and without `ck_apply_at`.
@@ -1615,6 +1627,10 @@ Each PR is verified locally first, opened as a draft, and keeps
    3.7), and is reviewed as such.
 5. **PR 5, driver cleanup.** Delete what ABI 4 left dead: the JS renaming
    chains, free-symbol sets and term renaming of the instruction driver.
+   Its acceptance includes wall time. The library's import closures and the
+   archive audit must check in no more time than on main before ABI 4
+   (6cdfb988), measured on AC power with no sleep. This gate was moved here
+   from #355 (decided 2026-11-11).
 6. **Later, if ever:** dimension binders, and the 64-dimension cap, as their
    own design.
 
