@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { testResults, mutationOutcome } from "../tools/frontend-test-results.mjs";
+import { budget } from "./timing.mjs";
 
 // Inject the same faults through the actual harnesses, including their
 // controls. Check the structured mutation outcome, not just a helper's
@@ -46,7 +47,7 @@ CubicalProgram.prototype.check = async function (...args) {
     const child = spawnSync(process.execPath,["--import",hook,"--test",
       `--test-reporter=${fileURLToPath(new URL("../tools/frontend-test-reporter.mjs",import.meta.url))}`,
       `--test-name-pattern=${pattern}`,...files],
-    {env:{...env,CUBIST_OBSERVATION_FAULT:fault},encoding:"utf8",timeout:60000,maxBuffer:4*1024*1024});
+    {env:{...env,CUBIST_OBSERVATION_FAULT:fault},encoding:"utf8",timeout:budget(60000),maxBuffer:4*1024*1024});
     return {status:child.status,signal:child.signal,error:child.error?.message,log:child.stdout};
   };
   const baseline = testResults(run("none"));

@@ -8,6 +8,7 @@ import { sourceReader } from "../tools/module-sources.mjs";
 import { lint } from "../web/cubist/lint.mjs";
 import { isDeepStrictEqual } from "node:util";
 import { observeModule } from "./module-observation.mjs";
+import { budget } from "./timing.mjs";
 import { ciSeeds, caseLimit, configuration, generate, minimize, observationDifferences } from "./fixtures/frontend-invariants.mjs";
 
 const count = Number(process.env.CUBIST_GENERATION_CASES ?? ciSeeds.length);
@@ -49,7 +50,7 @@ async function verify(config) {
 // CB3's recursive/path behavior participates in every combination as well
 // as G4/G8/G12's individual witnesses.
 for (let seed = 0; seed < count; seed++) for (const capture of [false, true]) {
-  test(`CB0 preservation: ${capture ? "capture target" : "uncolliding parameter"}, seed ${seed}`, { timeout: 30000 }, async () => {
+  test(`CB0 preservation: ${capture ? "capture target" : "uncolliding parameter"}, seed ${seed}`, { timeout: budget(30000) }, async () => {
     const config = { ...configuration(seed), capture };
     const { observed, desired } = await verify(config);
     const differences = observationDifferences(observed, desired);
