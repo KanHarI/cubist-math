@@ -587,3 +587,48 @@ test("a display decoded anew after a binder is named as shown shows the new stem
   assert.equal(names.epoch, epoch, "the codec's epoch skips a naming as shown");
   assert.equal(text(), "fun (x, x1 : Unit) => x");
 });
+
+// A variant decoding that still holds after #354's epoch moved is kept,
+// the same object (CubicalSyntax.holds): #354 decoded it anew to the same
+// text and recorded no stem it had not. λ (x1 : Unit). λ (x1 : Unit). x1,
+// the outer, shows as fun (x, x1_ : Unit) => x, its inner binder's x1_1 a
+// variant of x1; an unnamed Σ shown, then named z; and the λ is the decoding
+// it was, as #354 shows it.
+test("a variant decoding that still holds after #354's epoch moved is kept", async t => {
+  const program = fresh(t), { kernel, checker } = program, syntax = checker.syntax, names = kernel.binderNames;
+  const unitType = syntax.encode(unit);
+  const named = kernel.term("Lam", 0, unitType, kernel.term("Bound", 1));
+  names.set(named, "x1");
+  const wrapped = kernel.term("Lam", 0, unitType, named);
+  names.set(wrapped, "x1");
+  const sigma = kernel.term("Sigma", 0, unitType, unitType);
+  const decode = handle => syntax.decode(handle, new Map(), null, null);
+  const first = decode(wrapped);
+  assert.deepEqual([checker.displayText(first, new Map()), first.body.name], ["fun (x, x1_ : Unit) => x", "x1_1"]);
+  decode(sigma);
+  const renamings = names.renamings;
+  names.set(sigma, "z");
+  assert.equal(names.renamings, renamings + 1, "#354's epoch moved");
+  const again = decode(wrapped);
+  assert.equal(again, first, "the decoding holds, and is kept");
+  assert.equal(checker.displayText(again, new Map()), "fun (x, x1_ : Unit) => x");
+});
+
+// A decoding that shows a variant and a binder with no name yet holds only
+// while the binders' names have not moved on, as a provisional one: λ (x1 :
+// Unit). (λ (x1 : Unit). x1, the outer)(λ (_ : Unit). _), its inner binder
+// x1_1 and the last unnamed, x; named w, the last shows as w, as on #354.
+test("a variant decoding that shows a binder with no name yet goes when that binder is named otherwise", async t => {
+  const program = fresh(t), { kernel, checker } = program, syntax = checker.syntax, names = kernel.binderNames;
+  const unitType = syntax.encode(unit);
+  const named = kernel.term("Lam", 0, unitType, kernel.term("Bound", 1));
+  names.set(named, "x1");
+  const unnamed = kernel.term("Lam", 0, unitType, kernel.term("Bound", 0));
+  assert.ok(!names.has(unnamed));
+  const outer = kernel.term("Lam", 0, unitType, kernel.term("App", 0, named, unnamed));
+  names.set(outer, "x1");
+  const shown = () => { const term = syntax.decode(outer, new Map(), null, null); return [term.body.fn.name, term.body.arg.name]; };
+  assert.deepEqual(shown(), ["x1_1", "x"]);
+  names.set(unnamed, "w");
+  assert.deepEqual(shown(), ["x1_1", "w"]);
+});
