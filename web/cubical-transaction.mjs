@@ -33,6 +33,9 @@ export class CubicalDeclarationTransaction {
     // Nodes from this handle on are made after the checkpoint: a commit
     // moves them and a rollback drops them, and the binders' names with them.
     this.nodes = kernel.arena().nodes + 1;
+    // What the driver keeps by those handles is noted apart, to be moved or
+    // dropped with them (web/cubical-kernel.mjs, HandleMap).
+    for (const map of [kernel.binderNames, kernel.binderKeys, kernel.binderNames.shownUnnamed]) map.checkpoint(this.nodes);
     this.active = true;
   }
   added(collection) {
@@ -51,14 +54,8 @@ export class CubicalDeclarationTransaction {
       }
       // A binder kept by the commit keeps the name it was encoded with, and
       // the key its entries are chosen by.
-      for (const map of [kernel.binderNames, kernel.binderKeys]) {
-        const moved = [...map].filter(([handle]) => handle >= this.nodes);
-        for (const [handle] of moved) map.delete(handle);
-        for (const [handle, name] of moved) {
-          const kept = kernel.module._cb_relocated(kernel.handle, handle) >>> 0;
-          if (kept && !map.has(kept)) map.set(kept, name);
-        }
-      }
+      const relocated = handle => kernel.module._cb_relocated(kernel.handle, handle) >>> 0;
+      for (const map of [kernel.binderNames, kernel.binderKeys]) map.finish(relocated);
     } else {
       kernel.module._cb_rollback(kernel.handle);
       for (const [collection,snapshot] of this.metadata) {
@@ -66,11 +63,10 @@ export class CubicalDeclarationTransaction {
       }
       for (const collection of this.sizes.keys())
         for (const key of this.added(collection)) collection.delete(key);
-      for (const map of [kernel.binderNames, kernel.binderKeys])
-        for (const handle of map.keys()) if (handle >= this.nodes) map.delete(handle);
+      for (const map of [kernel.binderNames, kernel.binderKeys]) map.finish();
     }
     // Handles from here on are new nodes, none of them shown yet.
-    for (const handle of kernel.binderNames.shownUnnamed ?? []) if (handle >= this.nodes) kernel.binderNames.shownUnnamed.delete(handle);
+    kernel.binderNames.shownUnnamed.finish();
     kernel.entryNames.truncate(this.entries);
     checker.syntax.reset();
     kernel.forgetNodes();

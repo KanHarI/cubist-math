@@ -24,8 +24,24 @@ export { betaReduce, dimensionNames, displayTerm, printedLabels, readableDimensi
 // can tell the two apart. Syntax is shared, so each pass is memoized. A
 // renaming reads the kernel view (term-shape.mjs): an annotation is renamed
 // with the rest, and a stem it mentions keeps the binder's name.
+// Whether a name occurs, and a renaming, read the syntax alone. What the
+// pass makes of a decoding also reads the stems as they stand, which later
+// variants change: it is kept until #354's codec would have made the
+// decoding anew (BinderNames.renamings), as the codec now keeps decodings
+// longer, so that the pass shows what it showed on #354.
 class SourceNames {
-  constructor(stems) { this.stems = stems; this.results = new WeakMap(); this.mentions = new Map(); this.renamed = new Map(); }
+  constructor(stems, binderNames) {
+    Object.assign(this, { stems, binderNames, renamings: binderNames.renamings });
+    this.results = new WeakMap(); this.mentions = new Map(); this.renamed = new Map();
+  }
+  // A view's decoding, as the display shows it.
+  shown(value) {
+    if (this.renamings !== this.binderNames.renamings) {
+      this.results = new WeakMap();
+      this.renamings = this.binderNames.renamings;
+    }
+    return this.apply(value);
+  }
   memo(table, key) {
     if (!table.has(key)) table.set(key, new WeakMap());
     return table.get(key);
@@ -455,8 +471,8 @@ export class NativeCubicalElaborator {
     if (kind !== "typing") throw new TypeError("An inspected view needs a typing judgement.");
     const arena = this.kernel.arena(), derivedHandles = this.kernel.derivedHandles ??= new Set();
     derivedHandles.add(expression).add(type);
-    const stems = this.kernel.entryNames.stems, names = stems.size ? this.sourceNames ??= new SourceNames(stems) : null;
-    const display = value => names ? names.apply(value) : value;
+    const stems = this.kernel.entryNames.stems, names = stems.size ? this.sourceNames ??= new SourceNames(stems, this.kernel.binderNames) : null;
+    const display = value => names ? names.shown(value) : value;
     return { expression, typeHandle: type, judgement, naming, term: display(this.syntax.decode(expression, dimensions, null, naming)),
       type: display(this.syntax.decode(type, dimensions, null, naming)), checkingSteps,
       arenaNodes: arena.nodes, arenaBytes: arena.bytes };
