@@ -329,29 +329,34 @@ test("a decoding is shared where its node is named alike, and its own where it i
 
 // A binder the kernel built is shown unnamed until an encoding names it
 // (web/cubical-kernel.mjs, BinderNames). Naming it as it was shown, or x,
-// changes no decoding, and every decoding is kept; naming a binder shown by
-// two names by one of them drops the decodings that show a binder unnamed,
-// and keeps those of named binders alone.
-test("a binder named as it was shown keeps every decoding, and one named otherwise drops those that show a binder unnamed", async t => {
+// changes no decoding: one that shows it by its own name is kept, and one
+// in which a binder showed a variant is made anew, as #354 made it, to the
+// same text; naming a binder shown by two names by one of them drops the
+// decodings that show a binder unnamed, and keeps those of named binders
+// alone.
+test("a binder named as it was shown keeps its decodings, and one named otherwise drops those that show a binder unnamed", async t => {
   const program = fresh(t), { kernel, checker } = program, syntax = checker.syntax, names = kernel.binderNames;
   const decode = (handle, chain = null) => syntax.decode(handle, new Map(), chain, null);
   const unitType = syntax.encode(unit), outer = kernel.term("Bound", 1);
-  // λ (x : Unit). λ (x1 : Unit). x and Π (x : Unit). Π (x1 : Unit). x, all four binders unnamed.
+  // λ (x : Unit). λ (x1 : Unit). x, Π (x : Unit). Π (x1 : Unit). x and
+  // Σ (x : Unit). Unit, all five binders unnamed.
   const lambda = kernel.term("Lam", 0, unitType, kernel.term("Lam", 0, unitType, outer));
   const pi = kernel.term("Pi", 0, unitType, kernel.term("Pi", 0, unitType, outer));
+  const sigma = kernel.term("Sigma", 0, unitType, unitType);
   const [inner, piInner] = [lambda, pi].map(handle => kernel.node(handle).children[1]);
-  for (const handle of [lambda, inner, pi, piInner]) assert.ok(!names.has(handle));
+  for (const handle of [lambda, inner, pi, piInner, sigma]) assert.ok(!names.has(handle));
   const named = syntax.encode(lam("w", unit, { tag: "Var", name: "w" }));
   const shown = term => [term.name, term.body.name, term.body.body.name];
-  const [l, p, w] = [decode(lambda), decode(pi), decode(named)];
-  assert.deepEqual([shown(l), shown(p)], [["x", "x1", "x"], ["x", "x1", "x"]]);
+  const [l, p, s, w] = [decode(lambda), decode(pi), decode(sigma), decode(named)];
+  assert.deepEqual([shown(l), shown(p), s.name], [["x", "x1", "x"], ["x", "x1", "x"], "x"]);
   // The inner λ alone, under a binder q, is shown by a second name.
   const q = decode(inner, pushName("q", null));
   assert.deepEqual([q.name, q.body.name], ["x", "q"]);
   names.set(piInner, "x1");
   names.set(pi, "x");
-  assert.equal(decode(pi), p, "named as shown, x1, and x: the decoding is kept");
-  assert.equal(decode(lambda), l);
+  names.set(sigma, "x");
+  assert.equal(decode(sigma), s, "named x, as shown: the decoding is kept");
+  assert.deepEqual([shown(decode(pi)), shown(decode(lambda))], [["x", "x1", "x"], ["x", "x1", "x"]]);
   names.set(inner, "x1");
   const again = decode(inner, pushName("q", null));
   assert.deepEqual([again.name, again.body.name], ["x1", "q"], "the decoding that showed it as x is dropped");
@@ -359,42 +364,40 @@ test("a binder named as it was shown keeps every decoding, and one named otherwi
   assert.deepEqual(shown(decode(lambda)), ["x", "x1", "x"]);
 });
 
-// A binder's variant reads the stem of its own name, which is fixed at its
-// first use (EntryNames.stemOf): what a decoding showed, decoding it again
-// shows, whatever was shown since. From the first review of this change: a
-// binder x1 shown under an outer x1 is x1_1, read with x1 as its own stem;
-// an unnamed binder then shown under x as x1 does not make x1 a variant of
-// x, which would show the first as x2; and naming the unnamed one z, which
-// drops the decodings that show a binder unnamed, leaves the first's as it
-// was, as a codec of its own decodes it.
-test("a binder's variant shows the same whatever is shown after it", async t => {
+// A binder's variant reads the stem of its own name as the stems stand,
+// and records the variant's (web/cubical-variables.mjs, shownBinderName);
+// a decoding that made one is made anew, reading and recording them again,
+// wherever #354's codec decoded anew (CubicalSyntax.tierOf, VARIANT). From
+// the first review of this change: a binder x1 shown under an outer x1 is
+// x1_1; an unnamed binder shown under x as x1 makes x1 a variant of x; named
+// z, it moves #354's epoch, and the first shows as x2, kept or decoded by a
+// codec of its own, as on #354.
+test("a binder's variant reads the stems again where #354 decoded anew", async t => {
   const program = fresh(t), { kernel, checker } = program, syntax = checker.syntax, names = kernel.binderNames;
   const unitType = syntax.encode(unit), outer = kernel.term("Bound", 1);
   const named = kernel.term("Lam", 0, unitType, outer), unnamed = kernel.term("Pi", 0, unitType, outer);
   for (const handle of [named, unnamed]) assert.ok(!names.has(handle));
   names.set(named, "x1");
   const under = (codec, handle, name) => codec.decode(handle, new Map(), pushName(name, null), null).name;
-  assert.equal(under(syntax, named, "x1"), "x1_1");
-  assert.equal(under(syntax, unnamed, "x"), "x1");
+  assert.deepEqual([under(syntax, named, "x1"), under(syntax, unnamed, "x")], ["x1_1", "x1"]);
   names.set(unnamed, "z");
-  assert.equal(under(syntax, named, "x1"), "x1_1");
-  assert.equal(under(new CubicalSyntax(kernel), named, "x1"), "x1_1");
+  assert.deepEqual([under(syntax, named, "x1"), under(new CubicalSyntax(kernel), named, "x1")], ["x2", "x2"]);
 });
 
-// The same with two named binders and nothing named since: a binder y1
-// shown under y1 is y1_1, and a binder y shown under y as y1 after it
-// leaves y1 its own stem, so that a codec of its own decodes the first as
-// the kept decoding shows it.
-test("a name read as its own stem is never made a variant's", async t => {
+// Between #354's moves a decoding is kept as #354 kept it, though the stems
+// it read have changed since: a binder y1 shown under y1 is y1_1; a named y
+// shown under y as y1 then makes y1 a variant of y; with nothing named
+// since, the first is still y1_1 as kept, where a codec of its own, as a
+// session that had not shown it, reads y2.
+test("a binder's variant is kept between #354's moves, as #354 kept it", async t => {
   const program = fresh(t), { kernel, checker } = program, syntax = checker.syntax, names = kernel.binderNames;
   const unitType = syntax.encode(unit), outer = kernel.term("Bound", 1);
   const first = kernel.term("Lam", 0, unitType, outer), second = kernel.term("Sigma", 0, unitType, outer);
   names.set(first, "y1");
   names.set(second, "y");
   const under = (codec, handle, name) => codec.decode(handle, new Map(), pushName(name, null), null).name;
-  assert.equal(under(syntax, first, "y1"), "y1_1");
-  assert.equal(under(syntax, second, "y"), "y1");
-  assert.equal(under(new CubicalSyntax(kernel), first, "y1"), under(syntax, first, "y1"));
+  assert.deepEqual([under(syntax, first, "y1"), under(syntax, second, "y")], ["y1_1", "y1"]);
+  assert.deepEqual([under(syntax, first, "y1"), under(new CubicalSyntax(kernel), first, "y1")], ["y1_1", "y2"]);
 });
 
 // The names a node's entries take are one key, whatever characters they
@@ -415,12 +418,10 @@ test("entries named apart are decoded apart, whatever characters their names hol
   assert.deepEqual(shown("a", "b\u0000c"), ["a", "b\u0000c"]);
 });
 
-// The elaborator's display renaming reads the stems as #354 recorded them
-// (EntryNames.stems), apart from the stems binders' variants read, fixed at
-// first use (stemOf). From the second review of this change: a binder x'1
-// decoded under an outer x'1 reads x'1 as its own stem; a fresh x entry is
-// then spelled x'1, a variant of x for the display; and the first check of
-// λ (x'1 : Unit). x'1 shows it by x, as on #354.
+// The display renames a variant spelling to its stem, as the stems stand.
+// From the second review of this change: a binder x'1 decoded under an
+// outer x'1 is x'1_1; a fresh x entry is then spelled x'1, a variant of x;
+// and the first check of λ (x'1 : Unit). x'1 shows it by x, as on #354.
 test("the display renames a variant spelling to its stem, whatever a binder read before", async t => {
   const program = fresh(t), { kernel, checker } = program, syntax = checker.syntax, driver = checker.driver;
   const unitType = syntax.encode(unit), binder = kernel.term("Lam", 0, unitType, kernel.term("Bound", 1));
@@ -432,23 +433,22 @@ test("the display renames a variant spelling to its stem, whatever a binder read
   assert.equal(checker.displayText(view.term, new Map()), "fun (x : Unit) => x");
 });
 
-// A variant's stem, recorded for binders, is recorded once. From the
-// second review of this change: a binder x' shown under x' as x'1 makes
-// x'1 a variant of x'; a binder x'1 shown under x'1 is then x'2; and a fresh
-// x entry spelled x'1 leaves x'1 a variant of x' for binders, so that a
-// codec of its own decodes the second as the kept decoding shows it.
-test("a variant's stem, recorded for binders, is never recorded again", async t => {
+// A fresh entry's spelling records its stem over a binder variant's, as on
+// #354. From the second review of this change: a binder x' shown under x'
+// as x'1 makes x'1 a variant of x'; a binder x'1 shown under x'1 is then
+// x'2; a fresh x spelled x'1 makes x'1 a variant of x; with nothing named
+// since, the second is x'2 as kept, where a codec of its own reads x1.
+test("a fresh entry's spelling records its stem over a binder variant's", async t => {
   const program = fresh(t), { kernel, checker } = program, syntax = checker.syntax, driver = checker.driver;
   const unitType = syntax.encode(unit), outer = kernel.term("Bound", 1);
   const first = kernel.term("Sigma", 0, unitType, outer), second = kernel.term("Lam", 0, unitType, outer);
   kernel.binderNames.set(first, "x'");
   kernel.binderNames.set(second, "x'1");
   const under = (codec, handle, name) => codec.decode(handle, new Map(), pushName(name, null), null).name;
-  assert.equal(under(syntax, first, "x'"), "x'1");
-  assert.equal(under(syntax, second, "x'1"), "x'2");
+  assert.deepEqual([under(syntax, first, "x'"), under(syntax, second, "x'1")], ["x'1", "x'2"]);
   const entry = driver.freshEntry(driver.asType(driver.infer(unitType)), "x");
   assert.equal(kernel.entryNames.spelled(entry), "x'1");
-  assert.equal(under(new CubicalSyntax(kernel), second, "x'1"), under(syntax, second, "x'1"));
+  assert.deepEqual([under(syntax, second, "x'1"), under(new CubicalSyntax(kernel), second, "x'1")], ["x'2", "x1"]);
 });
 
 // The display's renaming of made-up names reads the stems as they stand,
@@ -493,4 +493,97 @@ test("a view after a binder shown unnamed is named reads the stems again", async
 test("a view after a binder shown unnamed is named as it was shown reads the stems again", async t => {
   const { cold, warm } = renamedAfter(t, "x");
   assert.deepEqual([cold[1], warm], ["fun (x : Unit) => x", ["fun (x' : Unit) => x'", "fun (x : Unit) => x"]]);
+});
+
+// A decoding made anew records its variants again before the display reads
+// the stems, as on #354. From the fourth review of this change: λ (x' :
+// Unit). λ (x' : Unit). x', the outer x', shows as fun (x', x'1 : Unit) =>
+// x', its inner binder's x'1 a variant of x'; a fresh x spelled x'1 makes
+// x'1 a variant of x; an unnamed Σ shown before is named z; and the λ shown
+// again records x'1 as a variant of x' and shows as before.
+test("a view decoded anew records its variants again before the display reads them", async t => {
+  const program = fresh(t), { kernel, checker } = program, syntax = checker.syntax, driver = checker.driver;
+  const unitType = syntax.encode(unit), type = () => driver.asType(driver.infer(unitType));
+  const shown = term => checker.displayText(checker.checkSyntax(term, null, new Map(), new Map()).term, new Map());
+  driver.freshEntry(type(), "y");
+  const inner = kernel.term("Lam", 0, unitType, kernel.term("Bound", 1));
+  kernel.binderNames.set(inner, "x'");
+  const nested = lam("x'", unit, lam("w", unit, { tag: "Var", name: "x'" }));
+  syntax.encode(nested);
+  const sigma = kernel.term("Sigma", 0, unitType, unitType);
+  syntax.decode(sigma, new Map(), null, null);
+  new CubicalDeclarationTransaction(kernel, checker).finish(false);
+  const transaction = new CubicalDeclarationTransaction(kernel, checker);
+  assert.deepEqual([shown(nested), kernel.entryNames.stems.get("x'1")], ["fun (x', x'1 : Unit) => x'", "x'"]);
+  transaction.finish(false);
+  const entry = checker.driver.freshEntry(type(), "x");
+  assert.deepEqual([kernel.entryNames.spelled(entry), kernel.entryNames.stems.get("x'1")], ["x'1", "x"]);
+  kernel.binderNames.set(sigma, "z");
+  assert.deepEqual([shown(nested), kernel.entryNames.stems.get("x'1")], ["fun (x', x'1 : Unit) => x'", "x'"]);
+});
+
+// The first review's sequence as a display shows it: λ (x1 : Unit). λ (x1 :
+// Unit). x1, the outer, shows as fun (x, x1_ : Unit) => x; an unnamed Π
+// shown under x as x1, named z, and it shows as fun (x, x1 : Unit) => x, as
+// on #354.
+test("a display decoded anew after a variant's stem changed shows the new stem's variant", async t => {
+  const program = fresh(t), { kernel, checker } = program, syntax = checker.syntax, names = kernel.binderNames;
+  const unitType = syntax.encode(unit), outer = kernel.term("Bound", 1);
+  const named = kernel.term("Lam", 0, unitType, outer), unnamed = kernel.term("Pi", 0, unitType, outer);
+  names.set(named, "x1");
+  const wrapped = kernel.term("Lam", 0, unitType, named);
+  names.set(wrapped, "x1");
+  const text = () => checker.displayText(syntax.decode(wrapped, new Map(), null, null), new Map());
+  assert.equal(text(), "fun (x, x1_ : Unit) => x");
+  assert.equal(syntax.decode(unnamed, new Map(), pushName("x", null), null).name, "x1");
+  names.set(unnamed, "z");
+  assert.equal(text(), "fun (x, x1 : Unit) => x");
+});
+
+// A commit that relocates a binder's name onto the handle of a binder shown
+// unnamed moved #354's epoch (BinderNames.placed). From the fourth review of
+// this change: λ (x'1 : Unit). x'1 shown while x'1 is no variant; a fresh x
+// spelled x'1; then, in a declaration, a transient unnamed Σ shown and
+// f := λ (w : Unit). tt defined and committed, its λ relocated onto the Σ's
+// handle. The λ (x'1 : Unit). x'1 shows as #354 shows it.
+test("a name a commit relocates onto a binder shown unnamed reads the stems again", async t => {
+  const program = fresh(t), { kernel, checker } = program, syntax = checker.syntax;
+  const unitType = syntax.encode(unit), type = () => checker.driver.asType(checker.driver.infer(unitType));
+  const identity = lam("x'1", unit, { tag: "Var", name: "x'1" });
+  const shown = () => checker.displayText(checker.checkSyntax(identity, null, new Map(), new Map()).term, new Map());
+  checker.driver.freshEntry(type(), "y");
+  syntax.encode(identity);
+  syntax.encode(point);
+  new CubicalDeclarationTransaction(kernel, checker).finish(false);
+  let transaction = new CubicalDeclarationTransaction(kernel, checker);
+  assert.equal(shown(), "fun (x' : Unit) => x'");
+  transaction.finish(false);
+  assert.equal(kernel.entryNames.spelled(checker.driver.freshEntry(type(), "x")), "x'1");
+  transaction = new CubicalDeclarationTransaction(kernel, checker);
+  const sigma = kernel.term("Sigma", 0, unitType, unitType);
+  syntax.decode(sigma, new Map(), null, null);
+  checker.define("main__f", lam("w", unit, point), { tag: "Pi", name: "w", domain: unit, body: unit });
+  transaction.finish(true);
+  const value = kernel.definition(kernel.definitions.get("main__f")).value;
+  assert.deepEqual([value, kernel.binderNames.get(value)], [sigma, "w"], "f's λ relocated onto the Σ's handle");
+  assert.equal(shown(), "fun (x : Unit) => x");
+});
+
+// The same with the Π named x1, as it was shown: the codec's epoch skips
+// the naming, and #354's moved, so the λ, whose part showed a variant, is
+// decoded anew to fun (x, x1 : Unit) => x, as on #354.
+test("a display decoded anew after a binder is named as shown shows the new stem's variant", async t => {
+  const program = fresh(t), { kernel, checker } = program, syntax = checker.syntax, names = kernel.binderNames;
+  const unitType = syntax.encode(unit), outer = kernel.term("Bound", 1);
+  const named = kernel.term("Lam", 0, unitType, outer), unnamed = kernel.term("Pi", 0, unitType, outer);
+  names.set(named, "x1");
+  const wrapped = kernel.term("Lam", 0, unitType, named);
+  names.set(wrapped, "x1");
+  const text = () => checker.displayText(syntax.decode(wrapped, new Map(), null, null), new Map());
+  assert.equal(text(), "fun (x, x1_ : Unit) => x");
+  assert.equal(syntax.decode(unnamed, new Map(), pushName("x", null), null).name, "x1");
+  const epoch = names.epoch;
+  names.set(unnamed, "x1");
+  assert.equal(names.epoch, epoch, "the codec's epoch skips a naming as shown");
+  assert.equal(text(), "fun (x, x1 : Unit) => x");
 });

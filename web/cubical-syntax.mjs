@@ -2,7 +2,7 @@ import { bindDimensions } from "./translator/dimension-slots.mjs";
 import { dimensionContextKey } from "./translator/syntax-graph.mjs";
 import { freeNames, isTerm } from "./translator/core.mjs";
 import { termParts } from "./translator/term-shape.mjs";
-import { binderTerm, binders as BINDERS, pushName, shownBinderName, variableName, variableTerm } from "./cubical-variables.mjs";
+import { binderName, binderTerm, binders as BINDERS, pushName, shownBinderName, variableName, variableTerm } from "./cubical-variables.mjs";
 // The scope of no context: what is encoded against it is closed.
 export const EMPTY_SCOPE = Object.freeze(new Map());
 // Lossless syntax transport between named cubical ASTs and C arena handles.
@@ -82,24 +82,23 @@ function required(decoder, args) {
 // CubicalSyntax.binder) and those its entries take (`naming`). What is
 // decoded in it is kept by the node alone, and so are the contexts its
 // parts are decoded in, each made once from this one: so a part met again
-// is found without reading its names again. A decoding that shows a binder
-// with no name yet is kept apart, until the binders' names move on
-// (`epoch`, CubicalSyntax.decode). Contexts hold node handles, and are
-// dropped with the decodings (CubicalSyntax.reset).
+// is found without reading its names again. Each decoding is kept in its
+// tier (CubicalSyntax.tierOf), as long as the codec keeps it. Contexts hold
+// node handles, and are dropped with the decodings (CubicalSyntax.reset).
 class DecodingContext {
   constructor(syntax, dimensions, key, names, naming) {
     Object.assign(this, { syntax, dimensions, key, names, naming });
     this.assigned = [...dimensions.values()].reduce((mask, index) => mask | 1n << BigInt(index), 0n);
-    this.decodings = new Map(); this.provisional = new Map(); this.epoch = syntax.namesEpoch;
+    this.decodings = TIERS.map(() => new Map()); this.stamps = [...syntax.stamps];
     this.restrictions = new Map(); this.bodies = new Map(); this.dimensionBinders = new Map();
   }
-  // What node `id` was decoded to here, if it was in the binders' names of
-  // `epoch`.
-  decoded(id, epoch) {
-    if (epoch !== this.epoch) { this.provisional.clear(); this.epoch = epoch; }
-    return this.decodings.get(id) ?? this.provisional.get(id);
+  // What node `id` was decoded to here, of the tiers whose stamps (what
+  // their decodings read) are still `stamps`.
+  decoded(id, stamps) {
+    for (const tier of TIERS) if (stamps[tier] !== this.stamps[tier]) { this.decodings[tier].clear(); this.stamps[tier] = stamps[tier]; }
+    return this.decodings[LASTING].get(id) ?? this.decodings[PROVISIONAL].get(id) ?? this.decodings[VARIANT].get(id);
   }
-  keep(id, decoding, unnamed) { (unnamed ? this.provisional : this.decodings).set(id, decoding); }
+  keep(id, decoding, tier) { this.decodings[tier].set(id, decoding); }
   // The context with only the dimensions in `free`, a node's free mask.
   restrictedTo(free) {
     if (!(this.assigned & ~free)) return this;
@@ -135,12 +134,11 @@ export class CubicalSyntax {
   constructor(kernel) {
     this.kernel = kernel;
     this.encoded = new NodeCache(kernel, true);
-    // Decodings by what they depend on (decodeNode): those that show a
-    // binder with no name yet apart, and kept until the binders' names move
-    // on (`namesEpoch`), with the decodings that show one (showsUnnamed).
-    this.decoded = new NodeCache(kernel);
-    this.provisional = new NodeCache(kernel); this.showsUnnamed = new WeakSet();
-    this.namesEpoch = kernel.binderNames.epoch;
+    // Decodings by what they depend on (decodeNode), one cache for each
+    // tier (tierOf), with each tier's stamp: what its decodings read, as it
+    // stood when they were made.
+    this.decoded = TIERS.map(() => new NodeCache(kernel)); this.tiers = new WeakMap();
+    this.stamps = [null, kernel.binderNames.epoch, kernel.binderNames.renamings];
     // The contexts decodings start in, by their naming (NO_NAMING for none),
     // their dimensions and their binders (contextOf); the names each set of
     // entries a naming meets takes there (shownEntries).
@@ -158,7 +156,7 @@ export class CubicalSyntax {
   // Handles made since a checkpoint move when it is committed or rolled
   // back: what was read of them is dropped then.
   reset() {
-    for (const cache of [this.encoded, this.decoded, this.provisional, this.free, this.heads, this.loose, this.mentioned]) cache.drop();
+    for (const cache of [this.encoded, ...this.decoded, this.free, this.heads, this.loose, this.mentioned]) cache.drop();
     this.contexts = new WeakMap(); this.entryNamings = new WeakMap();
   }
   // A node's loose range, as the kernel's `loose` (term_internal.h): one
@@ -454,18 +452,28 @@ export class CubicalSyntax {
   // (required).
   decode(id, dimensions, names, naming) {
     required("decode", { dimensions, names, naming });
-    // A binder shown unnamed has since been named otherwise
-    // (web/cubical-kernel.mjs, BinderNames): the decodings that show a
-    // binder unnamed go, and those that show named binders alone stay, as
-    // a binder's name never changes once given, nor, once read, the stem
-    // its variant reads (web/cubical-variables.mjs, EntryNames.stemOf).
-    const { epoch } = this.kernel.binderNames;
-    if (epoch !== this.namesEpoch) {
-      this.provisional = new NodeCache(this.kernel);
-      this.namesEpoch = epoch;
+    // The decodings of a tier whose stamp has moved go (tierOf).
+    const { epoch, renamings } = this.kernel.binderNames;
+    for (const [tier, stamp] of [[PROVISIONAL, epoch], [VARIANT, renamings]]) if (stamp !== this.stamps[tier]) {
+      this.decoded[tier] = new NodeCache(this.kernel);
+      this.stamps[tier] = stamp;
     }
     return this.decodeIn(id, this.contextOf(dimensions, names, naming));
   }
+  // How long a decoding is kept, by what it read that may change:
+  // - LASTING, one of named binders alone, whose names never change once
+  //   given, and which reads and writes nothing else that changes: for good;
+  // - PROVISIONAL, one that shows a binder with no name yet, this one or one
+  //   in a part: until a binder shown unnamed is named otherwise than shown
+  //   (web/cubical-kernel.mjs, BinderNames.epoch);
+  // - VARIANT, one in which a binder shows a variant of its name, which
+  //   reads the stem of the name and records the variant's
+  //   (web/cubical-variables.mjs, shownBinderName), or that holds such a
+  //   decoding: until #354's codec would have decoded it anew
+  //   (BinderNames.renamings). The stems it read may have changed since, and
+  //   decoding it again then records its variants again, in the order the
+  //   decodings are asked for, as on #354.
+  tierOf(decoding) { return this.tiers.get(decoding) ?? LASTING; }
   // The context a decoding starts in (DecodingContext): one for each
   // naming, binders and dimensions in their order.
   contextOf(dimensions, names, naming) {
@@ -491,10 +499,10 @@ export class CubicalSyntax {
   }
   // A node decoded in a context: found by the node there, or decoded.
   decodeIn(id, context) {
-    let result = context.decoded(id, this.namesEpoch);
+    let result = context.decoded(id, this.stamps);
     if (result === undefined) {
       result = this.decodeNode(id, context);
-      context.keep(id, result, this.showsUnnamed.has(result));
+      context.keep(id, result, this.tierOf(result));
     }
     return result;
   }
@@ -512,25 +520,29 @@ export class CubicalSyntax {
     // that name them) and those its entries take.
     const cacheKey = dimensions.size || loose || entries.size
       ? `${id}\0${within.key}\0${this.prefix(names, loose)?.id ?? 0}\0${this.shownEntries(entries, naming)}` : id;
-    const known = this.decoded.get(cacheKey) ?? this.provisional.get(cacheKey);
+    const known = this.decoded[LASTING].get(cacheKey) ?? this.decoded[PROVISIONAL].get(cacheKey) ?? this.decoded[VARIANT].get(cacheKey);
     if (known !== undefined) {
       if (completeContext && this.closed(known)) this.encoded.setNode(known, context.key, id);
       return known;
     }
     const node = this.kernel.node(id), { kind: tag, payload, children: c } = node;
-    // Whether the decoding shows a binder that has no name yet: this one, or
-    // one in a part.
-    let unnamed = BINDERS.has(tag) && !this.kernel.binderNames.has(id);
+    // The decoding's tier (tierOf): this binder's, if it has no name yet, or
+    // shows a variant of its name, or a part's.
+    let tier = BINDERS.has(tag) && !this.kernel.binderNames.has(id) ? PROVISIONAL : LASTING;
     const part = (handle, inner) => {
       const decoded = this.decodeIn(handle, inner);
-      unnamed ||= this.showsUnnamed.has(decoded);
+      tier = Math.max(tier, this.tierOf(decoded));
       return decoded;
     };
     const child = i => part(c[i], within);
     // A binder's own name, unless it would capture a variable its body refers
     // to otherwise: an outer binder's, by the body's loose indices past its
-    // own, or an entry's.
-    const binder = () => this.binderShownName(id, names, naming);
+    // own, or an entry's; then a variant of it.
+    const binder = () => {
+      const shown = this.binderShownName(id, names, naming);
+      if (shown !== binderName(this.kernel, id)) tier = VARIANT;
+      return shown;
+    };
     let bound;
     const body = i => part(c[i], within.under(bound));
     // A dimension binder's dimension, and its parts.
@@ -627,14 +639,15 @@ export class CubicalSyntax {
       this.encoded.setNode(result, within.key, id);
       if (completeContext) this.encoded.setNode(result, context.key, id);
     }
-    // One that shows a binder with no name yet is kept until a binder shown
-    // so is named otherwise (decode).
-    if (unnamed) this.showsUnnamed.add(result);
-    (unnamed ? this.provisional : this.decoded).set(cacheKey, result, id);
+    // Kept in its tier (tierOf).
+    if (tier !== LASTING) this.tiers.set(result, tier);
+    this.decoded[tier].set(cacheKey, result, id);
     return result;
   }
   // Whether syntax has no free variable, and so encodes alike in every scope.
   closed(term) { return !isTerm(term) || !freeNames(term).size; }}
 const NONE = Object.freeze(new Set());
+// A decoding's tiers, by how long it is kept (CubicalSyntax.tierOf).
+const LASTING = 0, PROVISIONAL = 1, VARIANT = 2, TIERS = [LASTING, PROVISIONAL, VARIANT];
 // The key of no naming, in the maps kept by naming.
 const NO_NAMING = Object.freeze({});

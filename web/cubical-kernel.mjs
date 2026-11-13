@@ -152,9 +152,10 @@ class HandleMap extends Map {
 // none of them shown yet (HandleMap.finish).
 // #354's codec made every decoding anew at each naming of a binder shown
 // unnamed, whatever the name, and at each name a commit relocated onto the
-// handle of one: `renamings` counts these, at which the display's renaming
-// of made-up names reads the stems again, as it did on #354's new
-// decodings (cubical-elaborator.mjs, SourceNames).
+// handle of one: `renamings` counts these. At each, the decodings that read
+// the stems are made anew, reading and recording them again
+// (CubicalSyntax.tierOf), and the display's renaming of made-up names reads
+// them again (cubical-elaborator.mjs, SourceNames), as on #354.
 const SHOWN_APART = null;
 class BinderNames extends HandleMap {
   set(handle, name) {
